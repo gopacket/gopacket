@@ -22,6 +22,8 @@ import (
 	"time"
 )
 
+var ErrNoLayersAdded = errors.New("NextDecoder called, but no layers added yet")
+
 // CaptureInfo provides standardized information about a packet captured off
 // the wire or read from a file.
 type CaptureInfo struct {
@@ -440,7 +442,7 @@ func (p *eagerPacket) NextDecoder(next Decoder) error {
 		return errNilDecoder
 	}
 	if p.last == nil {
-		return errors.New("NextDecoder called, but no layers added yet")
+		return ErrNoLayersAdded
 	}
 	d := p.last.LayerPayload()
 	if len(d) == 0 {
