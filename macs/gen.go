@@ -4,13 +4,14 @@
 // that can be found in the LICENSE file in the root of the source
 // tree.
 
+//go:build ignore
 // +build ignore
 
 // This binary pulls the list of known MAC
 // prefixes from IEEE and writes them out to a go file which is compiled
 // into gopacket.  It should be run as follows:
 //
-//  go run gen.go | gofmt > valid_mac_prefixes.go
+//	go run gen.go | gofmt > valid_mac_prefixes.go
 package main
 
 import (

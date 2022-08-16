@@ -11,8 +11,9 @@ package layers
 
 import (
 	"fmt"
-	"github.com/google/gopacket"
 	"net"
+
+	"github.com/gopacket/gopacket"
 )
 
 type NDPChassisType uint8

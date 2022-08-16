@@ -4,12 +4,13 @@
 // that can be found in the LICENSE file in the root of the source
 // tree.
 
+//go:build ignore
 // +build ignore
 
 // This binary pulls known ports from IANA, and uses them to populate
 // iana_ports.go's TCPPortNames and UDPPortNames maps.
 //
-//  go run gen.go | gofmt > iana_ports.go
+//	go run gen.go | gofmt > iana_ports.go
 package main
 
 import (

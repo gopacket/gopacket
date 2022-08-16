@@ -95,10 +95,11 @@ func longestCommonSubstring(strA, strB []byte) (indexA, indexB, length int) {
 // Difference represents a single part of the data being diffed, containing
 // information about both the original and new values.
 // From and To are the sets of bytes in the original and the new byte slice.
-//   !Replace        implies  From == To (no change)
-//   len(To) == 0    implies  From is being deleted
-//   len(From) == 0  implies  To is being inserted
-//   else            implies  From is being replaced by To
+//
+//	!Replace        implies  From == To (no change)
+//	len(To) == 0    implies  From is being deleted
+//	len(From) == 0  implies  To is being inserted
+//	else            implies  From is being replaced by To
 type Difference struct {
 	Replace  bool
 	From, To []byte
