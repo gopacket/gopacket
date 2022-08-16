@@ -64,7 +64,7 @@ func TestPacketMulticastListenerQueryMessageV2(t *testing.T) {
 		LayerTypeIPv6HopByHop,
 		LayerTypeICMPv6,
 		LayerTypeMLDv2MulticastListenerQuery}, t)
-	// See https://github.com/gopacket/gopacket/issues/517
+	// See https://github.com/google/gopacket/issues/517
 	// checkSerialization(p, t)
 }
 
@@ -138,6 +138,6 @@ func TestPacketMulticastListenerReportMessageV2(t *testing.T) {
 		LayerTypeIPv6HopByHop,
 		LayerTypeICMPv6,
 		LayerTypeMLDv2MulticastListenerReport}, t)
-	// See https://github.com/gopacket/gopacket/issues/517
+	// See https://github.com/google/gopacket/issues/517
 	// checkSerialization(p, t)
 }
