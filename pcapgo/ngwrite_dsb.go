@@ -71,10 +71,7 @@ type pcapngDecryptionSecretsBlock struct {
 func (w *NgWriter) WriteDecryptionSecretsBlock(secretType uint32, secretPayload []byte) error {
 
 	switch secretType {
-	case DSB_SECRETS_TYPE_SSH, DSB_SECRETS_TYPE_ZIGBEE_NWK_KEY, DSB_SECRETS_TYPE_WIREGUARD, DSB_SECRETS_TYPE_ZIGBEE_APS_KEY:
-		// unsupported secrets type
-		return ErrUnsupportedSecretsType
-	case DSB_SECRETS_TYPE_TLS:
+	case DSB_SECRETS_TYPE_SSH, DSB_SECRETS_TYPE_ZIGBEE_NWK_KEY, DSB_SECRETS_TYPE_WIREGUARD, DSB_SECRETS_TYPE_ZIGBEE_APS_KEY, DSB_SECRETS_TYPE_TLS:
 	default:
 		// unknown secrets type
 		return ErrUnknownSecretsType
@@ -95,7 +92,7 @@ func (w *NgWriter) WriteDecryptionSecretsBlock(secretType uint32, secretPayload 
 	binary.LittleEndian.PutUint32(w.buf[4:8], length)
 
 	// write decryption secrets block
-	binary.LittleEndian.PutUint32(w.buf[8:12], DSB_SECRETS_TYPE_TLS)
+	binary.LittleEndian.PutUint32(w.buf[8:12], secretType)
 	binary.LittleEndian.PutUint32(w.buf[12:16], uint32(secretPayloadLen))
 
 	if _, err := w.w.Write(w.buf[:16]); err != nil {

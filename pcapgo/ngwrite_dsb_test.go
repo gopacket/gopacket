@@ -2,7 +2,7 @@ package pcapgo
 
 import (
 	"fmt"
-	"github.com/google/gopacket/layers"
+	"github.com/gopacket/gopacket/layers"
 	"io"
 	"math"
 	"net"

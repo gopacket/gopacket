@@ -2,7 +2,7 @@ package pcapgo
 
 import (
 	"fmt"
-	"github.com/google/gopacket"
+	"github.com/gopacket/gopacket"
 	"io"
 	"os"
 	"testing"
