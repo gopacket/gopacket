@@ -8,6 +8,7 @@ package gopacket
 
 import (
 	"bytes"
+	"context"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -20,6 +21,8 @@ import (
 	"syscall"
 	"time"
 )
+
+var ErrNoLayersAdded = errors.New("NextDecoder called, but no layers added yet")
 
 // CaptureInfo provides standardized information about a packet captured off
 // the wire or read from a file.
@@ -439,7 +442,7 @@ func (p *eagerPacket) NextDecoder(next Decoder) error {
 		return errNilDecoder
 	}
 	if p.last == nil {
-		return errors.New("NextDecoder called, but no layers added yet")
+		return ErrNoLayersAdded
 	}
 	d := p.last.LayerPayload()
 	if len(d) == 0 {
@@ -714,7 +717,7 @@ type concat []PacketDataSource
 func (c *concat) ReadPacketData() (data []byte, ci CaptureInfo, err error) {
 	for len(*c) > 0 {
 		data, ci, err = (*c)[0].ReadPacketData()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			*c = (*c)[1:]
 			continue
 		}
@@ -778,7 +781,7 @@ type ZeroCopyPacketDataSource interface {
 //    handlePacket(packet)  // Do something with each packet.
 //  }
 type PacketSource struct {
-	source  PacketDataSource
+	source  func() (data []byte, ci CaptureInfo, err error)
 	decoder Decoder
 	// DecodeOptions is the set of options to use for decoding each piece
 	// of packet data.  This can/should be changed by the user to reflect the
@@ -787,10 +790,18 @@ type PacketSource struct {
 	c chan Packet
 }
 
+// NewZeroCopyPacketSource creates a zero copy packet data source.
+func NewZeroCopyPacketSource(source ZeroCopyPacketDataSource, decoder Decoder) *PacketSource {
+	return &PacketSource{
+		source:  source.ZeroCopyReadPacketData,
+		decoder: decoder,
+	}
+}
+
 // NewPacketSource creates a packet data source.
 func NewPacketSource(source PacketDataSource, decoder Decoder) *PacketSource {
 	return &PacketSource{
-		source:  source,
+		source:  source.ReadPacketData,
 		decoder: decoder,
 	}
 }
@@ -798,7 +809,7 @@ func NewPacketSource(source PacketDataSource, decoder Decoder) *PacketSource {
 // NextPacket returns the next decoded packet from the PacketSource.  On error,
 // it returns a nil packet and a non-nil error.
 func (p *PacketSource) NextPacket() (Packet, error) {
-	data, ci, err := p.source.ReadPacketData()
+	data, ci, err := p.source()
 	if err != nil {
 		return nil, err
 	}
@@ -809,12 +820,34 @@ func (p *PacketSource) NextPacket() (Packet, error) {
 	return packet, nil
 }
 
+// Packets returns a channel of packets, allowing easy iterating over
+// packets.  Packets will be asynchronously read in from the underlying
+// PacketDataSource and written to the returned channel.  If the underlying
+// PacketDataSource returns an io.EOF error, the channel will be closed.
+// If any other error is encountered, it is ignored.
+// The background Go routine will be canceled as soon as the given context
+// returns an error either because it got canceled or it has reached its deadline.
+//
+//  for packet := range packetSource.Packets(context.Background()) {
+//    handlePacket(packet)  // Do something with each packet.
+//  }
+//
+// If called more than once, returns the same channel.
+func (p *PacketSource) Packets(ctx context.Context) chan Packet {
+	const defaultPacketChannelSize = 1000
+	if p.c == nil {
+		p.c = make(chan Packet, defaultPacketChannelSize)
+		go p.packetsToChannel(ctx)
+	}
+	return p.c
+}
+
 // packetsToChannel reads in all packets from the packet source and sends them
 // to the given channel. This routine terminates when a non-temporary error
 // is returned by NextPacket().
-func (p *PacketSource) packetsToChannel() {
+func (p *PacketSource) packetsToChannel(ctx context.Context) {
 	defer close(p.c)
-	for {
+	for ctx.Err() == nil {
 		packet, err := p.NextPacket()
 		if err == nil {
 			p.c <- packet
@@ -822,19 +855,16 @@ func (p *PacketSource) packetsToChannel() {
 		}
 
 		// Immediately retry for temporary network errors
-		if nerr, ok := err.(net.Error); ok && nerr.Temporary() {
-			continue
-		}
-
-		// Immediately retry for EAGAIN
-		if err == syscall.EAGAIN {
+		var netErr net.Error
+		if ok := errors.As(err, &netErr); ok && netErr.Timeout() {
+			time.Sleep(time.Millisecond * time.Duration(5))
 			continue
 		}
 
 		// Immediately break for known unrecoverable errors
-		if err == io.EOF || err == io.ErrUnexpectedEOF ||
-			err == io.ErrNoProgress || err == io.ErrClosedPipe || err == io.ErrShortBuffer ||
-			err == syscall.EBADF ||
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) ||
+			errors.Is(err, io.ErrNoProgress) || errors.Is(err, io.ErrClosedPipe) || errors.Is(err, io.ErrShortBuffer) ||
+			errors.Is(err, syscall.EBADF) ||
 			strings.Contains(err.Error(), "use of closed file") {
 			break
 		}
@@ -842,23 +872,4 @@ func (p *PacketSource) packetsToChannel() {
 		// Sleep briefly and try again
 		time.Sleep(time.Millisecond * time.Duration(5))
 	}
-}
-
-// Packets returns a channel of packets, allowing easy iterating over
-// packets.  Packets will be asynchronously read in from the underlying
-// PacketDataSource and written to the returned channel.  If the underlying
-// PacketDataSource returns an io.EOF error, the channel will be closed.
-// If any other error is encountered, it is ignored.
-//
-//  for packet := range packetSource.Packets() {
-//    handlePacket(packet)  // Do something with each packet.
-//  }
-//
-// If called more than once, returns the same channel.
-func (p *PacketSource) Packets() chan Packet {
-	if p.c == nil {
-		p.c = make(chan Packet, 1000)
-		go p.packetsToChannel()
-	}
-	return p.c
 }
