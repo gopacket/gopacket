@@ -1,4 +1,10 @@
-on: [pull_request]
+name: push_pr_test
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
 
 jobs:
   build:

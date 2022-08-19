@@ -7,9 +7,10 @@
 package layers
 
 import (
-	"github.com/google/gopacket"
 	"reflect"
 	"testing"
+
+	"github.com/gopacket/gopacket"
 )
 
 // VXLAN is specifed in RFC 7348

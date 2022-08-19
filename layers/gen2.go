@@ -9,7 +9,7 @@
 
 // This binary handles creating string constants and function templates for enums.
 //
-//  go run gen.go | gofmt > enums_generated.go
+//	go run gen.go | gofmt > enums_generated.go
 package main
 
 import (
@@ -30,7 +30,7 @@ package layers
 import (
   "fmt"
 
-  "github.com/google/gopacket"
+  "github.com/gopacket/gopacket"
 )
 
 `

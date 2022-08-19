@@ -28,16 +28,17 @@ var NilDecodeFeedback DecodeFeedback = nilDecodeFeedback{}
 // PacketBuilder is used by layer decoders to store the layers they've decoded,
 // and to defer future decoding via NextDecoder.
 // Typically, the pattern for use is:
-//  func (m *myDecoder) Decode(data []byte, p PacketBuilder) error {
-//    if myLayer, err := myDecodingLogic(data); err != nil {
-//      return err
-//    } else {
-//      p.AddLayer(myLayer)
-//    }
-//    // maybe do this, if myLayer is a LinkLayer
-//    p.SetLinkLayer(myLayer)
-//    return p.NextDecoder(nextDecoder)
-//  }
+//
+//	func (m *myDecoder) Decode(data []byte, p PacketBuilder) error {
+//	  if myLayer, err := myDecodingLogic(data); err != nil {
+//	    return err
+//	  } else {
+//	    p.AddLayer(myLayer)
+//	  }
+//	  // maybe do this, if myLayer is a LinkLayer
+//	  p.SetLinkLayer(myLayer)
+//	  return p.NextDecoder(nextDecoder)
+//	}
 type PacketBuilder interface {
 	DecodeFeedback
 	// AddLayer should be called by a decoder immediately upon successful

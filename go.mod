@@ -1,11 +1,10 @@
-module github.com/google/gopacket
+module github.com/gopacket/gopacket
 
-go 1.12
+go 1.18
 
 require (
 	github.com/vishvananda/netlink v1.1.0
-	github.com/vishvananda/netns v0.0.0-20210104183010-2eb08e3e575f
-	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
-	golang.org/x/net v0.0.0-20190620200207-3b0461eec859
-	golang.org/x/sys v0.0.0-20200217220822-9197077df867
+	github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74
+	golang.org/x/net v0.0.0-20220812174116-3211cb980234
+	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab
 )
