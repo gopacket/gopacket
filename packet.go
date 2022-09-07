@@ -111,6 +111,12 @@ type Packet interface {
 	Data() []byte
 	// Metadata returns packet metadata associated with this packet.
 	Metadata() *PacketMetadata
+
+	//// Functions for verifying specific aspects of the packet:
+	//// ------------------------------------------------------------------
+	// VerifyChecksums verifies the checksums of all layers in this packet,
+	// that have one, and returns all found checksum mismatches.
+	VerifyChecksums() (error, []ChecksumMismatch)
 }
 
 type PooledPacket interface {
@@ -199,6 +205,30 @@ func (p *packet) Data() []byte {
 
 func (p *packet) DecodeOptions() *DecodeOptions {
 	return &p.decodeOptions
+}
+
+func (p *packet) VerifyChecksums() (error, []ChecksumMismatch) {
+	mismatches := make([]ChecksumMismatch, 0)
+	for i, l := range p.layers {
+		if lwc, ok := l.(LayerWithChecksum); ok {
+			// Verify checksum for that layer
+			err, res := lwc.VerifyChecksum()
+			if err != nil {
+				return fmt.Errorf("couldn't verify checksum for layer %d (%s): %w",
+					i+1, l.LayerType(), err), nil
+			}
+
+			if !res.Valid {
+				mismatches = append(mismatches, ChecksumMismatch{
+					ChecksumVerificationResult: res,
+					Layer:                      l,
+					LayerIndex:                 i,
+				})
+			}
+		}
+	}
+
+	return nil, mismatches
 }
 
 func (p *packet) addFinalDecodeError(err error, stack []byte) {
