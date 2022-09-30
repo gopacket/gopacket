@@ -156,6 +156,34 @@ func BenchmarkDecodeGeneve1(b *testing.B) {
 	}
 }
 
+func TestGeneveSerializeToNoCrashWithWrongLengths(t *testing.T) {
+	gn := &Geneve{
+		Version:        0x0,
+		OptionsLength:  0x0,
+		OAMPacket:      false,
+		CriticalOption: true,
+		Protocol:       EthernetTypeTransparentEthernetBridging,
+		VNI:            0xa,
+		Options: []*GeneveOption{
+			{
+				Class:  0x0,
+				Type:   0x80,
+				Length: 0x0,
+				Data:   []byte{0, 0, 0, 0, 0, 0, 0, 0xc},
+			},
+			{
+				Class:  0x0,
+				Type:   0x80,
+				Length: 0x0,
+				Data:   []byte{0, 0, 0, 0xc},
+			},
+		},
+	}
+
+	b := gopacket.NewSerializeBuffer()
+	gn.SerializeTo(b, gopacket.SerializeOptions{})
+}
+
 func TestIsomorphicPacketGeneve(t *testing.T) {
 	gn := &Geneve{
 		Version:        0x0,
