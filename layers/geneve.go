@@ -132,6 +132,9 @@ func (gn *Geneve) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.Serializ
 		dataLen := len(o.Data) & ^3
 		optionsLength += 4 + dataLen
 	}
+	if opts.FixLengths {
+		gn.OptionsLength = uint8(optionsLength)
+	}
 
 	plen := int(8 + optionsLength)
 	bytes, err := b.PrependBytes(plen)
@@ -168,6 +171,9 @@ func (gn *Geneve) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.Serializ
 	offset := 8
 	for _, o := range gn.Options {
 		dataLen := len(o.Data) & ^3
+		if opts.FixLengths {
+			o.Length = uint8(4 + dataLen)
+		}
 
 		binary.BigEndian.PutUint16(bytes[offset:(offset+2)], uint16(o.Class))
 
