@@ -127,7 +127,16 @@ func decodeGeneve(data []byte, p gopacket.PacketBuilder) error {
 // SerializationBuffer, implementing gopacket.SerializableLayer.
 // See the docs for gopacket.SerializableLayer for more info.
 func (gn *Geneve) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.SerializeOptions) error {
-	plen := int(gn.OptionsLength + 8)
+	var optionsLength int
+	for _, o := range gn.Options {
+		dataLen := len(o.Data) & ^3
+		optionsLength += 4 + dataLen
+	}
+	if opts.FixLengths {
+		gn.OptionsLength = uint8(optionsLength)
+	}
+
+	plen := int(8 + optionsLength)
 	bytes, err := b.PrependBytes(plen)
 	if err != nil {
 		return err
@@ -159,8 +168,13 @@ func (gn *Geneve) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.Serializ
 
 	// Construct Options
 
-	offset, _ := uint8(8), int32(gn.OptionsLength)
+	offset := 8
 	for _, o := range gn.Options {
+		dataLen := len(o.Data) & ^3
+		if opts.FixLengths {
+			o.Length = uint8(4 + dataLen)
+		}
+
 		binary.BigEndian.PutUint16(bytes[offset:(offset+2)], uint16(o.Class))
 
 		offset += 2
@@ -171,9 +185,9 @@ func (gn *Geneve) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.Serializ
 		bytes[offset] |= ((o.Length - 4) >> 2) & 0x1f
 
 		offset += 1
-		copy(bytes[offset:(offset+o.Length-4)], o.Data)
+		copy(bytes[offset:(offset+dataLen)], o.Data)
 
-		offset += o.Length - 4
+		offset += dataLen
 	}
 
 	return nil

@@ -156,6 +156,34 @@ func BenchmarkDecodeGeneve1(b *testing.B) {
 	}
 }
 
+func TestGeneveSerializeToNoCrashWithWrongLengths(t *testing.T) {
+	gn := &Geneve{
+		Version:        0x0,
+		OptionsLength:  0x0,
+		OAMPacket:      false,
+		CriticalOption: true,
+		Protocol:       EthernetTypeTransparentEthernetBridging,
+		VNI:            0xa,
+		Options: []*GeneveOption{
+			{
+				Class:  0x0,
+				Type:   0x80,
+				Length: 0x0,
+				Data:   []byte{0, 0, 0, 0, 0, 0, 0, 0xc},
+			},
+			{
+				Class:  0x0,
+				Type:   0x80,
+				Length: 0x0,
+				Data:   []byte{0, 0, 0, 0xc},
+			},
+		},
+	}
+
+	b := gopacket.NewSerializeBuffer()
+	gn.SerializeTo(b, gopacket.SerializeOptions{})
+}
+
 func TestIsomorphicPacketGeneve(t *testing.T) {
 	gn := &Geneve{
 		Version:        0x0,
@@ -188,6 +216,65 @@ func TestIsomorphicPacketGeneve(t *testing.T) {
 	gnTranslated.BaseLayer = BaseLayer{}
 
 	if !reflect.DeepEqual(gn, gnTranslated) {
-		t.Errorf("VXLAN isomorph mismatch, \nwant %#v\ngot %#v\n", gn, gnTranslated)
+		t.Errorf("Geneve isomorph mismatch, \nwant %#v\ngot %#v\n", gn, gnTranslated)
+	}
+}
+
+func TestIsomorphicPacketGeneveFixLengths(t *testing.T) {
+	gn := &Geneve{
+		Version:        0x0,
+		OptionsLength:  0x14,
+		OAMPacket:      false,
+		CriticalOption: true,
+		Protocol:       EthernetTypeTransparentEthernetBridging,
+		VNI:            0xa,
+		Options: []*GeneveOption{
+			{
+				Class:  0x0,
+				Type:   0x80,
+				Length: 12,
+				Data:   []byte{0, 0, 0, 0, 0, 0, 0, 0xc},
+			},
+			{
+				Class:  0x0,
+				Type:   0x80,
+				Length: 8,
+				Data:   []byte{0, 0, 0, 0xc},
+			},
+		},
+	}
+
+	gnWrongLengths := &Geneve{
+		Version:        0x0,
+		OptionsLength:  0x0,
+		OAMPacket:      false,
+		CriticalOption: true,
+		Protocol:       EthernetTypeTransparentEthernetBridging,
+		VNI:            0xa,
+		Options: []*GeneveOption{
+			{
+				Class:  0x0,
+				Type:   0x80,
+				Length: 0x0,
+				Data:   []byte{0, 0, 0, 0, 0, 0, 0, 0xc},
+			},
+			{
+				Class:  0x0,
+				Type:   0x80,
+				Length: 0x0,
+				Data:   []byte{0, 0, 0, 0xc},
+			},
+		},
+	}
+
+	b := gopacket.NewSerializeBuffer()
+	gnWrongLengths.SerializeTo(b, gopacket.SerializeOptions{FixLengths: true})
+
+	p := gopacket.NewPacket(b.Bytes(), gopacket.DecodeFunc(decodeGeneve), gopacket.Default)
+	gnTranslated := p.Layer(LayerTypeGeneve).(*Geneve)
+	gnTranslated.BaseLayer = BaseLayer{}
+
+	if !reflect.DeepEqual(gn, gnTranslated) {
+		t.Errorf("Geneve isomorph mismatch, \nwant %#v\ngot %#v\n", gn, gnTranslated)
 	}
 }
