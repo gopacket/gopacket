@@ -1449,7 +1449,7 @@ func (t LLDPPowerPriority) String() (s string) {
 func (t LLDPMediaSubtype) String() (s string) {
 	switch t {
 	case LLDPMediaTypeCapabilities:
-		s = "Media Capabilities "
+		s = "Media Capabilities"
 	case LLDPMediaTypeNetwork:
 		s = "Network Policy"
 	case LLDPMediaTypeLocation:
@@ -1487,7 +1487,7 @@ func (t LLDPMediaClass) String() (s string) {
 	case LLDPMediaClassEndpointIII:
 		s = "Endpoint Class III"
 	case LLDPMediaClassNetwork:
-		s = "Network connectivity "
+		s = "Network Connectivity"
 	default:
 		s = "Unknown"
 	}
