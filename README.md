@@ -1,6 +1,8 @@
 # GoPacket
 
-This library provides packet decoding capabilities for Go. 
+This library provides packet decoding capabilities for Go.
+
+Forked from the popular gopacket [repo](https://github.com/google/gopacket) by Google, this fork was created to ensure the project doesn't become stale and bugfixes, new protocols and performance improvements can be merged into it. submit your PRs here :) 
 
 See [godoc](https://godoc.org/github.com/gopacket/gopacket) for more details.
 
@@ -14,5 +16,3 @@ See [godoc](https://godoc.org/github.com/gopacket/gopacket) for more details.
 
 Minimum Go supported is 1.18
 
-Originally forked from the gopcap project written by Andreas
-Krennmair <ak@synflood.at> (http://github.com/akrennmair/gopcap), and [Google's repo](https://godoc.org/github.com/google/gopacket).
