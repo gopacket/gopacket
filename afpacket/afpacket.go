@@ -31,17 +31,6 @@ import (
 	"github.com/gopacket/gopacket"
 )
 
-/*
-#include <linux/if_packet.h>  // AF_PACKET, sockaddr_ll
-#include <linux/if_ether.h>  // ETH_P_ALL
-#include <sys/socket.h>  // socket()
-#include <unistd.h>  // close()
-#include <arpa/inet.h>  // htons()
-#include <sys/mman.h>  // mmap(), munmap()
-#include <poll.h>  // poll()
-*/
-import "C"
-
 var pageSize = unix.Getpagesize()
 
 // ErrPoll returned by poll
@@ -67,35 +56,59 @@ type Stats struct {
 	Polls int64
 }
 
+type TpacketReqv2 struct {
+	blockSize uint32
+	blockNr   uint32
+	frameSize uint32
+	frameNr   uint32
+}
+
+type TpacketReqv3 struct {
+	blockSize      uint32
+	blockNr        uint32
+	frameSize      uint32
+	frameNr        uint32
+	retireBlkTov   uint32
+	sizeOfPriv     uint32
+	featureReqWord uint32
+}
+
 // SocketStats is a struct where socket stats are stored
-type SocketStats C.struct_tpacket_stats
+type SocketStats struct {
+	packets uint32
+	drops   uint32
+}
 
 // Packets returns the number of packets seen by this socket.
 func (s *SocketStats) Packets() uint {
-	return uint(s.tp_packets)
+	return uint(s.packets)
 }
 
 // Drops returns the number of packets dropped on this socket.
 func (s *SocketStats) Drops() uint {
-	return uint(s.tp_drops)
+	return uint(s.drops)
 }
 
 // SocketStatsV3 is a struct where socket stats for TPacketV3 are stored
-type SocketStatsV3 C.struct_tpacket_stats_v3
+type SocketStatsV3 struct {
+	packets      uint32
+	drops        uint32
+	freezeQCount uint32
+}
 
 // Packets returns the number of packets seen by this socket.
 func (s *SocketStatsV3) Packets() uint {
-	return uint(s.tp_packets)
+	return uint(s.packets)
 }
 
 // Drops returns the number of packets dropped on this socket.
 func (s *SocketStatsV3) Drops() uint {
-	return uint(s.tp_drops)
+	return uint(s.drops)
 }
 
 // QueueFreezes returns the number of queue freezes on this socket.
 func (s *SocketStatsV3) QueueFreezes() uint {
-	return uint(s.tp_freeze_q_cnt)
+	return uint(s.freezeQCount)
 }
 
 // TPacket implements packet receiving for Linux AF_PACKET versions 1, 2, and 3.
@@ -181,21 +194,21 @@ func (h *TPacket) setUpRing() (err error) {
 	totalSize := int(h.opts.framesPerBlock * h.opts.numBlocks * h.opts.frameSize)
 	switch h.tpVersion {
 	case TPacketVersion1, TPacketVersion2:
-		var tp C.struct_tpacket_req
-		tp.tp_block_size = C.uint(h.opts.blockSize)
-		tp.tp_block_nr = C.uint(h.opts.numBlocks)
-		tp.tp_frame_size = C.uint(h.opts.frameSize)
-		tp.tp_frame_nr = C.uint(h.opts.framesPerBlock * h.opts.numBlocks)
+		var tp TpacketReqv2
+		tp.blockSize = uint32(h.opts.blockSize)
+		tp.blockNr = uint32(h.opts.numBlocks)
+		tp.frameSize = uint32(h.opts.frameSize)
+		tp.frameNr = uint32(h.opts.framesPerBlock * h.opts.numBlocks)
 		if err := setsockopt(h.fd, unix.SOL_PACKET, unix.PACKET_RX_RING, unsafe.Pointer(&tp), unsafe.Sizeof(tp)); err != nil {
 			return fmt.Errorf("setsockopt packet_rx_ring: %v", err)
 		}
 	case TPacketVersion3:
-		var tp C.struct_tpacket_req3
-		tp.tp_block_size = C.uint(h.opts.blockSize)
-		tp.tp_block_nr = C.uint(h.opts.numBlocks)
-		tp.tp_frame_size = C.uint(h.opts.frameSize)
-		tp.tp_frame_nr = C.uint(h.opts.framesPerBlock * h.opts.numBlocks)
-		tp.tp_retire_blk_tov = C.uint(h.opts.blockTimeout / time.Millisecond)
+		var tp TpacketReqv3
+		tp.blockSize = uint32(h.opts.blockSize)
+		tp.blockNr = uint32(h.opts.numBlocks)
+		tp.frameSize = uint32(h.opts.frameSize)
+		tp.frameNr = uint32(h.opts.framesPerBlock * h.opts.numBlocks)
+		tp.retireBlkTov = uint32(h.opts.blockTimeout / time.Millisecond)
 		if err := setsockopt(h.fd, unix.SOL_PACKET, unix.PACKET_RX_RING, unsafe.Pointer(&tp), unsafe.Sizeof(tp)); err != nil {
 			return fmt.Errorf("setsockopt packet_rx_ring v3: %v", err)
 		}
@@ -204,6 +217,7 @@ func (h *TPacket) setUpRing() (err error) {
 	}
 	h.ring, err = unix.Mmap(h.fd, 0, totalSize, unix.PROT_READ|unix.PROT_WRITE, unix.MAP_SHARED)
 	if err != nil {
+		fmt.Println("here")
 		return err
 	}
 	if h.ring == nil {
@@ -343,9 +357,8 @@ func (h *TPacket) Stats() (Stats, error) {
 // InitSocketStats clears socket counters and return empty stats.
 func (h *TPacket) InitSocketStats() error {
 	if h.tpVersion == TPacketVersion3 {
-		socklen := unsafe.Sizeof(h.socketStatsV3)
-		slt := C.socklen_t(socklen)
 		var ssv3 SocketStatsV3
+		slt := uint32(unsafe.Sizeof(ssv3))
 
 		err := getsockopt(h.fd, unix.SOL_PACKET, unix.PACKET_STATISTICS, unsafe.Pointer(&ssv3), uintptr(unsafe.Pointer(&slt)))
 		if err != nil {
@@ -353,9 +366,8 @@ func (h *TPacket) InitSocketStats() error {
 		}
 		h.socketStatsV3 = SocketStatsV3{}
 	} else {
-		socklen := unsafe.Sizeof(h.socketStats)
-		slt := C.socklen_t(socklen)
 		var ss SocketStats
+		slt := uint32(unsafe.Sizeof(ss))
 
 		err := getsockopt(h.fd, unix.SOL_PACKET, unix.PACKET_STATISTICS, unsafe.Pointer(&ss), uintptr(unsafe.Pointer(&slt)))
 		if err != nil {
@@ -372,31 +384,29 @@ func (h *TPacket) SocketStats() (SocketStats, SocketStatsV3, error) {
 	defer h.statsMu.Unlock()
 	// We need to save the counters since asking for the stats will clear them
 	if h.tpVersion == TPacketVersion3 {
-		socklen := unsafe.Sizeof(h.socketStatsV3)
-		slt := C.socklen_t(socklen)
 		var ssv3 SocketStatsV3
+		slt := uint32(unsafe.Sizeof(ssv3))
 
 		err := getsockopt(h.fd, unix.SOL_PACKET, unix.PACKET_STATISTICS, unsafe.Pointer(&ssv3), uintptr(unsafe.Pointer(&slt)))
 		if err != nil {
 			return SocketStats{}, SocketStatsV3{}, err
 		}
 
-		h.socketStatsV3.tp_packets += ssv3.tp_packets
-		h.socketStatsV3.tp_drops += ssv3.tp_drops
-		h.socketStatsV3.tp_freeze_q_cnt += ssv3.tp_freeze_q_cnt
+		h.socketStatsV3.packets += ssv3.packets
+		h.socketStatsV3.drops += ssv3.drops
+		h.socketStatsV3.freezeQCount += ssv3.freezeQCount
 		return h.socketStats, h.socketStatsV3, nil
 	}
-	socklen := unsafe.Sizeof(h.socketStats)
-	slt := C.socklen_t(socklen)
 	var ss SocketStats
+	slt := uint32(unsafe.Sizeof(ss))
 
 	err := getsockopt(h.fd, unix.SOL_PACKET, unix.PACKET_STATISTICS, unsafe.Pointer(&ss), uintptr(unsafe.Pointer(&slt)))
 	if err != nil {
 		return SocketStats{}, SocketStatsV3{}, err
 	}
 
-	h.socketStats.tp_packets += ss.tp_packets
-	h.socketStats.tp_drops += ss.tp_drops
+	h.socketStats.packets += ss.packets
+	h.socketStats.drops += ss.drops
 	return h.socketStats, h.socketStatsV3, nil
 }
 
@@ -512,8 +522,8 @@ const (
 func (h *TPacket) SetFanout(t FanoutType, id uint16) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	arg := C.int(t) << 16
-	arg |= C.int(id)
+	arg := int(t) << 16
+	arg |= int(id)
 	return setsockopt(h.fd, unix.SOL_PACKET, unix.PACKET_FANOUT, unsafe.Pointer(&arg), unsafe.Sizeof(arg))
 }
 
