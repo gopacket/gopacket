@@ -929,11 +929,15 @@ func (p *PacketSource) packetsToChannel(ctx context.Context) {
 	for ctx.Err() == nil {
 		packet, err := p.NextPacket()
 		if err == nil {
-			p.c <- packet
-			continue
+			select {
+			case p.c <- packet:
+				continue
+			case <-ctx.Done():
+				return
+			}
 		}
 
-		// Immediately retry for temporary network errors
+		// if timeout error sleep briefly and retry
 		var netErr net.Error
 		if ok := errors.As(err, &netErr); ok && netErr.Timeout() {
 			time.Sleep(time.Millisecond * time.Duration(5))
