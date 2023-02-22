@@ -8,6 +8,7 @@ package gopacket
 
 import (
 	"bytes"
+	"context"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -17,8 +18,21 @@ import (
 	"reflect"
 	"runtime/debug"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
+)
+
+const maximumMTU = 1500
+
+var (
+	ErrNoLayersAdded = errors.New("NextDecoder called, but no layers added yet")
+	poolPackedPool   = &sync.Pool{
+		New: func() interface{} {
+			b := make([]byte, maximumMTU)
+			return &b
+		},
+	}
 )
 
 // CaptureInfo provides standardized information about a packet captured off
@@ -97,6 +111,11 @@ type Packet interface {
 	Data() []byte
 	// Metadata returns packet metadata associated with this packet.
 	Metadata() *PacketMetadata
+}
+
+type PooledPacket interface {
+	Packet
+	Dispose()
 }
 
 // packet contains all the information we need to fulfill the Packet interface,
@@ -199,6 +218,15 @@ func (p *packet) recoverDecodeError() {
 			p.addFinalDecodeError(fmt.Errorf("%v", r), debug.Stack())
 		}
 	}
+}
+
+type pooledPacket struct {
+	Packet
+	origData *[]byte
+}
+
+func (p pooledPacket) Dispose() {
+	poolPackedPool.Put(p.origData)
 }
 
 // LayerString outputs an individual layer as a string.  The layer is output
@@ -441,7 +469,7 @@ func (p *eagerPacket) NextDecoder(next Decoder) error {
 		return errNilDecoder
 	}
 	if p.last == nil {
-		return errors.New("NextDecoder called, but no layers added yet")
+		return ErrNoLayersAdded
 	}
 	d := p.last.LayerPayload()
 	if len(d) == 0 {
@@ -619,6 +647,11 @@ type DecodeOptions struct {
 	// there's any chance that those bytes WILL be changed, this will invalidate
 	// your packets.
 	NoCopy bool
+	// Pool decoding only applies if NoCopy is false.
+	// Instead of always allocating new memory it takes the memory from a pool.
+	// NewPacket then will return a PooledPacket instead of a Packet.
+	// As soon as you're done with the PooledPacket you should call PooledPacket.Dispose() to return it to the pool.
+	Pool bool
 	// SkipDecodeRecovery skips over panic recovery during packet decoding.
 	// Normally, when packets decode, if a panic occurs, that panic is captured
 	// by a recover(), and a DecodeFailure layer is added to the packet detailing
@@ -653,18 +686,32 @@ var DecodeStreamsAsDatagrams = DecodeOptions{DecodeStreamsAsDatagrams: true}
 // NewPacket creates a new Packet object from a set of bytes.  The
 // firstLayerDecoder tells it how to interpret the first layer from the bytes,
 // future layers will be generated from that first layer automatically.
-func NewPacket(data []byte, firstLayerDecoder Decoder, options DecodeOptions) Packet {
+func NewPacket(data []byte, firstLayerDecoder Decoder, options DecodeOptions) (p Packet) {
 	if !options.NoCopy {
-		dataCopy := make([]byte, len(data))
-		copy(dataCopy, data)
-		data = dataCopy
+		var (
+			poolMemory *[]byte
+			dataCopy   []byte
+		)
+		if options.Pool && len(data) <= maximumMTU {
+			poolMemory = poolPackedPool.Get().(*[]byte)
+			dataCopy = (*poolMemory)[:len(data)]
+			copy(dataCopy, data)
+			data = dataCopy
+			defer func() {
+				p = &pooledPacket{Packet: p, origData: poolMemory}
+			}()
+		} else {
+			dataCopy = make([]byte, len(data))
+			copy(dataCopy, data)
+			data = dataCopy
+		}
 	}
 	if options.Lazy {
-		p := &lazyPacket{
+		lp := &lazyPacket{
 			packet: packet{data: data, decodeOptions: options},
 			next:   firstLayerDecoder,
 		}
-		p.layers = p.initialLayers[:0]
+		lp.layers = lp.initialLayers[:0]
 		// Crazy craziness:
 		// If the following return statemet is REMOVED, and Lazy is FALSE, then
 		// eager packet processing becomes 17% FASTER.  No, there is no logical
@@ -675,14 +722,14 @@ func NewPacket(data []byte, firstLayerDecoder Decoder, options DecodeOptions) Pa
 		// runtime.morestack/runtime.lessstack.  We'll hope the compiler gets better
 		// over time and we get this optimization for free.  Until then, we'll have
 		// to live with slower packet processing.
-		return p
+		return lp
 	}
-	p := &eagerPacket{
+	ep := &eagerPacket{
 		packet: packet{data: data, decodeOptions: options},
 	}
-	p.layers = p.initialLayers[:0]
-	p.initialDecode(firstLayerDecoder)
-	return p
+	ep.layers = ep.initialLayers[:0]
+	ep.initialDecode(firstLayerDecoder)
+	return ep
 }
 
 // PacketDataSource is an interface for some source of packet data.  Users may
@@ -716,7 +763,7 @@ type concat []PacketDataSource
 func (c *concat) ReadPacketData() (data []byte, ci CaptureInfo, err error) {
 	for len(*c) > 0 {
 		data, ci, err = (*c)[0].ReadPacketData()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			*c = (*c)[1:]
 			continue
 		}
@@ -742,6 +789,46 @@ type ZeroCopyPacketDataSource interface {
 	//  err:  An error encountered while reading packet data.  If err != nil,
 	//    then data/ci will be ignored.
 	ZeroCopyReadPacketData() (data []byte, ci CaptureInfo, err error)
+}
+
+type PacketSourceOption interface {
+	apply(ps *PacketSource)
+}
+
+type packetSourceOptionFunc func(ps *PacketSource)
+
+func (f packetSourceOptionFunc) apply(ps *PacketSource) {
+	f(ps)
+}
+
+func WithLazy(lazy bool) packetSourceOptionFunc {
+	return func(ps *PacketSource) {
+		ps.Lazy = lazy
+	}
+}
+
+func WithNoCopy(noCopy bool) packetSourceOptionFunc {
+	return func(ps *PacketSource) {
+		ps.NoCopy = noCopy
+	}
+}
+
+func WithPool(pool bool) packetSourceOptionFunc {
+	return func(ps *PacketSource) {
+		ps.Pool = pool
+	}
+}
+
+func WithSkipDecodeRecovery(skipDecodeRecovery bool) packetSourceOptionFunc {
+	return func(ps *PacketSource) {
+		ps.SkipDecodeRecovery = skipDecodeRecovery
+	}
+}
+
+func WithDecodeStreamsAsDatagrams(decodeStreamsAsDatagrams bool) packetSourceOptionFunc {
+	return func(ps *PacketSource) {
+		ps.DecodeStreamsAsDatagrams = decodeStreamsAsDatagrams
+	}
 }
 
 // PacketSource reads in packets from a PacketDataSource, decodes them, and
@@ -782,8 +869,9 @@ type ZeroCopyPacketDataSource interface {
 //	  handlePacket(packet)  // Do something with each packet.
 //	}
 type PacketSource struct {
-	source  PacketDataSource
-	decoder Decoder
+	zeroCopy bool
+	source   func() (data []byte, ci CaptureInfo, err error)
+	decoder  Decoder
 	// DecodeOptions is the set of options to use for decoding each piece
 	// of packet data.  This can/should be changed by the user to reflect the
 	// way packets should be decoded.
@@ -791,18 +879,38 @@ type PacketSource struct {
 	c chan Packet
 }
 
-// NewPacketSource creates a packet data source.
-func NewPacketSource(source PacketDataSource, decoder Decoder) *PacketSource {
-	return &PacketSource{
-		source:  source,
+// NewZeroCopyPacketSource creates a zero copy packet data source.
+func NewZeroCopyPacketSource(source ZeroCopyPacketDataSource, decoder Decoder, opts ...PacketSourceOption) *PacketSource {
+	ps := &PacketSource{
+		source:  source.ZeroCopyReadPacketData,
 		decoder: decoder,
 	}
+
+	for idx := range opts {
+		opts[idx].apply(ps)
+	}
+
+	return ps
+}
+
+// NewPacketSource creates a packet data source.
+func NewPacketSource(source PacketDataSource, decoder Decoder, opts ...PacketSourceOption) *PacketSource {
+	ps := &PacketSource{
+		source:  source.ReadPacketData,
+		decoder: decoder,
+	}
+
+	for idx := range opts {
+		opts[idx].apply(ps)
+	}
+
+	return ps
 }
 
 // NextPacket returns the next decoded packet from the PacketSource.  On error,
 // it returns a nil packet and a non-nil error.
 func (p *PacketSource) NextPacket() (Packet, error) {
-	data, ci, err := p.source.ReadPacketData()
+	data, ci, err := p.source()
 	if err != nil {
 		return nil, err
 	}
@@ -816,29 +924,30 @@ func (p *PacketSource) NextPacket() (Packet, error) {
 // packetsToChannel reads in all packets from the packet source and sends them
 // to the given channel. This routine terminates when a non-temporary error
 // is returned by NextPacket().
-func (p *PacketSource) packetsToChannel() {
+func (p *PacketSource) packetsToChannel(ctx context.Context) {
 	defer close(p.c)
-	for {
+	for ctx.Err() == nil {
 		packet, err := p.NextPacket()
 		if err == nil {
-			p.c <- packet
-			continue
+			select {
+			case p.c <- packet:
+				continue
+			case <-ctx.Done():
+				return
+			}
 		}
 
-		// Immediately retry for temporary network errors
-		if nerr, ok := err.(net.Error); ok && nerr.Temporary() {
-			continue
-		}
-
-		// Immediately retry for EAGAIN
-		if err == syscall.EAGAIN {
+		// if timeout error sleep briefly and retry
+		var netErr net.Error
+		if ok := errors.As(err, &netErr); ok && netErr.Timeout() {
+			time.Sleep(time.Millisecond * time.Duration(5))
 			continue
 		}
 
 		// Immediately break for known unrecoverable errors
-		if err == io.EOF || err == io.ErrUnexpectedEOF ||
-			err == io.ErrNoProgress || err == io.ErrClosedPipe || err == io.ErrShortBuffer ||
-			err == syscall.EBADF ||
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) ||
+			errors.Is(err, io.ErrNoProgress) || errors.Is(err, io.ErrClosedPipe) || errors.Is(err, io.ErrShortBuffer) ||
+			errors.Is(err, syscall.EBADF) ||
 			strings.Contains(err.Error(), "use of closed file") {
 			break
 		}
@@ -855,14 +964,36 @@ func (p *PacketSource) packetsToChannel() {
 // If any other error is encountered, it is ignored.
 //
 //	for packet := range packetSource.Packets() {
-//	  handlePacket(packet)  // Do something with each packet.
+//	  handlePacket(packet)  // Do something with each packet
 //	}
 //
 // If called more than once, returns the same channel.
 func (p *PacketSource) Packets() chan Packet {
+	return p.PacketsCtx(context.Background())
+}
+
+// PacketsCtx returns a channel of packets, allowing easy iterating over
+// packets.  Packets will be asynchronously read in from the underlying
+// PacketDataSource and written to the returned channel.  If the underlying
+// PacketDataSource returns an io.EOF error, the channel will be closed.
+// If any other error is encountered, it is ignored.
+// The background Go routine will be canceled as soon as the given context
+// returns an error either because it got canceled or it has reached its deadline.
+//
+//	for packet := range packetSource.PacketsCtx(context.Background()) {
+//	  handlePacket(packet)  // Do something with each packet.
+//	}
+//
+// If called more than once, returns the same channel.
+func (p *PacketSource) PacketsCtx(ctx context.Context) chan Packet {
+	if p.DecodeOptions.NoCopy && p.zeroCopy {
+		panic("PacketSource uses a zero copy datasource and NoCopy decoder option activated - Packets() uses a buffered channel hence packets are most likely overwritten")
+	}
+
+	const defaultPacketChannelSize = 1000
 	if p.c == nil {
-		p.c = make(chan Packet, 1000)
-		go p.packetsToChannel()
+		p.c = make(chan Packet, defaultPacketChannelSize)
+		go p.packetsToChannel(ctx)
 	}
 	return p.c
 }
