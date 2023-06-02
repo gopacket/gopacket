@@ -113,6 +113,8 @@ func (s *SocketStatsV3) QueueFreezes() uint {
 
 // TPacket implements packet receiving for Linux AF_PACKET versions 1, 2, and 3.
 type TPacket struct {
+	// ifIndex is the interface index the socket is bound to.
+	ifIndex int
 	// stats is simple statistics on TPacket's run. This MUST be the first entry to ensure alignment for sync.atomic
 	stats Stats
 	// fd is the C file descriptor.
@@ -159,6 +161,7 @@ func (h *TPacket) bindToInterface(ifaceName string) error {
 		}
 		ifIndex = iface.Index
 	}
+	h.ifIndex = ifIndex
 	s := &unix.SockaddrLinklayer{
 		Protocol: htons(uint16(unix.ETH_P_ALL)),
 		Ifindex:  ifIndex,
@@ -291,7 +294,7 @@ func (h *TPacket) SetBPF(filter []bpf.RawInstruction) error {
 	return setsockopt(h.fd, unix.SOL_SOCKET, unix.SO_ATTACH_FILTER, unsafe.Pointer(&p), unix.SizeofSockFprog)
 }
 
-// attach ebpf filter to af-packet
+// SetEBPF attaches ebpf filter to af-packet
 func (h *TPacket) SetEBPF(progFd int32) error {
 	return setsockopt(h.fd, unix.SOL_SOCKET, unix.SO_ATTACH_BPF, unsafe.Pointer(&progFd), 4)
 }
@@ -528,6 +531,22 @@ func (h *TPacket) SetFanout(t FanoutType, id uint16) error {
 	arg := int(t) << 16
 	arg |= int(id)
 	return setsockopt(h.fd, unix.SOL_PACKET, unix.PACKET_FANOUT, unsafe.Pointer(&arg), unsafe.Sizeof(arg))
+}
+
+// SetPromiscuous sets promiscuous mode to the required value. If it is enabled,
+// traffic not destined for the interface will also be captured.
+func (h *TPacket) SetPromiscuous(b bool) error {
+	mreq := unix.PacketMreq{
+		Ifindex: int32(h.ifIndex),
+		Type:    unix.PACKET_MR_PROMISC,
+	}
+
+	opt := unix.PACKET_ADD_MEMBERSHIP
+	if !b {
+		opt = unix.PACKET_DROP_MEMBERSHIP
+	}
+
+	return unix.SetsockoptPacketMreq(h.fd, unix.SOL_PACKET, opt, &mreq)
 }
 
 // WritePacketData transmits a raw packet.
