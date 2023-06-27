@@ -62,8 +62,8 @@ func decodeGeneveOption(data []byte, gn *Geneve, df gopacket.DecodeFeedback) (*G
 
 	opt.Class = binary.BigEndian.Uint16(data[0:2])
 	opt.Type = data[2]
-	opt.Flags = data[3] >> 4
-	opt.Length = (data[3]&0xf)*4 + 4
+	opt.Flags = data[3] >> 5
+	opt.Length = (data[3]&0x1f)*4 + 4
 
 	if len(data) < int(opt.Length) {
 		df.SetTruncated()
@@ -181,7 +181,7 @@ func (gn *Geneve) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.Serializ
 		bytes[offset] = o.Type
 
 		offset += 1
-		bytes[offset] |= o.Flags << 5
+		bytes[offset] = o.Flags << 5
 		bytes[offset] |= ((o.Length - 4) >> 2) & 0x1f
 
 		offset += 1
