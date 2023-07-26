@@ -41,6 +41,24 @@ func TestDHCPv4EncodeRequest(t *testing.T) {
 	testDHCPEqual(t, dhcp, dhcp2)
 }
 
+func TestDHCPv4EncodeRequestNoOptions(t *testing.T) {
+	dhcp := &DHCPv4{Operation: DHCPOpRequest, HardwareType: LinkTypeEthernet, Xid: 0x12345678,
+		ClientIP: net.IP{0, 0, 0, 0}, YourClientIP: net.IP{0, 0, 0, 0}, NextServerIP: net.IP{0, 0, 0, 0}, RelayAgentIP: net.IP{0, 0, 0, 0},
+		ClientHWAddr: net.HardwareAddr{0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc},
+		ServerName:   make([]byte, 64), File: make([]byte, 128)}
+
+	buf := gopacket.NewSerializeBuffer()
+	opts := gopacket.SerializeOptions{FixLengths: true}
+	err := gopacket.SerializeLayers(buf, opts, dhcp)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	p2 := gopacket.NewPacket(buf.Bytes(), LayerTypeDHCPv4, testDecodeOptions)
+	dhcp2 := p2.Layer(LayerTypeDHCPv4).(*DHCPv4)
+	testDHCPEqual(t, dhcp, dhcp2)
+}
+
 func TestDHCPv4EncodeResponse(t *testing.T) {
 	dhcp := &DHCPv4{Operation: DHCPOpReply, HardwareType: LinkTypeEthernet, Xid: 0x12345678,
 		ClientIP: net.IP{0, 0, 0, 0}, YourClientIP: net.IP{192, 168, 0, 123}, NextServerIP: net.IP{192, 168, 0, 1}, RelayAgentIP: net.IP{0, 0, 0, 0},
