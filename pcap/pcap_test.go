@@ -253,7 +253,7 @@ func TestBPFInstruction(t *testing.T) {
 				}
 				for i := 0; i < len(bpf); i++ {
 					if bpf[i] != expected.BpfInstruction[i] {
-						t.Errorf("expected instruction %d = %d, got %d", i, expected.BpfInstruction[i], bpf[i])
+						t.Errorf("expected instruction %d = %x, got %x", i, expected.BpfInstruction[i], bpf[i])
 					}
 				}
 			}
