@@ -34,20 +34,31 @@ package layers
 // Fetched from %q
 
 // TCPPortNames contains the port names for all TCP ports.
-var TCPPortNames = tcpPortNames
+func TCPPortNames(port TCPPort) (string, bool) {
+	switch port {
+	%s
+	}
+
+	return "", false
+}
 
 // UDPPortNames contains the port names for all UDP ports.
-var UDPPortNames = udpPortNames
+func UDPPortNames(port UDPPort) (string, bool) {
+	switch port {
+	%s
+	}
+
+	return "", false
+}
 
 // SCTPPortNames contains the port names for all SCTP ports.
-var SCTPPortNames = sctpPortNames
+func SCTPPortNames(port SCTPPort) (string, bool) {
+	switch port {
+	%s
+	}
 
-var tcpPortNames = map[TCPPort]string{
-%s}
-var udpPortNames = map[UDPPort]string{
-%s}
-var sctpPortNames = map[SCTPPort]string{
-%s}
+	return "", false
+}
 `
 
 var url = flag.String("url", "http://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xml", "URL to grab port numbers from")
@@ -76,9 +87,9 @@ func main() {
 	var udpPorts bytes.Buffer
 	var sctpPorts bytes.Buffer
 	done := map[string]map[int]bool{
-		"tcp":  map[int]bool{},
-		"udp":  map[int]bool{},
-		"sctp": map[int]bool{},
+		"tcp":  {},
+		"udp":  {},
+		"sctp": {},
 	}
 	for _, r := range registry.Records {
 		port, err := strconv.Atoi(r.Number)
@@ -103,7 +114,7 @@ func main() {
 			continue
 		}
 		done[r.Protocol][port] = true
-		fmt.Fprintf(b, "\t%d: %q,\n", port, r.Name)
+		fmt.Fprintf(b, "\tcase %d: return %q, true\n", port, r.Name)
 	}
 	fmt.Fprintln(os.Stderr, "Writing results to stdout")
 	fmt.Printf(fmtString, time.Now(), *url, tcpPorts.String(), udpPorts.String(), sctpPorts.String())

@@ -40,7 +40,7 @@ var UDPLitePortNames = map[UDPLitePort]string{}
 // or just "number" if there isn't.  Well-known names are stored in
 // TCPPortNames.
 func (a TCPPort) String() string {
-	if name, ok := TCPPortNames[a]; ok {
+	if name, ok := TCPPortNames(a); ok {
 		return fmt.Sprintf("%d(%s)", a, name)
 	}
 	return strconv.Itoa(int(a))
@@ -97,7 +97,7 @@ func RegisterTCPPortLayerType(port TCPPort, layerType gopacket.LayerType) {
 // or just "number" if there isn't.  Well-known names are stored in
 // UDPPortNames.
 func (a UDPPort) String() string {
-	if name, ok := UDPPortNames[a]; ok {
+	if name, ok := UDPPortNames(a); ok {
 		return fmt.Sprintf("%d(%s)", a, name)
 	}
 	return strconv.Itoa(int(a))
@@ -170,7 +170,7 @@ func (a RUDPPort) String() string {
 // or just "number" if there isn't.  Well-known names are stored in
 // SCTPPortNames.
 func (a SCTPPort) String() string {
-	if name, ok := SCTPPortNames[a]; ok {
+	if name, ok := SCTPPortNames(a); ok {
 		return fmt.Sprintf("%d(%s)", a, name)
 	}
 	return strconv.Itoa(int(a))

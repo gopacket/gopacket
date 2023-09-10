@@ -3,11349 +3,22942 @@
 package layers
 
 // Created by gen.go, don't edit manually
-// Generated at 2017-10-23 09:57:28.214859163 -0600 MDT m=+1.011679290
+// Generated at 2023-07-28 17:00:37.114586196 +0400 +04 m=+2.218439472
 // Fetched from "http://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xml"
 
 // TCPPortNames contains the port names for all TCP ports.
-var TCPPortNames = tcpPortNames
+func TCPPortNames(port TCPPort) (string, bool) {
+	switch port {
+	case 1:
+		return "tcpmux", true
+	case 2:
+		return "compressnet", true
+	case 3:
+		return "compressnet", true
+	case 5:
+		return "rje", true
+	case 7:
+		return "echo", true
+	case 9:
+		return "discard", true
+	case 11:
+		return "systat", true
+	case 13:
+		return "daytime", true
+	case 17:
+		return "qotd", true
+	case 18:
+		return "msp", true
+	case 19:
+		return "chargen", true
+	case 20:
+		return "ftp-data", true
+	case 21:
+		return "ftp", true
+	case 22:
+		return "ssh", true
+	case 23:
+		return "telnet", true
+	case 25:
+		return "smtp", true
+	case 27:
+		return "nsw-fe", true
+	case 29:
+		return "msg-icp", true
+	case 31:
+		return "msg-auth", true
+	case 33:
+		return "dsp", true
+	case 37:
+		return "time", true
+	case 38:
+		return "rap", true
+	case 39:
+		return "rlp", true
+	case 41:
+		return "graphics", true
+	case 42:
+		return "name", true
+	case 43:
+		return "nicname", true
+	case 44:
+		return "mpm-flags", true
+	case 45:
+		return "mpm", true
+	case 46:
+		return "mpm-snd", true
+	case 48:
+		return "auditd", true
+	case 49:
+		return "tacacs", true
+	case 50:
+		return "re-mail-ck", true
+	case 52:
+		return "xns-time", true
+	case 53:
+		return "domain", true
+	case 54:
+		return "xns-ch", true
+	case 55:
+		return "isi-gl", true
+	case 56:
+		return "xns-auth", true
+	case 58:
+		return "xns-mail", true
+	case 62:
+		return "acas", true
+	case 63:
+		return "whoispp", true
+	case 64:
+		return "covia", true
+	case 65:
+		return "tacacs-ds", true
+	case 66:
+		return "sql-net", true
+	case 67:
+		return "bootps", true
+	case 68:
+		return "bootpc", true
+	case 69:
+		return "tftp", true
+	case 70:
+		return "gopher", true
+	case 71:
+		return "netrjs-1", true
+	case 72:
+		return "netrjs-2", true
+	case 73:
+		return "netrjs-3", true
+	case 74:
+		return "netrjs-4", true
+	case 76:
+		return "deos", true
+	case 78:
+		return "vettcp", true
+	case 79:
+		return "finger", true
+	case 80:
+		return "http", true
+	case 82:
+		return "xfer", true
+	case 83:
+		return "mit-ml-dev", true
+	case 84:
+		return "ctf", true
+	case 85:
+		return "mit-ml-dev", true
+	case 86:
+		return "mfcobol", true
+	case 88:
+		return "kerberos", true
+	case 89:
+		return "su-mit-tg", true
+	case 90:
+		return "dnsix", true
+	case 91:
+		return "mit-dov", true
+	case 92:
+		return "npp", true
+	case 93:
+		return "dcp", true
+	case 94:
+		return "objcall", true
+	case 95:
+		return "supdup", true
+	case 96:
+		return "dixie", true
+	case 97:
+		return "swift-rvf", true
+	case 98:
+		return "tacnews", true
+	case 99:
+		return "metagram", true
+	case 101:
+		return "hostname", true
+	case 102:
+		return "iso-tsap", true
+	case 103:
+		return "gppitnp", true
+	case 104:
+		return "acr-nema", true
+	case 105:
+		return "cso", true
+	case 106:
+		return "3com-tsmux", true
+	case 107:
+		return "rtelnet", true
+	case 108:
+		return "snagas", true
+	case 109:
+		return "pop2", true
+	case 110:
+		return "pop3", true
+	case 111:
+		return "sunrpc", true
+	case 112:
+		return "mcidas", true
+	case 113:
+		return "ident", true
+	case 115:
+		return "sftp", true
+	case 116:
+		return "ansanotify", true
+	case 117:
+		return "uucp-path", true
+	case 118:
+		return "sqlserv", true
+	case 119:
+		return "nntp", true
+	case 120:
+		return "cfdptkt", true
+	case 121:
+		return "erpc", true
+	case 122:
+		return "smakynet", true
+	case 123:
+		return "ntp", true
+	case 124:
+		return "ansatrader", true
+	case 125:
+		return "locus-map", true
+	case 126:
+		return "nxedit", true
+	case 127:
+		return "locus-con", true
+	case 128:
+		return "gss-xlicen", true
+	case 129:
+		return "pwdgen", true
+	case 130:
+		return "cisco-fna", true
+	case 131:
+		return "cisco-tna", true
+	case 132:
+		return "cisco-sys", true
+	case 133:
+		return "statsrv", true
+	case 134:
+		return "ingres-net", true
+	case 135:
+		return "epmap", true
+	case 136:
+		return "profile", true
+	case 137:
+		return "netbios-ns", true
+	case 138:
+		return "netbios-dgm", true
+	case 139:
+		return "netbios-ssn", true
+	case 140:
+		return "emfis-data", true
+	case 141:
+		return "emfis-cntl", true
+	case 142:
+		return "bl-idm", true
+	case 143:
+		return "imap", true
+	case 144:
+		return "uma", true
+	case 145:
+		return "uaac", true
+	case 146:
+		return "iso-tp0", true
+	case 147:
+		return "iso-ip", true
+	case 148:
+		return "jargon", true
+	case 149:
+		return "aed-512", true
+	case 150:
+		return "sql-net", true
+	case 151:
+		return "hems", true
+	case 152:
+		return "bftp", true
+	case 153:
+		return "sgmp", true
+	case 154:
+		return "netsc-prod", true
+	case 155:
+		return "netsc-dev", true
+	case 156:
+		return "sqlsrv", true
+	case 157:
+		return "knet-cmp", true
+	case 158:
+		return "pcmail-srv", true
+	case 159:
+		return "nss-routing", true
+	case 160:
+		return "sgmp-traps", true
+	case 161:
+		return "snmp", true
+	case 162:
+		return "snmptrap", true
+	case 163:
+		return "cmip-man", true
+	case 164:
+		return "cmip-agent", true
+	case 165:
+		return "xns-courier", true
+	case 166:
+		return "s-net", true
+	case 167:
+		return "namp", true
+	case 168:
+		return "rsvd", true
+	case 169:
+		return "send", true
+	case 170:
+		return "print-srv", true
+	case 171:
+		return "multiplex", true
+	case 172:
+		return "cl-1", true
+	case 173:
+		return "xyplex-mux", true
+	case 174:
+		return "mailq", true
+	case 175:
+		return "vmnet", true
+	case 176:
+		return "genrad-mux", true
+	case 177:
+		return "xdmcp", true
+	case 178:
+		return "nextstep", true
+	case 179:
+		return "bgp", true
+	case 180:
+		return "ris", true
+	case 181:
+		return "unify", true
+	case 182:
+		return "audit", true
+	case 183:
+		return "ocbinder", true
+	case 184:
+		return "ocserver", true
+	case 185:
+		return "remote-kis", true
+	case 186:
+		return "kis", true
+	case 187:
+		return "aci", true
+	case 188:
+		return "mumps", true
+	case 189:
+		return "qft", true
+	case 190:
+		return "gacp", true
+	case 191:
+		return "prospero", true
+	case 192:
+		return "osu-nms", true
+	case 193:
+		return "srmp", true
+	case 194:
+		return "irc", true
+	case 195:
+		return "dn6-nlm-aud", true
+	case 196:
+		return "dn6-smm-red", true
+	case 197:
+		return "dls", true
+	case 198:
+		return "dls-mon", true
+	case 199:
+		return "smux", true
+	case 200:
+		return "src", true
+	case 201:
+		return "at-rtmp", true
+	case 202:
+		return "at-nbp", true
+	case 203:
+		return "at-3", true
+	case 204:
+		return "at-echo", true
+	case 205:
+		return "at-5", true
+	case 206:
+		return "at-zis", true
+	case 207:
+		return "at-7", true
+	case 208:
+		return "at-8", true
+	case 209:
+		return "qmtp", true
+	case 210:
+		return "z39-50", true
+	case 211:
+		return "914c-g", true
+	case 212:
+		return "anet", true
+	case 213:
+		return "ipx", true
+	case 214:
+		return "vmpwscs", true
+	case 215:
+		return "softpc", true
+	case 216:
+		return "CAIlic", true
+	case 217:
+		return "dbase", true
+	case 218:
+		return "mpp", true
+	case 219:
+		return "uarps", true
+	case 220:
+		return "imap3", true
+	case 221:
+		return "fln-spx", true
+	case 222:
+		return "rsh-spx", true
+	case 223:
+		return "cdc", true
+	case 224:
+		return "masqdialer", true
+	case 242:
+		return "direct", true
+	case 243:
+		return "sur-meas", true
+	case 244:
+		return "inbusiness", true
+	case 245:
+		return "link", true
+	case 246:
+		return "dsp3270", true
+	case 247:
+		return "subntbcst-tftp", true
+	case 248:
+		return "bhfhs", true
+	case 256:
+		return "rap", true
+	case 257:
+		return "set", true
+	case 259:
+		return "esro-gen", true
+	case 260:
+		return "openport", true
+	case 261:
+		return "nsiiops", true
+	case 262:
+		return "arcisdms", true
+	case 263:
+		return "hdap", true
+	case 264:
+		return "bgmp", true
+	case 265:
+		return "x-bone-ctl", true
+	case 266:
+		return "sst", true
+	case 267:
+		return "td-service", true
+	case 268:
+		return "td-replica", true
+	case 269:
+		return "manet", true
+	case 271:
+		return "pt-tls", true
+	case 280:
+		return "http-mgmt", true
+	case 281:
+		return "personal-link", true
+	case 282:
+		return "cableport-ax", true
+	case 283:
+		return "rescap", true
+	case 284:
+		return "corerjd", true
+	case 286:
+		return "fxp", true
+	case 287:
+		return "k-block", true
+	case 308:
+		return "novastorbakcup", true
+	case 309:
+		return "entrusttime", true
+	case 310:
+		return "bhmds", true
+	case 311:
+		return "asip-webadmin", true
+	case 312:
+		return "vslmp", true
+	case 313:
+		return "magenta-logic", true
+	case 314:
+		return "opalis-robot", true
+	case 315:
+		return "dpsi", true
+	case 316:
+		return "decauth", true
+	case 317:
+		return "zannet", true
+	case 318:
+		return "pkix-timestamp", true
+	case 319:
+		return "ptp-event", true
+	case 320:
+		return "ptp-general", true
+	case 321:
+		return "pip", true
+	case 322:
+		return "rtsps", true
+	case 323:
+		return "rpki-rtr", true
+	case 324:
+		return "rpki-rtr-tls", true
+	case 333:
+		return "texar", true
+	case 344:
+		return "pdap", true
+	case 345:
+		return "pawserv", true
+	case 346:
+		return "zserv", true
+	case 347:
+		return "fatserv", true
+	case 348:
+		return "csi-sgwp", true
+	case 349:
+		return "mftp", true
+	case 350:
+		return "matip-type-a", true
+	case 351:
+		return "matip-type-b", true
+	case 352:
+		return "dtag-ste-sb", true
+	case 353:
+		return "ndsauth", true
+	case 354:
+		return "bh611", true
+	case 355:
+		return "datex-asn", true
+	case 356:
+		return "cloanto-net-1", true
+	case 357:
+		return "bhevent", true
+	case 358:
+		return "shrinkwrap", true
+	case 359:
+		return "nsrmp", true
+	case 360:
+		return "scoi2odialog", true
+	case 361:
+		return "semantix", true
+	case 362:
+		return "srssend", true
+	case 363:
+		return "rsvp-tunnel", true
+	case 364:
+		return "aurora-cmgr", true
+	case 365:
+		return "dtk", true
+	case 366:
+		return "odmr", true
+	case 367:
+		return "mortgageware", true
+	case 368:
+		return "qbikgdp", true
+	case 369:
+		return "rpc2portmap", true
+	case 370:
+		return "codaauth2", true
+	case 371:
+		return "clearcase", true
+	case 372:
+		return "ulistproc", true
+	case 373:
+		return "legent-1", true
+	case 374:
+		return "legent-2", true
+	case 375:
+		return "hassle", true
+	case 376:
+		return "nip", true
+	case 377:
+		return "tnETOS", true
+	case 378:
+		return "dsETOS", true
+	case 379:
+		return "is99c", true
+	case 380:
+		return "is99s", true
+	case 381:
+		return "hp-collector", true
+	case 382:
+		return "hp-managed-node", true
+	case 383:
+		return "hp-alarm-mgr", true
+	case 384:
+		return "arns", true
+	case 385:
+		return "ibm-app", true
+	case 386:
+		return "asa", true
+	case 387:
+		return "aurp", true
+	case 388:
+		return "unidata-ldm", true
+	case 389:
+		return "ldap", true
+	case 390:
+		return "uis", true
+	case 391:
+		return "synotics-relay", true
+	case 392:
+		return "synotics-broker", true
+	case 393:
+		return "meta5", true
+	case 394:
+		return "embl-ndt", true
+	case 395:
+		return "netcp", true
+	case 396:
+		return "netware-ip", true
+	case 397:
+		return "mptn", true
+	case 398:
+		return "kryptolan", true
+	case 399:
+		return "iso-tsap-c2", true
+	case 400:
+		return "osb-sd", true
+	case 401:
+		return "ups", true
+	case 402:
+		return "genie", true
+	case 403:
+		return "decap", true
+	case 404:
+		return "nced", true
+	case 405:
+		return "ncld", true
+	case 406:
+		return "imsp", true
+	case 407:
+		return "timbuktu", true
+	case 408:
+		return "prm-sm", true
+	case 409:
+		return "prm-nm", true
+	case 410:
+		return "decladebug", true
+	case 411:
+		return "rmt", true
+	case 412:
+		return "synoptics-trap", true
+	case 413:
+		return "smsp", true
+	case 414:
+		return "infoseek", true
+	case 415:
+		return "bnet", true
+	case 416:
+		return "silverplatter", true
+	case 417:
+		return "onmux", true
+	case 418:
+		return "hyper-g", true
+	case 419:
+		return "ariel1", true
+	case 420:
+		return "smpte", true
+	case 421:
+		return "ariel2", true
+	case 422:
+		return "ariel3", true
+	case 423:
+		return "opc-job-start", true
+	case 424:
+		return "opc-job-track", true
+	case 425:
+		return "icad-el", true
+	case 426:
+		return "smartsdp", true
+	case 427:
+		return "svrloc", true
+	case 428:
+		return "ocs-cmu", true
+	case 429:
+		return "ocs-amu", true
+	case 430:
+		return "utmpsd", true
+	case 431:
+		return "utmpcd", true
+	case 432:
+		return "iasd", true
+	case 433:
+		return "nnsp", true
+	case 434:
+		return "mobileip-agent", true
+	case 435:
+		return "mobilip-mn", true
+	case 436:
+		return "dna-cml", true
+	case 437:
+		return "comscm", true
+	case 438:
+		return "dsfgw", true
+	case 439:
+		return "dasp", true
+	case 440:
+		return "sgcp", true
+	case 441:
+		return "decvms-sysmgt", true
+	case 442:
+		return "cvc-hostd", true
+	case 443:
+		return "https", true
+	case 444:
+		return "snpp", true
+	case 445:
+		return "microsoft-ds", true
+	case 446:
+		return "ddm-rdb", true
+	case 447:
+		return "ddm-dfm", true
+	case 448:
+		return "ddm-ssl", true
+	case 449:
+		return "as-servermap", true
+	case 450:
+		return "tserver", true
+	case 451:
+		return "sfs-smp-net", true
+	case 452:
+		return "sfs-config", true
+	case 453:
+		return "creativeserver", true
+	case 454:
+		return "contentserver", true
+	case 455:
+		return "creativepartnr", true
+	case 456:
+		return "macon-tcp", true
+	case 457:
+		return "scohelp", true
+	case 458:
+		return "appleqtc", true
+	case 459:
+		return "ampr-rcmd", true
+	case 460:
+		return "skronk", true
+	case 461:
+		return "datasurfsrv", true
+	case 462:
+		return "datasurfsrvsec", true
+	case 463:
+		return "alpes", true
+	case 464:
+		return "kpasswd", true
+	case 465:
+		return "urd", true
+	case 466:
+		return "digital-vrc", true
+	case 467:
+		return "mylex-mapd", true
+	case 468:
+		return "photuris", true
+	case 469:
+		return "rcp", true
+	case 470:
+		return "scx-proxy", true
+	case 471:
+		return "mondex", true
+	case 472:
+		return "ljk-login", true
+	case 473:
+		return "hybrid-pop", true
+	case 474:
+		return "tn-tl-w1", true
+	case 475:
+		return "tcpnethaspsrv", true
+	case 476:
+		return "tn-tl-fd1", true
+	case 477:
+		return "ss7ns", true
+	case 478:
+		return "spsc", true
+	case 479:
+		return "iafserver", true
+	case 480:
+		return "iafdbase", true
+	case 481:
+		return "ph", true
+	case 482:
+		return "bgs-nsi", true
+	case 483:
+		return "ulpnet", true
+	case 484:
+		return "integra-sme", true
+	case 485:
+		return "powerburst", true
+	case 486:
+		return "avian", true
+	case 487:
+		return "saft", true
+	case 488:
+		return "gss-http", true
+	case 489:
+		return "nest-protocol", true
+	case 490:
+		return "micom-pfs", true
+	case 491:
+		return "go-login", true
+	case 492:
+		return "ticf-1", true
+	case 493:
+		return "ticf-2", true
+	case 494:
+		return "pov-ray", true
+	case 495:
+		return "intecourier", true
+	case 496:
+		return "pim-rp-disc", true
+	case 497:
+		return "retrospect", true
+	case 498:
+		return "siam", true
+	case 499:
+		return "iso-ill", true
+	case 500:
+		return "isakmp", true
+	case 501:
+		return "stmf", true
+	case 502:
+		return "mbap", true
+	case 503:
+		return "intrinsa", true
+	case 504:
+		return "citadel", true
+	case 505:
+		return "mailbox-lm", true
+	case 506:
+		return "ohimsrv", true
+	case 507:
+		return "crs", true
+	case 508:
+		return "xvttp", true
+	case 509:
+		return "snare", true
+	case 510:
+		return "fcp", true
+	case 511:
+		return "passgo", true
+	case 512:
+		return "exec", true
+	case 513:
+		return "login", true
+	case 514:
+		return "shell", true
+	case 515:
+		return "printer", true
+	case 516:
+		return "videotex", true
+	case 517:
+		return "talk", true
+	case 518:
+		return "ntalk", true
+	case 519:
+		return "utime", true
+	case 520:
+		return "efs", true
+	case 521:
+		return "ripng", true
+	case 522:
+		return "ulp", true
+	case 523:
+		return "ibm-db2", true
+	case 524:
+		return "ncp", true
+	case 525:
+		return "timed", true
+	case 526:
+		return "tempo", true
+	case 527:
+		return "stx", true
+	case 528:
+		return "custix", true
+	case 529:
+		return "irc-serv", true
+	case 530:
+		return "courier", true
+	case 531:
+		return "conference", true
+	case 532:
+		return "netnews", true
+	case 533:
+		return "netwall", true
+	case 534:
+		return "windream", true
+	case 535:
+		return "iiop", true
+	case 536:
+		return "opalis-rdv", true
+	case 537:
+		return "nmsp", true
+	case 538:
+		return "gdomap", true
+	case 539:
+		return "apertus-ldp", true
+	case 540:
+		return "uucp", true
+	case 541:
+		return "uucp-rlogin", true
+	case 542:
+		return "commerce", true
+	case 543:
+		return "klogin", true
+	case 544:
+		return "kshell", true
+	case 545:
+		return "appleqtcsrvr", true
+	case 546:
+		return "dhcpv6-client", true
+	case 547:
+		return "dhcpv6-server", true
+	case 548:
+		return "afpovertcp", true
+	case 549:
+		return "idfp", true
+	case 550:
+		return "new-rwho", true
+	case 551:
+		return "cybercash", true
+	case 552:
+		return "devshr-nts", true
+	case 553:
+		return "pirp", true
+	case 554:
+		return "rtsp", true
+	case 555:
+		return "dsf", true
+	case 556:
+		return "remotefs", true
+	case 557:
+		return "openvms-sysipc", true
+	case 558:
+		return "sdnskmp", true
+	case 559:
+		return "teedtap", true
+	case 560:
+		return "rmonitor", true
+	case 561:
+		return "monitor", true
+	case 562:
+		return "chshell", true
+	case 563:
+		return "nntps", true
+	case 564:
+		return "9pfs", true
+	case 565:
+		return "whoami", true
+	case 566:
+		return "streettalk", true
+	case 567:
+		return "banyan-rpc", true
+	case 568:
+		return "ms-shuttle", true
+	case 569:
+		return "ms-rome", true
+	case 570:
+		return "meter", true
+	case 571:
+		return "meter", true
+	case 572:
+		return "sonar", true
+	case 573:
+		return "banyan-vip", true
+	case 574:
+		return "ftp-agent", true
+	case 575:
+		return "vemmi", true
+	case 576:
+		return "ipcd", true
+	case 577:
+		return "vnas", true
+	case 578:
+		return "ipdd", true
+	case 579:
+		return "decbsrv", true
+	case 580:
+		return "sntp-heartbeat", true
+	case 581:
+		return "bdp", true
+	case 582:
+		return "scc-security", true
+	case 583:
+		return "philips-vc", true
+	case 584:
+		return "keyserver", true
+	case 586:
+		return "password-chg", true
+	case 587:
+		return "submission", true
+	case 588:
+		return "cal", true
+	case 589:
+		return "eyelink", true
+	case 590:
+		return "tns-cml", true
+	case 591:
+		return "http-alt", true
+	case 592:
+		return "eudora-set", true
+	case 593:
+		return "http-rpc-epmap", true
+	case 594:
+		return "tpip", true
+	case 595:
+		return "cab-protocol", true
+	case 596:
+		return "smsd", true
+	case 597:
+		return "ptcnameservice", true
+	case 598:
+		return "sco-websrvrmg3", true
+	case 599:
+		return "acp", true
+	case 600:
+		return "ipcserver", true
+	case 601:
+		return "syslog-conn", true
+	case 602:
+		return "xmlrpc-beep", true
+	case 603:
+		return "idxp", true
+	case 604:
+		return "tunnel", true
+	case 605:
+		return "soap-beep", true
+	case 606:
+		return "urm", true
+	case 607:
+		return "nqs", true
+	case 608:
+		return "sift-uft", true
+	case 609:
+		return "npmp-trap", true
+	case 610:
+		return "npmp-local", true
+	case 611:
+		return "npmp-gui", true
+	case 612:
+		return "hmmp-ind", true
+	case 613:
+		return "hmmp-op", true
+	case 614:
+		return "sshell", true
+	case 615:
+		return "sco-inetmgr", true
+	case 616:
+		return "sco-sysmgr", true
+	case 617:
+		return "sco-dtmgr", true
+	case 618:
+		return "dei-icda", true
+	case 619:
+		return "compaq-evm", true
+	case 620:
+		return "sco-websrvrmgr", true
+	case 621:
+		return "escp-ip", true
+	case 622:
+		return "collaborator", true
+	case 623:
+		return "oob-ws-http", true
+	case 624:
+		return "cryptoadmin", true
+	case 625:
+		return "dec-dlm", true
+	case 626:
+		return "asia", true
+	case 627:
+		return "passgo-tivoli", true
+	case 628:
+		return "qmqp", true
+	case 629:
+		return "3com-amp3", true
+	case 630:
+		return "rda", true
+	case 631:
+		return "ipp", true
+	case 632:
+		return "bmpp", true
+	case 633:
+		return "servstat", true
+	case 634:
+		return "ginad", true
+	case 635:
+		return "rlzdbase", true
+	case 636:
+		return "ldaps", true
+	case 637:
+		return "lanserver", true
+	case 638:
+		return "mcns-sec", true
+	case 639:
+		return "msdp", true
+	case 640:
+		return "entrust-sps", true
+	case 641:
+		return "repcmd", true
+	case 642:
+		return "esro-emsdp", true
+	case 643:
+		return "sanity", true
+	case 644:
+		return "dwr", true
+	case 645:
+		return "pssc", true
+	case 646:
+		return "ldp", true
+	case 647:
+		return "dhcp-failover", true
+	case 648:
+		return "rrp", true
+	case 649:
+		return "cadview-3d", true
+	case 650:
+		return "obex", true
+	case 651:
+		return "ieee-mms", true
+	case 652:
+		return "hello-port", true
+	case 653:
+		return "repscmd", true
+	case 654:
+		return "aodv", true
+	case 655:
+		return "tinc", true
+	case 656:
+		return "spmp", true
+	case 657:
+		return "rmc", true
+	case 658:
+		return "tenfold", true
+	case 660:
+		return "mac-srvr-admin", true
+	case 661:
+		return "hap", true
+	case 662:
+		return "pftp", true
+	case 663:
+		return "purenoise", true
+	case 664:
+		return "oob-ws-https", true
+	case 665:
+		return "sun-dr", true
+	case 666:
+		return "mdqs", true
+	case 667:
+		return "disclose", true
+	case 668:
+		return "mecomm", true
+	case 669:
+		return "meregister", true
+	case 670:
+		return "vacdsm-sws", true
+	case 671:
+		return "vacdsm-app", true
+	case 672:
+		return "vpps-qua", true
+	case 673:
+		return "cimplex", true
+	case 674:
+		return "acap", true
+	case 675:
+		return "dctp", true
+	case 676:
+		return "vpps-via", true
+	case 677:
+		return "vpp", true
+	case 678:
+		return "ggf-ncp", true
+	case 679:
+		return "mrm", true
+	case 680:
+		return "entrust-aaas", true
+	case 681:
+		return "entrust-aams", true
+	case 682:
+		return "xfr", true
+	case 683:
+		return "corba-iiop", true
+	case 684:
+		return "corba-iiop-ssl", true
+	case 685:
+		return "mdc-portmapper", true
+	case 686:
+		return "hcp-wismar", true
+	case 687:
+		return "asipregistry", true
+	case 688:
+		return "realm-rusd", true
+	case 689:
+		return "nmap", true
+	case 690:
+		return "vatp", true
+	case 691:
+		return "msexch-routing", true
+	case 692:
+		return "hyperwave-isp", true
+	case 693:
+		return "connendp", true
+	case 694:
+		return "ha-cluster", true
+	case 695:
+		return "ieee-mms-ssl", true
+	case 696:
+		return "rushd", true
+	case 697:
+		return "uuidgen", true
+	case 698:
+		return "olsr", true
+	case 699:
+		return "accessnetwork", true
+	case 700:
+		return "epp", true
+	case 701:
+		return "lmp", true
+	case 702:
+		return "iris-beep", true
+	case 704:
+		return "elcsd", true
+	case 705:
+		return "agentx", true
+	case 706:
+		return "silc", true
+	case 707:
+		return "borland-dsj", true
+	case 709:
+		return "entrust-kmsh", true
+	case 710:
+		return "entrust-ash", true
+	case 711:
+		return "cisco-tdp", true
+	case 712:
+		return "tbrpf", true
+	case 713:
+		return "iris-xpc", true
+	case 714:
+		return "iris-xpcs", true
+	case 715:
+		return "iris-lwz", true
+	case 729:
+		return "netviewdm1", true
+	case 730:
+		return "netviewdm2", true
+	case 731:
+		return "netviewdm3", true
+	case 741:
+		return "netgw", true
+	case 742:
+		return "netrcs", true
+	case 744:
+		return "flexlm", true
+	case 747:
+		return "fujitsu-dev", true
+	case 748:
+		return "ris-cm", true
+	case 749:
+		return "kerberos-adm", true
+	case 750:
+		return "rfile", true
+	case 751:
+		return "pump", true
+	case 752:
+		return "qrh", true
+	case 753:
+		return "rrh", true
+	case 754:
+		return "tell", true
+	case 758:
+		return "nlogin", true
+	case 759:
+		return "con", true
+	case 760:
+		return "ns", true
+	case 761:
+		return "rxe", true
+	case 762:
+		return "quotad", true
+	case 763:
+		return "cycleserv", true
+	case 764:
+		return "omserv", true
+	case 765:
+		return "webster", true
+	case 767:
+		return "phonebook", true
+	case 769:
+		return "vid", true
+	case 770:
+		return "cadlock", true
+	case 771:
+		return "rtip", true
+	case 772:
+		return "cycleserv2", true
+	case 773:
+		return "submit", true
+	case 774:
+		return "rpasswd", true
+	case 775:
+		return "entomb", true
+	case 776:
+		return "wpages", true
+	case 777:
+		return "multiling-http", true
+	case 780:
+		return "wpgs", true
+	case 800:
+		return "mdbs-daemon", true
+	case 801:
+		return "device", true
+	case 802:
+		return "mbap-s", true
+	case 810:
+		return "fcp-udp", true
+	case 828:
+		return "itm-mcell-s", true
+	case 829:
+		return "pkix-3-ca-ra", true
+	case 830:
+		return "netconf-ssh", true
+	case 831:
+		return "netconf-beep", true
+	case 832:
+		return "netconfsoaphttp", true
+	case 833:
+		return "netconfsoapbeep", true
+	case 847:
+		return "dhcp-failover2", true
+	case 848:
+		return "gdoi", true
+	case 853:
+		return "domain-s", true
+	case 854:
+		return "dlep", true
+	case 860:
+		return "iscsi", true
+	case 861:
+		return "owamp-control", true
+	case 862:
+		return "twamp-control", true
+	case 873:
+		return "rsync", true
+	case 886:
+		return "iclcnet-locate", true
+	case 887:
+		return "iclcnet-svinfo", true
+	case 888:
+		return "accessbuilder", true
+	case 900:
+		return "omginitialrefs", true
+	case 901:
+		return "smpnameres", true
+	case 902:
+		return "ideafarm-door", true
+	case 903:
+		return "ideafarm-panic", true
+	case 910:
+		return "kink", true
+	case 911:
+		return "xact-backup", true
+	case 912:
+		return "apex-mesh", true
+	case 913:
+		return "apex-edge", true
+	case 953:
+		return "rndc", true
+	case 989:
+		return "ftps-data", true
+	case 990:
+		return "ftps", true
+	case 991:
+		return "nas", true
+	case 992:
+		return "telnets", true
+	case 993:
+		return "imaps", true
+	case 995:
+		return "pop3s", true
+	case 996:
+		return "vsinet", true
+	case 997:
+		return "maitrd", true
+	case 998:
+		return "busboy", true
+	case 999:
+		return "garcon", true
+	case 1000:
+		return "cadlock2", true
+	case 1001:
+		return "webpush", true
+	case 1010:
+		return "surf", true
+	case 1021:
+		return "exp1", true
+	case 1022:
+		return "exp2", true
+	case 1025:
+		return "blackjack", true
+	case 1026:
+		return "cap", true
+	case 1029:
+		return "solid-mux", true
+	case 1033:
+		return "netinfo-local", true
+	case 1034:
+		return "activesync", true
+	case 1035:
+		return "mxxrlogin", true
+	case 1036:
+		return "nsstp", true
+	case 1037:
+		return "ams", true
+	case 1038:
+		return "mtqp", true
+	case 1039:
+		return "sbl", true
+	case 1040:
+		return "netarx", true
+	case 1041:
+		return "danf-ak2", true
+	case 1042:
+		return "afrog", true
+	case 1043:
+		return "boinc-client", true
+	case 1044:
+		return "dcutility", true
+	case 1045:
+		return "fpitp", true
+	case 1046:
+		return "wfremotertm", true
+	case 1047:
+		return "neod1", true
+	case 1048:
+		return "neod2", true
+	case 1049:
+		return "td-postman", true
+	case 1050:
+		return "cma", true
+	case 1051:
+		return "optima-vnet", true
+	case 1052:
+		return "ddt", true
+	case 1053:
+		return "remote-as", true
+	case 1054:
+		return "brvread", true
+	case 1055:
+		return "ansyslmd", true
+	case 1056:
+		return "vfo", true
+	case 1057:
+		return "startron", true
+	case 1058:
+		return "nim", true
+	case 1059:
+		return "nimreg", true
+	case 1060:
+		return "polestar", true
+	case 1061:
+		return "kiosk", true
+	case 1062:
+		return "veracity", true
+	case 1063:
+		return "kyoceranetdev", true
+	case 1064:
+		return "jstel", true
+	case 1065:
+		return "syscomlan", true
+	case 1066:
+		return "fpo-fns", true
+	case 1067:
+		return "instl-boots", true
+	case 1068:
+		return "instl-bootc", true
+	case 1069:
+		return "cognex-insight", true
+	case 1070:
+		return "gmrupdateserv", true
+	case 1071:
+		return "bsquare-voip", true
+	case 1072:
+		return "cardax", true
+	case 1073:
+		return "bridgecontrol", true
+	case 1074:
+		return "warmspotMgmt", true
+	case 1075:
+		return "rdrmshc", true
+	case 1076:
+		return "dab-sti-c", true
+	case 1077:
+		return "imgames", true
+	case 1078:
+		return "avocent-proxy", true
+	case 1079:
+		return "asprovatalk", true
+	case 1080:
+		return "socks", true
+	case 1081:
+		return "pvuniwien", true
+	case 1082:
+		return "amt-esd-prot", true
+	case 1083:
+		return "ansoft-lm-1", true
+	case 1084:
+		return "ansoft-lm-2", true
+	case 1085:
+		return "webobjects", true
+	case 1086:
+		return "cplscrambler-lg", true
+	case 1087:
+		return "cplscrambler-in", true
+	case 1088:
+		return "cplscrambler-al", true
+	case 1089:
+		return "ff-annunc", true
+	case 1090:
+		return "ff-fms", true
+	case 1091:
+		return "ff-sm", true
+	case 1092:
+		return "obrpd", true
+	case 1093:
+		return "proofd", true
+	case 1094:
+		return "rootd", true
+	case 1095:
+		return "nicelink", true
+	case 1096:
+		return "cnrprotocol", true
+	case 1097:
+		return "sunclustermgr", true
+	case 1098:
+		return "rmiactivation", true
+	case 1099:
+		return "rmiregistry", true
+	case 1100:
+		return "mctp", true
+	case 1101:
+		return "pt2-discover", true
+	case 1102:
+		return "adobeserver-1", true
+	case 1103:
+		return "adobeserver-2", true
+	case 1104:
+		return "xrl", true
+	case 1105:
+		return "ftranhc", true
+	case 1106:
+		return "isoipsigport-1", true
+	case 1107:
+		return "isoipsigport-2", true
+	case 1108:
+		return "ratio-adp", true
+	case 1110:
+		return "webadmstart", true
+	case 1111:
+		return "lmsocialserver", true
+	case 1112:
+		return "icp", true
+	case 1113:
+		return "ltp-deepspace", true
+	case 1114:
+		return "mini-sql", true
+	case 1115:
+		return "ardus-trns", true
+	case 1116:
+		return "ardus-cntl", true
+	case 1117:
+		return "ardus-mtrns", true
+	case 1118:
+		return "sacred", true
+	case 1119:
+		return "bnetgame", true
+	case 1120:
+		return "bnetfile", true
+	case 1121:
+		return "rmpp", true
+	case 1122:
+		return "availant-mgr", true
+	case 1123:
+		return "murray", true
+	case 1124:
+		return "hpvmmcontrol", true
+	case 1125:
+		return "hpvmmagent", true
+	case 1126:
+		return "hpvmmdata", true
+	case 1127:
+		return "kwdb-commn", true
+	case 1128:
+		return "saphostctrl", true
+	case 1129:
+		return "saphostctrls", true
+	case 1130:
+		return "casp", true
+	case 1131:
+		return "caspssl", true
+	case 1132:
+		return "kvm-via-ip", true
+	case 1133:
+		return "dfn", true
+	case 1134:
+		return "aplx", true
+	case 1135:
+		return "omnivision", true
+	case 1136:
+		return "hhb-gateway", true
+	case 1137:
+		return "trim", true
+	case 1138:
+		return "encrypted-admin", true
+	case 1139:
+		return "evm", true
+	case 1140:
+		return "autonoc", true
+	case 1141:
+		return "mxomss", true
+	case 1142:
+		return "edtools", true
+	case 1143:
+		return "imyx", true
+	case 1144:
+		return "fuscript", true
+	case 1145:
+		return "x9-icue", true
+	case 1146:
+		return "audit-transfer", true
+	case 1147:
+		return "capioverlan", true
+	case 1148:
+		return "elfiq-repl", true
+	case 1149:
+		return "bvtsonar", true
+	case 1150:
+		return "blaze", true
+	case 1151:
+		return "unizensus", true
+	case 1152:
+		return "winpoplanmess", true
+	case 1153:
+		return "c1222-acse", true
+	case 1154:
+		return "resacommunity", true
+	case 1155:
+		return "nfa", true
+	case 1156:
+		return "iascontrol-oms", true
+	case 1157:
+		return "iascontrol", true
+	case 1158:
+		return "dbcontrol-oms", true
+	case 1159:
+		return "oracle-oms", true
+	case 1160:
+		return "olsv", true
+	case 1161:
+		return "health-polling", true
+	case 1162:
+		return "health-trap", true
+	case 1163:
+		return "sddp", true
+	case 1164:
+		return "qsm-proxy", true
+	case 1165:
+		return "qsm-gui", true
+	case 1166:
+		return "qsm-remote", true
+	case 1167:
+		return "cisco-ipsla", true
+	case 1168:
+		return "vchat", true
+	case 1169:
+		return "tripwire", true
+	case 1170:
+		return "atc-lm", true
+	case 1171:
+		return "atc-appserver", true
+	case 1172:
+		return "dnap", true
+	case 1173:
+		return "d-cinema-rrp", true
+	case 1174:
+		return "fnet-remote-ui", true
+	case 1175:
+		return "dossier", true
+	case 1176:
+		return "indigo-server", true
+	case 1177:
+		return "dkmessenger", true
+	case 1178:
+		return "sgi-storman", true
+	case 1179:
+		return "b2n", true
+	case 1180:
+		return "mc-client", true
+	case 1181:
+		return "3comnetman", true
+	case 1182:
+		return "accelenet", true
+	case 1183:
+		return "llsurfup-http", true
+	case 1184:
+		return "llsurfup-https", true
+	case 1185:
+		return "catchpole", true
+	case 1186:
+		return "mysql-cluster", true
+	case 1187:
+		return "alias", true
+	case 1188:
+		return "hp-webadmin", true
+	case 1189:
+		return "unet", true
+	case 1190:
+		return "commlinx-avl", true
+	case 1191:
+		return "gpfs", true
+	case 1192:
+		return "caids-sensor", true
+	case 1193:
+		return "fiveacross", true
+	case 1194:
+		return "openvpn", true
+	case 1195:
+		return "rsf-1", true
+	case 1196:
+		return "netmagic", true
+	case 1197:
+		return "carrius-rshell", true
+	case 1198:
+		return "cajo-discovery", true
+	case 1199:
+		return "dmidi", true
+	case 1200:
+		return "scol", true
+	case 1201:
+		return "nucleus-sand", true
+	case 1202:
+		return "caiccipc", true
+	case 1203:
+		return "ssslic-mgr", true
+	case 1204:
+		return "ssslog-mgr", true
+	case 1205:
+		return "accord-mgc", true
+	case 1206:
+		return "anthony-data", true
+	case 1207:
+		return "metasage", true
+	case 1208:
+		return "seagull-ais", true
+	case 1209:
+		return "ipcd3", true
+	case 1210:
+		return "eoss", true
+	case 1211:
+		return "groove-dpp", true
+	case 1212:
+		return "lupa", true
+	case 1213:
+		return "mpc-lifenet", true
+	case 1214:
+		return "kazaa", true
+	case 1215:
+		return "scanstat-1", true
+	case 1216:
+		return "etebac5", true
+	case 1217:
+		return "hpss-ndapi", true
+	case 1218:
+		return "aeroflight-ads", true
+	case 1219:
+		return "aeroflight-ret", true
+	case 1220:
+		return "qt-serveradmin", true
+	case 1221:
+		return "sweetware-apps", true
+	case 1222:
+		return "nerv", true
+	case 1223:
+		return "tgp", true
+	case 1224:
+		return "vpnz", true
+	case 1225:
+		return "slinkysearch", true
+	case 1226:
+		return "stgxfws", true
+	case 1227:
+		return "dns2go", true
+	case 1228:
+		return "florence", true
+	case 1229:
+		return "zented", true
+	case 1230:
+		return "periscope", true
+	case 1231:
+		return "menandmice-lpm", true
+	case 1232:
+		return "first-defense", true
+	case 1233:
+		return "univ-appserver", true
+	case 1234:
+		return "search-agent", true
+	case 1235:
+		return "mosaicsyssvc1", true
+	case 1236:
+		return "bvcontrol", true
+	case 1237:
+		return "tsdos390", true
+	case 1238:
+		return "hacl-qs", true
+	case 1239:
+		return "nmsd", true
+	case 1240:
+		return "instantia", true
+	case 1241:
+		return "nessus", true
+	case 1242:
+		return "nmasoverip", true
+	case 1243:
+		return "serialgateway", true
+	case 1244:
+		return "isbconference1", true
+	case 1245:
+		return "isbconference2", true
+	case 1246:
+		return "payrouter", true
+	case 1247:
+		return "visionpyramid", true
+	case 1248:
+		return "hermes", true
+	case 1249:
+		return "mesavistaco", true
+	case 1250:
+		return "swldy-sias", true
+	case 1251:
+		return "servergraph", true
+	case 1252:
+		return "bspne-pcc", true
+	case 1253:
+		return "q55-pcc", true
+	case 1254:
+		return "de-noc", true
+	case 1255:
+		return "de-cache-query", true
+	case 1256:
+		return "de-server", true
+	case 1257:
+		return "shockwave2", true
+	case 1258:
+		return "opennl", true
+	case 1259:
+		return "opennl-voice", true
+	case 1260:
+		return "ibm-ssd", true
+	case 1261:
+		return "mpshrsv", true
+	case 1262:
+		return "qnts-orb", true
+	case 1263:
+		return "dka", true
+	case 1264:
+		return "prat", true
+	case 1265:
+		return "dssiapi", true
+	case 1266:
+		return "dellpwrappks", true
+	case 1267:
+		return "epc", true
+	case 1268:
+		return "propel-msgsys", true
+	case 1269:
+		return "watilapp", true
+	case 1270:
+		return "opsmgr", true
+	case 1271:
+		return "excw", true
+	case 1272:
+		return "cspmlockmgr", true
+	case 1273:
+		return "emc-gateway", true
+	case 1274:
+		return "t1distproc", true
+	case 1275:
+		return "ivcollector", true
+	case 1277:
+		return "miva-mqs", true
+	case 1278:
+		return "dellwebadmin-1", true
+	case 1279:
+		return "dellwebadmin-2", true
+	case 1280:
+		return "pictrography", true
+	case 1281:
+		return "healthd", true
+	case 1282:
+		return "emperion", true
+	case 1283:
+		return "productinfo", true
+	case 1284:
+		return "iee-qfx", true
+	case 1285:
+		return "neoiface", true
+	case 1286:
+		return "netuitive", true
+	case 1287:
+		return "routematch", true
+	case 1288:
+		return "navbuddy", true
+	case 1289:
+		return "jwalkserver", true
+	case 1290:
+		return "winjaserver", true
+	case 1291:
+		return "seagulllms", true
+	case 1292:
+		return "dsdn", true
+	case 1293:
+		return "pkt-krb-ipsec", true
+	case 1294:
+		return "cmmdriver", true
+	case 1295:
+		return "ehtp", true
+	case 1296:
+		return "dproxy", true
+	case 1297:
+		return "sdproxy", true
+	case 1298:
+		return "lpcp", true
+	case 1299:
+		return "hp-sci", true
+	case 1300:
+		return "h323hostcallsc", true
+	case 1303:
+		return "sftsrv", true
+	case 1304:
+		return "boomerang", true
+	case 1305:
+		return "pe-mike", true
+	case 1306:
+		return "re-conn-proto", true
+	case 1307:
+		return "pacmand", true
+	case 1308:
+		return "odsi", true
+	case 1309:
+		return "jtag-server", true
+	case 1310:
+		return "husky", true
+	case 1311:
+		return "rxmon", true
+	case 1312:
+		return "sti-envision", true
+	case 1313:
+		return "bmc-patroldb", true
+	case 1314:
+		return "pdps", true
+	case 1315:
+		return "els", true
+	case 1316:
+		return "exbit-escp", true
+	case 1317:
+		return "vrts-ipcserver", true
+	case 1318:
+		return "krb5gatekeeper", true
+	case 1319:
+		return "amx-icsp", true
+	case 1320:
+		return "amx-axbnet", true
+	case 1321:
+		return "pip", true
+	case 1322:
+		return "novation", true
+	case 1323:
+		return "brcd", true
+	case 1324:
+		return "delta-mcp", true
+	case 1325:
+		return "dx-instrument", true
+	case 1326:
+		return "wimsic", true
+	case 1327:
+		return "ultrex", true
+	case 1328:
+		return "ewall", true
+	case 1329:
+		return "netdb-export", true
+	case 1330:
+		return "streetperfect", true
+	case 1331:
+		return "intersan", true
+	case 1332:
+		return "pcia-rxp-b", true
+	case 1333:
+		return "passwrd-policy", true
+	case 1334:
+		return "writesrv", true
+	case 1335:
+		return "digital-notary", true
+	case 1336:
+		return "ischat", true
+	case 1337:
+		return "menandmice-dns", true
+	case 1338:
+		return "wmc-log-svc", true
+	case 1339:
+		return "kjtsiteserver", true
+	case 1340:
+		return "naap", true
+	case 1341:
+		return "qubes", true
+	case 1342:
+		return "esbroker", true
+	case 1343:
+		return "re101", true
+	case 1344:
+		return "icap", true
+	case 1345:
+		return "vpjp", true
+	case 1346:
+		return "alta-ana-lm", true
+	case 1347:
+		return "bbn-mmc", true
+	case 1348:
+		return "bbn-mmx", true
+	case 1349:
+		return "sbook", true
+	case 1350:
+		return "editbench", true
+	case 1351:
+		return "equationbuilder", true
+	case 1352:
+		return "lotusnote", true
+	case 1353:
+		return "relief", true
+	case 1354:
+		return "XSIP-network", true
+	case 1355:
+		return "intuitive-edge", true
+	case 1356:
+		return "cuillamartin", true
+	case 1357:
+		return "pegboard", true
+	case 1358:
+		return "connlcli", true
+	case 1359:
+		return "ftsrv", true
+	case 1360:
+		return "mimer", true
+	case 1361:
+		return "linx", true
+	case 1362:
+		return "timeflies", true
+	case 1363:
+		return "ndm-requester", true
+	case 1364:
+		return "ndm-server", true
+	case 1365:
+		return "adapt-sna", true
+	case 1366:
+		return "netware-csp", true
+	case 1367:
+		return "dcs", true
+	case 1368:
+		return "screencast", true
+	case 1369:
+		return "gv-us", true
+	case 1370:
+		return "us-gv", true
+	case 1371:
+		return "fc-cli", true
+	case 1372:
+		return "fc-ser", true
+	case 1373:
+		return "chromagrafx", true
+	case 1374:
+		return "molly", true
+	case 1375:
+		return "bytex", true
+	case 1376:
+		return "ibm-pps", true
+	case 1377:
+		return "cichlid", true
+	case 1378:
+		return "elan", true
+	case 1379:
+		return "dbreporter", true
+	case 1380:
+		return "telesis-licman", true
+	case 1381:
+		return "apple-licman", true
+	case 1382:
+		return "udt-os", true
+	case 1383:
+		return "gwha", true
+	case 1384:
+		return "os-licman", true
+	case 1385:
+		return "atex-elmd", true
+	case 1386:
+		return "checksum", true
+	case 1387:
+		return "cadsi-lm", true
+	case 1388:
+		return "objective-dbc", true
+	case 1389:
+		return "iclpv-dm", true
+	case 1390:
+		return "iclpv-sc", true
+	case 1391:
+		return "iclpv-sas", true
+	case 1392:
+		return "iclpv-pm", true
+	case 1393:
+		return "iclpv-nls", true
+	case 1394:
+		return "iclpv-nlc", true
+	case 1395:
+		return "iclpv-wsm", true
+	case 1396:
+		return "dvl-activemail", true
+	case 1397:
+		return "audio-activmail", true
+	case 1398:
+		return "video-activmail", true
+	case 1399:
+		return "cadkey-licman", true
+	case 1400:
+		return "cadkey-tablet", true
+	case 1401:
+		return "goldleaf-licman", true
+	case 1402:
+		return "prm-sm-np", true
+	case 1403:
+		return "prm-nm-np", true
+	case 1404:
+		return "igi-lm", true
+	case 1405:
+		return "ibm-res", true
+	case 1406:
+		return "netlabs-lm", true
+	case 1407:
+		return "tibet-server", true
+	case 1408:
+		return "sophia-lm", true
+	case 1409:
+		return "here-lm", true
+	case 1410:
+		return "hiq", true
+	case 1411:
+		return "af", true
+	case 1412:
+		return "innosys", true
+	case 1413:
+		return "innosys-acl", true
+	case 1414:
+		return "ibm-mqseries", true
+	case 1415:
+		return "dbstar", true
+	case 1416:
+		return "novell-lu6-2", true
+	case 1417:
+		return "timbuktu-srv1", true
+	case 1418:
+		return "timbuktu-srv2", true
+	case 1419:
+		return "timbuktu-srv3", true
+	case 1420:
+		return "timbuktu-srv4", true
+	case 1421:
+		return "gandalf-lm", true
+	case 1422:
+		return "autodesk-lm", true
+	case 1423:
+		return "essbase", true
+	case 1424:
+		return "hybrid", true
+	case 1425:
+		return "zion-lm", true
+	case 1426:
+		return "sais", true
+	case 1427:
+		return "mloadd", true
+	case 1428:
+		return "informatik-lm", true
+	case 1429:
+		return "nms", true
+	case 1430:
+		return "tpdu", true
+	case 1431:
+		return "rgtp", true
+	case 1432:
+		return "blueberry-lm", true
+	case 1433:
+		return "ms-sql-s", true
+	case 1434:
+		return "ms-sql-m", true
+	case 1435:
+		return "ibm-cics", true
+	case 1436:
+		return "saism", true
+	case 1437:
+		return "tabula", true
+	case 1438:
+		return "eicon-server", true
+	case 1439:
+		return "eicon-x25", true
+	case 1440:
+		return "eicon-slp", true
+	case 1441:
+		return "cadis-1", true
+	case 1442:
+		return "cadis-2", true
+	case 1443:
+		return "ies-lm", true
+	case 1444:
+		return "marcam-lm", true
+	case 1445:
+		return "proxima-lm", true
+	case 1446:
+		return "ora-lm", true
+	case 1447:
+		return "apri-lm", true
+	case 1448:
+		return "oc-lm", true
+	case 1449:
+		return "peport", true
+	case 1450:
+		return "dwf", true
+	case 1451:
+		return "infoman", true
+	case 1452:
+		return "gtegsc-lm", true
+	case 1453:
+		return "genie-lm", true
+	case 1454:
+		return "interhdl-elmd", true
+	case 1455:
+		return "esl-lm", true
+	case 1456:
+		return "dca", true
+	case 1457:
+		return "valisys-lm", true
+	case 1458:
+		return "nrcabq-lm", true
+	case 1459:
+		return "proshare1", true
+	case 1460:
+		return "proshare2", true
+	case 1461:
+		return "ibm-wrless-lan", true
+	case 1462:
+		return "world-lm", true
+	case 1463:
+		return "nucleus", true
+	case 1464:
+		return "msl-lmd", true
+	case 1465:
+		return "pipes", true
+	case 1466:
+		return "oceansoft-lm", true
+	case 1467:
+		return "csdmbase", true
+	case 1468:
+		return "csdm", true
+	case 1469:
+		return "aal-lm", true
+	case 1470:
+		return "uaiact", true
+	case 1471:
+		return "csdmbase", true
+	case 1472:
+		return "csdm", true
+	case 1473:
+		return "openmath", true
+	case 1474:
+		return "telefinder", true
+	case 1475:
+		return "taligent-lm", true
+	case 1476:
+		return "clvm-cfg", true
+	case 1477:
+		return "ms-sna-server", true
+	case 1478:
+		return "ms-sna-base", true
+	case 1479:
+		return "dberegister", true
+	case 1480:
+		return "pacerforum", true
+	case 1481:
+		return "airs", true
+	case 1482:
+		return "miteksys-lm", true
+	case 1483:
+		return "afs", true
+	case 1484:
+		return "confluent", true
+	case 1485:
+		return "lansource", true
+	case 1486:
+		return "nms-topo-serv", true
+	case 1487:
+		return "localinfosrvr", true
+	case 1488:
+		return "docstor", true
+	case 1489:
+		return "dmdocbroker", true
+	case 1490:
+		return "insitu-conf", true
+	case 1492:
+		return "stone-design-1", true
+	case 1493:
+		return "netmap-lm", true
+	case 1494:
+		return "ica", true
+	case 1495:
+		return "cvc", true
+	case 1496:
+		return "liberty-lm", true
+	case 1497:
+		return "rfx-lm", true
+	case 1498:
+		return "sybase-sqlany", true
+	case 1499:
+		return "fhc", true
+	case 1500:
+		return "vlsi-lm", true
+	case 1501:
+		return "saiscm", true
+	case 1502:
+		return "shivadiscovery", true
+	case 1503:
+		return "imtc-mcs", true
+	case 1504:
+		return "evb-elm", true
+	case 1505:
+		return "funkproxy", true
+	case 1506:
+		return "utcd", true
+	case 1507:
+		return "symplex", true
+	case 1508:
+		return "diagmond", true
+	case 1509:
+		return "robcad-lm", true
+	case 1510:
+		return "mvx-lm", true
+	case 1511:
+		return "3l-l1", true
+	case 1512:
+		return "wins", true
+	case 1513:
+		return "fujitsu-dtc", true
+	case 1514:
+		return "fujitsu-dtcns", true
+	case 1515:
+		return "ifor-protocol", true
+	case 1516:
+		return "vpad", true
+	case 1517:
+		return "vpac", true
+	case 1518:
+		return "vpvd", true
+	case 1519:
+		return "vpvc", true
+	case 1520:
+		return "atm-zip-office", true
+	case 1521:
+		return "ncube-lm", true
+	case 1522:
+		return "ricardo-lm", true
+	case 1523:
+		return "cichild-lm", true
+	case 1524:
+		return "ingreslock", true
+	case 1525:
+		return "orasrv", true
+	case 1526:
+		return "pdap-np", true
+	case 1527:
+		return "tlisrv", true
+	case 1528:
+		return "norp", true
+	case 1529:
+		return "coauthor", true
+	case 1530:
+		return "rap-service", true
+	case 1531:
+		return "rap-listen", true
+	case 1532:
+		return "miroconnect", true
+	case 1533:
+		return "virtual-places", true
+	case 1534:
+		return "micromuse-lm", true
+	case 1535:
+		return "ampr-info", true
+	case 1536:
+		return "ampr-inter", true
+	case 1537:
+		return "sdsc-lm", true
+	case 1538:
+		return "3ds-lm", true
+	case 1539:
+		return "intellistor-lm", true
+	case 1540:
+		return "rds", true
+	case 1541:
+		return "rds2", true
+	case 1542:
+		return "gridgen-elmd", true
+	case 1543:
+		return "simba-cs", true
+	case 1544:
+		return "aspeclmd", true
+	case 1545:
+		return "vistium-share", true
+	case 1546:
+		return "abbaccuray", true
+	case 1547:
+		return "laplink", true
+	case 1548:
+		return "axon-lm", true
+	case 1549:
+		return "shivahose", true
+	case 1550:
+		return "3m-image-lm", true
+	case 1551:
+		return "hecmtl-db", true
+	case 1552:
+		return "pciarray", true
+	case 1553:
+		return "sna-cs", true
+	case 1554:
+		return "caci-lm", true
+	case 1555:
+		return "livelan", true
+	case 1556:
+		return "veritas-pbx", true
+	case 1557:
+		return "arbortext-lm", true
+	case 1558:
+		return "xingmpeg", true
+	case 1559:
+		return "web2host", true
+	case 1560:
+		return "asci-val", true
+	case 1561:
+		return "facilityview", true
+	case 1562:
+		return "pconnectmgr", true
+	case 1563:
+		return "cadabra-lm", true
+	case 1564:
+		return "pay-per-view", true
+	case 1565:
+		return "winddlb", true
+	case 1566:
+		return "corelvideo", true
+	case 1567:
+		return "jlicelmd", true
+	case 1568:
+		return "tsspmap", true
+	case 1569:
+		return "ets", true
+	case 1570:
+		return "orbixd", true
+	case 1571:
+		return "rdb-dbs-disp", true
+	case 1572:
+		return "chip-lm", true
+	case 1573:
+		return "itscomm-ns", true
+	case 1574:
+		return "mvel-lm", true
+	case 1575:
+		return "oraclenames", true
+	case 1576:
+		return "moldflow-lm", true
+	case 1577:
+		return "hypercube-lm", true
+	case 1578:
+		return "jacobus-lm", true
+	case 1579:
+		return "ioc-sea-lm", true
+	case 1580:
+		return "tn-tl-r1", true
+	case 1581:
+		return "mil-2045-47001", true
+	case 1582:
+		return "msims", true
+	case 1583:
+		return "simbaexpress", true
+	case 1584:
+		return "tn-tl-fd2", true
+	case 1585:
+		return "intv", true
+	case 1586:
+		return "ibm-abtact", true
+	case 1587:
+		return "pra-elmd", true
+	case 1588:
+		return "triquest-lm", true
+	case 1589:
+		return "vqp", true
+	case 1590:
+		return "gemini-lm", true
+	case 1591:
+		return "ncpm-pm", true
+	case 1592:
+		return "commonspace", true
+	case 1593:
+		return "mainsoft-lm", true
+	case 1594:
+		return "sixtrak", true
+	case 1595:
+		return "radio", true
+	case 1596:
+		return "radio-sm", true
+	case 1597:
+		return "orbplus-iiop", true
+	case 1598:
+		return "picknfs", true
+	case 1599:
+		return "simbaservices", true
+	case 1600:
+		return "issd", true
+	case 1601:
+		return "aas", true
+	case 1602:
+		return "inspect", true
+	case 1603:
+		return "picodbc", true
+	case 1604:
+		return "icabrowser", true
+	case 1605:
+		return "slp", true
+	case 1606:
+		return "slm-api", true
+	case 1607:
+		return "stt", true
+	case 1608:
+		return "smart-lm", true
+	case 1609:
+		return "isysg-lm", true
+	case 1610:
+		return "taurus-wh", true
+	case 1611:
+		return "ill", true
+	case 1612:
+		return "netbill-trans", true
+	case 1613:
+		return "netbill-keyrep", true
+	case 1614:
+		return "netbill-cred", true
+	case 1615:
+		return "netbill-auth", true
+	case 1616:
+		return "netbill-prod", true
+	case 1617:
+		return "nimrod-agent", true
+	case 1618:
+		return "skytelnet", true
+	case 1619:
+		return "xs-openstorage", true
+	case 1620:
+		return "faxportwinport", true
+	case 1621:
+		return "softdataphone", true
+	case 1622:
+		return "ontime", true
+	case 1623:
+		return "jaleosnd", true
+	case 1624:
+		return "udp-sr-port", true
+	case 1625:
+		return "svs-omagent", true
+	case 1626:
+		return "shockwave", true
+	case 1627:
+		return "t128-gateway", true
+	case 1628:
+		return "lontalk-norm", true
+	case 1629:
+		return "lontalk-urgnt", true
+	case 1630:
+		return "oraclenet8cman", true
+	case 1631:
+		return "visitview", true
+	case 1632:
+		return "pammratc", true
+	case 1633:
+		return "pammrpc", true
+	case 1634:
+		return "loaprobe", true
+	case 1635:
+		return "edb-server1", true
+	case 1636:
+		return "isdc", true
+	case 1637:
+		return "islc", true
+	case 1638:
+		return "ismc", true
+	case 1639:
+		return "cert-initiator", true
+	case 1640:
+		return "cert-responder", true
+	case 1641:
+		return "invision", true
+	case 1642:
+		return "isis-am", true
+	case 1643:
+		return "isis-ambc", true
+	case 1644:
+		return "saiseh", true
+	case 1645:
+		return "sightline", true
+	case 1646:
+		return "sa-msg-port", true
+	case 1647:
+		return "rsap", true
+	case 1648:
+		return "concurrent-lm", true
+	case 1649:
+		return "kermit", true
+	case 1650:
+		return "nkd", true
+	case 1651:
+		return "shiva-confsrvr", true
+	case 1652:
+		return "xnmp", true
+	case 1653:
+		return "alphatech-lm", true
+	case 1654:
+		return "stargatealerts", true
+	case 1655:
+		return "dec-mbadmin", true
+	case 1656:
+		return "dec-mbadmin-h", true
+	case 1657:
+		return "fujitsu-mmpdc", true
+	case 1658:
+		return "sixnetudr", true
+	case 1659:
+		return "sg-lm", true
+	case 1660:
+		return "skip-mc-gikreq", true
+	case 1661:
+		return "netview-aix-1", true
+	case 1662:
+		return "netview-aix-2", true
+	case 1663:
+		return "netview-aix-3", true
+	case 1664:
+		return "netview-aix-4", true
+	case 1665:
+		return "netview-aix-5", true
+	case 1666:
+		return "netview-aix-6", true
+	case 1667:
+		return "netview-aix-7", true
+	case 1668:
+		return "netview-aix-8", true
+	case 1669:
+		return "netview-aix-9", true
+	case 1670:
+		return "netview-aix-10", true
+	case 1671:
+		return "netview-aix-11", true
+	case 1672:
+		return "netview-aix-12", true
+	case 1673:
+		return "proshare-mc-1", true
+	case 1674:
+		return "proshare-mc-2", true
+	case 1675:
+		return "pdp", true
+	case 1676:
+		return "netcomm1", true
+	case 1677:
+		return "groupwise", true
+	case 1678:
+		return "prolink", true
+	case 1679:
+		return "darcorp-lm", true
+	case 1680:
+		return "microcom-sbp", true
+	case 1681:
+		return "sd-elmd", true
+	case 1682:
+		return "lanyon-lantern", true
+	case 1683:
+		return "ncpm-hip", true
+	case 1684:
+		return "snaresecure", true
+	case 1685:
+		return "n2nremote", true
+	case 1686:
+		return "cvmon", true
+	case 1687:
+		return "nsjtp-ctrl", true
+	case 1688:
+		return "nsjtp-data", true
+	case 1689:
+		return "firefox", true
+	case 1690:
+		return "ng-umds", true
+	case 1691:
+		return "empire-empuma", true
+	case 1692:
+		return "sstsys-lm", true
+	case 1693:
+		return "rrirtr", true
+	case 1694:
+		return "rrimwm", true
+	case 1695:
+		return "rrilwm", true
+	case 1696:
+		return "rrifmm", true
+	case 1697:
+		return "rrisat", true
+	case 1698:
+		return "rsvp-encap-1", true
+	case 1699:
+		return "rsvp-encap-2", true
+	case 1700:
+		return "mps-raft", true
+	case 1701:
+		return "l2f", true
+	case 1702:
+		return "deskshare", true
+	case 1703:
+		return "hb-engine", true
+	case 1704:
+		return "bcs-broker", true
+	case 1705:
+		return "slingshot", true
+	case 1706:
+		return "jetform", true
+	case 1707:
+		return "vdmplay", true
+	case 1708:
+		return "gat-lmd", true
+	case 1709:
+		return "centra", true
+	case 1710:
+		return "impera", true
+	case 1711:
+		return "pptconference", true
+	case 1712:
+		return "registrar", true
+	case 1713:
+		return "conferencetalk", true
+	case 1714:
+		return "sesi-lm", true
+	case 1715:
+		return "houdini-lm", true
+	case 1716:
+		return "xmsg", true
+	case 1717:
+		return "fj-hdnet", true
+	case 1718:
+		return "h323gatedisc", true
+	case 1719:
+		return "h323gatestat", true
+	case 1720:
+		return "h323hostcall", true
+	case 1721:
+		return "caicci", true
+	case 1722:
+		return "hks-lm", true
+	case 1723:
+		return "pptp", true
+	case 1724:
+		return "csbphonemaster", true
+	case 1725:
+		return "iden-ralp", true
+	case 1726:
+		return "iberiagames", true
+	case 1727:
+		return "winddx", true
+	case 1728:
+		return "telindus", true
+	case 1729:
+		return "citynl", true
+	case 1730:
+		return "roketz", true
+	case 1731:
+		return "msiccp", true
+	case 1732:
+		return "proxim", true
+	case 1733:
+		return "siipat", true
+	case 1734:
+		return "cambertx-lm", true
+	case 1735:
+		return "privatechat", true
+	case 1736:
+		return "street-stream", true
+	case 1737:
+		return "ultimad", true
+	case 1738:
+		return "gamegen1", true
+	case 1739:
+		return "webaccess", true
+	case 1740:
+		return "encore", true
+	case 1741:
+		return "cisco-net-mgmt", true
+	case 1742:
+		return "3Com-nsd", true
+	case 1743:
+		return "cinegrfx-lm", true
+	case 1744:
+		return "ncpm-ft", true
+	case 1745:
+		return "remote-winsock", true
+	case 1746:
+		return "ftrapid-1", true
+	case 1747:
+		return "ftrapid-2", true
+	case 1748:
+		return "oracle-em1", true
+	case 1749:
+		return "aspen-services", true
+	case 1750:
+		return "sslp", true
+	case 1751:
+		return "swiftnet", true
+	case 1752:
+		return "lofr-lm", true
+	case 1753:
+		return "predatar-comms", true
+	case 1754:
+		return "oracle-em2", true
+	case 1755:
+		return "ms-streaming", true
+	case 1756:
+		return "capfast-lmd", true
+	case 1757:
+		return "cnhrp", true
+	case 1758:
+		return "tftp-mcast", true
+	case 1759:
+		return "spss-lm", true
+	case 1760:
+		return "www-ldap-gw", true
+	case 1761:
+		return "cft-0", true
+	case 1762:
+		return "cft-1", true
+	case 1763:
+		return "cft-2", true
+	case 1764:
+		return "cft-3", true
+	case 1765:
+		return "cft-4", true
+	case 1766:
+		return "cft-5", true
+	case 1767:
+		return "cft-6", true
+	case 1768:
+		return "cft-7", true
+	case 1769:
+		return "bmc-net-adm", true
+	case 1770:
+		return "bmc-net-svc", true
+	case 1771:
+		return "vaultbase", true
+	case 1772:
+		return "essweb-gw", true
+	case 1773:
+		return "kmscontrol", true
+	case 1774:
+		return "global-dtserv", true
+	case 1775:
+		return "vdab", true
+	case 1776:
+		return "femis", true
+	case 1777:
+		return "powerguardian", true
+	case 1778:
+		return "prodigy-intrnet", true
+	case 1779:
+		return "pharmasoft", true
+	case 1780:
+		return "dpkeyserv", true
+	case 1781:
+		return "answersoft-lm", true
+	case 1782:
+		return "hp-hcip", true
+	case 1784:
+		return "finle-lm", true
+	case 1785:
+		return "windlm", true
+	case 1786:
+		return "funk-logger", true
+	case 1787:
+		return "funk-license", true
+	case 1788:
+		return "psmond", true
+	case 1789:
+		return "hello", true
+	case 1790:
+		return "nmsp", true
+	case 1791:
+		return "ea1", true
+	case 1792:
+		return "ibm-dt-2", true
+	case 1793:
+		return "rsc-robot", true
+	case 1794:
+		return "cera-bcm", true
+	case 1795:
+		return "dpi-proxy", true
+	case 1796:
+		return "vocaltec-admin", true
+	case 1797:
+		return "uma", true
+	case 1798:
+		return "etp", true
+	case 1799:
+		return "netrisk", true
+	case 1800:
+		return "ansys-lm", true
+	case 1801:
+		return "msmq", true
+	case 1802:
+		return "concomp1", true
+	case 1803:
+		return "hp-hcip-gwy", true
+	case 1804:
+		return "enl", true
+	case 1805:
+		return "enl-name", true
+	case 1806:
+		return "musiconline", true
+	case 1807:
+		return "fhsp", true
+	case 1808:
+		return "oracle-vp2", true
+	case 1809:
+		return "oracle-vp1", true
+	case 1810:
+		return "jerand-lm", true
+	case 1811:
+		return "scientia-sdb", true
+	case 1812:
+		return "radius", true
+	case 1813:
+		return "radius-acct", true
+	case 1814:
+		return "tdp-suite", true
+	case 1815:
+		return "mmpft", true
+	case 1816:
+		return "harp", true
+	case 1817:
+		return "rkb-oscs", true
+	case 1818:
+		return "etftp", true
+	case 1819:
+		return "plato-lm", true
+	case 1820:
+		return "mcagent", true
+	case 1821:
+		return "donnyworld", true
+	case 1822:
+		return "es-elmd", true
+	case 1823:
+		return "unisys-lm", true
+	case 1824:
+		return "metrics-pas", true
+	case 1825:
+		return "direcpc-video", true
+	case 1826:
+		return "ardt", true
+	case 1827:
+		return "asi", true
+	case 1828:
+		return "itm-mcell-u", true
+	case 1829:
+		return "optika-emedia", true
+	case 1830:
+		return "net8-cman", true
+	case 1831:
+		return "myrtle", true
+	case 1832:
+		return "tht-treasure", true
+	case 1833:
+		return "udpradio", true
+	case 1834:
+		return "ardusuni", true
+	case 1835:
+		return "ardusmul", true
+	case 1836:
+		return "ste-smsc", true
+	case 1837:
+		return "csoft1", true
+	case 1838:
+		return "talnet", true
+	case 1839:
+		return "netopia-vo1", true
+	case 1840:
+		return "netopia-vo2", true
+	case 1841:
+		return "netopia-vo3", true
+	case 1842:
+		return "netopia-vo4", true
+	case 1843:
+		return "netopia-vo5", true
+	case 1844:
+		return "direcpc-dll", true
+	case 1845:
+		return "altalink", true
+	case 1846:
+		return "tunstall-pnc", true
+	case 1847:
+		return "slp-notify", true
+	case 1848:
+		return "fjdocdist", true
+	case 1849:
+		return "alpha-sms", true
+	case 1850:
+		return "gsi", true
+	case 1851:
+		return "ctcd", true
+	case 1852:
+		return "virtual-time", true
+	case 1853:
+		return "vids-avtp", true
+	case 1854:
+		return "buddy-draw", true
+	case 1855:
+		return "fiorano-rtrsvc", true
+	case 1856:
+		return "fiorano-msgsvc", true
+	case 1857:
+		return "datacaptor", true
+	case 1858:
+		return "privateark", true
+	case 1859:
+		return "gammafetchsvr", true
+	case 1860:
+		return "sunscalar-svc", true
+	case 1861:
+		return "lecroy-vicp", true
+	case 1862:
+		return "mysql-cm-agent", true
+	case 1863:
+		return "msnp", true
+	case 1864:
+		return "paradym-31port", true
+	case 1865:
+		return "entp", true
+	case 1866:
+		return "swrmi", true
+	case 1867:
+		return "udrive", true
+	case 1868:
+		return "viziblebrowser", true
+	case 1869:
+		return "transact", true
+	case 1870:
+		return "sunscalar-dns", true
+	case 1871:
+		return "canocentral0", true
+	case 1872:
+		return "canocentral1", true
+	case 1873:
+		return "fjmpjps", true
+	case 1874:
+		return "fjswapsnp", true
+	case 1875:
+		return "westell-stats", true
+	case 1876:
+		return "ewcappsrv", true
+	case 1877:
+		return "hp-webqosdb", true
+	case 1878:
+		return "drmsmc", true
+	case 1879:
+		return "nettgain-nms", true
+	case 1880:
+		return "vsat-control", true
+	case 1881:
+		return "ibm-mqseries2", true
+	case 1882:
+		return "ecsqdmn", true
+	case 1883:
+		return "mqtt", true
+	case 1884:
+		return "idmaps", true
+	case 1885:
+		return "vrtstrapserver", true
+	case 1886:
+		return "leoip", true
+	case 1887:
+		return "filex-lport", true
+	case 1888:
+		return "ncconfig", true
+	case 1889:
+		return "unify-adapter", true
+	case 1890:
+		return "wilkenlistener", true
+	case 1891:
+		return "childkey-notif", true
+	case 1892:
+		return "childkey-ctrl", true
+	case 1893:
+		return "elad", true
+	case 1894:
+		return "o2server-port", true
+	case 1896:
+		return "b-novative-ls", true
+	case 1897:
+		return "metaagent", true
+	case 1898:
+		return "cymtec-port", true
+	case 1899:
+		return "mc2studios", true
+	case 1900:
+		return "ssdp", true
+	case 1901:
+		return "fjicl-tep-a", true
+	case 1902:
+		return "fjicl-tep-b", true
+	case 1903:
+		return "linkname", true
+	case 1904:
+		return "fjicl-tep-c", true
+	case 1905:
+		return "sugp", true
+	case 1906:
+		return "tpmd", true
+	case 1907:
+		return "intrastar", true
+	case 1908:
+		return "dawn", true
+	case 1909:
+		return "global-wlink", true
+	case 1910:
+		return "ultrabac", true
+	case 1911:
+		return "mtp", true
+	case 1912:
+		return "rhp-iibp", true
+	case 1913:
+		return "armadp", true
+	case 1914:
+		return "elm-momentum", true
+	case 1915:
+		return "facelink", true
+	case 1916:
+		return "persona", true
+	case 1917:
+		return "noagent", true
+	case 1918:
+		return "can-nds", true
+	case 1919:
+		return "can-dch", true
+	case 1920:
+		return "can-ferret", true
+	case 1921:
+		return "noadmin", true
+	case 1922:
+		return "tapestry", true
+	case 1923:
+		return "spice", true
+	case 1924:
+		return "xiip", true
+	case 1925:
+		return "discovery-port", true
+	case 1926:
+		return "egs", true
+	case 1927:
+		return "videte-cipc", true
+	case 1928:
+		return "emsd-port", true
+	case 1929:
+		return "bandwiz-system", true
+	case 1930:
+		return "driveappserver", true
+	case 1931:
+		return "amdsched", true
+	case 1932:
+		return "ctt-broker", true
+	case 1933:
+		return "xmapi", true
+	case 1934:
+		return "xaapi", true
+	case 1935:
+		return "macromedia-fcs", true
+	case 1936:
+		return "jetcmeserver", true
+	case 1937:
+		return "jwserver", true
+	case 1938:
+		return "jwclient", true
+	case 1939:
+		return "jvserver", true
+	case 1940:
+		return "jvclient", true
+	case 1941:
+		return "dic-aida", true
+	case 1942:
+		return "res", true
+	case 1943:
+		return "beeyond-media", true
+	case 1944:
+		return "close-combat", true
+	case 1945:
+		return "dialogic-elmd", true
+	case 1946:
+		return "tekpls", true
+	case 1947:
+		return "sentinelsrm", true
+	case 1948:
+		return "eye2eye", true
+	case 1949:
+		return "ismaeasdaqlive", true
+	case 1950:
+		return "ismaeasdaqtest", true
+	case 1951:
+		return "bcs-lmserver", true
+	case 1952:
+		return "mpnjsc", true
+	case 1953:
+		return "rapidbase", true
+	case 1954:
+		return "abr-api", true
+	case 1955:
+		return "abr-secure", true
+	case 1956:
+		return "vrtl-vmf-ds", true
+	case 1957:
+		return "unix-status", true
+	case 1958:
+		return "dxadmind", true
+	case 1959:
+		return "simp-all", true
+	case 1960:
+		return "nasmanager", true
+	case 1961:
+		return "bts-appserver", true
+	case 1962:
+		return "biap-mp", true
+	case 1963:
+		return "webmachine", true
+	case 1964:
+		return "solid-e-engine", true
+	case 1965:
+		return "tivoli-npm", true
+	case 1966:
+		return "slush", true
+	case 1967:
+		return "sns-quote", true
+	case 1968:
+		return "lipsinc", true
+	case 1969:
+		return "lipsinc1", true
+	case 1970:
+		return "netop-rc", true
+	case 1971:
+		return "netop-school", true
+	case 1972:
+		return "intersys-cache", true
+	case 1973:
+		return "dlsrap", true
+	case 1974:
+		return "drp", true
+	case 1975:
+		return "tcoflashagent", true
+	case 1976:
+		return "tcoregagent", true
+	case 1977:
+		return "tcoaddressbook", true
+	case 1978:
+		return "unisql", true
+	case 1979:
+		return "unisql-java", true
+	case 1980:
+		return "pearldoc-xact", true
+	case 1981:
+		return "p2pq", true
+	case 1982:
+		return "estamp", true
+	case 1983:
+		return "lhtp", true
+	case 1984:
+		return "bb", true
+	case 1985:
+		return "hsrp", true
+	case 1986:
+		return "licensedaemon", true
+	case 1987:
+		return "tr-rsrb-p1", true
+	case 1988:
+		return "tr-rsrb-p2", true
+	case 1989:
+		return "tr-rsrb-p3", true
+	case 1990:
+		return "stun-p1", true
+	case 1991:
+		return "stun-p2", true
+	case 1992:
+		return "stun-p3", true
+	case 1993:
+		return "snmp-tcp-port", true
+	case 1994:
+		return "stun-port", true
+	case 1995:
+		return "perf-port", true
+	case 1996:
+		return "tr-rsrb-port", true
+	case 1997:
+		return "gdp-port", true
+	case 1998:
+		return "x25-svc-port", true
+	case 1999:
+		return "tcp-id-port", true
+	case 2000:
+		return "cisco-sccp", true
+	case 2001:
+		return "dc", true
+	case 2002:
+		return "globe", true
+	case 2003:
+		return "brutus", true
+	case 2004:
+		return "mailbox", true
+	case 2005:
+		return "berknet", true
+	case 2006:
+		return "invokator", true
+	case 2007:
+		return "dectalk", true
+	case 2008:
+		return "conf", true
+	case 2009:
+		return "news", true
+	case 2010:
+		return "search", true
+	case 2011:
+		return "raid-cc", true
+	case 2012:
+		return "ttyinfo", true
+	case 2013:
+		return "raid-am", true
+	case 2014:
+		return "troff", true
+	case 2015:
+		return "cypress", true
+	case 2016:
+		return "bootserver", true
+	case 2017:
+		return "cypress-stat", true
+	case 2018:
+		return "terminaldb", true
+	case 2019:
+		return "whosockami", true
+	case 2020:
+		return "xinupageserver", true
+	case 2021:
+		return "servexec", true
+	case 2022:
+		return "down", true
+	case 2023:
+		return "xinuexpansion3", true
+	case 2024:
+		return "xinuexpansion4", true
+	case 2025:
+		return "ellpack", true
+	case 2026:
+		return "scrabble", true
+	case 2027:
+		return "shadowserver", true
+	case 2028:
+		return "submitserver", true
+	case 2029:
+		return "hsrpv6", true
+	case 2030:
+		return "device2", true
+	case 2031:
+		return "mobrien-chat", true
+	case 2032:
+		return "blackboard", true
+	case 2033:
+		return "glogger", true
+	case 2034:
+		return "scoremgr", true
+	case 2035:
+		return "imsldoc", true
+	case 2036:
+		return "e-dpnet", true
+	case 2037:
+		return "applus", true
+	case 2038:
+		return "objectmanager", true
+	case 2039:
+		return "prizma", true
+	case 2040:
+		return "lam", true
+	case 2041:
+		return "interbase", true
+	case 2042:
+		return "isis", true
+	case 2043:
+		return "isis-bcast", true
+	case 2044:
+		return "rimsl", true
+	case 2045:
+		return "cdfunc", true
+	case 2046:
+		return "sdfunc", true
+	case 2047:
+		return "dls", true
+	case 2048:
+		return "dls-monitor", true
+	case 2049:
+		return "shilp", true
+	case 2050:
+		return "av-emb-config", true
+	case 2051:
+		return "epnsdp", true
+	case 2052:
+		return "clearvisn", true
+	case 2053:
+		return "lot105-ds-upd", true
+	case 2054:
+		return "weblogin", true
+	case 2055:
+		return "iop", true
+	case 2056:
+		return "omnisky", true
+	case 2057:
+		return "rich-cp", true
+	case 2058:
+		return "newwavesearch", true
+	case 2059:
+		return "bmc-messaging", true
+	case 2060:
+		return "teleniumdaemon", true
+	case 2061:
+		return "netmount", true
+	case 2062:
+		return "icg-swp", true
+	case 2063:
+		return "icg-bridge", true
+	case 2064:
+		return "icg-iprelay", true
+	case 2065:
+		return "dlsrpn", true
+	case 2066:
+		return "aura", true
+	case 2067:
+		return "dlswpn", true
+	case 2068:
+		return "avauthsrvprtcl", true
+	case 2069:
+		return "event-port", true
+	case 2070:
+		return "ah-esp-encap", true
+	case 2071:
+		return "acp-port", true
+	case 2072:
+		return "msync", true
+	case 2073:
+		return "gxs-data-port", true
+	case 2074:
+		return "vrtl-vmf-sa", true
+	case 2075:
+		return "newlixengine", true
+	case 2076:
+		return "newlixconfig", true
+	case 2077:
+		return "tsrmagt", true
+	case 2078:
+		return "tpcsrvr", true
+	case 2079:
+		return "idware-router", true
+	case 2080:
+		return "autodesk-nlm", true
+	case 2081:
+		return "kme-trap-port", true
+	case 2082:
+		return "infowave", true
+	case 2083:
+		return "radsec", true
+	case 2084:
+		return "sunclustergeo", true
+	case 2085:
+		return "ada-cip", true
+	case 2086:
+		return "gnunet", true
+	case 2087:
+		return "eli", true
+	case 2088:
+		return "ip-blf", true
+	case 2089:
+		return "sep", true
+	case 2090:
+		return "lrp", true
+	case 2091:
+		return "prp", true
+	case 2092:
+		return "descent3", true
+	case 2093:
+		return "nbx-cc", true
+	case 2094:
+		return "nbx-au", true
+	case 2095:
+		return "nbx-ser", true
+	case 2096:
+		return "nbx-dir", true
+	case 2097:
+		return "jetformpreview", true
+	case 2098:
+		return "dialog-port", true
+	case 2099:
+		return "h2250-annex-g", true
+	case 2100:
+		return "amiganetfs", true
+	case 2101:
+		return "rtcm-sc104", true
+	case 2102:
+		return "zephyr-srv", true
+	case 2103:
+		return "zephyr-clt", true
+	case 2104:
+		return "zephyr-hm", true
+	case 2105:
+		return "minipay", true
+	case 2106:
+		return "mzap", true
+	case 2107:
+		return "bintec-admin", true
+	case 2108:
+		return "comcam", true
+	case 2109:
+		return "ergolight", true
+	case 2110:
+		return "umsp", true
+	case 2111:
+		return "dsatp", true
+	case 2112:
+		return "idonix-metanet", true
+	case 2113:
+		return "hsl-storm", true
+	case 2114:
+		return "ariascribe", true
+	case 2115:
+		return "kdm", true
+	case 2116:
+		return "ccowcmr", true
+	case 2117:
+		return "mentaclient", true
+	case 2118:
+		return "mentaserver", true
+	case 2119:
+		return "gsigatekeeper", true
+	case 2120:
+		return "qencp", true
+	case 2121:
+		return "scientia-ssdb", true
+	case 2122:
+		return "caupc-remote", true
+	case 2123:
+		return "gtp-control", true
+	case 2124:
+		return "elatelink", true
+	case 2125:
+		return "lockstep", true
+	case 2126:
+		return "pktcable-cops", true
+	case 2127:
+		return "index-pc-wb", true
+	case 2128:
+		return "net-steward", true
+	case 2129:
+		return "cs-live", true
+	case 2130:
+		return "xds", true
+	case 2131:
+		return "avantageb2b", true
+	case 2132:
+		return "solera-epmap", true
+	case 2133:
+		return "zymed-zpp", true
+	case 2134:
+		return "avenue", true
+	case 2135:
+		return "gris", true
+	case 2136:
+		return "appworxsrv", true
+	case 2137:
+		return "connect", true
+	case 2138:
+		return "unbind-cluster", true
+	case 2139:
+		return "ias-auth", true
+	case 2140:
+		return "ias-reg", true
+	case 2141:
+		return "ias-admind", true
+	case 2142:
+		return "tdmoip", true
+	case 2143:
+		return "lv-jc", true
+	case 2144:
+		return "lv-ffx", true
+	case 2145:
+		return "lv-pici", true
+	case 2146:
+		return "lv-not", true
+	case 2147:
+		return "lv-auth", true
+	case 2148:
+		return "veritas-ucl", true
+	case 2149:
+		return "acptsys", true
+	case 2150:
+		return "dynamic3d", true
+	case 2151:
+		return "docent", true
+	case 2152:
+		return "gtp-user", true
+	case 2153:
+		return "ctlptc", true
+	case 2154:
+		return "stdptc", true
+	case 2155:
+		return "brdptc", true
+	case 2156:
+		return "trp", true
+	case 2157:
+		return "xnds", true
+	case 2158:
+		return "touchnetplus", true
+	case 2159:
+		return "gdbremote", true
+	case 2160:
+		return "apc-2160", true
+	case 2161:
+		return "apc-2161", true
+	case 2162:
+		return "navisphere", true
+	case 2163:
+		return "navisphere-sec", true
+	case 2164:
+		return "ddns-v3", true
+	case 2165:
+		return "x-bone-api", true
+	case 2166:
+		return "iwserver", true
+	case 2167:
+		return "raw-serial", true
+	case 2168:
+		return "easy-soft-mux", true
+	case 2169:
+		return "brain", true
+	case 2170:
+		return "eyetv", true
+	case 2171:
+		return "msfw-storage", true
+	case 2172:
+		return "msfw-s-storage", true
+	case 2173:
+		return "msfw-replica", true
+	case 2174:
+		return "msfw-array", true
+	case 2175:
+		return "airsync", true
+	case 2176:
+		return "rapi", true
+	case 2177:
+		return "qwave", true
+	case 2178:
+		return "bitspeer", true
+	case 2179:
+		return "vmrdp", true
+	case 2180:
+		return "mc-gt-srv", true
+	case 2181:
+		return "eforward", true
+	case 2182:
+		return "cgn-stat", true
+	case 2183:
+		return "cgn-config", true
+	case 2184:
+		return "nvd", true
+	case 2185:
+		return "onbase-dds", true
+	case 2186:
+		return "gtaua", true
+	case 2187:
+		return "ssmc", true
+	case 2188:
+		return "radware-rpm", true
+	case 2189:
+		return "radware-rpm-s", true
+	case 2190:
+		return "tivoconnect", true
+	case 2191:
+		return "tvbus", true
+	case 2192:
+		return "asdis", true
+	case 2193:
+		return "drwcs", true
+	case 2197:
+		return "mnp-exchange", true
+	case 2198:
+		return "onehome-remote", true
+	case 2199:
+		return "onehome-help", true
+	case 2201:
+		return "ats", true
+	case 2202:
+		return "imtc-map", true
+	case 2203:
+		return "b2-runtime", true
+	case 2204:
+		return "b2-license", true
+	case 2205:
+		return "jps", true
+	case 2206:
+		return "hpocbus", true
+	case 2207:
+		return "hpssd", true
+	case 2208:
+		return "hpiod", true
+	case 2209:
+		return "rimf-ps", true
+	case 2210:
+		return "noaaport", true
+	case 2211:
+		return "emwin", true
+	case 2212:
+		return "leecoposserver", true
+	case 2213:
+		return "kali", true
+	case 2214:
+		return "rpi", true
+	case 2215:
+		return "ipcore", true
+	case 2216:
+		return "vtu-comms", true
+	case 2217:
+		return "gotodevice", true
+	case 2218:
+		return "bounzza", true
+	case 2219:
+		return "netiq-ncap", true
+	case 2220:
+		return "netiq", true
+	case 2221:
+		return "ethernet-ip-s", true
+	case 2222:
+		return "EtherNet-IP-1", true
+	case 2223:
+		return "rockwell-csp2", true
+	case 2224:
+		return "efi-mg", true
+	case 2225:
+		return "rcip-itu", true
+	case 2226:
+		return "di-drm", true
+	case 2227:
+		return "di-msg", true
+	case 2228:
+		return "ehome-ms", true
+	case 2229:
+		return "datalens", true
+	case 2230:
+		return "queueadm", true
+	case 2231:
+		return "wimaxasncp", true
+	case 2232:
+		return "ivs-video", true
+	case 2233:
+		return "infocrypt", true
+	case 2234:
+		return "directplay", true
+	case 2235:
+		return "sercomm-wlink", true
+	case 2236:
+		return "nani", true
+	case 2237:
+		return "optech-port1-lm", true
+	case 2238:
+		return "aviva-sna", true
+	case 2239:
+		return "imagequery", true
+	case 2240:
+		return "recipe", true
+	case 2241:
+		return "ivsd", true
+	case 2242:
+		return "foliocorp", true
+	case 2243:
+		return "magicom", true
+	case 2244:
+		return "nmsserver", true
+	case 2245:
+		return "hao", true
+	case 2246:
+		return "pc-mta-addrmap", true
+	case 2247:
+		return "antidotemgrsvr", true
+	case 2248:
+		return "ums", true
+	case 2249:
+		return "rfmp", true
+	case 2250:
+		return "remote-collab", true
+	case 2251:
+		return "dif-port", true
+	case 2252:
+		return "njenet-ssl", true
+	case 2253:
+		return "dtv-chan-req", true
+	case 2254:
+		return "seispoc", true
+	case 2255:
+		return "vrtp", true
+	case 2256:
+		return "pcc-mfp", true
+	case 2257:
+		return "simple-tx-rx", true
+	case 2258:
+		return "rcts", true
+	case 2259:
+		return "bid-serv", true
+	case 2260:
+		return "apc-2260", true
+	case 2261:
+		return "comotionmaster", true
+	case 2262:
+		return "comotionback", true
+	case 2263:
+		return "ecwcfg", true
+	case 2264:
+		return "apx500api-1", true
+	case 2265:
+		return "apx500api-2", true
+	case 2266:
+		return "mfserver", true
+	case 2267:
+		return "ontobroker", true
+	case 2268:
+		return "amt", true
+	case 2269:
+		return "mikey", true
+	case 2270:
+		return "starschool", true
+	case 2271:
+		return "mmcals", true
+	case 2272:
+		return "mmcal", true
+	case 2273:
+		return "mysql-im", true
+	case 2274:
+		return "pcttunnell", true
+	case 2275:
+		return "ibridge-data", true
+	case 2276:
+		return "ibridge-mgmt", true
+	case 2277:
+		return "bluectrlproxy", true
+	case 2278:
+		return "s3db", true
+	case 2279:
+		return "xmquery", true
+	case 2280:
+		return "lnvpoller", true
+	case 2281:
+		return "lnvconsole", true
+	case 2282:
+		return "lnvalarm", true
+	case 2283:
+		return "lnvstatus", true
+	case 2284:
+		return "lnvmaps", true
+	case 2285:
+		return "lnvmailmon", true
+	case 2286:
+		return "nas-metering", true
+	case 2287:
+		return "dna", true
+	case 2288:
+		return "netml", true
+	case 2289:
+		return "dict-lookup", true
+	case 2290:
+		return "sonus-logging", true
+	case 2291:
+		return "eapsp", true
+	case 2292:
+		return "mib-streaming", true
+	case 2293:
+		return "npdbgmngr", true
+	case 2294:
+		return "konshus-lm", true
+	case 2295:
+		return "advant-lm", true
+	case 2296:
+		return "theta-lm", true
+	case 2297:
+		return "d2k-datamover1", true
+	case 2298:
+		return "d2k-datamover2", true
+	case 2299:
+		return "pc-telecommute", true
+	case 2300:
+		return "cvmmon", true
+	case 2301:
+		return "cpq-wbem", true
+	case 2302:
+		return "binderysupport", true
+	case 2303:
+		return "proxy-gateway", true
+	case 2304:
+		return "attachmate-uts", true
+	case 2305:
+		return "mt-scaleserver", true
+	case 2306:
+		return "tappi-boxnet", true
+	case 2307:
+		return "pehelp", true
+	case 2308:
+		return "sdhelp", true
+	case 2309:
+		return "sdserver", true
+	case 2310:
+		return "sdclient", true
+	case 2311:
+		return "messageservice", true
+	case 2312:
+		return "wanscaler", true
+	case 2313:
+		return "iapp", true
+	case 2314:
+		return "cr-websystems", true
+	case 2315:
+		return "precise-sft", true
+	case 2316:
+		return "sent-lm", true
+	case 2317:
+		return "attachmate-g32", true
+	case 2318:
+		return "cadencecontrol", true
+	case 2319:
+		return "infolibria", true
+	case 2320:
+		return "siebel-ns", true
+	case 2321:
+		return "rdlap", true
+	case 2322:
+		return "ofsd", true
+	case 2323:
+		return "3d-nfsd", true
+	case 2324:
+		return "cosmocall", true
+	case 2325:
+		return "ansysli", true
+	case 2326:
+		return "idcp", true
+	case 2327:
+		return "xingcsm", true
+	case 2328:
+		return "netrix-sftm", true
+	case 2329:
+		return "nvd", true
+	case 2330:
+		return "tscchat", true
+	case 2331:
+		return "agentview", true
+	case 2332:
+		return "rcc-host", true
+	case 2333:
+		return "snapp", true
+	case 2334:
+		return "ace-client", true
+	case 2335:
+		return "ace-proxy", true
+	case 2336:
+		return "appleugcontrol", true
+	case 2337:
+		return "ideesrv", true
+	case 2338:
+		return "norton-lambert", true
+	case 2339:
+		return "3com-webview", true
+	case 2340:
+		return "wrs-registry", true
+	case 2341:
+		return "xiostatus", true
+	case 2342:
+		return "manage-exec", true
+	case 2343:
+		return "nati-logos", true
+	case 2344:
+		return "fcmsys", true
+	case 2345:
+		return "dbm", true
+	case 2346:
+		return "redstorm-join", true
+	case 2347:
+		return "redstorm-find", true
+	case 2348:
+		return "redstorm-info", true
+	case 2349:
+		return "redstorm-diag", true
+	case 2350:
+		return "psbserver", true
+	case 2351:
+		return "psrserver", true
+	case 2352:
+		return "pslserver", true
+	case 2353:
+		return "pspserver", true
+	case 2354:
+		return "psprserver", true
+	case 2355:
+		return "psdbserver", true
+	case 2356:
+		return "gxtelmd", true
+	case 2357:
+		return "unihub-server", true
+	case 2358:
+		return "futrix", true
+	case 2359:
+		return "flukeserver", true
+	case 2360:
+		return "nexstorindltd", true
+	case 2361:
+		return "tl1", true
+	case 2362:
+		return "digiman", true
+	case 2363:
+		return "mediacntrlnfsd", true
+	case 2364:
+		return "oi-2000", true
+	case 2365:
+		return "dbref", true
+	case 2366:
+		return "qip-login", true
+	case 2367:
+		return "service-ctrl", true
+	case 2368:
+		return "opentable", true
+	case 2369:
+		return "bif-p2p", true
+	case 2370:
+		return "l3-hbmon", true
+	case 2371:
+		return "rda", true
+	case 2372:
+		return "lanmessenger", true
+	case 2373:
+		return "remographlm", true
+	case 2374:
+		return "hydra", true
+	case 2375:
+		return "docker", true
+	case 2376:
+		return "docker-s", true
+	case 2377:
+		return "swarm", true
+	case 2379:
+		return "etcd-client", true
+	case 2380:
+		return "etcd-server", true
+	case 2381:
+		return "compaq-https", true
+	case 2382:
+		return "ms-olap3", true
+	case 2383:
+		return "ms-olap4", true
+	case 2384:
+		return "sd-request", true
+	case 2385:
+		return "sd-data", true
+	case 2386:
+		return "virtualtape", true
+	case 2387:
+		return "vsamredirector", true
+	case 2388:
+		return "mynahautostart", true
+	case 2389:
+		return "ovsessionmgr", true
+	case 2390:
+		return "rsmtp", true
+	case 2391:
+		return "3com-net-mgmt", true
+	case 2392:
+		return "tacticalauth", true
+	case 2393:
+		return "ms-olap1", true
+	case 2394:
+		return "ms-olap2", true
+	case 2395:
+		return "lan900-remote", true
+	case 2396:
+		return "wusage", true
+	case 2397:
+		return "ncl", true
+	case 2398:
+		return "orbiter", true
+	case 2399:
+		return "fmpro-fdal", true
+	case 2400:
+		return "opequus-server", true
+	case 2401:
+		return "cvspserver", true
+	case 2402:
+		return "taskmaster2000", true
+	case 2403:
+		return "taskmaster2000", true
+	case 2404:
+		return "iec-104", true
+	case 2405:
+		return "trc-netpoll", true
+	case 2406:
+		return "jediserver", true
+	case 2407:
+		return "orion", true
+	case 2408:
+		return "railgun-webaccl", true
+	case 2409:
+		return "sns-protocol", true
+	case 2410:
+		return "vrts-registry", true
+	case 2411:
+		return "netwave-ap-mgmt", true
+	case 2412:
+		return "cdn", true
+	case 2413:
+		return "orion-rmi-reg", true
+	case 2414:
+		return "beeyond", true
+	case 2415:
+		return "codima-rtp", true
+	case 2416:
+		return "rmtserver", true
+	case 2417:
+		return "composit-server", true
+	case 2418:
+		return "cas", true
+	case 2419:
+		return "attachmate-s2s", true
+	case 2420:
+		return "dslremote-mgmt", true
+	case 2421:
+		return "g-talk", true
+	case 2422:
+		return "crmsbits", true
+	case 2423:
+		return "rnrp", true
+	case 2424:
+		return "kofax-svr", true
+	case 2425:
+		return "fjitsuappmgr", true
+	case 2426:
+		return "vcmp", true
+	case 2427:
+		return "mgcp-gateway", true
+	case 2428:
+		return "ott", true
+	case 2429:
+		return "ft-role", true
+	case 2430:
+		return "venus", true
+	case 2431:
+		return "venus-se", true
+	case 2432:
+		return "codasrv", true
+	case 2433:
+		return "codasrv-se", true
+	case 2434:
+		return "pxc-epmap", true
+	case 2435:
+		return "optilogic", true
+	case 2436:
+		return "topx", true
+	case 2437:
+		return "unicontrol", true
+	case 2438:
+		return "msp", true
+	case 2439:
+		return "sybasedbsynch", true
+	case 2440:
+		return "spearway", true
+	case 2441:
+		return "pvsw-inet", true
+	case 2442:
+		return "netangel", true
+	case 2443:
+		return "powerclientcsf", true
+	case 2444:
+		return "btpp2sectrans", true
+	case 2445:
+		return "dtn1", true
+	case 2446:
+		return "bues-service", true
+	case 2447:
+		return "ovwdb", true
+	case 2448:
+		return "hpppssvr", true
+	case 2449:
+		return "ratl", true
+	case 2450:
+		return "netadmin", true
+	case 2451:
+		return "netchat", true
+	case 2452:
+		return "snifferclient", true
+	case 2453:
+		return "madge-ltd", true
+	case 2454:
+		return "indx-dds", true
+	case 2455:
+		return "wago-io-system", true
+	case 2456:
+		return "altav-remmgt", true
+	case 2457:
+		return "rapido-ip", true
+	case 2458:
+		return "griffin", true
+	case 2459:
+		return "xrpl", true
+	case 2460:
+		return "ms-theater", true
+	case 2461:
+		return "qadmifoper", true
+	case 2462:
+		return "qadmifevent", true
+	case 2463:
+		return "lsi-raid-mgmt", true
+	case 2464:
+		return "direcpc-si", true
+	case 2465:
+		return "lbm", true
+	case 2466:
+		return "lbf", true
+	case 2467:
+		return "high-criteria", true
+	case 2468:
+		return "qip-msgd", true
+	case 2469:
+		return "mti-tcs-comm", true
+	case 2470:
+		return "taskman-port", true
+	case 2471:
+		return "seaodbc", true
+	case 2472:
+		return "c3", true
+	case 2473:
+		return "aker-cdp", true
+	case 2474:
+		return "vitalanalysis", true
+	case 2475:
+		return "ace-server", true
+	case 2476:
+		return "ace-svr-prop", true
+	case 2477:
+		return "ssm-cvs", true
+	case 2478:
+		return "ssm-cssps", true
+	case 2479:
+		return "ssm-els", true
+	case 2480:
+		return "powerexchange", true
+	case 2481:
+		return "giop", true
+	case 2482:
+		return "giop-ssl", true
+	case 2483:
+		return "ttc", true
+	case 2484:
+		return "ttc-ssl", true
+	case 2485:
+		return "netobjects1", true
+	case 2486:
+		return "netobjects2", true
+	case 2487:
+		return "pns", true
+	case 2488:
+		return "moy-corp", true
+	case 2489:
+		return "tsilb", true
+	case 2490:
+		return "qip-qdhcp", true
+	case 2491:
+		return "conclave-cpp", true
+	case 2492:
+		return "groove", true
+	case 2493:
+		return "talarian-mqs", true
+	case 2494:
+		return "bmc-ar", true
+	case 2495:
+		return "fast-rem-serv", true
+	case 2496:
+		return "dirgis", true
+	case 2497:
+		return "quaddb", true
+	case 2498:
+		return "odn-castraq", true
+	case 2499:
+		return "unicontrol", true
+	case 2500:
+		return "rtsserv", true
+	case 2501:
+		return "rtsclient", true
+	case 2502:
+		return "kentrox-prot", true
+	case 2503:
+		return "nms-dpnss", true
+	case 2504:
+		return "wlbs", true
+	case 2505:
+		return "ppcontrol", true
+	case 2506:
+		return "jbroker", true
+	case 2507:
+		return "spock", true
+	case 2508:
+		return "jdatastore", true
+	case 2509:
+		return "fjmpss", true
+	case 2510:
+		return "fjappmgrbulk", true
+	case 2511:
+		return "metastorm", true
+	case 2512:
+		return "citrixima", true
+	case 2513:
+		return "citrixadmin", true
+	case 2514:
+		return "facsys-ntp", true
+	case 2515:
+		return "facsys-router", true
+	case 2516:
+		return "maincontrol", true
+	case 2517:
+		return "call-sig-trans", true
+	case 2518:
+		return "willy", true
+	case 2519:
+		return "globmsgsvc", true
+	case 2520:
+		return "pvsw", true
+	case 2521:
+		return "adaptecmgr", true
+	case 2522:
+		return "windb", true
+	case 2523:
+		return "qke-llc-v3", true
+	case 2524:
+		return "optiwave-lm", true
+	case 2525:
+		return "ms-v-worlds", true
+	case 2526:
+		return "ema-sent-lm", true
+	case 2527:
+		return "iqserver", true
+	case 2528:
+		return "ncr-ccl", true
+	case 2529:
+		return "utsftp", true
+	case 2530:
+		return "vrcommerce", true
+	case 2531:
+		return "ito-e-gui", true
+	case 2532:
+		return "ovtopmd", true
+	case 2533:
+		return "snifferserver", true
+	case 2534:
+		return "combox-web-acc", true
+	case 2535:
+		return "madcap", true
+	case 2536:
+		return "btpp2audctr1", true
+	case 2537:
+		return "upgrade", true
+	case 2538:
+		return "vnwk-prapi", true
+	case 2539:
+		return "vsiadmin", true
+	case 2540:
+		return "lonworks", true
+	case 2541:
+		return "lonworks2", true
+	case 2542:
+		return "udrawgraph", true
+	case 2543:
+		return "reftek", true
+	case 2544:
+		return "novell-zen", true
+	case 2545:
+		return "sis-emt", true
+	case 2546:
+		return "vytalvaultbrtp", true
+	case 2547:
+		return "vytalvaultvsmp", true
+	case 2548:
+		return "vytalvaultpipe", true
+	case 2549:
+		return "ipass", true
+	case 2550:
+		return "ads", true
+	case 2551:
+		return "isg-uda-server", true
+	case 2552:
+		return "call-logging", true
+	case 2553:
+		return "efidiningport", true
+	case 2554:
+		return "vcnet-link-v10", true
+	case 2555:
+		return "compaq-wcp", true
+	case 2556:
+		return "nicetec-nmsvc", true
+	case 2557:
+		return "nicetec-mgmt", true
+	case 2558:
+		return "pclemultimedia", true
+	case 2559:
+		return "lstp", true
+	case 2560:
+		return "labrat", true
+	case 2561:
+		return "mosaixcc", true
+	case 2562:
+		return "delibo", true
+	case 2563:
+		return "cti-redwood", true
+	case 2564:
+		return "hp-3000-telnet", true
+	case 2565:
+		return "coord-svr", true
+	case 2566:
+		return "pcs-pcw", true
+	case 2567:
+		return "clp", true
+	case 2568:
+		return "spamtrap", true
+	case 2569:
+		return "sonuscallsig", true
+	case 2570:
+		return "hs-port", true
+	case 2571:
+		return "cecsvc", true
+	case 2572:
+		return "ibp", true
+	case 2573:
+		return "trustestablish", true
+	case 2574:
+		return "blockade-bpsp", true
+	case 2575:
+		return "hl7", true
+	case 2576:
+		return "tclprodebugger", true
+	case 2577:
+		return "scipticslsrvr", true
+	case 2578:
+		return "rvs-isdn-dcp", true
+	case 2579:
+		return "mpfoncl", true
+	case 2580:
+		return "tributary", true
+	case 2581:
+		return "argis-te", true
+	case 2582:
+		return "argis-ds", true
+	case 2583:
+		return "mon", true
+	case 2584:
+		return "cyaserv", true
+	case 2585:
+		return "netx-server", true
+	case 2586:
+		return "netx-agent", true
+	case 2587:
+		return "masc", true
+	case 2588:
+		return "privilege", true
+	case 2589:
+		return "quartus-tcl", true
+	case 2590:
+		return "idotdist", true
+	case 2591:
+		return "maytagshuffle", true
+	case 2592:
+		return "netrek", true
+	case 2593:
+		return "mns-mail", true
+	case 2594:
+		return "dts", true
+	case 2595:
+		return "worldfusion1", true
+	case 2596:
+		return "worldfusion2", true
+	case 2597:
+		return "homesteadglory", true
+	case 2598:
+		return "citriximaclient", true
+	case 2599:
+		return "snapd", true
+	case 2600:
+		return "hpstgmgr", true
+	case 2601:
+		return "discp-client", true
+	case 2602:
+		return "discp-server", true
+	case 2603:
+		return "servicemeter", true
+	case 2604:
+		return "nsc-ccs", true
+	case 2605:
+		return "nsc-posa", true
+	case 2606:
+		return "netmon", true
+	case 2607:
+		return "connection", true
+	case 2608:
+		return "wag-service", true
+	case 2609:
+		return "system-monitor", true
+	case 2610:
+		return "versa-tek", true
+	case 2611:
+		return "lionhead", true
+	case 2612:
+		return "qpasa-agent", true
+	case 2613:
+		return "smntubootstrap", true
+	case 2614:
+		return "neveroffline", true
+	case 2615:
+		return "firepower", true
+	case 2616:
+		return "appswitch-emp", true
+	case 2617:
+		return "cmadmin", true
+	case 2618:
+		return "priority-e-com", true
+	case 2619:
+		return "bruce", true
+	case 2620:
+		return "lpsrecommender", true
+	case 2621:
+		return "miles-apart", true
+	case 2622:
+		return "metricadbc", true
+	case 2623:
+		return "lmdp", true
+	case 2624:
+		return "aria", true
+	case 2625:
+		return "blwnkl-port", true
+	case 2626:
+		return "gbjd816", true
+	case 2627:
+		return "moshebeeri", true
+	case 2628:
+		return "dict", true
+	case 2629:
+		return "sitaraserver", true
+	case 2630:
+		return "sitaramgmt", true
+	case 2631:
+		return "sitaradir", true
+	case 2632:
+		return "irdg-post", true
+	case 2633:
+		return "interintelli", true
+	case 2634:
+		return "pk-electronics", true
+	case 2635:
+		return "backburner", true
+	case 2636:
+		return "solve", true
+	case 2637:
+		return "imdocsvc", true
+	case 2638:
+		return "sybaseanywhere", true
+	case 2639:
+		return "aminet", true
+	case 2640:
+		return "ami-control", true
+	case 2641:
+		return "hdl-srv", true
+	case 2642:
+		return "tragic", true
+	case 2643:
+		return "gte-samp", true
+	case 2644:
+		return "travsoft-ipx-t", true
+	case 2645:
+		return "novell-ipx-cmd", true
+	case 2646:
+		return "and-lm", true
+	case 2647:
+		return "syncserver", true
+	case 2648:
+		return "upsnotifyprot", true
+	case 2649:
+		return "vpsipport", true
+	case 2650:
+		return "eristwoguns", true
+	case 2651:
+		return "ebinsite", true
+	case 2652:
+		return "interpathpanel", true
+	case 2653:
+		return "sonus", true
+	case 2654:
+		return "corel-vncadmin", true
+	case 2655:
+		return "unglue", true
+	case 2656:
+		return "kana", true
+	case 2657:
+		return "sns-dispatcher", true
+	case 2658:
+		return "sns-admin", true
+	case 2659:
+		return "sns-query", true
+	case 2660:
+		return "gcmonitor", true
+	case 2661:
+		return "olhost", true
+	case 2662:
+		return "bintec-capi", true
+	case 2663:
+		return "bintec-tapi", true
+	case 2664:
+		return "patrol-mq-gm", true
+	case 2665:
+		return "patrol-mq-nm", true
+	case 2666:
+		return "extensis", true
+	case 2667:
+		return "alarm-clock-s", true
+	case 2668:
+		return "alarm-clock-c", true
+	case 2669:
+		return "toad", true
+	case 2670:
+		return "tve-announce", true
+	case 2671:
+		return "newlixreg", true
+	case 2672:
+		return "nhserver", true
+	case 2673:
+		return "firstcall42", true
+	case 2674:
+		return "ewnn", true
+	case 2675:
+		return "ttc-etap", true
+	case 2676:
+		return "simslink", true
+	case 2677:
+		return "gadgetgate1way", true
+	case 2678:
+		return "gadgetgate2way", true
+	case 2679:
+		return "syncserverssl", true
+	case 2680:
+		return "pxc-sapxom", true
+	case 2681:
+		return "mpnjsomb", true
+	case 2683:
+		return "ncdloadbalance", true
+	case 2684:
+		return "mpnjsosv", true
+	case 2685:
+		return "mpnjsocl", true
+	case 2686:
+		return "mpnjsomg", true
+	case 2687:
+		return "pq-lic-mgmt", true
+	case 2688:
+		return "md-cg-http", true
+	case 2689:
+		return "fastlynx", true
+	case 2690:
+		return "hp-nnm-data", true
+	case 2691:
+		return "itinternet", true
+	case 2692:
+		return "admins-lms", true
+	case 2694:
+		return "pwrsevent", true
+	case 2695:
+		return "vspread", true
+	case 2696:
+		return "unifyadmin", true
+	case 2697:
+		return "oce-snmp-trap", true
+	case 2698:
+		return "mck-ivpip", true
+	case 2699:
+		return "csoft-plusclnt", true
+	case 2700:
+		return "tqdata", true
+	case 2701:
+		return "sms-rcinfo", true
+	case 2702:
+		return "sms-xfer", true
+	case 2703:
+		return "sms-chat", true
+	case 2704:
+		return "sms-remctrl", true
+	case 2705:
+		return "sds-admin", true
+	case 2706:
+		return "ncdmirroring", true
+	case 2707:
+		return "emcsymapiport", true
+	case 2708:
+		return "banyan-net", true
+	case 2709:
+		return "supermon", true
+	case 2710:
+		return "sso-service", true
+	case 2711:
+		return "sso-control", true
+	case 2712:
+		return "aocp", true
+	case 2713:
+		return "raventbs", true
+	case 2714:
+		return "raventdm", true
+	case 2715:
+		return "hpstgmgr2", true
+	case 2716:
+		return "inova-ip-disco", true
+	case 2717:
+		return "pn-requester", true
+	case 2718:
+		return "pn-requester2", true
+	case 2719:
+		return "scan-change", true
+	case 2720:
+		return "wkars", true
+	case 2721:
+		return "smart-diagnose", true
+	case 2722:
+		return "proactivesrvr", true
+	case 2723:
+		return "watchdog-nt", true
+	case 2724:
+		return "qotps", true
+	case 2725:
+		return "msolap-ptp2", true
+	case 2726:
+		return "tams", true
+	case 2727:
+		return "mgcp-callagent", true
+	case 2728:
+		return "sqdr", true
+	case 2729:
+		return "tcim-control", true
+	case 2730:
+		return "nec-raidplus", true
+	case 2731:
+		return "fyre-messanger", true
+	case 2732:
+		return "g5m", true
+	case 2733:
+		return "signet-ctf", true
+	case 2734:
+		return "ccs-software", true
+	case 2735:
+		return "netiq-mc", true
+	case 2736:
+		return "radwiz-nms-srv", true
+	case 2737:
+		return "srp-feedback", true
+	case 2738:
+		return "ndl-tcp-ois-gw", true
+	case 2739:
+		return "tn-timing", true
+	case 2740:
+		return "alarm", true
+	case 2741:
+		return "tsb", true
+	case 2742:
+		return "tsb2", true
+	case 2743:
+		return "murx", true
+	case 2744:
+		return "honyaku", true
+	case 2745:
+		return "urbisnet", true
+	case 2746:
+		return "cpudpencap", true
+	case 2747:
+		return "fjippol-swrly", true
+	case 2748:
+		return "fjippol-polsvr", true
+	case 2749:
+		return "fjippol-cnsl", true
+	case 2750:
+		return "fjippol-port1", true
+	case 2751:
+		return "fjippol-port2", true
+	case 2752:
+		return "rsisysaccess", true
+	case 2753:
+		return "de-spot", true
+	case 2754:
+		return "apollo-cc", true
+	case 2755:
+		return "expresspay", true
+	case 2756:
+		return "simplement-tie", true
+	case 2757:
+		return "cnrp", true
+	case 2758:
+		return "apollo-status", true
+	case 2759:
+		return "apollo-gms", true
+	case 2760:
+		return "sabams", true
+	case 2761:
+		return "dicom-iscl", true
+	case 2762:
+		return "dicom-tls", true
+	case 2763:
+		return "desktop-dna", true
+	case 2764:
+		return "data-insurance", true
+	case 2765:
+		return "qip-audup", true
+	case 2766:
+		return "compaq-scp", true
+	case 2767:
+		return "uadtc", true
+	case 2768:
+		return "uacs", true
+	case 2769:
+		return "exce", true
+	case 2770:
+		return "veronica", true
+	case 2771:
+		return "vergencecm", true
+	case 2772:
+		return "auris", true
+	case 2773:
+		return "rbakcup1", true
+	case 2774:
+		return "rbakcup2", true
+	case 2775:
+		return "smpp", true
+	case 2776:
+		return "ridgeway1", true
+	case 2777:
+		return "ridgeway2", true
+	case 2778:
+		return "gwen-sonya", true
+	case 2779:
+		return "lbc-sync", true
+	case 2780:
+		return "lbc-control", true
+	case 2781:
+		return "whosells", true
+	case 2782:
+		return "everydayrc", true
+	case 2783:
+		return "aises", true
+	case 2784:
+		return "www-dev", true
+	case 2785:
+		return "aic-np", true
+	case 2786:
+		return "aic-oncrpc", true
+	case 2787:
+		return "piccolo", true
+	case 2788:
+		return "fryeserv", true
+	case 2789:
+		return "media-agent", true
+	case 2790:
+		return "plgproxy", true
+	case 2791:
+		return "mtport-regist", true
+	case 2792:
+		return "f5-globalsite", true
+	case 2793:
+		return "initlsmsad", true
+	case 2795:
+		return "livestats", true
+	case 2796:
+		return "ac-tech", true
+	case 2797:
+		return "esp-encap", true
+	case 2798:
+		return "tmesis-upshot", true
+	case 2799:
+		return "icon-discover", true
+	case 2800:
+		return "acc-raid", true
+	case 2801:
+		return "igcp", true
+	case 2802:
+		return "veritas-tcp1", true
+	case 2803:
+		return "btprjctrl", true
+	case 2804:
+		return "dvr-esm", true
+	case 2805:
+		return "wta-wsp-s", true
+	case 2806:
+		return "cspuni", true
+	case 2807:
+		return "cspmulti", true
+	case 2808:
+		return "j-lan-p", true
+	case 2809:
+		return "corbaloc", true
+	case 2810:
+		return "netsteward", true
+	case 2811:
+		return "gsiftp", true
+	case 2812:
+		return "atmtcp", true
+	case 2813:
+		return "llm-pass", true
+	case 2814:
+		return "llm-csv", true
+	case 2815:
+		return "lbc-measure", true
+	case 2816:
+		return "lbc-watchdog", true
+	case 2817:
+		return "nmsigport", true
+	case 2818:
+		return "rmlnk", true
+	case 2819:
+		return "fc-faultnotify", true
+	case 2820:
+		return "univision", true
+	case 2821:
+		return "vrts-at-port", true
+	case 2822:
+		return "ka0wuc", true
+	case 2823:
+		return "cqg-netlan", true
+	case 2824:
+		return "cqg-netlan-1", true
+	case 2826:
+		return "slc-systemlog", true
+	case 2827:
+		return "slc-ctrlrloops", true
+	case 2828:
+		return "itm-lm", true
+	case 2829:
+		return "silkp1", true
+	case 2830:
+		return "silkp2", true
+	case 2831:
+		return "silkp3", true
+	case 2832:
+		return "silkp4", true
+	case 2833:
+		return "glishd", true
+	case 2834:
+		return "evtp", true
+	case 2835:
+		return "evtp-data", true
+	case 2836:
+		return "catalyst", true
+	case 2837:
+		return "repliweb", true
+	case 2838:
+		return "starbot", true
+	case 2839:
+		return "nmsigport", true
+	case 2840:
+		return "l3-exprt", true
+	case 2841:
+		return "l3-ranger", true
+	case 2842:
+		return "l3-hawk", true
+	case 2843:
+		return "pdnet", true
+	case 2844:
+		return "bpcp-poll", true
+	case 2845:
+		return "bpcp-trap", true
+	case 2846:
+		return "aimpp-hello", true
+	case 2847:
+		return "aimpp-port-req", true
+	case 2848:
+		return "amt-blc-port", true
+	case 2849:
+		return "fxp", true
+	case 2850:
+		return "metaconsole", true
+	case 2851:
+		return "webemshttp", true
+	case 2852:
+		return "bears-01", true
+	case 2853:
+		return "ispipes", true
+	case 2854:
+		return "infomover", true
+	case 2855:
+		return "msrp", true
+	case 2856:
+		return "cesdinv", true
+	case 2857:
+		return "simctlp", true
+	case 2858:
+		return "ecnp", true
+	case 2859:
+		return "activememory", true
+	case 2860:
+		return "dialpad-voice1", true
+	case 2861:
+		return "dialpad-voice2", true
+	case 2862:
+		return "ttg-protocol", true
+	case 2863:
+		return "sonardata", true
+	case 2864:
+		return "astronova-main", true
+	case 2865:
+		return "pit-vpn", true
+	case 2866:
+		return "iwlistener", true
+	case 2867:
+		return "esps-portal", true
+	case 2868:
+		return "npep-messaging", true
+	case 2869:
+		return "icslap", true
+	case 2870:
+		return "daishi", true
+	case 2871:
+		return "msi-selectplay", true
+	case 2872:
+		return "radix", true
+	case 2873:
+		return "psrt", true
+	case 2874:
+		return "dxmessagebase1", true
+	case 2875:
+		return "dxmessagebase2", true
+	case 2876:
+		return "sps-tunnel", true
+	case 2877:
+		return "bluelance", true
+	case 2878:
+		return "aap", true
+	case 2879:
+		return "ucentric-ds", true
+	case 2880:
+		return "synapse", true
+	case 2881:
+		return "ndsp", true
+	case 2882:
+		return "ndtp", true
+	case 2883:
+		return "ndnp", true
+	case 2884:
+		return "flashmsg", true
+	case 2885:
+		return "topflow", true
+	case 2886:
+		return "responselogic", true
+	case 2887:
+		return "aironetddp", true
+	case 2888:
+		return "spcsdlobby", true
+	case 2889:
+		return "rsom", true
+	case 2890:
+		return "cspclmulti", true
+	case 2891:
+		return "cinegrfx-elmd", true
+	case 2892:
+		return "snifferdata", true
+	case 2893:
+		return "vseconnector", true
+	case 2894:
+		return "abacus-remote", true
+	case 2895:
+		return "natuslink", true
+	case 2896:
+		return "ecovisiong6-1", true
+	case 2897:
+		return "citrix-rtmp", true
+	case 2898:
+		return "appliance-cfg", true
+	case 2899:
+		return "powergemplus", true
+	case 2900:
+		return "quicksuite", true
+	case 2901:
+		return "allstorcns", true
+	case 2902:
+		return "netaspi", true
+	case 2903:
+		return "suitcase", true
+	case 2904:
+		return "m2ua", true
+	case 2905:
+		return "m3ua", true
+	case 2906:
+		return "caller9", true
+	case 2907:
+		return "webmethods-b2b", true
+	case 2908:
+		return "mao", true
+	case 2909:
+		return "funk-dialout", true
+	case 2910:
+		return "tdaccess", true
+	case 2911:
+		return "blockade", true
+	case 2912:
+		return "epicon", true
+	case 2913:
+		return "boosterware", true
+	case 2914:
+		return "gamelobby", true
+	case 2915:
+		return "tksocket", true
+	case 2916:
+		return "elvin-server", true
+	case 2917:
+		return "elvin-client", true
+	case 2918:
+		return "kastenchasepad", true
+	case 2919:
+		return "roboer", true
+	case 2920:
+		return "roboeda", true
+	case 2921:
+		return "cesdcdman", true
+	case 2922:
+		return "cesdcdtrn", true
+	case 2923:
+		return "wta-wsp-wtp-s", true
+	case 2924:
+		return "precise-vip", true
+	case 2926:
+		return "mobile-file-dl", true
+	case 2927:
+		return "unimobilectrl", true
+	case 2928:
+		return "redstone-cpss", true
+	case 2929:
+		return "amx-webadmin", true
+	case 2930:
+		return "amx-weblinx", true
+	case 2931:
+		return "circle-x", true
+	case 2932:
+		return "incp", true
+	case 2933:
+		return "4-tieropmgw", true
+	case 2934:
+		return "4-tieropmcli", true
+	case 2935:
+		return "qtp", true
+	case 2936:
+		return "otpatch", true
+	case 2937:
+		return "pnaconsult-lm", true
+	case 2938:
+		return "sm-pas-1", true
+	case 2939:
+		return "sm-pas-2", true
+	case 2940:
+		return "sm-pas-3", true
+	case 2941:
+		return "sm-pas-4", true
+	case 2942:
+		return "sm-pas-5", true
+	case 2943:
+		return "ttnrepository", true
+	case 2944:
+		return "megaco-h248", true
+	case 2945:
+		return "h248-binary", true
+	case 2946:
+		return "fjsvmpor", true
+	case 2947:
+		return "gpsd", true
+	case 2948:
+		return "wap-push", true
+	case 2949:
+		return "wap-pushsecure", true
+	case 2950:
+		return "esip", true
+	case 2951:
+		return "ottp", true
+	case 2952:
+		return "mpfwsas", true
+	case 2953:
+		return "ovalarmsrv", true
+	case 2954:
+		return "ovalarmsrv-cmd", true
+	case 2955:
+		return "csnotify", true
+	case 2956:
+		return "ovrimosdbman", true
+	case 2957:
+		return "jmact5", true
+	case 2958:
+		return "jmact6", true
+	case 2959:
+		return "rmopagt", true
+	case 2960:
+		return "dfoxserver", true
+	case 2961:
+		return "boldsoft-lm", true
+	case 2962:
+		return "iph-policy-cli", true
+	case 2963:
+		return "iph-policy-adm", true
+	case 2964:
+		return "bullant-srap", true
+	case 2965:
+		return "bullant-rap", true
+	case 2966:
+		return "idp-infotrieve", true
+	case 2967:
+		return "ssc-agent", true
+	case 2968:
+		return "enpp", true
+	case 2969:
+		return "essp", true
+	case 2970:
+		return "index-net", true
+	case 2971:
+		return "netclip", true
+	case 2972:
+		return "pmsm-webrctl", true
+	case 2973:
+		return "svnetworks", true
+	case 2974:
+		return "signal", true
+	case 2975:
+		return "fjmpcm", true
+	case 2976:
+		return "cns-srv-port", true
+	case 2977:
+		return "ttc-etap-ns", true
+	case 2978:
+		return "ttc-etap-ds", true
+	case 2979:
+		return "h263-video", true
+	case 2980:
+		return "wimd", true
+	case 2981:
+		return "mylxamport", true
+	case 2982:
+		return "iwb-whiteboard", true
+	case 2983:
+		return "netplan", true
+	case 2984:
+		return "hpidsadmin", true
+	case 2985:
+		return "hpidsagent", true
+	case 2986:
+		return "stonefalls", true
+	case 2987:
+		return "identify", true
+	case 2988:
+		return "hippad", true
+	case 2989:
+		return "zarkov", true
+	case 2990:
+		return "boscap", true
+	case 2991:
+		return "wkstn-mon", true
+	case 2992:
+		return "avenyo", true
+	case 2993:
+		return "veritas-vis1", true
+	case 2994:
+		return "veritas-vis2", true
+	case 2995:
+		return "idrs", true
+	case 2996:
+		return "vsixml", true
+	case 2997:
+		return "rebol", true
+	case 2998:
+		return "realsecure", true
+	case 2999:
+		return "remoteware-un", true
+	case 3000:
+		return "hbci", true
+	case 3001:
+		return "origo-native", true
+	case 3002:
+		return "exlm-agent", true
+	case 3003:
+		return "cgms", true
+	case 3004:
+		return "csoftragent", true
+	case 3005:
+		return "geniuslm", true
+	case 3006:
+		return "ii-admin", true
+	case 3007:
+		return "lotusmtap", true
+	case 3008:
+		return "midnight-tech", true
+	case 3009:
+		return "pxc-ntfy", true
+	case 3010:
+		return "gw", true
+	case 3011:
+		return "trusted-web", true
+	case 3012:
+		return "twsdss", true
+	case 3013:
+		return "gilatskysurfer", true
+	case 3014:
+		return "broker-service", true
+	case 3015:
+		return "nati-dstp", true
+	case 3016:
+		return "notify-srvr", true
+	case 3017:
+		return "event-listener", true
+	case 3018:
+		return "srvc-registry", true
+	case 3019:
+		return "resource-mgr", true
+	case 3020:
+		return "cifs", true
+	case 3021:
+		return "agriserver", true
+	case 3022:
+		return "csregagent", true
+	case 3023:
+		return "magicnotes", true
+	case 3024:
+		return "nds-sso", true
+	case 3025:
+		return "arepa-raft", true
+	case 3026:
+		return "agri-gateway", true
+	case 3027:
+		return "LiebDevMgmt-C", true
+	case 3028:
+		return "LiebDevMgmt-DM", true
+	case 3029:
+		return "LiebDevMgmt-A", true
+	case 3030:
+		return "arepa-cas", true
+	case 3031:
+		return "eppc", true
+	case 3032:
+		return "redwood-chat", true
+	case 3033:
+		return "pdb", true
+	case 3034:
+		return "osmosis-aeea", true
+	case 3035:
+		return "fjsv-gssagt", true
+	case 3036:
+		return "hagel-dump", true
+	case 3037:
+		return "hp-san-mgmt", true
+	case 3038:
+		return "santak-ups", true
+	case 3039:
+		return "cogitate", true
+	case 3040:
+		return "tomato-springs", true
+	case 3041:
+		return "di-traceware", true
+	case 3042:
+		return "journee", true
+	case 3043:
+		return "brp", true
+	case 3044:
+		return "epp", true
+	case 3045:
+		return "responsenet", true
+	case 3046:
+		return "di-ase", true
+	case 3047:
+		return "hlserver", true
+	case 3048:
+		return "pctrader", true
+	case 3049:
+		return "nsws", true
+	case 3050:
+		return "gds-db", true
+	case 3051:
+		return "galaxy-server", true
+	case 3052:
+		return "apc-3052", true
+	case 3053:
+		return "dsom-server", true
+	case 3054:
+		return "amt-cnf-prot", true
+	case 3055:
+		return "policyserver", true
+	case 3056:
+		return "cdl-server", true
+	case 3057:
+		return "goahead-fldup", true
+	case 3058:
+		return "videobeans", true
+	case 3059:
+		return "qsoft", true
+	case 3060:
+		return "interserver", true
+	case 3061:
+		return "cautcpd", true
+	case 3062:
+		return "ncacn-ip-tcp", true
+	case 3063:
+		return "ncadg-ip-udp", true
+	case 3064:
+		return "rprt", true
+	case 3065:
+		return "slinterbase", true
+	case 3066:
+		return "netattachsdmp", true
+	case 3067:
+		return "fjhpjp", true
+	case 3068:
+		return "ls3bcast", true
+	case 3069:
+		return "ls3", true
+	case 3070:
+		return "mgxswitch", true
+	case 3071:
+		return "xplat-replicate", true
+	case 3072:
+		return "csd-monitor", true
+	case 3073:
+		return "vcrp", true
+	case 3074:
+		return "xbox", true
+	case 3075:
+		return "orbix-locator", true
+	case 3076:
+		return "orbix-config", true
+	case 3077:
+		return "orbix-loc-ssl", true
+	case 3078:
+		return "orbix-cfg-ssl", true
+	case 3079:
+		return "lv-frontpanel", true
+	case 3080:
+		return "stm-pproc", true
+	case 3081:
+		return "tl1-lv", true
+	case 3082:
+		return "tl1-raw", true
+	case 3083:
+		return "tl1-telnet", true
+	case 3084:
+		return "itm-mccs", true
+	case 3085:
+		return "pcihreq", true
+	case 3086:
+		return "jdl-dbkitchen", true
+	case 3087:
+		return "asoki-sma", true
+	case 3088:
+		return "xdtp", true
+	case 3089:
+		return "ptk-alink", true
+	case 3090:
+		return "stss", true
+	case 3091:
+		return "1ci-smcs", true
+	case 3093:
+		return "rapidmq-center", true
+	case 3094:
+		return "rapidmq-reg", true
+	case 3095:
+		return "panasas", true
+	case 3096:
+		return "ndl-aps", true
+	case 3098:
+		return "umm-port", true
+	case 3099:
+		return "chmd", true
+	case 3100:
+		return "opcon-xps", true
+	case 3101:
+		return "hp-pxpib", true
+	case 3102:
+		return "slslavemon", true
+	case 3103:
+		return "autocuesmi", true
+	case 3104:
+		return "autocuelog", true
+	case 3105:
+		return "cardbox", true
+	case 3106:
+		return "cardbox-http", true
+	case 3107:
+		return "business", true
+	case 3108:
+		return "geolocate", true
+	case 3109:
+		return "personnel", true
+	case 3110:
+		return "sim-control", true
+	case 3111:
+		return "wsynch", true
+	case 3112:
+		return "ksysguard", true
+	case 3113:
+		return "cs-auth-svr", true
+	case 3114:
+		return "ccmad", true
+	case 3115:
+		return "mctet-master", true
+	case 3116:
+		return "mctet-gateway", true
+	case 3117:
+		return "mctet-jserv", true
+	case 3118:
+		return "pkagent", true
+	case 3119:
+		return "d2000kernel", true
+	case 3120:
+		return "d2000webserver", true
+	case 3121:
+		return "pcmk-remote", true
+	case 3122:
+		return "vtr-emulator", true
+	case 3123:
+		return "edix", true
+	case 3124:
+		return "beacon-port", true
+	case 3125:
+		return "a13-an", true
+	case 3127:
+		return "ctx-bridge", true
+	case 3128:
+		return "ndl-aas", true
+	case 3129:
+		return "netport-id", true
+	case 3130:
+		return "icpv2", true
+	case 3131:
+		return "netbookmark", true
+	case 3132:
+		return "ms-rule-engine", true
+	case 3133:
+		return "prism-deploy", true
+	case 3134:
+		return "ecp", true
+	case 3135:
+		return "peerbook-port", true
+	case 3136:
+		return "grubd", true
+	case 3137:
+		return "rtnt-1", true
+	case 3138:
+		return "rtnt-2", true
+	case 3139:
+		return "incognitorv", true
+	case 3140:
+		return "ariliamulti", true
+	case 3141:
+		return "vmodem", true
+	case 3142:
+		return "rdc-wh-eos", true
+	case 3143:
+		return "seaview", true
+	case 3144:
+		return "tarantella", true
+	case 3145:
+		return "csi-lfap", true
+	case 3146:
+		return "bears-02", true
+	case 3147:
+		return "rfio", true
+	case 3148:
+		return "nm-game-admin", true
+	case 3149:
+		return "nm-game-server", true
+	case 3150:
+		return "nm-asses-admin", true
+	case 3151:
+		return "nm-assessor", true
+	case 3152:
+		return "feitianrockey", true
+	case 3153:
+		return "s8-client-port", true
+	case 3154:
+		return "ccmrmi", true
+	case 3155:
+		return "jpegmpeg", true
+	case 3156:
+		return "indura", true
+	case 3157:
+		return "e3consultants", true
+	case 3158:
+		return "stvp", true
+	case 3159:
+		return "navegaweb-port", true
+	case 3160:
+		return "tip-app-server", true
+	case 3161:
+		return "doc1lm", true
+	case 3162:
+		return "sflm", true
+	case 3163:
+		return "res-sap", true
+	case 3164:
+		return "imprs", true
+	case 3165:
+		return "newgenpay", true
+	case 3166:
+		return "sossecollector", true
+	case 3167:
+		return "nowcontact", true
+	case 3168:
+		return "poweronnud", true
+	case 3169:
+		return "serverview-as", true
+	case 3170:
+		return "serverview-asn", true
+	case 3171:
+		return "serverview-gf", true
+	case 3172:
+		return "serverview-rm", true
+	case 3173:
+		return "serverview-icc", true
+	case 3174:
+		return "armi-server", true
+	case 3175:
+		return "t1-e1-over-ip", true
+	case 3176:
+		return "ars-master", true
+	case 3177:
+		return "phonex-port", true
+	case 3178:
+		return "radclientport", true
+	case 3179:
+		return "h2gf-w-2m", true
+	case 3180:
+		return "mc-brk-srv", true
+	case 3181:
+		return "bmcpatrolagent", true
+	case 3182:
+		return "bmcpatrolrnvu", true
+	case 3183:
+		return "cops-tls", true
+	case 3184:
+		return "apogeex-port", true
+	case 3185:
+		return "smpppd", true
+	case 3186:
+		return "iiw-port", true
+	case 3187:
+		return "odi-port", true
+	case 3188:
+		return "brcm-comm-port", true
+	case 3189:
+		return "pcle-infex", true
+	case 3190:
+		return "csvr-proxy", true
+	case 3191:
+		return "csvr-sslproxy", true
+	case 3192:
+		return "firemonrcc", true
+	case 3193:
+		return "spandataport", true
+	case 3194:
+		return "magbind", true
+	case 3195:
+		return "ncu-1", true
+	case 3196:
+		return "ncu-2", true
+	case 3197:
+		return "embrace-dp-s", true
+	case 3198:
+		return "embrace-dp-c", true
+	case 3199:
+		return "dmod-workspace", true
+	case 3200:
+		return "tick-port", true
+	case 3201:
+		return "cpq-tasksmart", true
+	case 3202:
+		return "intraintra", true
+	case 3203:
+		return "netwatcher-mon", true
+	case 3204:
+		return "netwatcher-db", true
+	case 3205:
+		return "isns", true
+	case 3206:
+		return "ironmail", true
+	case 3207:
+		return "vx-auth-port", true
+	case 3208:
+		return "pfu-prcallback", true
+	case 3209:
+		return "netwkpathengine", true
+	case 3210:
+		return "flamenco-proxy", true
+	case 3211:
+		return "avsecuremgmt", true
+	case 3212:
+		return "surveyinst", true
+	case 3213:
+		return "neon24x7", true
+	case 3214:
+		return "jmq-daemon-1", true
+	case 3215:
+		return "jmq-daemon-2", true
+	case 3216:
+		return "ferrari-foam", true
+	case 3217:
+		return "unite", true
+	case 3218:
+		return "smartpackets", true
+	case 3219:
+		return "wms-messenger", true
+	case 3220:
+		return "xnm-ssl", true
+	case 3221:
+		return "xnm-clear-text", true
+	case 3222:
+		return "glbp", true
+	case 3223:
+		return "digivote", true
+	case 3224:
+		return "aes-discovery", true
+	case 3225:
+		return "fcip-port", true
+	case 3226:
+		return "isi-irp", true
+	case 3227:
+		return "dwnmshttp", true
+	case 3228:
+		return "dwmsgserver", true
+	case 3229:
+		return "global-cd-port", true
+	case 3230:
+		return "sftdst-port", true
+	case 3231:
+		return "vidigo", true
+	case 3232:
+		return "mdtp", true
+	case 3233:
+		return "whisker", true
+	case 3234:
+		return "alchemy", true
+	case 3235:
+		return "mdap-port", true
+	case 3236:
+		return "apparenet-ts", true
+	case 3237:
+		return "apparenet-tps", true
+	case 3238:
+		return "apparenet-as", true
+	case 3239:
+		return "apparenet-ui", true
+	case 3240:
+		return "triomotion", true
+	case 3241:
+		return "sysorb", true
+	case 3242:
+		return "sdp-id-port", true
+	case 3243:
+		return "timelot", true
+	case 3244:
+		return "onesaf", true
+	case 3245:
+		return "vieo-fe", true
+	case 3246:
+		return "dvt-system", true
+	case 3247:
+		return "dvt-data", true
+	case 3248:
+		return "procos-lm", true
+	case 3249:
+		return "ssp", true
+	case 3250:
+		return "hicp", true
+	case 3251:
+		return "sysscanner", true
+	case 3252:
+		return "dhe", true
+	case 3253:
+		return "pda-data", true
+	case 3254:
+		return "pda-sys", true
+	case 3255:
+		return "semaphore", true
+	case 3256:
+		return "cpqrpm-agent", true
+	case 3257:
+		return "cpqrpm-server", true
+	case 3258:
+		return "ivecon-port", true
+	case 3259:
+		return "epncdp2", true
+	case 3260:
+		return "iscsi-target", true
+	case 3261:
+		return "winshadow", true
+	case 3262:
+		return "necp", true
+	case 3263:
+		return "ecolor-imager", true
+	case 3264:
+		return "ccmail", true
+	case 3265:
+		return "altav-tunnel", true
+	case 3266:
+		return "ns-cfg-server", true
+	case 3267:
+		return "ibm-dial-out", true
+	case 3268:
+		return "msft-gc", true
+	case 3269:
+		return "msft-gc-ssl", true
+	case 3270:
+		return "verismart", true
+	case 3271:
+		return "csoft-prev", true
+	case 3272:
+		return "user-manager", true
+	case 3273:
+		return "sxmp", true
+	case 3274:
+		return "ordinox-server", true
+	case 3275:
+		return "samd", true
+	case 3276:
+		return "maxim-asics", true
+	case 3277:
+		return "awg-proxy", true
+	case 3278:
+		return "lkcmserver", true
+	case 3279:
+		return "admind", true
+	case 3280:
+		return "vs-server", true
+	case 3281:
+		return "sysopt", true
+	case 3282:
+		return "datusorb", true
+	case 3283:
+		return "Apple Remote Desktop (Net Assistant)", true
+	case 3284:
+		return "4talk", true
+	case 3285:
+		return "plato", true
+	case 3286:
+		return "e-net", true
+	case 3287:
+		return "directvdata", true
+	case 3288:
+		return "cops", true
+	case 3289:
+		return "enpc", true
+	case 3290:
+		return "caps-lm", true
+	case 3291:
+		return "sah-lm", true
+	case 3292:
+		return "cart-o-rama", true
+	case 3293:
+		return "fg-fps", true
+	case 3294:
+		return "fg-gip", true
+	case 3295:
+		return "dyniplookup", true
+	case 3296:
+		return "rib-slm", true
+	case 3297:
+		return "cytel-lm", true
+	case 3298:
+		return "deskview", true
+	case 3299:
+		return "pdrncs", true
+	case 3300:
+		return "ceph", true
+	case 3301:
+		return "tarantool", true
+	case 3302:
+		return "mcs-fastmail", true
+	case 3303:
+		return "opsession-clnt", true
+	case 3304:
+		return "opsession-srvr", true
+	case 3305:
+		return "odette-ftp", true
+	case 3306:
+		return "mysql", true
+	case 3307:
+		return "opsession-prxy", true
+	case 3308:
+		return "tns-server", true
+	case 3309:
+		return "tns-adv", true
+	case 3310:
+		return "dyna-access", true
+	case 3311:
+		return "mcns-tel-ret", true
+	case 3312:
+		return "appman-server", true
+	case 3313:
+		return "uorb", true
+	case 3314:
+		return "uohost", true
+	case 3315:
+		return "cdid", true
+	case 3316:
+		return "aicc-cmi", true
+	case 3317:
+		return "vsaiport", true
+	case 3318:
+		return "ssrip", true
+	case 3319:
+		return "sdt-lmd", true
+	case 3320:
+		return "officelink2000", true
+	case 3321:
+		return "vnsstr", true
+	case 3326:
+		return "sftu", true
+	case 3327:
+		return "bbars", true
+	case 3328:
+		return "egptlm", true
+	case 3329:
+		return "hp-device-disc", true
+	case 3330:
+		return "mcs-calypsoicf", true
+	case 3331:
+		return "mcs-messaging", true
+	case 3332:
+		return "mcs-mailsvr", true
+	case 3333:
+		return "dec-notes", true
+	case 3334:
+		return "directv-web", true
+	case 3335:
+		return "directv-soft", true
+	case 3336:
+		return "directv-tick", true
+	case 3337:
+		return "directv-catlg", true
+	case 3338:
+		return "anet-b", true
+	case 3339:
+		return "anet-l", true
+	case 3340:
+		return "anet-m", true
+	case 3341:
+		return "anet-h", true
+	case 3342:
+		return "webtie", true
+	case 3343:
+		return "ms-cluster-net", true
+	case 3344:
+		return "bnt-manager", true
+	case 3345:
+		return "influence", true
+	case 3346:
+		return "trnsprntproxy", true
+	case 3347:
+		return "phoenix-rpc", true
+	case 3348:
+		return "pangolin-laser", true
+	case 3349:
+		return "chevinservices", true
+	case 3350:
+		return "findviatv", true
+	case 3351:
+		return "btrieve", true
+	case 3352:
+		return "ssql", true
+	case 3353:
+		return "fatpipe", true
+	case 3354:
+		return "suitjd", true
+	case 3355:
+		return "ordinox-dbase", true
+	case 3356:
+		return "upnotifyps", true
+	case 3357:
+		return "adtech-test", true
+	case 3358:
+		return "mpsysrmsvr", true
+	case 3359:
+		return "wg-netforce", true
+	case 3360:
+		return "kv-server", true
+	case 3361:
+		return "kv-agent", true
+	case 3362:
+		return "dj-ilm", true
+	case 3363:
+		return "nati-vi-server", true
+	case 3364:
+		return "creativeserver", true
+	case 3365:
+		return "contentserver", true
+	case 3366:
+		return "creativepartnr", true
+	case 3372:
+		return "tip2", true
+	case 3373:
+		return "lavenir-lm", true
+	case 3374:
+		return "cluster-disc", true
+	case 3375:
+		return "vsnm-agent", true
+	case 3376:
+		return "cdbroker", true
+	case 3377:
+		return "cogsys-lm", true
+	case 3378:
+		return "wsicopy", true
+	case 3379:
+		return "socorfs", true
+	case 3380:
+		return "sns-channels", true
+	case 3381:
+		return "geneous", true
+	case 3382:
+		return "fujitsu-neat", true
+	case 3383:
+		return "esp-lm", true
+	case 3384:
+		return "hp-clic", true
+	case 3385:
+		return "qnxnetman", true
+	case 3386:
+		return "gprs-data", true
+	case 3387:
+		return "backroomnet", true
+	case 3388:
+		return "cbserver", true
+	case 3389:
+		return "ms-wbt-server", true
+	case 3390:
+		return "dsc", true
+	case 3391:
+		return "savant", true
+	case 3392:
+		return "efi-lm", true
+	case 3393:
+		return "d2k-tapestry1", true
+	case 3394:
+		return "d2k-tapestry2", true
+	case 3395:
+		return "dyna-lm", true
+	case 3396:
+		return "printer-agent", true
+	case 3397:
+		return "cloanto-lm", true
+	case 3398:
+		return "mercantile", true
+	case 3399:
+		return "csms", true
+	case 3400:
+		return "csms2", true
+	case 3401:
+		return "filecast", true
+	case 3402:
+		return "fxaengine-net", true
+	case 3405:
+		return "nokia-ann-ch1", true
+	case 3406:
+		return "nokia-ann-ch2", true
+	case 3407:
+		return "ldap-admin", true
+	case 3408:
+		return "BESApi", true
+	case 3409:
+		return "networklens", true
+	case 3410:
+		return "networklenss", true
+	case 3411:
+		return "biolink-auth", true
+	case 3412:
+		return "xmlblaster", true
+	case 3413:
+		return "svnet", true
+	case 3414:
+		return "wip-port", true
+	case 3415:
+		return "bcinameservice", true
+	case 3416:
+		return "commandport", true
+	case 3417:
+		return "csvr", true
+	case 3418:
+		return "rnmap", true
+	case 3419:
+		return "softaudit", true
+	case 3420:
+		return "ifcp-port", true
+	case 3421:
+		return "bmap", true
+	case 3422:
+		return "rusb-sys-port", true
+	case 3423:
+		return "xtrm", true
+	case 3424:
+		return "xtrms", true
+	case 3425:
+		return "agps-port", true
+	case 3426:
+		return "arkivio", true
+	case 3427:
+		return "websphere-snmp", true
+	case 3428:
+		return "twcss", true
+	case 3429:
+		return "gcsp", true
+	case 3430:
+		return "ssdispatch", true
+	case 3431:
+		return "ndl-als", true
+	case 3432:
+		return "osdcp", true
+	case 3433:
+		return "opnet-smp", true
+	case 3434:
+		return "opencm", true
+	case 3435:
+		return "pacom", true
+	case 3436:
+		return "gc-config", true
+	case 3437:
+		return "autocueds", true
+	case 3438:
+		return "spiral-admin", true
+	case 3439:
+		return "hri-port", true
+	case 3440:
+		return "ans-console", true
+	case 3441:
+		return "connect-client", true
+	case 3442:
+		return "connect-server", true
+	case 3443:
+		return "ov-nnm-websrv", true
+	case 3444:
+		return "denali-server", true
+	case 3445:
+		return "monp", true
+	case 3446:
+		return "3comfaxrpc", true
+	case 3447:
+		return "directnet", true
+	case 3448:
+		return "dnc-port", true
+	case 3449:
+		return "hotu-chat", true
+	case 3450:
+		return "castorproxy", true
+	case 3451:
+		return "asam", true
+	case 3452:
+		return "sabp-signal", true
+	case 3453:
+		return "pscupd", true
+	case 3454:
+		return "mira", true
+	case 3455:
+		return "prsvp", true
+	case 3456:
+		return "vat", true
+	case 3457:
+		return "vat-control", true
+	case 3458:
+		return "d3winosfi", true
+	case 3459:
+		return "integral", true
+	case 3460:
+		return "edm-manager", true
+	case 3461:
+		return "edm-stager", true
+	case 3462:
+		return "edm-std-notify", true
+	case 3463:
+		return "edm-adm-notify", true
+	case 3464:
+		return "edm-mgr-sync", true
+	case 3465:
+		return "edm-mgr-cntrl", true
+	case 3466:
+		return "workflow", true
+	case 3467:
+		return "rcst", true
+	case 3468:
+		return "ttcmremotectrl", true
+	case 3469:
+		return "pluribus", true
+	case 3470:
+		return "jt400", true
+	case 3471:
+		return "jt400-ssl", true
+	case 3472:
+		return "jaugsremotec-1", true
+	case 3473:
+		return "jaugsremotec-2", true
+	case 3474:
+		return "ttntspauto", true
+	case 3475:
+		return "genisar-port", true
+	case 3476:
+		return "nppmp", true
+	case 3477:
+		return "ecomm", true
+	case 3478:
+		return "stun", true
+	case 3479:
+		return "twrpc", true
+	case 3480:
+		return "plethora", true
+	case 3481:
+		return "cleanerliverc", true
+	case 3482:
+		return "vulture", true
+	case 3483:
+		return "slim-devices", true
+	case 3484:
+		return "gbs-stp", true
+	case 3485:
+		return "celatalk", true
+	case 3486:
+		return "ifsf-hb-port", true
+	case 3487:
+		return "ltctcp", true
+	case 3488:
+		return "fs-rh-srv", true
+	case 3489:
+		return "dtp-dia", true
+	case 3490:
+		return "colubris", true
+	case 3491:
+		return "swr-port", true
+	case 3492:
+		return "tvdumtray-port", true
+	case 3493:
+		return "nut", true
+	case 3494:
+		return "ibm3494", true
+	case 3495:
+		return "seclayer-tcp", true
+	case 3496:
+		return "seclayer-tls", true
+	case 3497:
+		return "ipether232port", true
+	case 3498:
+		return "dashpas-port", true
+	case 3499:
+		return "sccip-media", true
+	case 3500:
+		return "rtmp-port", true
+	case 3501:
+		return "isoft-p2p", true
+	case 3502:
+		return "avinstalldisc", true
+	case 3503:
+		return "lsp-ping", true
+	case 3504:
+		return "ironstorm", true
+	case 3505:
+		return "ccmcomm", true
+	case 3506:
+		return "apc-3506", true
+	case 3507:
+		return "nesh-broker", true
+	case 3508:
+		return "interactionweb", true
+	case 3509:
+		return "vt-ssl", true
+	case 3510:
+		return "xss-port", true
+	case 3511:
+		return "webmail-2", true
+	case 3512:
+		return "aztec", true
+	case 3513:
+		return "arcpd", true
+	case 3514:
+		return "must-p2p", true
+	case 3515:
+		return "must-backplane", true
+	case 3516:
+		return "smartcard-port", true
+	case 3517:
+		return "802-11-iapp", true
+	case 3518:
+		return "artifact-msg", true
+	case 3519:
+		return "nvmsgd", true
+	case 3520:
+		return "galileolog", true
+	case 3521:
+		return "mc3ss", true
+	case 3522:
+		return "nssocketport", true
+	case 3523:
+		return "odeumservlink", true
+	case 3524:
+		return "ecmport", true
+	case 3525:
+		return "eisport", true
+	case 3526:
+		return "starquiz-port", true
+	case 3527:
+		return "beserver-msg-q", true
+	case 3528:
+		return "jboss-iiop", true
+	case 3529:
+		return "jboss-iiop-ssl", true
+	case 3530:
+		return "gf", true
+	case 3531:
+		return "joltid", true
+	case 3532:
+		return "raven-rmp", true
+	case 3533:
+		return "raven-rdp", true
+	case 3534:
+		return "urld-port", true
+	case 3535:
+		return "ms-la", true
+	case 3536:
+		return "snac", true
+	case 3537:
+		return "ni-visa-remote", true
+	case 3538:
+		return "ibm-diradm", true
+	case 3539:
+		return "ibm-diradm-ssl", true
+	case 3540:
+		return "pnrp-port", true
+	case 3541:
+		return "voispeed-port", true
+	case 3542:
+		return "hacl-monitor", true
+	case 3543:
+		return "qftest-lookup", true
+	case 3544:
+		return "teredo", true
+	case 3545:
+		return "camac", true
+	case 3547:
+		return "symantec-sim", true
+	case 3548:
+		return "interworld", true
+	case 3549:
+		return "tellumat-nms", true
+	case 3550:
+		return "ssmpp", true
+	case 3551:
+		return "apcupsd", true
+	case 3552:
+		return "taserver", true
+	case 3553:
+		return "rbr-discovery", true
+	case 3554:
+		return "questnotify", true
+	case 3555:
+		return "razor", true
+	case 3556:
+		return "sky-transport", true
+	case 3557:
+		return "personalos-001", true
+	case 3558:
+		return "mcp-port", true
+	case 3559:
+		return "cctv-port", true
+	case 3560:
+		return "iniserve-port", true
+	case 3561:
+		return "bmc-onekey", true
+	case 3562:
+		return "sdbproxy", true
+	case 3563:
+		return "watcomdebug", true
+	case 3564:
+		return "esimport", true
+	case 3565:
+		return "m2pa", true
+	case 3566:
+		return "quest-data-hub", true
+	case 3567:
+		return "dof-eps", true
+	case 3568:
+		return "dof-tunnel-sec", true
+	case 3569:
+		return "mbg-ctrl", true
+	case 3570:
+		return "mccwebsvr-port", true
+	case 3571:
+		return "megardsvr-port", true
+	case 3572:
+		return "megaregsvrport", true
+	case 3573:
+		return "tag-ups-1", true
+	case 3574:
+		return "dmaf-server", true
+	case 3575:
+		return "ccm-port", true
+	case 3576:
+		return "cmc-port", true
+	case 3577:
+		return "config-port", true
+	case 3578:
+		return "data-port", true
+	case 3579:
+		return "ttat3lb", true
+	case 3580:
+		return "nati-svrloc", true
+	case 3581:
+		return "kfxaclicensing", true
+	case 3582:
+		return "press", true
+	case 3583:
+		return "canex-watch", true
+	case 3584:
+		return "u-dbap", true
+	case 3585:
+		return "emprise-lls", true
+	case 3586:
+		return "emprise-lsc", true
+	case 3587:
+		return "p2pgroup", true
+	case 3588:
+		return "sentinel", true
+	case 3589:
+		return "isomair", true
+	case 3590:
+		return "wv-csp-sms", true
+	case 3591:
+		return "gtrack-server", true
+	case 3592:
+		return "gtrack-ne", true
+	case 3593:
+		return "bpmd", true
+	case 3594:
+		return "mediaspace", true
+	case 3595:
+		return "shareapp", true
+	case 3596:
+		return "iw-mmogame", true
+	case 3597:
+		return "a14", true
+	case 3598:
+		return "a15", true
+	case 3599:
+		return "quasar-server", true
+	case 3600:
+		return "trap-daemon", true
+	case 3601:
+		return "visinet-gui", true
+	case 3602:
+		return "infiniswitchcl", true
+	case 3603:
+		return "int-rcv-cntrl", true
+	case 3604:
+		return "bmc-jmx-port", true
+	case 3605:
+		return "comcam-io", true
+	case 3606:
+		return "splitlock", true
+	case 3607:
+		return "precise-i3", true
+	case 3608:
+		return "trendchip-dcp", true
+	case 3609:
+		return "cpdi-pidas-cm", true
+	case 3610:
+		return "echonet", true
+	case 3611:
+		return "six-degrees", true
+	case 3612:
+		return "dataprotector", true
+	case 3613:
+		return "alaris-disc", true
+	case 3614:
+		return "sigma-port", true
+	case 3615:
+		return "start-network", true
+	case 3616:
+		return "cd3o-protocol", true
+	case 3617:
+		return "sharp-server", true
+	case 3618:
+		return "aairnet-1", true
+	case 3619:
+		return "aairnet-2", true
+	case 3620:
+		return "ep-pcp", true
+	case 3621:
+		return "ep-nsp", true
+	case 3622:
+		return "ff-lr-port", true
+	case 3623:
+		return "haipe-discover", true
+	case 3624:
+		return "dist-upgrade", true
+	case 3625:
+		return "volley", true
+	case 3626:
+		return "bvcdaemon-port", true
+	case 3627:
+		return "jamserverport", true
+	case 3628:
+		return "ept-machine", true
+	case 3629:
+		return "escvpnet", true
+	case 3630:
+		return "cs-remote-db", true
+	case 3631:
+		return "cs-services", true
+	case 3632:
+		return "distcc", true
+	case 3633:
+		return "wacp", true
+	case 3634:
+		return "hlibmgr", true
+	case 3635:
+		return "sdo", true
+	case 3636:
+		return "servistaitsm", true
+	case 3637:
+		return "scservp", true
+	case 3638:
+		return "ehp-backup", true
+	case 3639:
+		return "xap-ha", true
+	case 3640:
+		return "netplay-port1", true
+	case 3641:
+		return "netplay-port2", true
+	case 3642:
+		return "juxml-port", true
+	case 3643:
+		return "audiojuggler", true
+	case 3644:
+		return "ssowatch", true
+	case 3645:
+		return "cyc", true
+	case 3646:
+		return "xss-srv-port", true
+	case 3647:
+		return "splitlock-gw", true
+	case 3648:
+		return "fjcp", true
+	case 3649:
+		return "nmmp", true
+	case 3650:
+		return "prismiq-plugin", true
+	case 3651:
+		return "xrpc-registry", true
+	case 3652:
+		return "vxcrnbuport", true
+	case 3653:
+		return "tsp", true
+	case 3654:
+		return "vaprtm", true
+	case 3655:
+		return "abatemgr", true
+	case 3656:
+		return "abatjss", true
+	case 3657:
+		return "immedianet-bcn", true
+	case 3658:
+		return "ps-ams", true
+	case 3659:
+		return "apple-sasl", true
+	case 3660:
+		return "can-nds-ssl", true
+	case 3661:
+		return "can-ferret-ssl", true
+	case 3662:
+		return "pserver", true
+	case 3663:
+		return "dtp", true
+	case 3664:
+		return "ups-engine", true
+	case 3665:
+		return "ent-engine", true
+	case 3666:
+		return "eserver-pap", true
+	case 3667:
+		return "infoexch", true
+	case 3668:
+		return "dell-rm-port", true
+	case 3669:
+		return "casanswmgmt", true
+	case 3670:
+		return "smile", true
+	case 3671:
+		return "efcp", true
+	case 3672:
+		return "lispworks-orb", true
+	case 3673:
+		return "mediavault-gui", true
+	case 3674:
+		return "wininstall-ipc", true
+	case 3675:
+		return "calltrax", true
+	case 3676:
+		return "va-pacbase", true
+	case 3677:
+		return "roverlog", true
+	case 3678:
+		return "ipr-dglt", true
+	case 3679:
+		return "Escale (Newton Dock)", true
+	case 3680:
+		return "npds-tracker", true
+	case 3681:
+		return "bts-x73", true
+	case 3682:
+		return "cas-mapi", true
+	case 3683:
+		return "bmc-ea", true
+	case 3684:
+		return "faxstfx-port", true
+	case 3685:
+		return "dsx-agent", true
+	case 3686:
+		return "tnmpv2", true
+	case 3687:
+		return "simple-push", true
+	case 3688:
+		return "simple-push-s", true
+	case 3689:
+		return "daap", true
+	case 3690:
+		return "svn", true
+	case 3691:
+		return "magaya-network", true
+	case 3692:
+		return "intelsync", true
+	case 3693:
+		return "easl", true
+	case 3695:
+		return "bmc-data-coll", true
+	case 3696:
+		return "telnetcpcd", true
+	case 3697:
+		return "nw-license", true
+	case 3698:
+		return "sagectlpanel", true
+	case 3699:
+		return "kpn-icw", true
+	case 3700:
+		return "lrs-paging", true
+	case 3701:
+		return "netcelera", true
+	case 3702:
+		return "ws-discovery", true
+	case 3703:
+		return "adobeserver-3", true
+	case 3704:
+		return "adobeserver-4", true
+	case 3705:
+		return "adobeserver-5", true
+	case 3706:
+		return "rt-event", true
+	case 3707:
+		return "rt-event-s", true
+	case 3708:
+		return "sun-as-iiops", true
+	case 3709:
+		return "ca-idms", true
+	case 3710:
+		return "portgate-auth", true
+	case 3711:
+		return "edb-server2", true
+	case 3712:
+		return "sentinel-ent", true
+	case 3713:
+		return "tftps", true
+	case 3714:
+		return "delos-dms", true
+	case 3715:
+		return "anoto-rendezv", true
+	case 3716:
+		return "wv-csp-sms-cir", true
+	case 3717:
+		return "wv-csp-udp-cir", true
+	case 3718:
+		return "opus-services", true
+	case 3719:
+		return "itelserverport", true
+	case 3720:
+		return "ufastro-instr", true
+	case 3721:
+		return "xsync", true
+	case 3722:
+		return "xserveraid", true
+	case 3723:
+		return "sychrond", true
+	case 3724:
+		return "blizwow", true
+	case 3725:
+		return "na-er-tip", true
+	case 3726:
+		return "array-manager", true
+	case 3727:
+		return "e-mdu", true
+	case 3728:
+		return "e-woa", true
+	case 3729:
+		return "fksp-audit", true
+	case 3730:
+		return "client-ctrl", true
+	case 3731:
+		return "smap", true
+	case 3732:
+		return "m-wnn", true
+	case 3733:
+		return "multip-msg", true
+	case 3734:
+		return "synel-data", true
+	case 3735:
+		return "pwdis", true
+	case 3736:
+		return "rs-rmi", true
+	case 3737:
+		return "xpanel", true
+	case 3738:
+		return "versatalk", true
+	case 3739:
+		return "launchbird-lm", true
+	case 3740:
+		return "heartbeat", true
+	case 3741:
+		return "wysdma", true
+	case 3742:
+		return "cst-port", true
+	case 3743:
+		return "ipcs-command", true
+	case 3744:
+		return "sasg", true
+	case 3745:
+		return "gw-call-port", true
+	case 3746:
+		return "linktest", true
+	case 3747:
+		return "linktest-s", true
+	case 3748:
+		return "webdata", true
+	case 3749:
+		return "cimtrak", true
+	case 3750:
+		return "cbos-ip-port", true
+	case 3751:
+		return "gprs-cube", true
+	case 3752:
+		return "vipremoteagent", true
+	case 3753:
+		return "nattyserver", true
+	case 3754:
+		return "timestenbroker", true
+	case 3755:
+		return "sas-remote-hlp", true
+	case 3756:
+		return "canon-capt", true
+	case 3757:
+		return "grf-port", true
+	case 3758:
+		return "apw-registry", true
+	case 3759:
+		return "exapt-lmgr", true
+	case 3760:
+		return "adtempusclient", true
+	case 3761:
+		return "gsakmp", true
+	case 3762:
+		return "gbs-smp", true
+	case 3763:
+		return "xo-wave", true
+	case 3764:
+		return "mni-prot-rout", true
+	case 3765:
+		return "rtraceroute", true
+	case 3766:
+		return "sitewatch-s", true
+	case 3767:
+		return "listmgr-port", true
+	case 3768:
+		return "rblcheckd", true
+	case 3769:
+		return "haipe-otnk", true
+	case 3770:
+		return "cindycollab", true
+	case 3771:
+		return "paging-port", true
+	case 3772:
+		return "ctp", true
+	case 3773:
+		return "ctdhercules", true
+	case 3774:
+		return "zicom", true
+	case 3775:
+		return "ispmmgr", true
+	case 3776:
+		return "dvcprov-port", true
+	case 3777:
+		return "jibe-eb", true
+	case 3778:
+		return "c-h-it-port", true
+	case 3779:
+		return "cognima", true
+	case 3780:
+		return "nnp", true
+	case 3781:
+		return "abcvoice-port", true
+	case 3782:
+		return "iso-tp0s", true
+	case 3783:
+		return "bim-pem", true
+	case 3784:
+		return "bfd-control", true
+	case 3785:
+		return "bfd-echo", true
+	case 3786:
+		return "upstriggervsw", true
+	case 3787:
+		return "fintrx", true
+	case 3788:
+		return "isrp-port", true
+	case 3789:
+		return "remotedeploy", true
+	case 3790:
+		return "quickbooksrds", true
+	case 3791:
+		return "tvnetworkvideo", true
+	case 3792:
+		return "sitewatch", true
+	case 3793:
+		return "dcsoftware", true
+	case 3794:
+		return "jaus", true
+	case 3795:
+		return "myblast", true
+	case 3796:
+		return "spw-dialer", true
+	case 3797:
+		return "idps", true
+	case 3798:
+		return "minilock", true
+	case 3799:
+		return "radius-dynauth", true
+	case 3800:
+		return "pwgpsi", true
+	case 3801:
+		return "ibm-mgr", true
+	case 3802:
+		return "vhd", true
+	case 3803:
+		return "soniqsync", true
+	case 3804:
+		return "iqnet-port", true
+	case 3805:
+		return "tcpdataserver", true
+	case 3806:
+		return "wsmlb", true
+	case 3807:
+		return "spugna", true
+	case 3808:
+		return "sun-as-iiops-ca", true
+	case 3809:
+		return "apocd", true
+	case 3810:
+		return "wlanauth", true
+	case 3811:
+		return "amp", true
+	case 3812:
+		return "neto-wol-server", true
+	case 3813:
+		return "rap-ip", true
+	case 3814:
+		return "neto-dcs", true
+	case 3815:
+		return "lansurveyorxml", true
+	case 3816:
+		return "sunlps-http", true
+	case 3817:
+		return "tapeware", true
+	case 3818:
+		return "crinis-hb", true
+	case 3819:
+		return "epl-slp", true
+	case 3820:
+		return "scp", true
+	case 3821:
+		return "pmcp", true
+	case 3822:
+		return "acp-discovery", true
+	case 3823:
+		return "acp-conduit", true
+	case 3824:
+		return "acp-policy", true
+	case 3825:
+		return "ffserver", true
+	case 3826:
+		return "warmux", true
+	case 3827:
+		return "netmpi", true
+	case 3828:
+		return "neteh", true
+	case 3829:
+		return "neteh-ext", true
+	case 3830:
+		return "cernsysmgmtagt", true
+	case 3831:
+		return "dvapps", true
+	case 3832:
+		return "xxnetserver", true
+	case 3833:
+		return "aipn-auth", true
+	case 3834:
+		return "spectardata", true
+	case 3835:
+		return "spectardb", true
+	case 3836:
+		return "markem-dcp", true
+	case 3837:
+		return "mkm-discovery", true
+	case 3838:
+		return "sos", true
+	case 3839:
+		return "amx-rms", true
+	case 3840:
+		return "flirtmitmir", true
+	case 3841:
+		return "shiprush-db-svr", true
+	case 3842:
+		return "nhci", true
+	case 3843:
+		return "quest-agent", true
+	case 3844:
+		return "rnm", true
+	case 3845:
+		return "v-one-spp", true
+	case 3846:
+		return "an-pcp", true
+	case 3847:
+		return "msfw-control", true
+	case 3848:
+		return "item", true
+	case 3849:
+		return "spw-dnspreload", true
+	case 3850:
+		return "qtms-bootstrap", true
+	case 3851:
+		return "spectraport", true
+	case 3852:
+		return "sse-app-config", true
+	case 3853:
+		return "sscan", true
+	case 3854:
+		return "stryker-com", true
+	case 3855:
+		return "opentrac", true
+	case 3856:
+		return "informer", true
+	case 3857:
+		return "trap-port", true
+	case 3858:
+		return "trap-port-mom", true
+	case 3859:
+		return "nav-port", true
+	case 3860:
+		return "sasp", true
+	case 3861:
+		return "winshadow-hd", true
+	case 3862:
+		return "giga-pocket", true
+	case 3863:
+		return "asap-tcp", true
+	case 3864:
+		return "asap-tcp-tls", true
+	case 3865:
+		return "xpl", true
+	case 3866:
+		return "dzdaemon", true
+	case 3867:
+		return "dzoglserver", true
+	case 3868:
+		return "diameter", true
+	case 3869:
+		return "ovsam-mgmt", true
+	case 3870:
+		return "ovsam-d-agent", true
+	case 3871:
+		return "avocent-adsap", true
+	case 3872:
+		return "oem-agent", true
+	case 3873:
+		return "fagordnc", true
+	case 3874:
+		return "sixxsconfig", true
+	case 3875:
+		return "pnbscada", true
+	case 3876:
+		return "dl-agent", true
+	case 3877:
+		return "xmpcr-interface", true
+	case 3878:
+		return "fotogcad", true
+	case 3879:
+		return "appss-lm", true
+	case 3880:
+		return "igrs", true
+	case 3881:
+		return "idac", true
+	case 3882:
+		return "msdts1", true
+	case 3883:
+		return "vrpn", true
+	case 3884:
+		return "softrack-meter", true
+	case 3885:
+		return "topflow-ssl", true
+	case 3886:
+		return "nei-management", true
+	case 3887:
+		return "ciphire-data", true
+	case 3888:
+		return "ciphire-serv", true
+	case 3889:
+		return "dandv-tester", true
+	case 3890:
+		return "ndsconnect", true
+	case 3891:
+		return "rtc-pm-port", true
+	case 3892:
+		return "pcc-image-port", true
+	case 3893:
+		return "cgi-starapi", true
+	case 3894:
+		return "syam-agent", true
+	case 3895:
+		return "syam-smc", true
+	case 3896:
+		return "sdo-tls", true
+	case 3897:
+		return "sdo-ssh", true
+	case 3898:
+		return "senip", true
+	case 3899:
+		return "itv-control", true
+	case 3900:
+		return "udt-os", true
+	case 3901:
+		return "nimsh", true
+	case 3902:
+		return "nimaux", true
+	case 3903:
+		return "charsetmgr", true
+	case 3904:
+		return "omnilink-port", true
+	case 3905:
+		return "mupdate", true
+	case 3906:
+		return "topovista-data", true
+	case 3907:
+		return "imoguia-port", true
+	case 3908:
+		return "hppronetman", true
+	case 3909:
+		return "surfcontrolcpa", true
+	case 3910:
+		return "prnrequest", true
+	case 3911:
+		return "prnstatus", true
+	case 3912:
+		return "gbmt-stars", true
+	case 3913:
+		return "listcrt-port", true
+	case 3914:
+		return "listcrt-port-2", true
+	case 3915:
+		return "agcat", true
+	case 3916:
+		return "wysdmc", true
+	case 3917:
+		return "aftmux", true
+	case 3918:
+		return "pktcablemmcops", true
+	case 3919:
+		return "hyperip", true
+	case 3920:
+		return "exasoftport1", true
+	case 3921:
+		return "herodotus-net", true
+	case 3922:
+		return "sor-update", true
+	case 3923:
+		return "symb-sb-port", true
+	case 3924:
+		return "mpl-gprs-port", true
+	case 3925:
+		return "zmp", true
+	case 3926:
+		return "winport", true
+	case 3927:
+		return "natdataservice", true
+	case 3928:
+		return "netboot-pxe", true
+	case 3929:
+		return "smauth-port", true
+	case 3930:
+		return "syam-webserver", true
+	case 3931:
+		return "msr-plugin-port", true
+	case 3932:
+		return "dyn-site", true
+	case 3933:
+		return "plbserve-port", true
+	case 3934:
+		return "sunfm-port", true
+	case 3935:
+		return "sdp-portmapper", true
+	case 3936:
+		return "mailprox", true
+	case 3937:
+		return "dvbservdsc", true
+	case 3938:
+		return "dbcontrol-agent", true
+	case 3939:
+		return "aamp", true
+	case 3940:
+		return "xecp-node", true
+	case 3941:
+		return "homeportal-web", true
+	case 3942:
+		return "srdp", true
+	case 3943:
+		return "tig", true
+	case 3944:
+		return "sops", true
+	case 3945:
+		return "emcads", true
+	case 3946:
+		return "backupedge", true
+	case 3947:
+		return "ccp", true
+	case 3948:
+		return "apdap", true
+	case 3949:
+		return "drip", true
+	case 3950:
+		return "namemunge", true
+	case 3951:
+		return "pwgippfax", true
+	case 3952:
+		return "i3-sessionmgr", true
+	case 3953:
+		return "xmlink-connect", true
+	case 3954:
+		return "adrep", true
+	case 3955:
+		return "p2pcommunity", true
+	case 3956:
+		return "gvcp", true
+	case 3957:
+		return "mqe-broker", true
+	case 3958:
+		return "mqe-agent", true
+	case 3959:
+		return "treehopper", true
+	case 3960:
+		return "bess", true
+	case 3961:
+		return "proaxess", true
+	case 3962:
+		return "sbi-agent", true
+	case 3963:
+		return "thrp", true
+	case 3964:
+		return "sasggprs", true
+	case 3965:
+		return "ati-ip-to-ncpe", true
+	case 3966:
+		return "bflckmgr", true
+	case 3967:
+		return "ppsms", true
+	case 3968:
+		return "ianywhere-dbns", true
+	case 3969:
+		return "landmarks", true
+	case 3970:
+		return "lanrevagent", true
+	case 3971:
+		return "lanrevserver", true
+	case 3972:
+		return "iconp", true
+	case 3973:
+		return "progistics", true
+	case 3974:
+		return "xk22", true
+	case 3975:
+		return "airshot", true
+	case 3976:
+		return "opswagent", true
+	case 3977:
+		return "opswmanager", true
+	case 3978:
+		return "secure-cfg-svr", true
+	case 3979:
+		return "smwan", true
+	case 3981:
+		return "starfish", true
+	case 3982:
+		return "eis", true
+	case 3983:
+		return "eisp", true
+	case 3984:
+		return "mapper-nodemgr", true
+	case 3985:
+		return "mapper-mapethd", true
+	case 3986:
+		return "mapper-ws-ethd", true
+	case 3987:
+		return "centerline", true
+	case 3988:
+		return "dcs-config", true
+	case 3989:
+		return "bv-queryengine", true
+	case 3990:
+		return "bv-is", true
+	case 3991:
+		return "bv-smcsrv", true
+	case 3992:
+		return "bv-ds", true
+	case 3993:
+		return "bv-agent", true
+	case 3995:
+		return "iss-mgmt-ssl", true
+	case 3996:
+		return "abcsoftware", true
+	case 3997:
+		return "agentsease-db", true
+	case 3998:
+		return "dnx", true
+	case 3999:
+		return "nvcnet", true
+	case 4000:
+		return "terabase", true
+	case 4001:
+		return "newoak", true
+	case 4002:
+		return "pxc-spvr-ft", true
+	case 4003:
+		return "pxc-splr-ft", true
+	case 4004:
+		return "pxc-roid", true
+	case 4005:
+		return "pxc-pin", true
+	case 4006:
+		return "pxc-spvr", true
+	case 4007:
+		return "pxc-splr", true
+	case 4008:
+		return "netcheque", true
+	case 4009:
+		return "chimera-hwm", true
+	case 4010:
+		return "samsung-unidex", true
+	case 4011:
+		return "altserviceboot", true
+	case 4012:
+		return "pda-gate", true
+	case 4013:
+		return "acl-manager", true
+	case 4014:
+		return "taiclock", true
+	case 4015:
+		return "talarian-mcast1", true
+	case 4016:
+		return "talarian-mcast2", true
+	case 4017:
+		return "talarian-mcast3", true
+	case 4018:
+		return "talarian-mcast4", true
+	case 4019:
+		return "talarian-mcast5", true
+	case 4020:
+		return "trap", true
+	case 4021:
+		return "nexus-portal", true
+	case 4022:
+		return "dnox", true
+	case 4023:
+		return "esnm-zoning", true
+	case 4024:
+		return "tnp1-port", true
+	case 4025:
+		return "partimage", true
+	case 4026:
+		return "as-debug", true
+	case 4027:
+		return "bxp", true
+	case 4028:
+		return "dtserver-port", true
+	case 4029:
+		return "ip-qsig", true
+	case 4030:
+		return "jdmn-port", true
+	case 4031:
+		return "suucp", true
+	case 4032:
+		return "vrts-auth-port", true
+	case 4033:
+		return "sanavigator", true
+	case 4034:
+		return "ubxd", true
+	case 4035:
+		return "wap-push-http", true
+	case 4036:
+		return "wap-push-https", true
+	case 4037:
+		return "ravehd", true
+	case 4038:
+		return "fazzt-ptp", true
+	case 4039:
+		return "fazzt-admin", true
+	case 4040:
+		return "yo-main", true
+	case 4041:
+		return "houston", true
+	case 4042:
+		return "ldxp", true
+	case 4043:
+		return "nirp", true
+	case 4044:
+		return "ltp", true
+	case 4045:
+		return "npp", true
+	case 4046:
+		return "acp-proto", true
+	case 4047:
+		return "ctp-state", true
+	case 4049:
+		return "wafs", true
+	case 4050:
+		return "cisco-wafs", true
+	case 4051:
+		return "cppdp", true
+	case 4052:
+		return "interact", true
+	case 4053:
+		return "ccu-comm-1", true
+	case 4054:
+		return "ccu-comm-2", true
+	case 4055:
+		return "ccu-comm-3", true
+	case 4056:
+		return "lms", true
+	case 4057:
+		return "wfm", true
+	case 4058:
+		return "kingfisher", true
+	case 4059:
+		return "dlms-cosem", true
+	case 4060:
+		return "dsmeter-iatc", true
+	case 4061:
+		return "ice-location", true
+	case 4062:
+		return "ice-slocation", true
+	case 4063:
+		return "ice-router", true
+	case 4064:
+		return "ice-srouter", true
+	case 4065:
+		return "avanti-cdp", true
+	case 4066:
+		return "pmas", true
+	case 4067:
+		return "idp", true
+	case 4068:
+		return "ipfltbcst", true
+	case 4069:
+		return "minger", true
+	case 4070:
+		return "tripe", true
+	case 4071:
+		return "aibkup", true
+	case 4072:
+		return "zieto-sock", true
+	case 4073:
+		return "iRAPP", true
+	case 4074:
+		return "cequint-cityid", true
+	case 4075:
+		return "perimlan", true
+	case 4076:
+		return "seraph", true
+	case 4078:
+		return "cssp", true
+	case 4079:
+		return "santools", true
+	case 4080:
+		return "lorica-in", true
+	case 4081:
+		return "lorica-in-sec", true
+	case 4082:
+		return "lorica-out", true
+	case 4083:
+		return "lorica-out-sec", true
+	case 4085:
+		return "ezmessagesrv", true
+	case 4087:
+		return "applusservice", true
+	case 4088:
+		return "npsp", true
+	case 4089:
+		return "opencore", true
+	case 4090:
+		return "omasgport", true
+	case 4091:
+		return "ewinstaller", true
+	case 4092:
+		return "ewdgs", true
+	case 4093:
+		return "pvxpluscs", true
+	case 4094:
+		return "sysrqd", true
+	case 4095:
+		return "xtgui", true
+	case 4096:
+		return "bre", true
+	case 4097:
+		return "patrolview", true
+	case 4098:
+		return "drmsfsd", true
+	case 4099:
+		return "dpcp", true
+	case 4100:
+		return "igo-incognito", true
+	case 4101:
+		return "brlp-0", true
+	case 4102:
+		return "brlp-1", true
+	case 4103:
+		return "brlp-2", true
+	case 4104:
+		return "brlp-3", true
+	case 4105:
+		return "shofar", true
+	case 4106:
+		return "synchronite", true
+	case 4107:
+		return "j-ac", true
+	case 4108:
+		return "accel", true
+	case 4109:
+		return "izm", true
+	case 4110:
+		return "g2tag", true
+	case 4111:
+		return "xgrid", true
+	case 4112:
+		return "apple-vpns-rp", true
+	case 4113:
+		return "aipn-reg", true
+	case 4114:
+		return "jomamqmonitor", true
+	case 4115:
+		return "cds", true
+	case 4116:
+		return "smartcard-tls", true
+	case 4117:
+		return "hillrserv", true
+	case 4118:
+		return "netscript", true
+	case 4119:
+		return "assuria-slm", true
+	case 4120:
+		return "minirem", true
+	case 4121:
+		return "e-builder", true
+	case 4122:
+		return "fprams", true
+	case 4123:
+		return "z-wave", true
+	case 4124:
+		return "tigv2", true
+	case 4125:
+		return "opsview-envoy", true
+	case 4126:
+		return "ddrepl", true
+	case 4127:
+		return "unikeypro", true
+	case 4128:
+		return "nufw", true
+	case 4129:
+		return "nuauth", true
+	case 4130:
+		return "fronet", true
+	case 4131:
+		return "stars", true
+	case 4132:
+		return "nuts-dem", true
+	case 4133:
+		return "nuts-bootp", true
+	case 4134:
+		return "nifty-hmi", true
+	case 4135:
+		return "cl-db-attach", true
+	case 4136:
+		return "cl-db-request", true
+	case 4137:
+		return "cl-db-remote", true
+	case 4138:
+		return "nettest", true
+	case 4139:
+		return "thrtx", true
+	case 4140:
+		return "cedros-fds", true
+	case 4141:
+		return "oirtgsvc", true
+	case 4142:
+		return "oidocsvc", true
+	case 4143:
+		return "oidsr", true
+	case 4145:
+		return "vvr-control", true
+	case 4146:
+		return "tgcconnect", true
+	case 4147:
+		return "vrxpservman", true
+	case 4148:
+		return "hhb-handheld", true
+	case 4149:
+		return "agslb", true
+	case 4150:
+		return "PowerAlert-nsa", true
+	case 4151:
+		return "menandmice-noh", true
+	case 4152:
+		return "idig-mux", true
+	case 4153:
+		return "mbl-battd", true
+	case 4154:
+		return "atlinks", true
+	case 4155:
+		return "bzr", true
+	case 4156:
+		return "stat-results", true
+	case 4157:
+		return "stat-scanner", true
+	case 4158:
+		return "stat-cc", true
+	case 4159:
+		return "nss", true
+	case 4160:
+		return "jini-discovery", true
+	case 4161:
+		return "omscontact", true
+	case 4162:
+		return "omstopology", true
+	case 4163:
+		return "silverpeakpeer", true
+	case 4164:
+		return "silverpeakcomm", true
+	case 4165:
+		return "altcp", true
+	case 4166:
+		return "joost", true
+	case 4167:
+		return "ddgn", true
+	case 4168:
+		return "pslicser", true
+	case 4169:
+		return "iadt", true
+	case 4170:
+		return "d-cinema-csp", true
+	case 4171:
+		return "ml-svnet", true
+	case 4172:
+		return "pcoip", true
+	case 4174:
+		return "smcluster", true
+	case 4175:
+		return "bccp", true
+	case 4176:
+		return "tl-ipcproxy", true
+	case 4177:
+		return "wello", true
+	case 4178:
+		return "storman", true
+	case 4179:
+		return "MaxumSP", true
+	case 4180:
+		return "httpx", true
+	case 4181:
+		return "macbak", true
+	case 4182:
+		return "pcptcpservice", true
+	case 4183:
+		return "cyborgnet", true
+	case 4184:
+		return "universe-suite", true
+	case 4185:
+		return "wcpp", true
+	case 4186:
+		return "boxbackupstore", true
+	case 4187:
+		return "csc-proxy", true
+	case 4188:
+		return "vatata", true
+	case 4189:
+		return "pcep", true
+	case 4190:
+		return "sieve", true
+	case 4192:
+		return "azeti", true
+	case 4193:
+		return "pvxplusio", true
+	case 4194:
+		return "spdm", true
+	case 4195:
+		return "aws-wsp", true
+	case 4197:
+		return "hctl", true
+	case 4199:
+		return "eims-admin", true
+	case 4300:
+		return "corelccam", true
+	case 4301:
+		return "d-data", true
+	case 4302:
+		return "d-data-control", true
+	case 4303:
+		return "srcp", true
+	case 4304:
+		return "owserver", true
+	case 4305:
+		return "batman", true
+	case 4306:
+		return "pinghgl", true
+	case 4307:
+		return "trueconf", true
+	case 4308:
+		return "compx-lockview", true
+	case 4309:
+		return "dserver", true
+	case 4310:
+		return "mirrtex", true
+	case 4311:
+		return "p6ssmc", true
+	case 4312:
+		return "pscl-mgt", true
+	case 4313:
+		return "perrla", true
+	case 4314:
+		return "choiceview-agt", true
+	case 4316:
+		return "choiceview-clt", true
+	case 4317:
+		return "opentelemetry", true
+	case 4319:
+		return "fox-skytale", true
+	case 4320:
+		return "fdt-rcatp", true
+	case 4321:
+		return "rwhois", true
+	case 4322:
+		return "trim-event", true
+	case 4323:
+		return "trim-ice", true
+	case 4325:
+		return "geognosisadmin", true
+	case 4326:
+		return "geognosis", true
+	case 4327:
+		return "jaxer-web", true
+	case 4328:
+		return "jaxer-manager", true
+	case 4329:
+		return "publiqare-sync", true
+	case 4330:
+		return "dey-sapi", true
+	case 4331:
+		return "ktickets-rest", true
+	case 4332:
+		return "getty-focus", true
+	case 4333:
+		return "ahsp", true
+	case 4334:
+		return "netconf-ch-ssh", true
+	case 4335:
+		return "netconf-ch-tls", true
+	case 4336:
+		return "restconf-ch-tls", true
+	case 4340:
+		return "gaia", true
+	case 4343:
+		return "unicall", true
+	case 4344:
+		return "vinainstall", true
+	case 4345:
+		return "m4-network-as", true
+	case 4346:
+		return "elanlm", true
+	case 4347:
+		return "lansurveyor", true
+	case 4348:
+		return "itose", true
+	case 4349:
+		return "fsportmap", true
+	case 4350:
+		return "net-device", true
+	case 4351:
+		return "plcy-net-svcs", true
+	case 4352:
+		return "pjlink", true
+	case 4353:
+		return "f5-iquery", true
+	case 4354:
+		return "qsnet-trans", true
+	case 4355:
+		return "qsnet-workst", true
+	case 4356:
+		return "qsnet-assist", true
+	case 4357:
+		return "qsnet-cond", true
+	case 4358:
+		return "qsnet-nucl", true
+	case 4359:
+		return "omabcastltkm", true
+	case 4360:
+		return "matrix-vnet", true
+	case 4368:
+		return "wxbrief", true
+	case 4369:
+		return "epmd", true
+	case 4370:
+		return "elpro-tunnel", true
+	case 4371:
+		return "l2c-control", true
+	case 4372:
+		return "l2c-data", true
+	case 4373:
+		return "remctl", true
+	case 4374:
+		return "psi-ptt", true
+	case 4375:
+		return "tolteces", true
+	case 4376:
+		return "bip", true
+	case 4377:
+		return "cp-spxsvr", true
+	case 4378:
+		return "cp-spxdpy", true
+	case 4379:
+		return "ctdb", true
+	case 4389:
+		return "xandros-cms", true
+	case 4390:
+		return "wiegand", true
+	case 4391:
+		return "apwi-imserver", true
+	case 4392:
+		return "apwi-rxserver", true
+	case 4393:
+		return "apwi-rxspooler", true
+	case 4395:
+		return "omnivisionesx", true
+	case 4396:
+		return "fly", true
+	case 4400:
+		return "ds-srv", true
+	case 4401:
+		return "ds-srvr", true
+	case 4402:
+		return "ds-clnt", true
+	case 4403:
+		return "ds-user", true
+	case 4404:
+		return "ds-admin", true
+	case 4405:
+		return "ds-mail", true
+	case 4406:
+		return "ds-slp", true
+	case 4407:
+		return "nacagent", true
+	case 4408:
+		return "slscc", true
+	case 4409:
+		return "netcabinet-com", true
+	case 4410:
+		return "itwo-server", true
+	case 4411:
+		return "found", true
+	case 4413:
+		return "avi-nms", true
+	case 4414:
+		return "updog", true
+	case 4415:
+		return "brcd-vr-req", true
+	case 4416:
+		return "pjj-player", true
+	case 4417:
+		return "workflowdir", true
+	case 4419:
+		return "cbp", true
+	case 4420:
+		return "nvme", true
+	case 4421:
+		return "scaleft", true
+	case 4422:
+		return "tsepisp", true
+	case 4423:
+		return "thingkit", true
+	case 4425:
+		return "netrockey6", true
+	case 4426:
+		return "beacon-port-2", true
+	case 4427:
+		return "drizzle", true
+	case 4428:
+		return "omviserver", true
+	case 4429:
+		return "omviagent", true
+	case 4430:
+		return "rsqlserver", true
+	case 4431:
+		return "wspipe", true
+	case 4432:
+		return "l-acoustics", true
+	case 4433:
+		return "vop", true
+	case 4442:
+		return "saris", true
+	case 4443:
+		return "pharos", true
+	case 4444:
+		return "krb524", true
+	case 4445:
+		return "upnotifyp", true
+	case 4446:
+		return "n1-fwp", true
+	case 4447:
+		return "n1-rmgmt", true
+	case 4448:
+		return "asc-slmd", true
+	case 4449:
+		return "privatewire", true
+	case 4450:
+		return "camp", true
+	case 4451:
+		return "ctisystemmsg", true
+	case 4452:
+		return "ctiprogramload", true
+	case 4453:
+		return "nssalertmgr", true
+	case 4454:
+		return "nssagentmgr", true
+	case 4455:
+		return "prchat-user", true
+	case 4456:
+		return "prchat-server", true
+	case 4457:
+		return "prRegister", true
+	case 4458:
+		return "mcp", true
+	case 4460:
+		return "ntske", true
+	case 4484:
+		return "hpssmgmt", true
+	case 4485:
+		return "assyst-dr", true
+	case 4486:
+		return "icms", true
+	case 4487:
+		return "prex-tcp", true
+	case 4488:
+		return "awacs-ice", true
+	case 4500:
+		return "ipsec-nat-t", true
+	case 4535:
+		return "ehs", true
+	case 4536:
+		return "ehs-ssl", true
+	case 4537:
+		return "wssauthsvc", true
+	case 4538:
+		return "swx-gate", true
+	case 4545:
+		return "worldscores", true
+	case 4546:
+		return "sf-lm", true
+	case 4547:
+		return "lanner-lm", true
+	case 4548:
+		return "synchromesh", true
+	case 4549:
+		return "aegate", true
+	case 4550:
+		return "gds-adppiw-db", true
+	case 4551:
+		return "ieee-mih", true
+	case 4552:
+		return "menandmice-mon", true
+	case 4553:
+		return "icshostsvc", true
+	case 4554:
+		return "msfrs", true
+	case 4555:
+		return "rsip", true
+	case 4556:
+		return "dtn-bundle", true
+	case 4559:
+		return "hylafax", true
+	case 4563:
+		return "amahi-anywhere", true
+	case 4566:
+		return "kwtc", true
+	case 4567:
+		return "tram", true
+	case 4568:
+		return "bmc-reporting", true
+	case 4569:
+		return "iax", true
+	case 4570:
+		return "deploymentmap", true
+	case 4573:
+		return "cardifftec-back", true
+	case 4590:
+		return "rid", true
+	case 4591:
+		return "l3t-at-an", true
+	case 4593:
+		return "ipt-anri-anri", true
+	case 4594:
+		return "ias-session", true
+	case 4595:
+		return "ias-paging", true
+	case 4596:
+		return "ias-neighbor", true
+	case 4597:
+		return "a21-an-1xbs", true
+	case 4598:
+		return "a16-an-an", true
+	case 4599:
+		return "a17-an-an", true
+	case 4600:
+		return "piranha1", true
+	case 4601:
+		return "piranha2", true
+	case 4602:
+		return "mtsserver", true
+	case 4603:
+		return "menandmice-upg", true
+	case 4604:
+		return "irp", true
+	case 4605:
+		return "sixchat", true
+	case 4606:
+		return "sixid", true
+	case 4646:
+		return "dots-signal", true
+	case 4658:
+		return "playsta2-app", true
+	case 4659:
+		return "playsta2-lob", true
+	case 4660:
+		return "smaclmgr", true
+	case 4661:
+		return "kar2ouche", true
+	case 4662:
+		return "oms", true
+	case 4663:
+		return "noteit", true
+	case 4664:
+		return "ems", true
+	case 4665:
+		return "contclientms", true
+	case 4666:
+		return "eportcomm", true
+	case 4667:
+		return "mmacomm", true
+	case 4668:
+		return "mmaeds", true
+	case 4669:
+		return "eportcommdata", true
+	case 4670:
+		return "light", true
+	case 4671:
+		return "acter", true
+	case 4672:
+		return "rfa", true
+	case 4673:
+		return "cxws", true
+	case 4674:
+		return "appiq-mgmt", true
+	case 4675:
+		return "dhct-status", true
+	case 4676:
+		return "dhct-alerts", true
+	case 4677:
+		return "bcs", true
+	case 4678:
+		return "traversal", true
+	case 4679:
+		return "mgesupervision", true
+	case 4680:
+		return "mgemanagement", true
+	case 4681:
+		return "parliant", true
+	case 4682:
+		return "finisar", true
+	case 4683:
+		return "spike", true
+	case 4684:
+		return "rfid-rp1", true
+	case 4685:
+		return "autopac", true
+	case 4686:
+		return "msp-os", true
+	case 4687:
+		return "nst", true
+	case 4688:
+		return "mobile-p2p", true
+	case 4689:
+		return "altovacentral", true
+	case 4690:
+		return "prelude", true
+	case 4691:
+		return "mtn", true
+	case 4692:
+		return "conspiracy", true
+	case 4700:
+		return "netxms-agent", true
+	case 4701:
+		return "netxms-mgmt", true
+	case 4702:
+		return "netxms-sync", true
+	case 4703:
+		return "npqes-test", true
+	case 4704:
+		return "assuria-ins", true
+	case 4711:
+		return "trinity-dist", true
+	case 4725:
+		return "truckstar", true
+	case 4727:
+		return "fcis", true
+	case 4728:
+		return "capmux", true
+	case 4730:
+		return "gearman", true
+	case 4731:
+		return "remcap", true
+	case 4733:
+		return "resorcs", true
+	case 4737:
+		return "ipdr-sp", true
+	case 4738:
+		return "solera-lpn", true
+	case 4739:
+		return "ipfix", true
+	case 4740:
+		return "ipfixs", true
+	case 4741:
+		return "lumimgrd", true
+	case 4742:
+		return "sicct", true
+	case 4743:
+		return "openhpid", true
+	case 4744:
+		return "ifsp", true
+	case 4745:
+		return "fmp", true
+	case 4749:
+		return "profilemac", true
+	case 4750:
+		return "ssad", true
+	case 4751:
+		return "spocp", true
+	case 4752:
+		return "snap", true
+	case 4753:
+		return "simon", true
+	case 4756:
+		return "RDCenter", true
+	case 4774:
+		return "converge", true
+	case 4784:
+		return "bfd-multi-ctl", true
+	case 4786:
+		return "smart-install", true
+	case 4787:
+		return "sia-ctrl-plane", true
+	case 4788:
+		return "xmcp", true
+	case 4792:
+		return "unified-bus", true
+	case 4800:
+		return "iims", true
+	case 4801:
+		return "iwec", true
+	case 4802:
+		return "ilss", true
+	case 4803:
+		return "notateit", true
+	case 4827:
+		return "htcp", true
+	case 4837:
+		return "varadero-0", true
+	case 4838:
+		return "varadero-1", true
+	case 4839:
+		return "varadero-2", true
+	case 4840:
+		return "opcua-tcp", true
+	case 4841:
+		return "quosa", true
+	case 4842:
+		return "gw-asv", true
+	case 4843:
+		return "opcua-tls", true
+	case 4844:
+		return "gw-log", true
+	case 4845:
+		return "wcr-remlib", true
+	case 4846:
+		return "contamac-icm", true
+	case 4847:
+		return "wfc", true
+	case 4848:
+		return "appserv-http", true
+	case 4849:
+		return "appserv-https", true
+	case 4850:
+		return "sun-as-nodeagt", true
+	case 4851:
+		return "derby-repli", true
+	case 4867:
+		return "unify-debug", true
+	case 4868:
+		return "phrelay", true
+	case 4869:
+		return "phrelaydbg", true
+	case 4870:
+		return "cc-tracking", true
+	case 4871:
+		return "wired", true
+	case 4876:
+		return "tritium-can", true
+	case 4877:
+		return "lmcs", true
+	case 4879:
+		return "wsdl-event", true
+	case 4880:
+		return "hislip", true
+	case 4883:
+		return "wmlserver", true
+	case 4884:
+		return "hivestor", true
+	case 4885:
+		return "abbs", true
+	case 4888:
+		return "xcap-portal", true
+	case 4889:
+		return "xcap-control", true
+	case 4894:
+		return "lyskom", true
+	case 4899:
+		return "radmin-port", true
+	case 4900:
+		return "hfcs", true
+	case 4901:
+		return "flr-agent", true
+	case 4902:
+		return "magiccontrol", true
+	case 4912:
+		return "lutap", true
+	case 4913:
+		return "lutcp", true
+	case 4914:
+		return "bones", true
+	case 4915:
+		return "frcs", true
+	case 4940:
+		return "eq-office-4940", true
+	case 4941:
+		return "eq-office-4941", true
+	case 4942:
+		return "eq-office-4942", true
+	case 4949:
+		return "munin", true
+	case 4950:
+		return "sybasesrvmon", true
+	case 4951:
+		return "pwgwims", true
+	case 4952:
+		return "sagxtsds", true
+	case 4953:
+		return "dbsyncarbiter", true
+	case 4969:
+		return "ccss-qmm", true
+	case 4970:
+		return "ccss-qsm", true
+	case 4971:
+		return "burp", true
+	case 4984:
+		return "webyast", true
+	case 4985:
+		return "gerhcs", true
+	case 4986:
+		return "mrip", true
+	case 4987:
+		return "smar-se-port1", true
+	case 4988:
+		return "smar-se-port2", true
+	case 4989:
+		return "parallel", true
+	case 4990:
+		return "busycal", true
+	case 4991:
+		return "vrt", true
+	case 4999:
+		return "hfcs-manager", true
+	case 5000:
+		return "commplex-main", true
+	case 5001:
+		return "commplex-link", true
+	case 5002:
+		return "rfe", true
+	case 5003:
+		return "fmpro-internal", true
+	case 5004:
+		return "avt-profile-1", true
+	case 5005:
+		return "avt-profile-2", true
+	case 5006:
+		return "wsm-server", true
+	case 5007:
+		return "wsm-server-ssl", true
+	case 5008:
+		return "synapsis-edge", true
+	case 5009:
+		return "winfs", true
+	case 5010:
+		return "telelpathstart", true
+	case 5011:
+		return "telelpathattack", true
+	case 5012:
+		return "nsp", true
+	case 5013:
+		return "fmpro-v6", true
+	case 5015:
+		return "fmwp", true
+	case 5020:
+		return "zenginkyo-1", true
+	case 5021:
+		return "zenginkyo-2", true
+	case 5022:
+		return "mice", true
+	case 5023:
+		return "htuilsrv", true
+	case 5024:
+		return "scpi-telnet", true
+	case 5025:
+		return "scpi-raw", true
+	case 5026:
+		return "strexec-d", true
+	case 5027:
+		return "strexec-s", true
+	case 5028:
+		return "qvr", true
+	case 5029:
+		return "infobright", true
+	case 5032:
+		return "signacert-agent", true
+	case 5033:
+		return "jtnetd-server", true
+	case 5034:
+		return "jtnetd-status", true
+	case 5042:
+		return "asnaacceler8db", true
+	case 5043:
+		return "swxadmin", true
+	case 5044:
+		return "lxi-evntsvc", true
+	case 5045:
+		return "osp", true
+	case 5048:
+		return "texai", true
+	case 5049:
+		return "ivocalize", true
+	case 5050:
+		return "mmcc", true
+	case 5051:
+		return "ita-agent", true
+	case 5052:
+		return "ita-manager", true
+	case 5053:
+		return "rlm", true
+	case 5054:
+		return "rlm-admin", true
+	case 5055:
+		return "unot", true
+	case 5056:
+		return "intecom-ps1", true
+	case 5057:
+		return "intecom-ps2", true
+	case 5059:
+		return "sds", true
+	case 5060:
+		return "sip", true
+	case 5061:
+		return "sips", true
+	case 5062:
+		return "na-localise", true
+	case 5063:
+		return "csrpc", true
+	case 5064:
+		return "ca-1", true
+	case 5065:
+		return "ca-2", true
+	case 5066:
+		return "stanag-5066", true
+	case 5067:
+		return "authentx", true
+	case 5068:
+		return "bitforestsrv", true
+	case 5069:
+		return "i-net-2000-npr", true
+	case 5070:
+		return "vtsas", true
+	case 5071:
+		return "powerschool", true
+	case 5072:
+		return "ayiya", true
+	case 5073:
+		return "tag-pm", true
+	case 5074:
+		return "alesquery", true
+	case 5075:
+		return "pvaccess", true
+	case 5080:
+		return "onscreen", true
+	case 5081:
+		return "sdl-ets", true
+	case 5082:
+		return "qcp", true
+	case 5083:
+		return "qfp", true
+	case 5084:
+		return "llrp", true
+	case 5085:
+		return "encrypted-llrp", true
+	case 5086:
+		return "aprigo-cs", true
+	case 5087:
+		return "biotic", true
+	case 5093:
+		return "sentinel-lm", true
+	case 5094:
+		return "hart-ip", true
+	case 5099:
+		return "sentlm-srv2srv", true
+	case 5100:
+		return "socalia", true
+	case 5101:
+		return "talarian-tcp", true
+	case 5102:
+		return "oms-nonsecure", true
+	case 5103:
+		return "actifio-c2c", true
+	case 5106:
+		return "actifioudsagent", true
+	case 5107:
+		return "actifioreplic", true
+	case 5111:
+		return "taep-as-svc", true
+	case 5112:
+		return "pm-cmdsvr", true
+	case 5114:
+		return "ev-services", true
+	case 5115:
+		return "autobuild", true
+	case 5117:
+		return "gradecam", true
+	case 5120:
+		return "barracuda-bbs", true
+	case 5133:
+		return "nbt-pc", true
+	case 5134:
+		return "ppactivation", true
+	case 5135:
+		return "erp-scale", true
+	case 5137:
+		return "ctsd", true
+	case 5145:
+		return "rmonitor-secure", true
+	case 5146:
+		return "social-alarm", true
+	case 5150:
+		return "atmp", true
+	case 5151:
+		return "esri-sde", true
+	case 5152:
+		return "sde-discovery", true
+	case 5154:
+		return "bzflag", true
+	case 5155:
+		return "asctrl-agent", true
+	case 5156:
+		return "rugameonline", true
+	case 5157:
+		return "mediat", true
+	case 5161:
+		return "snmpssh", true
+	case 5162:
+		return "snmpssh-trap", true
+	case 5163:
+		return "sbackup", true
+	case 5164:
+		return "vpa", true
+	case 5165:
+		return "ife-icorp", true
+	case 5166:
+		return "winpcs", true
+	case 5167:
+		return "scte104", true
+	case 5168:
+		return "scte30", true
+	case 5172:
+		return "pcoip-mgmt", true
+	case 5190:
+		return "aol", true
+	case 5191:
+		return "aol-1", true
+	case 5192:
+		return "aol-2", true
+	case 5193:
+		return "aol-3", true
+	case 5194:
+		return "cpscomm", true
+	case 5195:
+		return "ampl-lic", true
+	case 5196:
+		return "ampl-tableproxy", true
+	case 5197:
+		return "tunstall-lwp", true
+	case 5200:
+		return "targus-getdata", true
+	case 5201:
+		return "targus-getdata1", true
+	case 5202:
+		return "targus-getdata2", true
+	case 5203:
+		return "targus-getdata3", true
+	case 5209:
+		return "nomad", true
+	case 5215:
+		return "noteza", true
+	case 5221:
+		return "3exmp", true
+	case 5222:
+		return "xmpp-client", true
+	case 5223:
+		return "hpvirtgrp", true
+	case 5224:
+		return "hpvirtctrl", true
+	case 5225:
+		return "hp-server", true
+	case 5226:
+		return "hp-status", true
+	case 5227:
+		return "perfd", true
+	case 5228:
+		return "hpvroom", true
+	case 5229:
+		return "jaxflow", true
+	case 5230:
+		return "jaxflow-data", true
+	case 5231:
+		return "crusecontrol", true
+	case 5232:
+		return "csedaemon", true
+	case 5233:
+		return "enfs", true
+	case 5234:
+		return "eenet", true
+	case 5235:
+		return "galaxy-network", true
+	case 5236:
+		return "padl2sim", true
+	case 5237:
+		return "mnet-discovery", true
+	case 5242:
+		return "attune", true
+	case 5243:
+		return "xycstatus", true
+	case 5245:
+		return "downtools", true
+	case 5248:
+		return "caacws", true
+	case 5249:
+		return "caaclang2", true
+	case 5250:
+		return "soagateway", true
+	case 5251:
+		return "caevms", true
+	case 5252:
+		return "movaz-ssc", true
+	case 5253:
+		return "kpdp", true
+	case 5254:
+		return "logcabin", true
+	case 5264:
+		return "3com-njack-1", true
+	case 5265:
+		return "3com-njack-2", true
+	case 5269:
+		return "xmpp-server", true
+	case 5270:
+		return "cartographerxmp", true
+	case 5271:
+		return "cuelink", true
+	case 5272:
+		return "pk", true
+	case 5280:
+		return "xmpp-bosh", true
+	case 5281:
+		return "undo-lm", true
+	case 5282:
+		return "transmit-port", true
+	case 5298:
+		return "presence", true
+	case 5299:
+		return "nlg-data", true
+	case 5300:
+		return "hacl-hb", true
+	case 5301:
+		return "hacl-gs", true
+	case 5302:
+		return "hacl-cfg", true
+	case 5303:
+		return "hacl-probe", true
+	case 5304:
+		return "hacl-local", true
+	case 5305:
+		return "hacl-test", true
+	case 5306:
+		return "sun-mc-grp", true
+	case 5307:
+		return "sco-aip", true
+	case 5308:
+		return "cfengine", true
+	case 5309:
+		return "jprinter", true
+	case 5310:
+		return "outlaws", true
+	case 5312:
+		return "permabit-cs", true
+	case 5313:
+		return "rrdp", true
+	case 5314:
+		return "opalis-rbt-ipc", true
+	case 5315:
+		return "hacl-poll", true
+	case 5316:
+		return "hpbladems", true
+	case 5317:
+		return "hpdevms", true
+	case 5318:
+		return "pkix-cmc", true
+	case 5320:
+		return "bsfserver-zn", true
+	case 5321:
+		return "bsfsvr-zn-ssl", true
+	case 5343:
+		return "kfserver", true
+	case 5344:
+		return "xkotodrcp", true
+	case 5349:
+		return "stuns", true
+	case 5352:
+		return "dns-llq", true
+	case 5353:
+		return "mdns", true
+	case 5354:
+		return "mdnsresponder", true
+	case 5355:
+		return "llmnr", true
+	case 5356:
+		return "ms-smlbiz", true
+	case 5357:
+		return "wsdapi", true
+	case 5358:
+		return "wsdapi-s", true
+	case 5359:
+		return "ms-alerter", true
+	case 5360:
+		return "ms-sideshow", true
+	case 5361:
+		return "ms-s-sideshow", true
+	case 5362:
+		return "serverwsd2", true
+	case 5363:
+		return "net-projection", true
+	case 5397:
+		return "stresstester", true
+	case 5398:
+		return "elektron-admin", true
+	case 5399:
+		return "securitychase", true
+	case 5400:
+		return "excerpt", true
+	case 5401:
+		return "excerpts", true
+	case 5402:
+		return "mftp", true
+	case 5403:
+		return "hpoms-ci-lstn", true
+	case 5404:
+		return "hpoms-dps-lstn", true
+	case 5405:
+		return "netsupport", true
+	case 5406:
+		return "systemics-sox", true
+	case 5407:
+		return "foresyte-clear", true
+	case 5408:
+		return "foresyte-sec", true
+	case 5409:
+		return "salient-dtasrv", true
+	case 5410:
+		return "salient-usrmgr", true
+	case 5411:
+		return "actnet", true
+	case 5412:
+		return "continuus", true
+	case 5413:
+		return "wwiotalk", true
+	case 5414:
+		return "statusd", true
+	case 5415:
+		return "ns-server", true
+	case 5416:
+		return "sns-gateway", true
+	case 5417:
+		return "sns-agent", true
+	case 5418:
+		return "mcntp", true
+	case 5419:
+		return "dj-ice", true
+	case 5420:
+		return "cylink-c", true
+	case 5421:
+		return "netsupport2", true
+	case 5422:
+		return "salient-mux", true
+	case 5423:
+		return "virtualuser", true
+	case 5424:
+		return "beyond-remote", true
+	case 5425:
+		return "br-channel", true
+	case 5426:
+		return "devbasic", true
+	case 5427:
+		return "sco-peer-tta", true
+	case 5428:
+		return "telaconsole", true
+	case 5429:
+		return "base", true
+	case 5430:
+		return "radec-corp", true
+	case 5431:
+		return "park-agent", true
+	case 5432:
+		return "postgresql", true
+	case 5433:
+		return "pyrrho", true
+	case 5434:
+		return "sgi-arrayd", true
+	case 5435:
+		return "sceanics", true
+	case 5443:
+		return "spss", true
+	case 5445:
+		return "smbdirect", true
+	case 5450:
+		return "tiepie", true
+	case 5453:
+		return "surebox", true
+	case 5454:
+		return "apc-5454", true
+	case 5455:
+		return "apc-5455", true
+	case 5456:
+		return "apc-5456", true
+	case 5461:
+		return "silkmeter", true
+	case 5462:
+		return "ttl-publisher", true
+	case 5463:
+		return "ttlpriceproxy", true
+	case 5464:
+		return "quailnet", true
+	case 5465:
+		return "netops-broker", true
+	case 5470:
+		return "apsolab-col", true
+	case 5471:
+		return "apsolab-cols", true
+	case 5472:
+		return "apsolab-tag", true
+	case 5473:
+		return "apsolab-tags", true
+	case 5475:
+		return "apsolab-data", true
+	case 5500:
+		return "fcp-addr-srvr1", true
+	case 5501:
+		return "fcp-addr-srvr2", true
+	case 5502:
+		return "fcp-srvr-inst1", true
+	case 5503:
+		return "fcp-srvr-inst2", true
+	case 5504:
+		return "fcp-cics-gw1", true
+	case 5505:
+		return "checkoutdb", true
+	case 5506:
+		return "amc", true
+	case 5507:
+		return "psl-management", true
+	case 5540:
+		return "matter", true
+	case 5550:
+		return "cbus", true
+	case 5553:
+		return "sgi-eventmond", true
+	case 5554:
+		return "sgi-esphttp", true
+	case 5555:
+		return "personal-agent", true
+	case 5556:
+		return "freeciv", true
+	case 5557:
+		return "farenet", true
+	case 5565:
+		return "dp-bura", true
+	case 5566:
+		return "westec-connect", true
+	case 5567:
+		return "dof-dps-mc-sec", true
+	case 5568:
+		return "sdt", true
+	case 5569:
+		return "rdmnet-ctrl", true
+	case 5573:
+		return "sdmmp", true
+	case 5574:
+		return "lsi-bobcat", true
+	case 5575:
+		return "ora-oap", true
+	case 5579:
+		return "fdtracks", true
+	case 5580:
+		return "tmosms0", true
+	case 5581:
+		return "tmosms1", true
+	case 5582:
+		return "fac-restore", true
+	case 5583:
+		return "tmo-icon-sync", true
+	case 5584:
+		return "bis-web", true
+	case 5585:
+		return "bis-sync", true
+	case 5586:
+		return "att-mt-sms", true
+	case 5597:
+		return "ininmessaging", true
+	case 5598:
+		return "mctfeed", true
+	case 5599:
+		return "esinstall", true
+	case 5600:
+		return "esmmanager", true
+	case 5601:
+		return "esmagent", true
+	case 5602:
+		return "a1-msc", true
+	case 5603:
+		return "a1-bs", true
+	case 5604:
+		return "a3-sdunode", true
+	case 5605:
+		return "a4-sdunode", true
+	case 5618:
+		return "efr", true
+	case 5627:
+		return "ninaf", true
+	case 5628:
+		return "htrust", true
+	case 5629:
+		return "symantec-sfdb", true
+	case 5630:
+		return "precise-comm", true
+	case 5631:
+		return "pcanywheredata", true
+	case 5632:
+		return "pcanywherestat", true
+	case 5633:
+		return "beorl", true
+	case 5634:
+		return "xprtld", true
+	case 5635:
+		return "sfmsso", true
+	case 5636:
+		return "sfm-db-server", true
+	case 5637:
+		return "cssc", true
+	case 5638:
+		return "flcrs", true
+	case 5639:
+		return "ics", true
+	case 5646:
+		return "vfmobile", true
+	case 5666:
+		return "nrpe", true
+	case 5670:
+		return "filemq", true
+	case 5671:
+		return "amqps", true
+	case 5672:
+		return "amqp", true
+	case 5673:
+		return "jms", true
+	case 5674:
+		return "hyperscsi-port", true
+	case 5675:
+		return "v5ua", true
+	case 5676:
+		return "raadmin", true
+	case 5677:
+		return "questdb2-lnchr", true
+	case 5678:
+		return "rrac", true
+	case 5679:
+		return "dccm", true
+	case 5680:
+		return "auriga-router", true
+	case 5681:
+		return "ncxcp", true
+	case 5683:
+		return "coap", true
+	case 5684:
+		return "coaps", true
+	case 5688:
+		return "ggz", true
+	case 5689:
+		return "qmvideo", true
+	case 5693:
+		return "rbsystem", true
+	case 5696:
+		return "kmip", true
+	case 5700:
+		return "supportassist", true
+	case 5705:
+		return "storageos", true
+	case 5713:
+		return "proshareaudio", true
+	case 5714:
+		return "prosharevideo", true
+	case 5715:
+		return "prosharedata", true
+	case 5716:
+		return "prosharerequest", true
+	case 5717:
+		return "prosharenotify", true
+	case 5718:
+		return "dpm", true
+	case 5719:
+		return "dpm-agent", true
+	case 5720:
+		return "ms-licensing", true
+	case 5721:
+		return "dtpt", true
+	case 5722:
+		return "msdfsr", true
+	case 5723:
+		return "omhs", true
+	case 5724:
+		return "omsdk", true
+	case 5725:
+		return "ms-ilm", true
+	case 5726:
+		return "ms-ilm-sts", true
+	case 5727:
+		return "asgenf", true
+	case 5728:
+		return "io-dist-data", true
+	case 5729:
+		return "openmail", true
+	case 5730:
+		return "unieng", true
+	case 5741:
+		return "ida-discover1", true
+	case 5742:
+		return "ida-discover2", true
+	case 5743:
+		return "watchdoc-pod", true
+	case 5744:
+		return "watchdoc", true
+	case 5745:
+		return "fcopy-server", true
+	case 5746:
+		return "fcopys-server", true
+	case 5747:
+		return "tunatic", true
+	case 5748:
+		return "tunalyzer", true
+	case 5750:
+		return "rscd", true
+	case 5755:
+		return "openmailg", true
+	case 5757:
+		return "x500ms", true
+	case 5766:
+		return "openmailns", true
+	case 5767:
+		return "s-openmail", true
+	case 5768:
+		return "openmailpxy", true
+	case 5769:
+		return "spramsca", true
+	case 5770:
+		return "spramsd", true
+	case 5771:
+		return "netagent", true
+	case 5777:
+		return "starfield-io", true
+	case 5780:
+		return "vts-rpc", true
+	case 5781:
+		return "3par-evts", true
+	case 5782:
+		return "3par-mgmt", true
+	case 5783:
+		return "3par-mgmt-ssl", true
+	case 5785:
+		return "3par-rcopy", true
+	case 5793:
+		return "xtreamx", true
+	case 5798:
+		return "enlabel-dpl", true
+	case 5813:
+		return "icmpd", true
+	case 5814:
+		return "spt-automation", true
+	case 5820:
+		return "autopassdaemon", true
+	case 5841:
+		return "shiprush-d-ch", true
+	case 5842:
+		return "reversion", true
+	case 5859:
+		return "wherehoo", true
+	case 5863:
+		return "ppsuitemsg", true
+	case 5868:
+		return "diameters", true
+	case 5883:
+		return "jute", true
+	case 5900:
+		return "rfb", true
+	case 5903:
+		return "ff-ice", true
+	case 5904:
+		return "ag-swim", true
+	case 5905:
+		return "asmgcs", true
+	case 5906:
+		return "rpas-c2", true
+	case 5907:
+		return "dsd", true
+	case 5908:
+		return "ipsma", true
+	case 5909:
+		return "agma", true
+	case 5910:
+		return "ats-atn", true
+	case 5911:
+		return "ats-acars", true
+	case 5912:
+		return "ais-met", true
+	case 5913:
+		return "aoc-acars", true
+	case 5963:
+		return "indy", true
+	case 5968:
+		return "mppolicy-v5", true
+	case 5969:
+		return "mppolicy-mgr", true
+	case 5984:
+		return "couchdb", true
+	case 5985:
+		return "wsman", true
+	case 5986:
+		return "wsmans", true
+	case 5987:
+		return "wbem-rmi", true
+	case 5988:
+		return "wbem-http", true
+	case 5989:
+		return "wbem-https", true
+	case 5990:
+		return "wbem-exp-https", true
+	case 5991:
+		return "nuxsl", true
+	case 5992:
+		return "consul-insight", true
+	case 5993:
+		return "cim-rs", true
+	case 5994:
+		return "rms-agent", true
+	case 5999:
+		return "cvsup", true
+	case 6064:
+		return "ndl-ahp-svc", true
+	case 6065:
+		return "winpharaoh", true
+	case 6066:
+		return "ewctsp", true
+	case 6068:
+		return "gsmp-ancp", true
+	case 6069:
+		return "trip", true
+	case 6070:
+		return "messageasap", true
+	case 6071:
+		return "ssdtp", true
+	case 6072:
+		return "diagnose-proc", true
+	case 6073:
+		return "directplay8", true
+	case 6074:
+		return "max", true
+	case 6075:
+		return "dpm-acm", true
+	case 6076:
+		return "msft-dpm-cert", true
+	case 6077:
+		return "iconstructsrv", true
+	case 6084:
+		return "reload-config", true
+	case 6085:
+		return "konspire2b", true
+	case 6086:
+		return "pdtp", true
+	case 6087:
+		return "ldss", true
+	case 6088:
+		return "doglms", true
+	case 6099:
+		return "raxa-mgmt", true
+	case 6100:
+		return "synchronet-db", true
+	case 6101:
+		return "synchronet-rtc", true
+	case 6102:
+		return "synchronet-upd", true
+	case 6103:
+		return "rets", true
+	case 6104:
+		return "dbdb", true
+	case 6105:
+		return "primaserver", true
+	case 6106:
+		return "mpsserver", true
+	case 6107:
+		return "etc-control", true
+	case 6108:
+		return "sercomm-scadmin", true
+	case 6109:
+		return "globecast-id", true
+	case 6110:
+		return "softcm", true
+	case 6111:
+		return "spc", true
+	case 6112:
+		return "dtspcd", true
+	case 6113:
+		return "dayliteserver", true
+	case 6114:
+		return "wrspice", true
+	case 6115:
+		return "xic", true
+	case 6116:
+		return "xtlserv", true
+	case 6117:
+		return "daylitetouch", true
+	case 6121:
+		return "spdy", true
+	case 6122:
+		return "bex-webadmin", true
+	case 6123:
+		return "backup-express", true
+	case 6124:
+		return "pnbs", true
+	case 6130:
+		return "damewaremobgtwy", true
+	case 6133:
+		return "nbt-wol", true
+	case 6140:
+		return "pulsonixnls", true
+	case 6141:
+		return "meta-corp", true
+	case 6142:
+		return "aspentec-lm", true
+	case 6143:
+		return "watershed-lm", true
+	case 6144:
+		return "statsci1-lm", true
+	case 6145:
+		return "statsci2-lm", true
+	case 6146:
+		return "lonewolf-lm", true
+	case 6147:
+		return "montage-lm", true
+	case 6148:
+		return "ricardo-lm", true
+	case 6149:
+		return "tal-pod", true
+	case 6159:
+		return "efb-aci", true
+	case 6160:
+		return "ecmp", true
+	case 6161:
+		return "patrol-ism", true
+	case 6162:
+		return "patrol-coll", true
+	case 6163:
+		return "pscribe", true
+	case 6200:
+		return "lm-x", true
+	case 6209:
+		return "qmtps", true
+	case 6222:
+		return "radmind", true
+	case 6241:
+		return "jeol-nsdtp-1", true
+	case 6242:
+		return "jeol-nsdtp-2", true
+	case 6243:
+		return "jeol-nsdtp-3", true
+	case 6244:
+		return "jeol-nsdtp-4", true
+	case 6251:
+		return "tl1-raw-ssl", true
+	case 6252:
+		return "tl1-ssh", true
+	case 6253:
+		return "crip", true
+	case 6267:
+		return "gld", true
+	case 6268:
+		return "grid", true
+	case 6269:
+		return "grid-alt", true
+	case 6300:
+		return "bmc-grx", true
+	case 6301:
+		return "bmc-ctd-ldap", true
+	case 6306:
+		return "ufmp", true
+	case 6315:
+		return "scup", true
+	case 6316:
+		return "abb-escp", true
+	case 6317:
+		return "nav-data-cmd", true
+	case 6320:
+		return "repsvc", true
+	case 6321:
+		return "emp-server1", true
+	case 6322:
+		return "emp-server2", true
+	case 6324:
+		return "hrd-ncs", true
+	case 6325:
+		return "dt-mgmtsvc", true
+	case 6326:
+		return "dt-vra", true
+	case 6343:
+		return "sflow", true
+	case 6344:
+		return "streletz", true
+	case 6346:
+		return "gnutella-svc", true
+	case 6347:
+		return "gnutella-rtr", true
+	case 6350:
+		return "adap", true
+	case 6355:
+		return "pmcs", true
+	case 6360:
+		return "metaedit-mu", true
+	case 6370:
+		return "metaedit-se", true
+	case 6379:
+		return "redis", true
+	case 6382:
+		return "metatude-mds", true
+	case 6389:
+		return "clariion-evr01", true
+	case 6390:
+		return "metaedit-ws", true
+	case 6417:
+		return "faxcomservice", true
+	case 6418:
+		return "syserverremote", true
+	case 6419:
+		return "svdrp", true
+	case 6420:
+		return "nim-vdrshell", true
+	case 6421:
+		return "nim-wan", true
+	case 6432:
+		return "pgbouncer", true
+	case 6440:
+		return "heliosd", true
+	case 6442:
+		return "tarp", true
+	case 6443:
+		return "sun-sr-https", true
+	case 6444:
+		return "sge-qmaster", true
+	case 6445:
+		return "sge-execd", true
+	case 6446:
+		return "mysql-proxy", true
+	case 6455:
+		return "skip-cert-recv", true
+	case 6456:
+		return "skip-cert-send", true
+	case 6464:
+		return "ieee11073-20701", true
+	case 6471:
+		return "lvision-lm", true
+	case 6480:
+		return "sun-sr-http", true
+	case 6481:
+		return "servicetags", true
+	case 6482:
+		return "ldoms-mgmt", true
+	case 6483:
+		return "SunVTS-RMI", true
+	case 6484:
+		return "sun-sr-jms", true
+	case 6485:
+		return "sun-sr-iiop", true
+	case 6486:
+		return "sun-sr-iiops", true
+	case 6487:
+		return "sun-sr-iiop-aut", true
+	case 6488:
+		return "sun-sr-jmx", true
+	case 6489:
+		return "sun-sr-admin", true
+	case 6500:
+		return "boks", true
+	case 6501:
+		return "boks-servc", true
+	case 6502:
+		return "boks-servm", true
+	case 6503:
+		return "boks-clntd", true
+	case 6505:
+		return "badm-priv", true
+	case 6506:
+		return "badm-pub", true
+	case 6507:
+		return "bdir-priv", true
+	case 6508:
+		return "bdir-pub", true
+	case 6509:
+		return "mgcs-mfp-port", true
+	case 6510:
+		return "mcer-port", true
+	case 6513:
+		return "netconf-tls", true
+	case 6514:
+		return "syslog-tls", true
+	case 6515:
+		return "elipse-rec", true
+	case 6543:
+		return "lds-distrib", true
+	case 6544:
+		return "lds-dump", true
+	case 6547:
+		return "apc-6547", true
+	case 6548:
+		return "apc-6548", true
+	case 6549:
+		return "apc-6549", true
+	case 6550:
+		return "fg-sysupdate", true
+	case 6551:
+		return "sum", true
+	case 6556:
+		return "checkmk-agent", true
+	case 6558:
+		return "xdsxdm", true
+	case 6566:
+		return "sane-port", true
+	case 6568:
+		return "canit-store", true
+	case 6579:
+		return "affiliate", true
+	case 6580:
+		return "parsec-master", true
+	case 6581:
+		return "parsec-peer", true
+	case 6582:
+		return "parsec-game", true
+	case 6583:
+		return "joaJewelSuite", true
+	case 6600:
+		return "mshvlm", true
+	case 6601:
+		return "mstmg-sstp", true
+	case 6602:
+		return "wsscomfrmwk", true
+	case 6619:
+		return "odette-ftps", true
+	case 6620:
+		return "kftp-data", true
+	case 6621:
+		return "kftp", true
+	case 6622:
+		return "mcftp", true
+	case 6623:
+		return "ktelnet", true
+	case 6624:
+		return "datascaler-db", true
+	case 6625:
+		return "datascaler-ctl", true
+	case 6626:
+		return "wago-service", true
+	case 6627:
+		return "nexgen", true
+	case 6628:
+		return "afesc-mc", true
+	case 6629:
+		return "nexgen-aux", true
+	case 6632:
+		return "mxodbc-connect", true
+	case 6640:
+		return "ovsdb", true
+	case 6653:
+		return "openflow", true
+	case 6655:
+		return "pcs-sf-ui-man", true
+	case 6656:
+		return "emgmsg", true
+	case 6670:
+		return "vocaltec-gold", true
+	case 6671:
+		return "p4p-portal", true
+	case 6672:
+		return "vision-server", true
+	case 6673:
+		return "vision-elmd", true
+	case 6678:
+		return "vfbp", true
+	case 6679:
+		return "osaut", true
+	case 6687:
+		return "clever-ctrace", true
+	case 6688:
+		return "clever-tcpip", true
+	case 6689:
+		return "tsa", true
+	case 6690:
+		return "cleverdetect", true
+	case 6697:
+		return "ircs-u", true
+	case 6701:
+		return "kti-icad-srvr", true
+	case 6702:
+		return "e-design-net", true
+	case 6703:
+		return "e-design-web", true
+	case 6714:
+		return "ibprotocol", true
+	case 6715:
+		return "fibotrader-com", true
+	case 6716:
+		return "princity-agent", true
+	case 6767:
+		return "bmc-perf-agent", true
+	case 6768:
+		return "bmc-perf-mgrd", true
+	case 6769:
+		return "adi-gxp-srvprt", true
+	case 6770:
+		return "plysrv-http", true
+	case 6771:
+		return "plysrv-https", true
+	case 6777:
+		return "ntz-tracker", true
+	case 6778:
+		return "ntz-p2p-storage", true
+	case 6785:
+		return "dgpf-exchg", true
+	case 6786:
+		return "smc-jmx", true
+	case 6787:
+		return "smc-admin", true
+	case 6788:
+		return "smc-http", true
+	case 6789:
+		return "radg", true
+	case 6790:
+		return "hnmp", true
+	case 6791:
+		return "hnm", true
+	case 6801:
+		return "acnet", true
+	case 6817:
+		return "pentbox-sim", true
+	case 6831:
+		return "ambit-lm", true
+	case 6841:
+		return "netmo-default", true
+	case 6842:
+		return "netmo-http", true
+	case 6850:
+		return "iccrushmore", true
+	case 6868:
+		return "acctopus-cc", true
+	case 6888:
+		return "muse", true
+	case 6900:
+		return "rtimeviewer", true
+	case 6901:
+		return "jetstream", true
+	case 6924:
+		return "split-ping", true
+	case 6935:
+		return "ethoscan", true
+	case 6936:
+		return "xsmsvc", true
+	case 6946:
+		return "bioserver", true
+	case 6951:
+		return "otlp", true
+	case 6961:
+		return "jmact3", true
+	case 6962:
+		return "jmevt2", true
+	case 6963:
+		return "swismgr1", true
+	case 6964:
+		return "swismgr2", true
+	case 6965:
+		return "swistrap", true
+	case 6966:
+		return "swispol", true
+	case 6969:
+		return "acmsoda", true
+	case 6970:
+		return "conductor", true
+	case 6997:
+		return "MobilitySrv", true
+	case 6998:
+		return "iatp-highpri", true
+	case 6999:
+		return "iatp-normalpri", true
+	case 7000:
+		return "afs3-fileserver", true
+	case 7001:
+		return "afs3-callback", true
+	case 7002:
+		return "afs3-prserver", true
+	case 7003:
+		return "afs3-vlserver", true
+	case 7004:
+		return "afs3-kaserver", true
+	case 7005:
+		return "afs3-volser", true
+	case 7006:
+		return "afs3-errors", true
+	case 7007:
+		return "afs3-bos", true
+	case 7008:
+		return "afs3-update", true
+	case 7009:
+		return "afs3-rmtsys", true
+	case 7010:
+		return "ups-onlinet", true
+	case 7011:
+		return "talon-disc", true
+	case 7012:
+		return "talon-engine", true
+	case 7013:
+		return "microtalon-dis", true
+	case 7014:
+		return "microtalon-com", true
+	case 7015:
+		return "talon-webserver", true
+	case 7016:
+		return "spg", true
+	case 7017:
+		return "grasp", true
+	case 7018:
+		return "fisa-svc", true
+	case 7019:
+		return "doceri-ctl", true
+	case 7020:
+		return "dpserve", true
+	case 7021:
+		return "dpserveadmin", true
+	case 7022:
+		return "ctdp", true
+	case 7023:
+		return "ct2nmcs", true
+	case 7024:
+		return "vmsvc", true
+	case 7025:
+		return "vmsvc-2", true
+	case 7026:
+		return "loreji-panel", true
+	case 7030:
+		return "op-probe", true
+	case 7031:
+		return "iposplanet", true
+	case 7070:
+		return "arcp", true
+	case 7071:
+		return "iwg1", true
+	case 7072:
+		return "iba-cfg", true
+	case 7073:
+		return "martalk", true
+	case 7080:
+		return "empowerid", true
+	case 7099:
+		return "lazy-ptop", true
+	case 7100:
+		return "font-service", true
+	case 7101:
+		return "elcn", true
+	case 7117:
+		return "rothaga", true
+	case 7121:
+		return "virprot-lm", true
+	case 7123:
+		return "snif", true
+	case 7128:
+		return "scenidm", true
+	case 7129:
+		return "scenccs", true
+	case 7161:
+		return "cabsm-comm", true
+	case 7162:
+		return "caistoragemgr", true
+	case 7163:
+		return "cacsambroker", true
+	case 7164:
+		return "fsr", true
+	case 7165:
+		return "doc-server", true
+	case 7166:
+		return "aruba-server", true
+	case 7167:
+		return "casrmagent", true
+	case 7168:
+		return "cnckadserver", true
+	case 7169:
+		return "ccag-pib", true
+	case 7170:
+		return "nsrp", true
+	case 7171:
+		return "drm-production", true
+	case 7172:
+		return "metalbend", true
+	case 7173:
+		return "zsecure", true
+	case 7174:
+		return "clutild", true
+	case 7200:
+		return "fodms", true
+	case 7201:
+		return "dlip", true
+	case 7202:
+		return "pon-ictp", true
+	case 7215:
+		return "PS-Server", true
+	case 7216:
+		return "PS-Capture-Pro", true
+	case 7227:
+		return "ramp", true
+	case 7228:
+		return "citrixupp", true
+	case 7229:
+		return "citrixuppg", true
+	case 7234:
+		return "asa-gateways", true
+	case 7236:
+		return "display", true
+	case 7237:
+		return "pads", true
+	case 7244:
+		return "frc-hicp", true
+	case 7262:
+		return "cnap", true
+	case 7272:
+		return "watchme-7272", true
+	case 7273:
+		return "oma-rlp", true
+	case 7274:
+		return "oma-rlp-s", true
+	case 7275:
+		return "oma-ulp", true
+	case 7276:
+		return "oma-ilp", true
+	case 7277:
+		return "oma-ilp-s", true
+	case 7278:
+		return "oma-dcdocbs", true
+	case 7279:
+		return "ctxlic", true
+	case 7280:
+		return "itactionserver1", true
+	case 7281:
+		return "itactionserver2", true
+	case 7282:
+		return "mzca-action", true
+	case 7283:
+		return "genstat", true
+	case 7365:
+		return "lcm-server", true
+	case 7391:
+		return "mindfilesys", true
+	case 7392:
+		return "mrssrendezvous", true
+	case 7393:
+		return "nfoldman", true
+	case 7394:
+		return "fse", true
+	case 7395:
+		return "winqedit", true
+	case 7397:
+		return "hexarc", true
+	case 7400:
+		return "rtps-discovery", true
+	case 7401:
+		return "rtps-dd-ut", true
+	case 7402:
+		return "rtps-dd-mt", true
+	case 7410:
+		return "ionixnetmon", true
+	case 7411:
+		return "daqstream", true
+	case 7421:
+		return "mtportmon", true
+	case 7426:
+		return "pmdmgr", true
+	case 7427:
+		return "oveadmgr", true
+	case 7428:
+		return "ovladmgr", true
+	case 7429:
+		return "opi-sock", true
+	case 7430:
+		return "xmpv7", true
+	case 7431:
+		return "pmd", true
+	case 7437:
+		return "faximum", true
+	case 7443:
+		return "oracleas-https", true
+	case 7471:
+		return "sttunnel", true
+	case 7473:
+		return "rise", true
+	case 7474:
+		return "neo4j", true
+	case 7478:
+		return "openit", true
+	case 7491:
+		return "telops-lmd", true
+	case 7500:
+		return "silhouette", true
+	case 7501:
+		return "ovbus", true
+	case 7508:
+		return "adcp", true
+	case 7509:
+		return "acplt", true
+	case 7510:
+		return "ovhpas", true
+	case 7511:
+		return "pafec-lm", true
+	case 7542:
+		return "saratoga", true
+	case 7543:
+		return "atul", true
+	case 7544:
+		return "nta-ds", true
+	case 7545:
+		return "nta-us", true
+	case 7546:
+		return "cfs", true
+	case 7547:
+		return "cwmp", true
+	case 7548:
+		return "tidp", true
+	case 7549:
+		return "nls-tl", true
+	case 7551:
+		return "controlone-con", true
+	case 7560:
+		return "sncp", true
+	case 7563:
+		return "cfw", true
+	case 7566:
+		return "vsi-omega", true
+	case 7569:
+		return "dell-eql-asm", true
+	case 7570:
+		return "aries-kfinder", true
+	case 7574:
+		return "coherence", true
+	case 7588:
+		return "sun-lm", true
+	case 7606:
+		return "mipi-debug", true
+	case 7624:
+		return "indi", true
+	case 7626:
+		return "simco", true
+	case 7627:
+		return "soap-http", true
+	case 7628:
+		return "zen-pawn", true
+	case 7629:
+		return "xdas", true
+	case 7630:
+		return "hawk", true
+	case 7631:
+		return "tesla-sys-msg", true
+	case 7633:
+		return "pmdfmgt", true
+	case 7648:
+		return "cuseeme", true
+	case 7663:
+		return "rome", true
+	case 7672:
+		return "imqstomp", true
+	case 7673:
+		return "imqstomps", true
+	case 7674:
+		return "imqtunnels", true
+	case 7675:
+		return "imqtunnel", true
+	case 7676:
+		return "imqbrokerd", true
+	case 7677:
+		return "sun-user-https", true
+	case 7680:
+		return "ms-do", true
+	case 7683:
+		return "dmt", true
+	case 7687:
+		return "bolt", true
+	case 7689:
+		return "collaber", true
+	case 7690:
+		return "sovd", true
+	case 7697:
+		return "klio", true
+	case 7700:
+		return "em7-secom", true
+	case 7707:
+		return "sync-em7", true
+	case 7708:
+		return "scinet", true
+	case 7720:
+		return "medimageportal", true
+	case 7724:
+		return "nsdeepfreezectl", true
+	case 7725:
+		return "nitrogen", true
+	case 7726:
+		return "freezexservice", true
+	case 7727:
+		return "trident-data", true
+	case 7728:
+		return "osvr", true
+	case 7734:
+		return "smip", true
+	case 7738:
+		return "aiagent", true
+	case 7741:
+		return "scriptview", true
+	case 7742:
+		return "msss", true
+	case 7743:
+		return "sstp-1", true
+	case 7744:
+		return "raqmon-pdu", true
+	case 7747:
+		return "prgp", true
+	case 7775:
+		return "inetfs", true
+	case 7777:
+		return "cbt", true
+	case 7778:
+		return "interwise", true
+	case 7779:
+		return "vstat", true
+	case 7781:
+		return "accu-lmgr", true
+	case 7786:
+		return "minivend", true
+	case 7787:
+		return "popup-reminders", true
+	case 7789:
+		return "office-tools", true
+	case 7794:
+		return "q3ade", true
+	case 7797:
+		return "pnet-conn", true
+	case 7798:
+		return "pnet-enc", true
+	case 7799:
+		return "altbsdp", true
+	case 7800:
+		return "asr", true
+	case 7801:
+		return "ssp-client", true
+	case 7810:
+		return "rbt-wanopt", true
+	case 7845:
+		return "apc-7845", true
+	case 7846:
+		return "apc-7846", true
+	case 7847:
+		return "csoauth", true
+	case 7869:
+		return "mobileanalyzer", true
+	case 7870:
+		return "rbt-smc", true
+	case 7871:
+		return "mdm", true
+	case 7878:
+		return "owms", true
+	case 7880:
+		return "pss", true
+	case 7887:
+		return "ubroker", true
+	case 7900:
+		return "mevent", true
+	case 7901:
+		return "tnos-sp", true
+	case 7902:
+		return "tnos-dp", true
+	case 7903:
+		return "tnos-dps", true
+	case 7913:
+		return "qo-secure", true
+	case 7932:
+		return "t2-drm", true
+	case 7933:
+		return "t2-brm", true
+	case 7962:
+		return "generalsync", true
+	case 7967:
+		return "supercell", true
+	case 7979:
+		return "micromuse-ncps", true
+	case 7980:
+		return "quest-vista", true
+	case 7981:
+		return "sossd-collect", true
+	case 7982:
+		return "sossd-agent", true
+	case 7997:
+		return "pushns", true
+	case 7999:
+		return "irdmi2", true
+	case 8000:
+		return "irdmi", true
+	case 8001:
+		return "vcom-tunnel", true
+	case 8002:
+		return "teradataordbms", true
+	case 8003:
+		return "mcreport", true
+	case 8004:
+		return "p2pevolvenet", true
+	case 8005:
+		return "mxi", true
+	case 8006:
+		return "wpl-analytics", true
+	case 8007:
+		return "warppipe", true
+	case 8008:
+		return "http-alt", true
+	case 8009:
+		return "nvme-disc", true
+	case 8015:
+		return "cfg-cloud", true
+	case 8016:
+		return "ads-s", true
+	case 8019:
+		return "qbdb", true
+	case 8020:
+		return "intu-ec-svcdisc", true
+	case 8021:
+		return "intu-ec-client", true
+	case 8022:
+		return "oa-system", true
+	case 8023:
+		return "arca-api", true
+	case 8025:
+		return "ca-audit-da", true
+	case 8026:
+		return "ca-audit-ds", true
+	case 8027:
+		return "papachi-p2p-srv", true
+	case 8032:
+		return "pro-ed", true
+	case 8033:
+		return "mindprint", true
+	case 8034:
+		return "vantronix-mgmt", true
+	case 8040:
+		return "ampify", true
+	case 8041:
+		return "enguity-xccetp", true
+	case 8042:
+		return "fs-agent", true
+	case 8043:
+		return "fs-server", true
+	case 8044:
+		return "fs-mgmt", true
+	case 8051:
+		return "rocrail", true
+	case 8052:
+		return "senomix01", true
+	case 8053:
+		return "senomix02", true
+	case 8054:
+		return "senomix03", true
+	case 8055:
+		return "senomix04", true
+	case 8056:
+		return "senomix05", true
+	case 8057:
+		return "senomix06", true
+	case 8058:
+		return "senomix07", true
+	case 8059:
+		return "senomix08", true
+	case 8066:
+		return "toad-bi-appsrvr", true
+	case 8067:
+		return "infi-async", true
+	case 8070:
+		return "ucs-isc", true
+	case 8074:
+		return "gadugadu", true
+	case 8077:
+		return "mles", true
+	case 8080:
+		return "http-alt", true
+	case 8081:
+		return "sunproxyadmin", true
+	case 8082:
+		return "us-cli", true
+	case 8083:
+		return "us-srv", true
+	case 8084:
+		return "websnp", true
+	case 8086:
+		return "d-s-n", true
+	case 8087:
+		return "simplifymedia", true
+	case 8088:
+		return "radan-http", true
+	case 8090:
+		return "opsmessaging", true
+	case 8091:
+		return "jamlink", true
+	case 8097:
+		return "sac", true
+	case 8100:
+		return "xprint-server", true
+	case 8101:
+		return "ldoms-migr", true
+	case 8102:
+		return "kz-migr", true
+	case 8115:
+		return "mtl8000-matrix", true
+	case 8116:
+		return "cp-cluster", true
+	case 8117:
+		return "purityrpc", true
+	case 8118:
+		return "privoxy", true
+	case 8121:
+		return "apollo-data", true
+	case 8122:
+		return "apollo-admin", true
+	case 8128:
+		return "paycash-online", true
+	case 8129:
+		return "paycash-wbp", true
+	case 8130:
+		return "indigo-vrmi", true
+	case 8131:
+		return "indigo-vbcp", true
+	case 8132:
+		return "dbabble", true
+	case 8140:
+		return "puppet", true
+	case 8148:
+		return "isdd", true
+	case 8153:
+		return "quantastor", true
+	case 8160:
+		return "patrol", true
+	case 8161:
+		return "patrol-snmp", true
+	case 8162:
+		return "lpar2rrd", true
+	case 8181:
+		return "intermapper", true
+	case 8182:
+		return "vmware-fdm", true
+	case 8183:
+		return "proremote", true
+	case 8184:
+		return "itach", true
+	case 8190:
+		return "gcp-rphy", true
+	case 8191:
+		return "limnerpressure", true
+	case 8192:
+		return "spytechphone", true
+	case 8194:
+		return "blp1", true
+	case 8195:
+		return "blp2", true
+	case 8199:
+		return "vvr-data", true
+	case 8200:
+		return "trivnet1", true
+	case 8201:
+		return "trivnet2", true
+	case 8204:
+		return "lm-perfworks", true
+	case 8205:
+		return "lm-instmgr", true
+	case 8206:
+		return "lm-dta", true
+	case 8207:
+		return "lm-sserver", true
+	case 8208:
+		return "lm-webwatcher", true
+	case 8230:
+		return "rexecj", true
+	case 8243:
+		return "synapse-nhttps", true
+	case 8270:
+		return "robot-remote", true
+	case 8276:
+		return "ms-mcc", true
+	case 8280:
+		return "synapse-nhttp", true
+	case 8282:
+		return "libelle", true
+	case 8292:
+		return "blp3", true
+	case 8293:
+		return "hiperscan-id", true
+	case 8294:
+		return "blp4", true
+	case 8300:
+		return "tmi", true
+	case 8301:
+		return "amberon", true
+	case 8313:
+		return "hub-open-net", true
+	case 8320:
+		return "tnp-discover", true
+	case 8321:
+		return "tnp", true
+	case 8322:
+		return "garmin-marine", true
+	case 8351:
+		return "server-find", true
+	case 8376:
+		return "cruise-enum", true
+	case 8377:
+		return "cruise-swroute", true
+	case 8378:
+		return "cruise-config", true
+	case 8379:
+		return "cruise-diags", true
+	case 8380:
+		return "cruise-update", true
+	case 8383:
+		return "m2mservices", true
+	case 8400:
+		return "cvd", true
+	case 8401:
+		return "sabarsd", true
+	case 8402:
+		return "abarsd", true
+	case 8403:
+		return "admind", true
+	case 8404:
+		return "svcloud", true
+	case 8405:
+		return "svbackup", true
+	case 8415:
+		return "dlpx-sp", true
+	case 8416:
+		return "espeech", true
+	case 8417:
+		return "espeech-rtp", true
+	case 8423:
+		return "aritts", true
+	case 8432:
+		return "pgbackrest", true
+	case 8442:
+		return "cybro-a-bus", true
+	case 8443:
+		return "pcsync-https", true
+	case 8444:
+		return "pcsync-http", true
+	case 8445:
+		return "copy", true
+	case 8450:
+		return "npmp", true
+	case 8457:
+		return "nexentamv", true
+	case 8470:
+		return "cisco-avp", true
+	case 8471:
+		return "pim-port", true
+	case 8472:
+		return "otv", true
+	case 8473:
+		return "vp2p", true
+	case 8474:
+		return "noteshare", true
+	case 8500:
+		return "fmtp", true
+	case 8501:
+		return "cmtp-mgt", true
+	case 8502:
+		return "ftnmtp", true
+	case 8554:
+		return "rtsp-alt", true
+	case 8555:
+		return "d-fence", true
+	case 8567:
+		return "dof-tunnel", true
+	case 8600:
+		return "asterix", true
+	case 8610:
+		return "canon-mfnp", true
+	case 8611:
+		return "canon-bjnp1", true
+	case 8612:
+		return "canon-bjnp2", true
+	case 8613:
+		return "canon-bjnp3", true
+	case 8614:
+		return "canon-bjnp4", true
+	case 8615:
+		return "imink", true
+	case 8665:
+		return "monetra", true
+	case 8666:
+		return "monetra-admin", true
+	case 8675:
+		return "msi-cps-rm", true
+	case 8686:
+		return "sun-as-jmxrmi", true
+	case 8688:
+		return "openremote-ctrl", true
+	case 8699:
+		return "vnyx", true
+	case 8710:
+		return "semi-grpc", true
+	case 8711:
+		return "nvc", true
+	case 8733:
+		return "ibus", true
+	case 8750:
+		return "dey-keyneg", true
+	case 8763:
+		return "mc-appserver", true
+	case 8764:
+		return "openqueue", true
+	case 8765:
+		return "ultraseek-http", true
+	case 8766:
+		return "amcs", true
+	case 8767:
+		return "core-of-source", true
+	case 8768:
+		return "sandpolis", true
+	case 8769:
+		return "oktaauthenticat", true
+	case 8770:
+		return "dpap", true
+	case 8778:
+		return "uec", true
+	case 8786:
+		return "msgclnt", true
+	case 8787:
+		return "msgsrvr", true
+	case 8793:
+		return "acd-pm", true
+	case 8800:
+		return "sunwebadmin", true
+	case 8804:
+		return "truecm", true
+	case 8873:
+		return "dxspider", true
+	case 8880:
+		return "cddbp-alt", true
+	case 8881:
+		return "galaxy4d", true
+	case 8883:
+		return "secure-mqtt", true
+	case 8888:
+		return "ddi-tcp-1", true
+	case 8889:
+		return "ddi-tcp-2", true
+	case 8890:
+		return "ddi-tcp-3", true
+	case 8891:
+		return "ddi-tcp-4", true
+	case 8892:
+		return "ddi-tcp-5", true
+	case 8893:
+		return "ddi-tcp-6", true
+	case 8894:
+		return "ddi-tcp-7", true
+	case 8899:
+		return "ospf-lite", true
+	case 8900:
+		return "jmb-cds1", true
+	case 8901:
+		return "jmb-cds2", true
+	case 8908:
+		return "dpp", true
+	case 8910:
+		return "manyone-http", true
+	case 8911:
+		return "manyone-xml", true
+	case 8912:
+		return "wcbackup", true
+	case 8913:
+		return "dragonfly", true
+	case 8937:
+		return "twds", true
+	case 8953:
+		return "ub-dns-control", true
+	case 8954:
+		return "cumulus-admin", true
+	case 8980:
+		return "nod-provider", true
+	case 8989:
+		return "sunwebadmins", true
+	case 8990:
+		return "http-wmap", true
+	case 8991:
+		return "https-wmap", true
+	case 8997:
+		return "oracle-ms-ens", true
+	case 8998:
+		return "canto-roboflow", true
+	case 8999:
+		return "bctp", true
+	case 9000:
+		return "cslistener", true
+	case 9001:
+		return "etlservicemgr", true
+	case 9002:
+		return "dynamid", true
+	case 9005:
+		return "golem", true
+	case 9008:
+		return "ogs-server", true
+	case 9009:
+		return "pichat", true
+	case 9010:
+		return "sdr", true
+	case 9020:
+		return "tambora", true
+	case 9021:
+		return "panagolin-ident", true
+	case 9022:
+		return "paragent", true
+	case 9023:
+		return "swa-1", true
+	case 9024:
+		return "swa-2", true
+	case 9025:
+		return "swa-3", true
+	case 9026:
+		return "swa-4", true
+	case 9050:
+		return "versiera", true
+	case 9051:
+		return "fio-cmgmt", true
+	case 9060:
+		return "CardWeb-IO", true
+	case 9080:
+		return "glrpc", true
+	case 9083:
+		return "emc-pp-mgmtsvc", true
+	case 9084:
+		return "aurora", true
+	case 9085:
+		return "ibm-rsyscon", true
+	case 9086:
+		return "net2display", true
+	case 9087:
+		return "classic", true
+	case 9088:
+		return "sqlexec", true
+	case 9089:
+		return "sqlexec-ssl", true
+	case 9090:
+		return "websm", true
+	case 9091:
+		return "xmltec-xmlmail", true
+	case 9092:
+		return "XmlIpcRegSvc", true
+	case 9093:
+		return "copycat", true
+	case 9100:
+		return "hp-pdl-datastr", true
+	case 9101:
+		return "bacula-dir", true
+	case 9102:
+		return "bacula-fd", true
+	case 9103:
+		return "bacula-sd", true
+	case 9104:
+		return "peerwire", true
+	case 9105:
+		return "xadmin", true
+	case 9106:
+		return "astergate", true
+	case 9107:
+		return "astergatefax", true
+	case 9111:
+		return "hexxorecore", true
+	case 9119:
+		return "mxit", true
+	case 9122:
+		return "grcmp", true
+	case 9123:
+		return "grcp", true
+	case 9131:
+		return "dddp", true
+	case 9160:
+		return "apani1", true
+	case 9161:
+		return "apani2", true
+	case 9162:
+		return "apani3", true
+	case 9163:
+		return "apani4", true
+	case 9164:
+		return "apani5", true
+	case 9191:
+		return "sun-as-jpda", true
+	case 9200:
+		return "wap-wsp", true
+	case 9201:
+		return "wap-wsp-wtp", true
+	case 9202:
+		return "wap-wsp-s", true
+	case 9203:
+		return "wap-wsp-wtp-s", true
+	case 9204:
+		return "wap-vcard", true
+	case 9205:
+		return "wap-vcal", true
+	case 9206:
+		return "wap-vcard-s", true
+	case 9207:
+		return "wap-vcal-s", true
+	case 9208:
+		return "rjcdb-vcards", true
+	case 9209:
+		return "almobile-system", true
+	case 9210:
+		return "oma-mlp", true
+	case 9211:
+		return "oma-mlp-s", true
+	case 9212:
+		return "serverviewdbms", true
+	case 9213:
+		return "serverstart", true
+	case 9214:
+		return "ipdcesgbs", true
+	case 9215:
+		return "insis", true
+	case 9216:
+		return "acme", true
+	case 9217:
+		return "fsc-port", true
+	case 9222:
+		return "teamcoherence", true
+	case 9255:
+		return "mon", true
+	case 9278:
+		return "pegasus", true
+	case 9279:
+		return "pegasus-ctl", true
+	case 9280:
+		return "pgps", true
+	case 9281:
+		return "swtp-port1", true
+	case 9282:
+		return "swtp-port2", true
+	case 9283:
+		return "callwaveiam", true
+	case 9284:
+		return "visd", true
+	case 9285:
+		return "n2h2server", true
+	case 9287:
+		return "cumulus", true
+	case 9292:
+		return "armtechdaemon", true
+	case 9293:
+		return "storview", true
+	case 9294:
+		return "armcenterhttp", true
+	case 9295:
+		return "armcenterhttps", true
+	case 9300:
+		return "vrace", true
+	case 9306:
+		return "sphinxql", true
+	case 9310:
+		return "sapms", true
+	case 9312:
+		return "sphinxapi", true
+	case 9318:
+		return "secure-ts", true
+	case 9321:
+		return "guibase", true
+	case 9339:
+		return "gnmi-gnoi", true
+	case 9340:
+		return "gribi", true
+	case 9343:
+		return "mpidcmgr", true
+	case 9344:
+		return "mphlpdmc", true
+	case 9345:
+		return "rancher", true
+	case 9346:
+		return "ctechlicensing", true
+	case 9374:
+		return "fjdmimgr", true
+	case 9380:
+		return "boxp", true
+	case 9387:
+		return "d2dconfig", true
+	case 9388:
+		return "d2ddatatrans", true
+	case 9389:
+		return "adws", true
+	case 9390:
+		return "otp", true
+	case 9396:
+		return "fjinvmgr", true
+	case 9397:
+		return "mpidcagt", true
+	case 9400:
+		return "sec-t4net-srv", true
+	case 9401:
+		return "sec-t4net-clt", true
+	case 9402:
+		return "sec-pc2fax-srv", true
+	case 9418:
+		return "git", true
+	case 9443:
+		return "tungsten-https", true
+	case 9444:
+		return "wso2esb-console", true
+	case 9445:
+		return "mindarray-ca", true
+	case 9450:
+		return "sntlkeyssrvr", true
+	case 9500:
+		return "ismserver", true
+	case 9535:
+		return "mngsuite", true
+	case 9536:
+		return "laes-bf", true
+	case 9555:
+		return "trispen-sra", true
+	case 9559:
+		return "p4runtime", true
+	case 9592:
+		return "ldgateway", true
+	case 9593:
+		return "cba8", true
+	case 9594:
+		return "msgsys", true
+	case 9595:
+		return "pds", true
+	case 9596:
+		return "mercury-disc", true
+	case 9597:
+		return "pd-admin", true
+	case 9598:
+		return "vscp", true
+	case 9599:
+		return "robix", true
+	case 9600:
+		return "micromuse-ncpw", true
+	case 9612:
+		return "streamcomm-ds", true
+	case 9614:
+		return "iadt-tls", true
+	case 9616:
+		return "erunbook-agent", true
+	case 9617:
+		return "erunbook-server", true
+	case 9618:
+		return "condor", true
+	case 9628:
+		return "odbcpathway", true
+	case 9629:
+		return "uniport", true
+	case 9630:
+		return "peoctlr", true
+	case 9631:
+		return "peocoll", true
+	case 9640:
+		return "pqsflows", true
+	case 9666:
+		return "zoomcp", true
+	case 9667:
+		return "xmms2", true
+	case 9668:
+		return "tec5-sdctp", true
+	case 9694:
+		return "client-wakeup", true
+	case 9695:
+		return "ccnx", true
+	case 9700:
+		return "board-roar", true
+	case 9747:
+		return "l5nas-parchan", true
+	case 9750:
+		return "board-voip", true
+	case 9753:
+		return "rasadv", true
+	case 9762:
+		return "tungsten-http", true
+	case 9800:
+		return "davsrc", true
+	case 9801:
+		return "sstp-2", true
+	case 9802:
+		return "davsrcs", true
+	case 9875:
+		return "sapv1", true
+	case 9876:
+		return "sd", true
+	case 9877:
+		return "x510", true
+	case 9888:
+		return "cyborg-systems", true
+	case 9889:
+		return "gt-proxy", true
+	case 9898:
+		return "monkeycom", true
+	case 9900:
+		return "iua", true
+	case 9909:
+		return "domaintime", true
+	case 9911:
+		return "sype-transport", true
+	case 9925:
+		return "xybrid-cloud", true
+	case 9950:
+		return "apc-9950", true
+	case 9951:
+		return "apc-9951", true
+	case 9952:
+		return "apc-9952", true
+	case 9953:
+		return "acis", true
+	case 9954:
+		return "hinp", true
+	case 9955:
+		return "alljoyn-stm", true
+	case 9966:
+		return "odnsp", true
+	case 9978:
+		return "xybrid-rt", true
+	case 9979:
+		return "visweather", true
+	case 9981:
+		return "pumpkindb", true
+	case 9987:
+		return "dsm-scm-target", true
+	case 9988:
+		return "nsesrvr", true
+	case 9990:
+		return "osm-appsrvr", true
+	case 9991:
+		return "osm-oev", true
+	case 9992:
+		return "palace-1", true
+	case 9993:
+		return "palace-2", true
+	case 9994:
+		return "palace-3", true
+	case 9995:
+		return "palace-4", true
+	case 9996:
+		return "palace-5", true
+	case 9997:
+		return "palace-6", true
+	case 9998:
+		return "distinct32", true
+	case 9999:
+		return "distinct", true
+	case 10000:
+		return "ndmp", true
+	case 10001:
+		return "scp-config", true
+	case 10002:
+		return "documentum", true
+	case 10003:
+		return "documentum-s", true
+	case 10004:
+		return "emcrmirccd", true
+	case 10005:
+		return "emcrmird", true
+	case 10006:
+		return "netapp-sync", true
+	case 10007:
+		return "mvs-capacity", true
+	case 10008:
+		return "octopus", true
+	case 10009:
+		return "swdtp-sv", true
+	case 10010:
+		return "rxapi", true
+	case 10020:
+		return "abb-hw", true
+	case 10050:
+		return "zabbix-agent", true
+	case 10051:
+		return "zabbix-trapper", true
+	case 10055:
+		return "qptlmd", true
+	case 10080:
+		return "amanda", true
+	case 10081:
+		return "famdc", true
+	case 10100:
+		return "itap-ddtp", true
+	case 10101:
+		return "ezmeeting-2", true
+	case 10102:
+		return "ezproxy-2", true
+	case 10103:
+		return "ezrelay", true
+	case 10104:
+		return "swdtp", true
+	case 10107:
+		return "bctp-server", true
+	case 10110:
+		return "nmea-0183", true
+	case 10113:
+		return "netiq-endpoint", true
+	case 10114:
+		return "netiq-qcheck", true
+	case 10115:
+		return "netiq-endpt", true
+	case 10116:
+		return "netiq-voipa", true
+	case 10117:
+		return "iqrm", true
+	case 10125:
+		return "cimple", true
+	case 10128:
+		return "bmc-perf-sd", true
+	case 10129:
+		return "bmc-gms", true
+	case 10160:
+		return "qb-db-server", true
+	case 10161:
+		return "snmptls", true
+	case 10162:
+		return "snmptls-trap", true
+	case 10200:
+		return "trisoap", true
+	case 10201:
+		return "rsms", true
+	case 10252:
+		return "apollo-relay", true
+	case 10260:
+		return "axis-wimp-port", true
+	case 10261:
+		return "tile-ml", true
+	case 10288:
+		return "blocks", true
+	case 10321:
+		return "cosir", true
+	case 10443:
+		return "cirrossp", true
+	case 10540:
+		return "MOS-lower", true
+	case 10541:
+		return "MOS-upper", true
+	case 10542:
+		return "MOS-aux", true
+	case 10543:
+		return "MOS-soap", true
+	case 10544:
+		return "MOS-soap-opt", true
+	case 10548:
+		return "serverdocs", true
+	case 10631:
+		return "printopia", true
+	case 10800:
+		return "gap", true
+	case 10805:
+		return "lpdg", true
+	case 10809:
+		return "nbd", true
+	case 10860:
+		return "helix", true
+	case 10880:
+		return "bveapi", true
+	case 10933:
+		return "octopustentacle", true
+	case 10990:
+		return "rmiaux", true
+	case 11000:
+		return "irisa", true
+	case 11001:
+		return "metasys", true
+	case 11095:
+		return "weave", true
+	case 11103:
+		return "origo-sync", true
+	case 11104:
+		return "netapp-icmgmt", true
+	case 11105:
+		return "netapp-icdata", true
+	case 11106:
+		return "sgi-lk", true
+	case 11109:
+		return "sgi-dmfmgr", true
+	case 11110:
+		return "sgi-soap", true
+	case 11111:
+		return "vce", true
+	case 11112:
+		return "dicom", true
+	case 11161:
+		return "suncacao-snmp", true
+	case 11162:
+		return "suncacao-jmxmp", true
+	case 11163:
+		return "suncacao-rmi", true
+	case 11164:
+		return "suncacao-csa", true
+	case 11165:
+		return "suncacao-websvc", true
+	case 11172:
+		return "oemcacao-jmxmp", true
+	case 11173:
+		return "t5-straton", true
+	case 11174:
+		return "oemcacao-rmi", true
+	case 11175:
+		return "oemcacao-websvc", true
+	case 11201:
+		return "smsqp", true
+	case 11202:
+		return "dcsl-backup", true
+	case 11208:
+		return "wifree", true
+	case 11211:
+		return "memcache", true
+	case 11235:
+		return "xcompute", true
+	case 11319:
+		return "imip", true
+	case 11320:
+		return "imip-channels", true
+	case 11321:
+		return "arena-server", true
+	case 11367:
+		return "atm-uhas", true
+	case 11371:
+		return "hkp", true
+	case 11489:
+		return "asgcypresstcps", true
+	case 11600:
+		return "tempest-port", true
+	case 11623:
+		return "emc-xsw-dconfig", true
+	case 11720:
+		return "h323callsigalt", true
+	case 11723:
+		return "emc-xsw-dcache", true
+	case 11751:
+		return "intrepid-ssl", true
+	case 11796:
+		return "lanschool", true
+	case 11876:
+		return "xoraya", true
+	case 11967:
+		return "sysinfo-sp", true
+	case 11971:
+		return "tibsd", true
+	case 12000:
+		return "entextxid", true
+	case 12001:
+		return "entextnetwk", true
+	case 12002:
+		return "entexthigh", true
+	case 12003:
+		return "entextmed", true
+	case 12004:
+		return "entextlow", true
+	case 12005:
+		return "dbisamserver1", true
+	case 12006:
+		return "dbisamserver2", true
+	case 12007:
+		return "accuracer", true
+	case 12008:
+		return "accuracer-dbms", true
+	case 12010:
+		return "edbsrvr", true
+	case 12012:
+		return "vipera", true
+	case 12013:
+		return "vipera-ssl", true
+	case 12109:
+		return "rets-ssl", true
+	case 12121:
+		return "nupaper-ss", true
+	case 12168:
+		return "cawas", true
+	case 12172:
+		return "hivep", true
+	case 12300:
+		return "linogridengine", true
+	case 12302:
+		return "rads", true
+	case 12321:
+		return "warehouse-sss", true
+	case 12322:
+		return "warehouse", true
+	case 12345:
+		return "italk", true
+	case 12546:
+		return "carb-repl-ctrl", true
+	case 12753:
+		return "tsaf", true
+	case 12865:
+		return "netperf", true
+	case 13160:
+		return "i-zipqd", true
+	case 13216:
+		return "bcslogc", true
+	case 13217:
+		return "rs-pias", true
+	case 13218:
+		return "emc-vcas-tcp", true
+	case 13223:
+		return "powwow-client", true
+	case 13224:
+		return "powwow-server", true
+	case 13400:
+		return "doip-data", true
+	case 13720:
+		return "bprd", true
+	case 13721:
+		return "bpdbm", true
+	case 13722:
+		return "bpjava-msvc", true
+	case 13724:
+		return "vnetd", true
+	case 13782:
+		return "bpcd", true
+	case 13783:
+		return "vopied", true
+	case 13785:
+		return "nbdb", true
+	case 13786:
+		return "nomdb", true
+	case 13818:
+		return "dsmcc-config", true
+	case 13819:
+		return "dsmcc-session", true
+	case 13820:
+		return "dsmcc-passthru", true
+	case 13821:
+		return "dsmcc-download", true
+	case 13822:
+		return "dsmcc-ccp", true
+	case 13823:
+		return "bmdss", true
+	case 13832:
+		return "a-trust-rpc", true
+	case 13894:
+		return "ucontrol", true
+	case 13929:
+		return "dta-systems", true
+	case 13930:
+		return "medevolve", true
+	case 14000:
+		return "scotty-ft", true
+	case 14001:
+		return "sua", true
+	case 14033:
+		return "sage-best-com1", true
+	case 14034:
+		return "sage-best-com2", true
+	case 14141:
+		return "vcs-app", true
+	case 14142:
+		return "icpp", true
+	case 14143:
+		return "icpps", true
+	case 14145:
+		return "gcm-app", true
+	case 14149:
+		return "vrts-tdd", true
+	case 14150:
+		return "vcscmd", true
+	case 14154:
+		return "vad", true
+	case 14250:
+		return "cps", true
+	case 14414:
+		return "ca-web-update", true
+	case 14500:
+		return "xpra", true
+	case 14936:
+		return "hde-lcesrvr-1", true
+	case 14937:
+		return "hde-lcesrvr-2", true
+	case 15000:
+		return "hydap", true
+	case 15002:
+		return "onep-tls", true
+	case 15345:
+		return "xpilot", true
+	case 15363:
+		return "3link", true
+	case 15555:
+		return "cisco-snat", true
+	case 15660:
+		return "bex-xr", true
+	case 15740:
+		return "ptp", true
+	case 15999:
+		return "programmar", true
+	case 16000:
+		return "fmsas", true
+	case 16001:
+		return "fmsascon", true
+	case 16002:
+		return "gsms", true
+	case 16020:
+		return "jwpc", true
+	case 16021:
+		return "jwpc-bin", true
+	case 16161:
+		return "sun-sea-port", true
+	case 16162:
+		return "solaris-audit", true
+	case 16309:
+		return "etb4j", true
+	case 16310:
+		return "pduncs", true
+	case 16311:
+		return "pdefmns", true
+	case 16360:
+		return "netserialext1", true
+	case 16361:
+		return "netserialext2", true
+	case 16367:
+		return "netserialext3", true
+	case 16368:
+		return "netserialext4", true
+	case 16384:
+		return "connected", true
+	case 16385:
+		return "rdgs", true
+	case 16619:
+		return "xoms", true
+	case 16665:
+		return "axon-tunnel", true
+	case 16789:
+		return "cadsisvr", true
+	case 16900:
+		return "newbay-snc-mc", true
+	case 16950:
+		return "sgcip", true
+	case 16991:
+		return "intel-rci-mp", true
+	case 16992:
+		return "amt-soap-http", true
+	case 16993:
+		return "amt-soap-https", true
+	case 16994:
+		return "amt-redir-tcp", true
+	case 16995:
+		return "amt-redir-tls", true
+	case 17007:
+		return "isode-dua", true
+	case 17010:
+		return "ncpu", true
+	case 17184:
+		return "vestasdlp", true
+	case 17185:
+		return "soundsvirtual", true
+	case 17219:
+		return "chipper", true
+	case 17220:
+		return "avtp", true
+	case 17221:
+		return "avdecc", true
+	case 17223:
+		return "isa100-gci", true
+	case 17225:
+		return "trdp-md", true
+	case 17234:
+		return "integrius-stp", true
+	case 17235:
+		return "ssh-mgmt", true
+	case 17500:
+		return "db-lsp", true
+	case 17555:
+		return "ailith", true
+	case 17729:
+		return "ea", true
+	case 17754:
+		return "zep", true
+	case 17755:
+		return "zigbee-ip", true
+	case 17756:
+		return "zigbee-ips", true
+	case 17777:
+		return "sw-orion", true
+	case 18000:
+		return "biimenu", true
+	case 18104:
+		return "radpdf", true
+	case 18136:
+		return "racf", true
+	case 18181:
+		return "opsec-cvp", true
+	case 18182:
+		return "opsec-ufp", true
+	case 18183:
+		return "opsec-sam", true
+	case 18184:
+		return "opsec-lea", true
+	case 18185:
+		return "opsec-omi", true
+	case 18186:
+		return "ohsc", true
+	case 18187:
+		return "opsec-ela", true
+	case 18241:
+		return "checkpoint-rtm", true
+	case 18242:
+		return "iclid", true
+	case 18243:
+		return "clusterxl", true
+	case 18262:
+		return "gv-pf", true
+	case 18463:
+		return "ac-cluster", true
+	case 18634:
+		return "rds-ib", true
+	case 18635:
+		return "rds-ip", true
+	case 18668:
+		return "vdmmesh", true
+	case 18769:
+		return "ique", true
+	case 18881:
+		return "infotos", true
+	case 18888:
+		return "apc-necmp", true
+	case 19000:
+		return "igrid", true
+	case 19007:
+		return "scintilla", true
+	case 19020:
+		return "j-link", true
+	case 19191:
+		return "opsec-uaa", true
+	case 19194:
+		return "ua-secureagent", true
+	case 19220:
+		return "cora", true
+	case 19283:
+		return "keysrvr", true
+	case 19315:
+		return "keyshadow", true
+	case 19398:
+		return "mtrgtrans", true
+	case 19410:
+		return "hp-sco", true
+	case 19411:
+		return "hp-sca", true
+	case 19412:
+		return "hp-sessmon", true
+	case 19539:
+		return "fxuptp", true
+	case 19540:
+		return "sxuptp", true
+	case 19541:
+		return "jcp", true
+	case 19790:
+		return "faircom-db", true
+	case 19998:
+		return "iec-104-sec", true
+	case 19999:
+		return "dnp-sec", true
+	case 20000:
+		return "dnp", true
+	case 20001:
+		return "microsan", true
+	case 20002:
+		return "commtact-http", true
+	case 20003:
+		return "commtact-https", true
+	case 20005:
+		return "openwebnet", true
+	case 20013:
+		return "ss-idi", true
+	case 20014:
+		return "opendeploy", true
+	case 20034:
+		return "nburn-id", true
+	case 20046:
+		return "tmophl7mts", true
+	case 20048:
+		return "mountd", true
+	case 20049:
+		return "nfsrdma", true
+	case 20057:
+		return "avesterra", true
+	case 20167:
+		return "tolfab", true
+	case 20202:
+		return "ipdtp-port", true
+	case 20222:
+		return "ipulse-ics", true
+	case 20480:
+		return "emwavemsg", true
+	case 20670:
+		return "track", true
+	case 20810:
+		return "crtech-nlm", true
+	case 20999:
+		return "athand-mmp", true
+	case 21000:
+		return "irtrans", true
+	case 21010:
+		return "notezilla-lan", true
+	case 21212:
+		return "trinket-agent", true
+	case 21213:
+		return "cohesity-agent", true
+	case 21221:
+		return "aigairserver", true
+	case 21553:
+		return "rdm-tfs", true
+	case 21554:
+		return "dfserver", true
+	case 21590:
+		return "vofr-gateway", true
+	case 21800:
+		return "tvpm", true
+	case 21801:
+		return "sal", true
+	case 21845:
+		return "webphone", true
+	case 21846:
+		return "netspeak-is", true
+	case 21847:
+		return "netspeak-cs", true
+	case 21848:
+		return "netspeak-acd", true
+	case 21849:
+		return "netspeak-cps", true
+	case 22000:
+		return "snapenetio", true
+	case 22001:
+		return "optocontrol", true
+	case 22002:
+		return "optohost002", true
+	case 22003:
+		return "optohost003", true
+	case 22004:
+		return "optohost004", true
+	case 22005:
+		return "optohost004", true
+	case 22125:
+		return "dcap", true
+	case 22128:
+		return "gsidcap", true
+	case 22222:
+		return "easyengine", true
+	case 22273:
+		return "wnn6", true
+	case 22305:
+		return "cis", true
+	case 22333:
+		return "showcockpit-net", true
+	case 22335:
+		return "shrewd-control", true
+	case 22343:
+		return "cis-secure", true
+	case 22347:
+		return "wibukey", true
+	case 22350:
+		return "codemeter", true
+	case 22351:
+		return "codemeter-cmwan", true
+	case 22537:
+		return "caldsoft-backup", true
+	case 22555:
+		return "vocaltec-wconf", true
+	case 22763:
+		return "talikaserver", true
+	case 22800:
+		return "aws-brf", true
+	case 22951:
+		return "brf-gw", true
+	case 23000:
+		return "inovaport1", true
+	case 23001:
+		return "inovaport2", true
+	case 23002:
+		return "inovaport3", true
+	case 23003:
+		return "inovaport4", true
+	case 23004:
+		return "inovaport5", true
+	case 23005:
+		return "inovaport6", true
+	case 23053:
+		return "gntp", true
+	case 23294:
+		return "5afe-dir", true
+	case 23333:
+		return "elxmgmt", true
+	case 23400:
+		return "novar-dbase", true
+	case 23401:
+		return "novar-alarm", true
+	case 23402:
+		return "novar-global", true
+	case 23456:
+		return "aequus", true
+	case 23457:
+		return "aequus-alt", true
+	case 23546:
+		return "areaguard-neo", true
+	case 24000:
+		return "med-ltp", true
+	case 24001:
+		return "med-fsp-rx", true
+	case 24002:
+		return "med-fsp-tx", true
+	case 24003:
+		return "med-supp", true
+	case 24004:
+		return "med-ovw", true
+	case 24005:
+		return "med-ci", true
+	case 24006:
+		return "med-net-svc", true
+	case 24242:
+		return "filesphere", true
+	case 24249:
+		return "vista-4gl", true
+	case 24321:
+		return "ild", true
+	case 24323:
+		return "vrmg-ip", true
+	case 24386:
+		return "intel-rci", true
+	case 24465:
+		return "tonidods", true
+	case 24554:
+		return "binkp", true
+	case 24577:
+		return "bilobit", true
+	case 24666:
+		return "sdtvwcam", true
+	case 24676:
+		return "canditv", true
+	case 24677:
+		return "flashfiler", true
+	case 24678:
+		return "proactivate", true
+	case 24680:
+		return "tcc-http", true
+	case 24754:
+		return "cslg", true
+	case 24922:
+		return "find", true
+	case 25000:
+		return "icl-twobase1", true
+	case 25001:
+		return "icl-twobase2", true
+	case 25002:
+		return "icl-twobase3", true
+	case 25003:
+		return "icl-twobase4", true
+	case 25004:
+		return "icl-twobase5", true
+	case 25005:
+		return "icl-twobase6", true
+	case 25006:
+		return "icl-twobase7", true
+	case 25007:
+		return "icl-twobase8", true
+	case 25008:
+		return "icl-twobase9", true
+	case 25009:
+		return "icl-twobase10", true
+	case 25576:
+		return "sauterdongle", true
+	case 25604:
+		return "idtp", true
+	case 25793:
+		return "vocaltec-hos", true
+	case 25900:
+		return "tasp-net", true
+	case 25901:
+		return "niobserver", true
+	case 25902:
+		return "nilinkanalyst", true
+	case 25903:
+		return "niprobe", true
+	case 26000:
+		return "quake", true
+	case 26133:
+		return "scscp", true
+	case 26208:
+		return "wnn6-ds", true
+	case 26257:
+		return "cockroach", true
+	case 26260:
+		return "ezproxy", true
+	case 26261:
+		return "ezmeeting", true
+	case 26262:
+		return "k3software-svr", true
+	case 26263:
+		return "k3software-cli", true
+	case 26486:
+		return "exoline-tcp", true
+	case 26487:
+		return "exoconfig", true
+	case 26489:
+		return "exonet", true
+	case 27010:
+		return "flex-lmadmin", true
+	case 27017:
+		return "mongodb", true
+	case 27345:
+		return "imagepump", true
+	case 27442:
+		return "jesmsjc", true
+	case 27504:
+		return "kopek-httphead", true
+	case 27782:
+		return "ars-vista", true
+	case 27876:
+		return "astrolink", true
+	case 27999:
+		return "tw-auth-key", true
+	case 28000:
+		return "nxlmd", true
+	case 28001:
+		return "pqsp", true
+	case 28010:
+		return "gruber-cashreg", true
+	case 28080:
+		return "thor-engine", true
+	case 28200:
+		return "voxelstorm", true
+	case 28240:
+		return "siemensgsm", true
+	case 28589:
+		return "bosswave", true
+	case 29000:
+		return "saltd-licensing", true
+	case 29167:
+		return "otmp", true
+	case 29999:
+		return "bingbang", true
+	case 30000:
+		return "ndmps", true
+	case 30001:
+		return "pago-services1", true
+	case 30002:
+		return "pago-services2", true
+	case 30003:
+		return "amicon-fpsu-ra", true
+	case 30100:
+		return "rwp", true
+	case 30260:
+		return "kingdomsonline", true
+	case 30400:
+		return "gs-realtime", true
+	case 30999:
+		return "ovobs", true
+	case 31016:
+		return "ka-sddp", true
+	case 31020:
+		return "autotrac-acp", true
+	case 31337:
+		return "eldim", true
+	case 31400:
+		return "pace-licensed", true
+	case 31416:
+		return "xqosd", true
+	case 31457:
+		return "tetrinet", true
+	case 31620:
+		return "lm-mon", true
+	case 31685:
+		return "dsx-monitor", true
+	case 31765:
+		return "gamesmith-port", true
+	case 31948:
+		return "iceedcp-tx", true
+	case 31949:
+		return "iceedcp-rx", true
+	case 32034:
+		return "iracinghelper", true
+	case 32249:
+		return "t1distproc60", true
+	case 32400:
+		return "plex", true
+	case 32483:
+		return "apm-link", true
+	case 32635:
+		return "sec-ntb-clnt", true
+	case 32636:
+		return "DMExpress", true
+	case 32767:
+		return "filenet-powsrm", true
+	case 32768:
+		return "filenet-tms", true
+	case 32769:
+		return "filenet-rpc", true
+	case 32770:
+		return "filenet-nch", true
+	case 32771:
+		return "filenet-rmi", true
+	case 32772:
+		return "filenet-pa", true
+	case 32773:
+		return "filenet-cm", true
+	case 32774:
+		return "filenet-re", true
+	case 32775:
+		return "filenet-pch", true
+	case 32776:
+		return "filenet-peior", true
+	case 32777:
+		return "filenet-obrok", true
+	case 32801:
+		return "mlsn", true
+	case 32811:
+		return "retp", true
+	case 32896:
+		return "idmgratm", true
+	case 33000:
+		return "wg-endpt-comms", true
+	case 33060:
+		return "mysqlx", true
+	case 33123:
+		return "aurora-balaena", true
+	case 33331:
+		return "diamondport", true
+	case 33333:
+		return "dgi-serv", true
+	case 33334:
+		return "speedtrace", true
+	case 33434:
+		return "traceroute", true
+	case 33656:
+		return "snip-slave", true
+	case 33890:
+		return "digilent-adept", true
+	case 34249:
+		return "turbonote-2", true
+	case 34378:
+		return "p-net-local", true
+	case 34379:
+		return "p-net-remote", true
+	case 34567:
+		return "dhanalakshmi", true
+	case 34962:
+		return "profinet-rt", true
+	case 34963:
+		return "profinet-rtm", true
+	case 34964:
+		return "profinet-cm", true
+	case 34980:
+		return "ethercat", true
+	case 35000:
+		return "heathview", true
+	case 35001:
+		return "rt-viewer", true
+	case 35002:
+		return "rt-sound", true
+	case 35003:
+		return "rt-devicemapper", true
+	case 35004:
+		return "rt-classmanager", true
+	case 35005:
+		return "rt-labtracker", true
+	case 35006:
+		return "rt-helper", true
+	case 35100:
+		return "axio-disc", true
+	case 35354:
+		return "kitim", true
+	case 35355:
+		return "altova-lm", true
+	case 35356:
+		return "guttersnex", true
+	case 35357:
+		return "openstack-id", true
+	case 36001:
+		return "allpeers", true
+	case 36524:
+		return "febooti-aw", true
+	case 36602:
+		return "observium-agent", true
+	case 36700:
+		return "mapx", true
+	case 36865:
+		return "kastenxpipe", true
+	case 37475:
+		return "neckar", true
+	case 37483:
+		return "gdrive-sync", true
+	case 37601:
+		return "eftp", true
+	case 37654:
+		return "unisys-eportal", true
+	case 38000:
+		return "ivs-database", true
+	case 38001:
+		return "ivs-insertion", true
+	case 38002:
+		return "cresco-control", true
+	case 38201:
+		return "galaxy7-data", true
+	case 38202:
+		return "fairview", true
+	case 38203:
+		return "agpolicy", true
+	case 38638:
+		return "psqlmws", true
+	case 38800:
+		return "sruth", true
+	case 38865:
+		return "secrmmsafecopya", true
+	case 39063:
+		return "vroa", true
+	case 39681:
+		return "turbonote-1", true
+	case 40000:
+		return "safetynetp", true
+	case 40404:
+		return "sptx", true
+	case 40841:
+		return "cscp", true
+	case 40842:
+		return "csccredir", true
+	case 40843:
+		return "csccfirewall", true
+	case 41111:
+		return "fs-qos", true
+	case 41121:
+		return "tentacle", true
+	case 41230:
+		return "z-wave-s", true
+	case 41794:
+		return "crestron-cip", true
+	case 41795:
+		return "crestron-ctp", true
+	case 41796:
+		return "crestron-cips", true
+	case 41797:
+		return "crestron-ctps", true
+	case 42508:
+		return "candp", true
+	case 42509:
+		return "candrp", true
+	case 42510:
+		return "caerpc", true
+	case 42999:
+		return "curiosity", true
+	case 43000:
+		return "recvr-rc", true
+	case 43188:
+		return "reachout", true
+	case 43189:
+		return "ndm-agent-port", true
+	case 43190:
+		return "ip-provision", true
+	case 43191:
+		return "noit-transport", true
+	case 43210:
+		return "shaperai", true
+	case 43439:
+		return "eq3-update", true
+	case 43440:
+		return "ew-mgmt", true
+	case 43441:
+		return "ciscocsdb", true
+	case 44123:
+		return "z-wave-tunnel", true
+	case 44321:
+		return "pmcd", true
+	case 44322:
+		return "pmcdproxy", true
+	case 44323:
+		return "pmwebapi", true
+	case 44444:
+		return "cognex-dataman", true
+	case 44445:
+		return "acronis-backup", true
+	case 44553:
+		return "rbr-debug", true
+	case 44818:
+		return "EtherNet-IP-2", true
+	case 44900:
+		return "m3da", true
+	case 45000:
+		return "asmp", true
+	case 45001:
+		return "asmps", true
+	case 45002:
+		return "rs-status", true
+	case 45045:
+		return "synctest", true
+	case 45054:
+		return "invision-ag", true
+	case 45514:
+		return "cloudcheck", true
+	case 45678:
+		return "eba", true
+	case 45824:
+		return "dai-shell", true
+	case 45825:
+		return "qdb2service", true
+	case 45966:
+		return "ssr-servermgr", true
+	case 46336:
+		return "inedo", true
+	case 46998:
+		return "spremotetablet", true
+	case 46999:
+		return "mediabox", true
+	case 47000:
+		return "mbus", true
+	case 47001:
+		return "winrm", true
+	case 47557:
+		return "dbbrowse", true
+	case 47624:
+		return "directplaysrvr", true
+	case 47806:
+		return "ap", true
+	case 47808:
+		return "bacnet", true
+	case 48000:
+		return "nimcontroller", true
+	case 48001:
+		return "nimspooler", true
+	case 48002:
+		return "nimhub", true
+	case 48003:
+		return "nimgtw", true
+	case 48004:
+		return "nimbusdb", true
+	case 48005:
+		return "nimbusdbctrl", true
+	case 48048:
+		return "juka", true
+	case 48049:
+		return "3gpp-cbsp", true
+	case 48050:
+		return "weandsf", true
+	case 48128:
+		return "isnetserv", true
+	case 48129:
+		return "blp5", true
+	case 48556:
+		return "com-bardac-dw", true
+	case 48619:
+		return "iqobject", true
+	case 48653:
+		return "robotraconteur", true
+	case 49000:
+		return "matahari", true
+	case 49001:
+		return "nusrp", true
+	case 49150:
+		return "inspider", true
+
+	}
+
+	return "", false
+}
 
 // UDPPortNames contains the port names for all UDP ports.
-var UDPPortNames = udpPortNames
+func UDPPortNames(port UDPPort) (string, bool) {
+	switch port {
+	case 1:
+		return "tcpmux", true
+	case 2:
+		return "compressnet", true
+	case 3:
+		return "compressnet", true
+	case 5:
+		return "rje", true
+	case 7:
+		return "echo", true
+	case 9:
+		return "discard", true
+	case 11:
+		return "systat", true
+	case 13:
+		return "daytime", true
+	case 17:
+		return "qotd", true
+	case 18:
+		return "msp", true
+	case 19:
+		return "chargen", true
+	case 20:
+		return "ftp-data", true
+	case 21:
+		return "ftp", true
+	case 22:
+		return "ssh", true
+	case 23:
+		return "telnet", true
+	case 25:
+		return "smtp", true
+	case 27:
+		return "nsw-fe", true
+	case 29:
+		return "msg-icp", true
+	case 31:
+		return "msg-auth", true
+	case 33:
+		return "dsp", true
+	case 37:
+		return "time", true
+	case 38:
+		return "rap", true
+	case 39:
+		return "rlp", true
+	case 41:
+		return "graphics", true
+	case 42:
+		return "name", true
+	case 43:
+		return "nicname", true
+	case 44:
+		return "mpm-flags", true
+	case 45:
+		return "mpm", true
+	case 46:
+		return "mpm-snd", true
+	case 48:
+		return "auditd", true
+	case 49:
+		return "tacacs", true
+	case 50:
+		return "re-mail-ck", true
+	case 52:
+		return "xns-time", true
+	case 53:
+		return "domain", true
+	case 54:
+		return "xns-ch", true
+	case 55:
+		return "isi-gl", true
+	case 56:
+		return "xns-auth", true
+	case 58:
+		return "xns-mail", true
+	case 62:
+		return "acas", true
+	case 63:
+		return "whoispp", true
+	case 64:
+		return "covia", true
+	case 65:
+		return "tacacs-ds", true
+	case 66:
+		return "sql-net", true
+	case 67:
+		return "bootps", true
+	case 68:
+		return "bootpc", true
+	case 69:
+		return "tftp", true
+	case 70:
+		return "gopher", true
+	case 71:
+		return "netrjs-1", true
+	case 72:
+		return "netrjs-2", true
+	case 73:
+		return "netrjs-3", true
+	case 74:
+		return "netrjs-4", true
+	case 76:
+		return "deos", true
+	case 78:
+		return "vettcp", true
+	case 79:
+		return "finger", true
+	case 80:
+		return "http", true
+	case 82:
+		return "xfer", true
+	case 83:
+		return "mit-ml-dev", true
+	case 84:
+		return "ctf", true
+	case 85:
+		return "mit-ml-dev", true
+	case 86:
+		return "mfcobol", true
+	case 88:
+		return "kerberos", true
+	case 89:
+		return "su-mit-tg", true
+	case 90:
+		return "dnsix", true
+	case 91:
+		return "mit-dov", true
+	case 92:
+		return "npp", true
+	case 93:
+		return "dcp", true
+	case 94:
+		return "objcall", true
+	case 95:
+		return "supdup", true
+	case 96:
+		return "dixie", true
+	case 97:
+		return "swift-rvf", true
+	case 98:
+		return "tacnews", true
+	case 99:
+		return "metagram", true
+	case 101:
+		return "hostname", true
+	case 102:
+		return "iso-tsap", true
+	case 103:
+		return "gppitnp", true
+	case 104:
+		return "acr-nema", true
+	case 105:
+		return "cso", true
+	case 106:
+		return "3com-tsmux", true
+	case 107:
+		return "rtelnet", true
+	case 108:
+		return "snagas", true
+	case 109:
+		return "pop2", true
+	case 110:
+		return "pop3", true
+	case 111:
+		return "sunrpc", true
+	case 112:
+		return "mcidas", true
+	case 113:
+		return "auth", true
+	case 115:
+		return "sftp", true
+	case 116:
+		return "ansanotify", true
+	case 117:
+		return "uucp-path", true
+	case 118:
+		return "sqlserv", true
+	case 119:
+		return "nntp", true
+	case 120:
+		return "cfdptkt", true
+	case 121:
+		return "erpc", true
+	case 122:
+		return "smakynet", true
+	case 123:
+		return "ntp", true
+	case 124:
+		return "ansatrader", true
+	case 125:
+		return "locus-map", true
+	case 126:
+		return "nxedit", true
+	case 127:
+		return "locus-con", true
+	case 128:
+		return "gss-xlicen", true
+	case 129:
+		return "pwdgen", true
+	case 130:
+		return "cisco-fna", true
+	case 131:
+		return "cisco-tna", true
+	case 132:
+		return "cisco-sys", true
+	case 133:
+		return "statsrv", true
+	case 134:
+		return "ingres-net", true
+	case 135:
+		return "epmap", true
+	case 136:
+		return "profile", true
+	case 137:
+		return "netbios-ns", true
+	case 138:
+		return "netbios-dgm", true
+	case 139:
+		return "netbios-ssn", true
+	case 140:
+		return "emfis-data", true
+	case 141:
+		return "emfis-cntl", true
+	case 142:
+		return "bl-idm", true
+	case 144:
+		return "uma", true
+	case 145:
+		return "uaac", true
+	case 146:
+		return "iso-tp0", true
+	case 147:
+		return "iso-ip", true
+	case 148:
+		return "jargon", true
+	case 149:
+		return "aed-512", true
+	case 150:
+		return "sql-net", true
+	case 151:
+		return "hems", true
+	case 152:
+		return "bftp", true
+	case 153:
+		return "sgmp", true
+	case 154:
+		return "netsc-prod", true
+	case 155:
+		return "netsc-dev", true
+	case 156:
+		return "sqlsrv", true
+	case 157:
+		return "knet-cmp", true
+	case 158:
+		return "pcmail-srv", true
+	case 159:
+		return "nss-routing", true
+	case 160:
+		return "sgmp-traps", true
+	case 161:
+		return "snmp", true
+	case 162:
+		return "snmptrap", true
+	case 163:
+		return "cmip-man", true
+	case 164:
+		return "cmip-agent", true
+	case 165:
+		return "xns-courier", true
+	case 166:
+		return "s-net", true
+	case 167:
+		return "namp", true
+	case 168:
+		return "rsvd", true
+	case 169:
+		return "send", true
+	case 170:
+		return "print-srv", true
+	case 171:
+		return "multiplex", true
+	case 172:
+		return "cl-1", true
+	case 173:
+		return "xyplex-mux", true
+	case 174:
+		return "mailq", true
+	case 175:
+		return "vmnet", true
+	case 176:
+		return "genrad-mux", true
+	case 177:
+		return "xdmcp", true
+	case 178:
+		return "nextstep", true
+	case 179:
+		return "bgp", true
+	case 180:
+		return "ris", true
+	case 181:
+		return "unify", true
+	case 182:
+		return "audit", true
+	case 183:
+		return "ocbinder", true
+	case 184:
+		return "ocserver", true
+	case 185:
+		return "remote-kis", true
+	case 186:
+		return "kis", true
+	case 187:
+		return "aci", true
+	case 188:
+		return "mumps", true
+	case 189:
+		return "qft", true
+	case 190:
+		return "gacp", true
+	case 191:
+		return "prospero", true
+	case 192:
+		return "osu-nms", true
+	case 193:
+		return "srmp", true
+	case 194:
+		return "irc", true
+	case 195:
+		return "dn6-nlm-aud", true
+	case 196:
+		return "dn6-smm-red", true
+	case 197:
+		return "dls", true
+	case 198:
+		return "dls-mon", true
+	case 199:
+		return "smux", true
+	case 200:
+		return "src", true
+	case 201:
+		return "at-rtmp", true
+	case 202:
+		return "at-nbp", true
+	case 203:
+		return "at-3", true
+	case 204:
+		return "at-echo", true
+	case 205:
+		return "at-5", true
+	case 206:
+		return "at-zis", true
+	case 207:
+		return "at-7", true
+	case 208:
+		return "at-8", true
+	case 209:
+		return "qmtp", true
+	case 210:
+		return "z39-50", true
+	case 211:
+		return "914c-g", true
+	case 212:
+		return "anet", true
+	case 213:
+		return "ipx", true
+	case 214:
+		return "vmpwscs", true
+	case 215:
+		return "softpc", true
+	case 216:
+		return "CAIlic", true
+	case 217:
+		return "dbase", true
+	case 218:
+		return "mpp", true
+	case 219:
+		return "uarps", true
+	case 220:
+		return "imap3", true
+	case 221:
+		return "fln-spx", true
+	case 222:
+		return "rsh-spx", true
+	case 223:
+		return "cdc", true
+	case 224:
+		return "masqdialer", true
+	case 242:
+		return "direct", true
+	case 243:
+		return "sur-meas", true
+	case 244:
+		return "inbusiness", true
+	case 245:
+		return "link", true
+	case 246:
+		return "dsp3270", true
+	case 247:
+		return "subntbcst-tftp", true
+	case 248:
+		return "bhfhs", true
+	case 256:
+		return "rap", true
+	case 257:
+		return "set", true
+	case 259:
+		return "esro-gen", true
+	case 260:
+		return "openport", true
+	case 261:
+		return "nsiiops", true
+	case 262:
+		return "arcisdms", true
+	case 263:
+		return "hdap", true
+	case 264:
+		return "bgmp", true
+	case 265:
+		return "x-bone-ctl", true
+	case 266:
+		return "sst", true
+	case 267:
+		return "td-service", true
+	case 268:
+		return "td-replica", true
+	case 269:
+		return "manet", true
+	case 270:
+		return "gist", true
+	case 280:
+		return "http-mgmt", true
+	case 281:
+		return "personal-link", true
+	case 282:
+		return "cableport-ax", true
+	case 283:
+		return "rescap", true
+	case 284:
+		return "corerjd", true
+	case 286:
+		return "fxp", true
+	case 287:
+		return "k-block", true
+	case 308:
+		return "novastorbakcup", true
+	case 309:
+		return "entrusttime", true
+	case 310:
+		return "bhmds", true
+	case 311:
+		return "asip-webadmin", true
+	case 312:
+		return "vslmp", true
+	case 313:
+		return "magenta-logic", true
+	case 314:
+		return "opalis-robot", true
+	case 315:
+		return "dpsi", true
+	case 316:
+		return "decauth", true
+	case 317:
+		return "zannet", true
+	case 318:
+		return "pkix-timestamp", true
+	case 319:
+		return "ptp-event", true
+	case 320:
+		return "ptp-general", true
+	case 321:
+		return "pip", true
+	case 322:
+		return "rtsps", true
+	case 333:
+		return "texar", true
+	case 344:
+		return "pdap", true
+	case 345:
+		return "pawserv", true
+	case 346:
+		return "zserv", true
+	case 347:
+		return "fatserv", true
+	case 348:
+		return "csi-sgwp", true
+	case 349:
+		return "mftp", true
+	case 350:
+		return "matip-type-a", true
+	case 351:
+		return "matip-type-b", true
+	case 352:
+		return "dtag-ste-sb", true
+	case 353:
+		return "ndsauth", true
+	case 354:
+		return "bh611", true
+	case 355:
+		return "datex-asn", true
+	case 356:
+		return "cloanto-net-1", true
+	case 357:
+		return "bhevent", true
+	case 358:
+		return "shrinkwrap", true
+	case 359:
+		return "nsrmp", true
+	case 360:
+		return "scoi2odialog", true
+	case 361:
+		return "semantix", true
+	case 362:
+		return "srssend", true
+	case 363:
+		return "rsvp-tunnel", true
+	case 364:
+		return "aurora-cmgr", true
+	case 365:
+		return "dtk", true
+	case 366:
+		return "odmr", true
+	case 367:
+		return "mortgageware", true
+	case 368:
+		return "qbikgdp", true
+	case 369:
+		return "rpc2portmap", true
+	case 370:
+		return "codaauth2", true
+	case 371:
+		return "clearcase", true
+	case 372:
+		return "ulistproc", true
+	case 373:
+		return "legent-1", true
+	case 374:
+		return "legent-2", true
+	case 375:
+		return "hassle", true
+	case 376:
+		return "nip", true
+	case 377:
+		return "tnETOS", true
+	case 378:
+		return "dsETOS", true
+	case 379:
+		return "is99c", true
+	case 380:
+		return "is99s", true
+	case 381:
+		return "hp-collector", true
+	case 382:
+		return "hp-managed-node", true
+	case 383:
+		return "hp-alarm-mgr", true
+	case 384:
+		return "arns", true
+	case 385:
+		return "ibm-app", true
+	case 386:
+		return "asa", true
+	case 387:
+		return "aurp", true
+	case 388:
+		return "unidata-ldm", true
+	case 389:
+		return "ldap", true
+	case 390:
+		return "uis", true
+	case 391:
+		return "synotics-relay", true
+	case 392:
+		return "synotics-broker", true
+	case 393:
+		return "meta5", true
+	case 394:
+		return "embl-ndt", true
+	case 395:
+		return "netcp", true
+	case 396:
+		return "netware-ip", true
+	case 397:
+		return "mptn", true
+	case 398:
+		return "kryptolan", true
+	case 399:
+		return "iso-tsap-c2", true
+	case 400:
+		return "osb-sd", true
+	case 401:
+		return "ups", true
+	case 402:
+		return "genie", true
+	case 403:
+		return "decap", true
+	case 404:
+		return "nced", true
+	case 405:
+		return "ncld", true
+	case 406:
+		return "imsp", true
+	case 407:
+		return "timbuktu", true
+	case 408:
+		return "prm-sm", true
+	case 409:
+		return "prm-nm", true
+	case 410:
+		return "decladebug", true
+	case 411:
+		return "rmt", true
+	case 412:
+		return "synoptics-trap", true
+	case 413:
+		return "smsp", true
+	case 414:
+		return "infoseek", true
+	case 415:
+		return "bnet", true
+	case 416:
+		return "silverplatter", true
+	case 417:
+		return "onmux", true
+	case 418:
+		return "hyper-g", true
+	case 419:
+		return "ariel1", true
+	case 420:
+		return "smpte", true
+	case 421:
+		return "ariel2", true
+	case 422:
+		return "ariel3", true
+	case 423:
+		return "opc-job-start", true
+	case 424:
+		return "opc-job-track", true
+	case 425:
+		return "icad-el", true
+	case 426:
+		return "smartsdp", true
+	case 427:
+		return "svrloc", true
+	case 428:
+		return "ocs-cmu", true
+	case 429:
+		return "ocs-amu", true
+	case 430:
+		return "utmpsd", true
+	case 431:
+		return "utmpcd", true
+	case 432:
+		return "iasd", true
+	case 433:
+		return "nnsp", true
+	case 434:
+		return "mobileip-agent", true
+	case 435:
+		return "mobilip-mn", true
+	case 436:
+		return "dna-cml", true
+	case 437:
+		return "comscm", true
+	case 438:
+		return "dsfgw", true
+	case 439:
+		return "dasp", true
+	case 440:
+		return "sgcp", true
+	case 441:
+		return "decvms-sysmgt", true
+	case 442:
+		return "cvc-hostd", true
+	case 443:
+		return "https", true
+	case 444:
+		return "snpp", true
+	case 445:
+		return "microsoft-ds", true
+	case 446:
+		return "ddm-rdb", true
+	case 447:
+		return "ddm-dfm", true
+	case 448:
+		return "ddm-ssl", true
+	case 449:
+		return "as-servermap", true
+	case 450:
+		return "tserver", true
+	case 451:
+		return "sfs-smp-net", true
+	case 452:
+		return "sfs-config", true
+	case 453:
+		return "creativeserver", true
+	case 454:
+		return "contentserver", true
+	case 455:
+		return "creativepartnr", true
+	case 456:
+		return "macon-udp", true
+	case 457:
+		return "scohelp", true
+	case 458:
+		return "appleqtc", true
+	case 459:
+		return "ampr-rcmd", true
+	case 460:
+		return "skronk", true
+	case 461:
+		return "datasurfsrv", true
+	case 462:
+		return "datasurfsrvsec", true
+	case 463:
+		return "alpes", true
+	case 464:
+		return "kpasswd", true
+	case 465:
+		return "igmpv3lite", true
+	case 466:
+		return "digital-vrc", true
+	case 467:
+		return "mylex-mapd", true
+	case 468:
+		return "photuris", true
+	case 469:
+		return "rcp", true
+	case 470:
+		return "scx-proxy", true
+	case 471:
+		return "mondex", true
+	case 472:
+		return "ljk-login", true
+	case 473:
+		return "hybrid-pop", true
+	case 474:
+		return "tn-tl-w2", true
+	case 475:
+		return "tcpnethaspsrv", true
+	case 476:
+		return "tn-tl-fd1", true
+	case 477:
+		return "ss7ns", true
+	case 478:
+		return "spsc", true
+	case 479:
+		return "iafserver", true
+	case 480:
+		return "iafdbase", true
+	case 481:
+		return "ph", true
+	case 482:
+		return "bgs-nsi", true
+	case 483:
+		return "ulpnet", true
+	case 484:
+		return "integra-sme", true
+	case 485:
+		return "powerburst", true
+	case 486:
+		return "avian", true
+	case 487:
+		return "saft", true
+	case 488:
+		return "gss-http", true
+	case 489:
+		return "nest-protocol", true
+	case 490:
+		return "micom-pfs", true
+	case 491:
+		return "go-login", true
+	case 492:
+		return "ticf-1", true
+	case 493:
+		return "ticf-2", true
+	case 494:
+		return "pov-ray", true
+	case 495:
+		return "intecourier", true
+	case 496:
+		return "pim-rp-disc", true
+	case 497:
+		return "retrospect", true
+	case 498:
+		return "siam", true
+	case 499:
+		return "iso-ill", true
+	case 500:
+		return "isakmp", true
+	case 501:
+		return "stmf", true
+	case 502:
+		return "mbap", true
+	case 503:
+		return "intrinsa", true
+	case 504:
+		return "citadel", true
+	case 505:
+		return "mailbox-lm", true
+	case 506:
+		return "ohimsrv", true
+	case 507:
+		return "crs", true
+	case 508:
+		return "xvttp", true
+	case 509:
+		return "snare", true
+	case 510:
+		return "fcp", true
+	case 511:
+		return "passgo", true
+	case 512:
+		return "comsat", true
+	case 513:
+		return "who", true
+	case 514:
+		return "syslog", true
+	case 515:
+		return "printer", true
+	case 516:
+		return "videotex", true
+	case 517:
+		return "talk", true
+	case 518:
+		return "ntalk", true
+	case 519:
+		return "utime", true
+	case 520:
+		return "router", true
+	case 521:
+		return "ripng", true
+	case 522:
+		return "ulp", true
+	case 523:
+		return "ibm-db2", true
+	case 524:
+		return "ncp", true
+	case 525:
+		return "timed", true
+	case 526:
+		return "tempo", true
+	case 527:
+		return "stx", true
+	case 528:
+		return "custix", true
+	case 529:
+		return "irc-serv", true
+	case 530:
+		return "courier", true
+	case 531:
+		return "conference", true
+	case 532:
+		return "netnews", true
+	case 533:
+		return "netwall", true
+	case 534:
+		return "windream", true
+	case 535:
+		return "iiop", true
+	case 536:
+		return "opalis-rdv", true
+	case 537:
+		return "nmsp", true
+	case 538:
+		return "gdomap", true
+	case 539:
+		return "apertus-ldp", true
+	case 540:
+		return "uucp", true
+	case 541:
+		return "uucp-rlogin", true
+	case 542:
+		return "commerce", true
+	case 543:
+		return "klogin", true
+	case 544:
+		return "kshell", true
+	case 545:
+		return "appleqtcsrvr", true
+	case 546:
+		return "dhcpv6-client", true
+	case 547:
+		return "dhcpv6-server", true
+	case 548:
+		return "afpovertcp", true
+	case 549:
+		return "idfp", true
+	case 550:
+		return "new-rwho", true
+	case 551:
+		return "cybercash", true
+	case 552:
+		return "devshr-nts", true
+	case 553:
+		return "pirp", true
+	case 554:
+		return "rtsp", true
+	case 555:
+		return "dsf", true
+	case 556:
+		return "remotefs", true
+	case 557:
+		return "openvms-sysipc", true
+	case 558:
+		return "sdnskmp", true
+	case 559:
+		return "teedtap", true
+	case 560:
+		return "rmonitor", true
+	case 561:
+		return "monitor", true
+	case 562:
+		return "chshell", true
+	case 563:
+		return "nntps", true
+	case 564:
+		return "9pfs", true
+	case 565:
+		return "whoami", true
+	case 566:
+		return "streettalk", true
+	case 567:
+		return "banyan-rpc", true
+	case 568:
+		return "ms-shuttle", true
+	case 569:
+		return "ms-rome", true
+	case 570:
+		return "meter", true
+	case 571:
+		return "meter", true
+	case 572:
+		return "sonar", true
+	case 573:
+		return "banyan-vip", true
+	case 574:
+		return "ftp-agent", true
+	case 575:
+		return "vemmi", true
+	case 576:
+		return "ipcd", true
+	case 577:
+		return "vnas", true
+	case 578:
+		return "ipdd", true
+	case 579:
+		return "decbsrv", true
+	case 580:
+		return "sntp-heartbeat", true
+	case 581:
+		return "bdp", true
+	case 582:
+		return "scc-security", true
+	case 583:
+		return "philips-vc", true
+	case 584:
+		return "keyserver", true
+	case 586:
+		return "password-chg", true
+	case 587:
+		return "submission", true
+	case 588:
+		return "cal", true
+	case 589:
+		return "eyelink", true
+	case 590:
+		return "tns-cml", true
+	case 591:
+		return "http-alt", true
+	case 592:
+		return "eudora-set", true
+	case 593:
+		return "http-rpc-epmap", true
+	case 594:
+		return "tpip", true
+	case 595:
+		return "cab-protocol", true
+	case 596:
+		return "smsd", true
+	case 597:
+		return "ptcnameservice", true
+	case 598:
+		return "sco-websrvrmg3", true
+	case 599:
+		return "acp", true
+	case 600:
+		return "ipcserver", true
+	case 601:
+		return "syslog-conn", true
+	case 602:
+		return "xmlrpc-beep", true
+	case 603:
+		return "idxp", true
+	case 604:
+		return "tunnel", true
+	case 605:
+		return "soap-beep", true
+	case 606:
+		return "urm", true
+	case 607:
+		return "nqs", true
+	case 608:
+		return "sift-uft", true
+	case 609:
+		return "npmp-trap", true
+	case 610:
+		return "npmp-local", true
+	case 611:
+		return "npmp-gui", true
+	case 612:
+		return "hmmp-ind", true
+	case 613:
+		return "hmmp-op", true
+	case 614:
+		return "sshell", true
+	case 615:
+		return "sco-inetmgr", true
+	case 616:
+		return "sco-sysmgr", true
+	case 617:
+		return "sco-dtmgr", true
+	case 618:
+		return "dei-icda", true
+	case 619:
+		return "compaq-evm", true
+	case 620:
+		return "sco-websrvrmgr", true
+	case 621:
+		return "escp-ip", true
+	case 622:
+		return "collaborator", true
+	case 623:
+		return "asf-rmcp", true
+	case 624:
+		return "cryptoadmin", true
+	case 625:
+		return "dec-dlm", true
+	case 626:
+		return "asia", true
+	case 627:
+		return "passgo-tivoli", true
+	case 628:
+		return "qmqp", true
+	case 629:
+		return "3com-amp3", true
+	case 630:
+		return "rda", true
+	case 631:
+		return "ipp", true
+	case 632:
+		return "bmpp", true
+	case 633:
+		return "servstat", true
+	case 634:
+		return "ginad", true
+	case 635:
+		return "rlzdbase", true
+	case 636:
+		return "ldaps", true
+	case 637:
+		return "lanserver", true
+	case 638:
+		return "mcns-sec", true
+	case 639:
+		return "msdp", true
+	case 640:
+		return "entrust-sps", true
+	case 641:
+		return "repcmd", true
+	case 642:
+		return "esro-emsdp", true
+	case 643:
+		return "sanity", true
+	case 644:
+		return "dwr", true
+	case 645:
+		return "pssc", true
+	case 646:
+		return "ldp", true
+	case 647:
+		return "dhcp-failover", true
+	case 648:
+		return "rrp", true
+	case 649:
+		return "cadview-3d", true
+	case 650:
+		return "obex", true
+	case 651:
+		return "ieee-mms", true
+	case 652:
+		return "hello-port", true
+	case 653:
+		return "repscmd", true
+	case 654:
+		return "aodv", true
+	case 655:
+		return "tinc", true
+	case 656:
+		return "spmp", true
+	case 657:
+		return "rmc", true
+	case 658:
+		return "tenfold", true
+	case 660:
+		return "mac-srvr-admin", true
+	case 661:
+		return "hap", true
+	case 662:
+		return "pftp", true
+	case 663:
+		return "purenoise", true
+	case 664:
+		return "asf-secure-rmcp", true
+	case 665:
+		return "sun-dr", true
+	case 666:
+		return "mdqs", true
+	case 667:
+		return "disclose", true
+	case 668:
+		return "mecomm", true
+	case 669:
+		return "meregister", true
+	case 670:
+		return "vacdsm-sws", true
+	case 671:
+		return "vacdsm-app", true
+	case 672:
+		return "vpps-qua", true
+	case 673:
+		return "cimplex", true
+	case 674:
+		return "acap", true
+	case 675:
+		return "dctp", true
+	case 676:
+		return "vpps-via", true
+	case 677:
+		return "vpp", true
+	case 678:
+		return "ggf-ncp", true
+	case 679:
+		return "mrm", true
+	case 680:
+		return "entrust-aaas", true
+	case 681:
+		return "entrust-aams", true
+	case 682:
+		return "xfr", true
+	case 683:
+		return "corba-iiop", true
+	case 684:
+		return "corba-iiop-ssl", true
+	case 685:
+		return "mdc-portmapper", true
+	case 686:
+		return "hcp-wismar", true
+	case 687:
+		return "asipregistry", true
+	case 688:
+		return "realm-rusd", true
+	case 689:
+		return "nmap", true
+	case 690:
+		return "vatp", true
+	case 691:
+		return "msexch-routing", true
+	case 692:
+		return "hyperwave-isp", true
+	case 693:
+		return "connendp", true
+	case 694:
+		return "ha-cluster", true
+	case 695:
+		return "ieee-mms-ssl", true
+	case 696:
+		return "rushd", true
+	case 697:
+		return "uuidgen", true
+	case 698:
+		return "olsr", true
+	case 699:
+		return "accessnetwork", true
+	case 700:
+		return "epp", true
+	case 701:
+		return "lmp", true
+	case 702:
+		return "iris-beep", true
+	case 704:
+		return "elcsd", true
+	case 705:
+		return "agentx", true
+	case 706:
+		return "silc", true
+	case 707:
+		return "borland-dsj", true
+	case 709:
+		return "entrust-kmsh", true
+	case 710:
+		return "entrust-ash", true
+	case 711:
+		return "cisco-tdp", true
+	case 712:
+		return "tbrpf", true
+	case 713:
+		return "iris-xpc", true
+	case 714:
+		return "iris-xpcs", true
+	case 715:
+		return "iris-lwz", true
+	case 716:
+		return "pana", true
+	case 729:
+		return "netviewdm1", true
+	case 730:
+		return "netviewdm2", true
+	case 731:
+		return "netviewdm3", true
+	case 741:
+		return "netgw", true
+	case 742:
+		return "netrcs", true
+	case 744:
+		return "flexlm", true
+	case 747:
+		return "fujitsu-dev", true
+	case 748:
+		return "ris-cm", true
+	case 749:
+		return "kerberos-adm", true
+	case 750:
+		return "loadav", true
+	case 751:
+		return "pump", true
+	case 752:
+		return "qrh", true
+	case 753:
+		return "rrh", true
+	case 754:
+		return "tell", true
+	case 758:
+		return "nlogin", true
+	case 759:
+		return "con", true
+	case 760:
+		return "ns", true
+	case 761:
+		return "rxe", true
+	case 762:
+		return "quotad", true
+	case 763:
+		return "cycleserv", true
+	case 764:
+		return "omserv", true
+	case 765:
+		return "webster", true
+	case 767:
+		return "phonebook", true
+	case 769:
+		return "vid", true
+	case 770:
+		return "cadlock", true
+	case 771:
+		return "rtip", true
+	case 772:
+		return "cycleserv2", true
+	case 773:
+		return "notify", true
+	case 774:
+		return "acmaint-dbd", true
+	case 775:
+		return "acmaint-transd", true
+	case 776:
+		return "wpages", true
+	case 777:
+		return "multiling-http", true
+	case 780:
+		return "wpgs", true
+	case 800:
+		return "mdbs-daemon", true
+	case 801:
+		return "device", true
+	case 802:
+		return "mbap-s", true
+	case 810:
+		return "fcp-udp", true
+	case 828:
+		return "itm-mcell-s", true
+	case 829:
+		return "pkix-3-ca-ra", true
+	case 830:
+		return "netconf-ssh", true
+	case 831:
+		return "netconf-beep", true
+	case 832:
+		return "netconfsoaphttp", true
+	case 833:
+		return "netconfsoapbeep", true
+	case 847:
+		return "dhcp-failover2", true
+	case 848:
+		return "gdoi", true
+	case 853:
+		return "domain-s", true
+	case 854:
+		return "dlep", true
+	case 860:
+		return "iscsi", true
+	case 861:
+		return "owamp-test", true
+	case 862:
+		return "twamp-test", true
+	case 873:
+		return "rsync", true
+	case 886:
+		return "iclcnet-locate", true
+	case 887:
+		return "iclcnet-svinfo", true
+	case 888:
+		return "accessbuilder", true
+	case 900:
+		return "omginitialrefs", true
+	case 901:
+		return "smpnameres", true
+	case 902:
+		return "ideafarm-door", true
+	case 903:
+		return "ideafarm-panic", true
+	case 910:
+		return "kink", true
+	case 911:
+		return "xact-backup", true
+	case 912:
+		return "apex-mesh", true
+	case 913:
+		return "apex-edge", true
+	case 914:
+		return "rift-lies", true
+	case 915:
+		return "rift-ties", true
+	case 989:
+		return "ftps-data", true
+	case 990:
+		return "ftps", true
+	case 991:
+		return "nas", true
+	case 992:
+		return "telnets", true
+	case 995:
+		return "pop3s", true
+	case 996:
+		return "vsinet", true
+	case 997:
+		return "maitrd", true
+	case 998:
+		return "puparp", true
+	case 999:
+		return "applix", true
+	case 1000:
+		return "cadlock2", true
+	case 1010:
+		return "surf", true
+	case 1021:
+		return "exp1", true
+	case 1022:
+		return "exp2", true
+	case 1025:
+		return "blackjack", true
+	case 1026:
+		return "cap", true
+	case 1027:
+		return "6a44", true
+	case 1029:
+		return "solid-mux", true
+	case 1033:
+		return "netinfo-local", true
+	case 1034:
+		return "activesync", true
+	case 1035:
+		return "mxxrlogin", true
+	case 1036:
+		return "nsstp", true
+	case 1037:
+		return "ams", true
+	case 1038:
+		return "mtqp", true
+	case 1039:
+		return "sbl", true
+	case 1040:
+		return "netarx", true
+	case 1041:
+		return "danf-ak2", true
+	case 1042:
+		return "afrog", true
+	case 1043:
+		return "boinc-client", true
+	case 1044:
+		return "dcutility", true
+	case 1045:
+		return "fpitp", true
+	case 1046:
+		return "wfremotertm", true
+	case 1047:
+		return "neod1", true
+	case 1048:
+		return "neod2", true
+	case 1049:
+		return "td-postman", true
+	case 1050:
+		return "cma", true
+	case 1051:
+		return "optima-vnet", true
+	case 1052:
+		return "ddt", true
+	case 1053:
+		return "remote-as", true
+	case 1054:
+		return "brvread", true
+	case 1055:
+		return "ansyslmd", true
+	case 1056:
+		return "vfo", true
+	case 1057:
+		return "startron", true
+	case 1058:
+		return "nim", true
+	case 1059:
+		return "nimreg", true
+	case 1060:
+		return "polestar", true
+	case 1061:
+		return "kiosk", true
+	case 1062:
+		return "veracity", true
+	case 1063:
+		return "kyoceranetdev", true
+	case 1064:
+		return "jstel", true
+	case 1065:
+		return "syscomlan", true
+	case 1066:
+		return "fpo-fns", true
+	case 1067:
+		return "instl-boots", true
+	case 1068:
+		return "instl-bootc", true
+	case 1069:
+		return "cognex-insight", true
+	case 1070:
+		return "gmrupdateserv", true
+	case 1071:
+		return "bsquare-voip", true
+	case 1072:
+		return "cardax", true
+	case 1073:
+		return "bridgecontrol", true
+	case 1074:
+		return "warmspotMgmt", true
+	case 1075:
+		return "rdrmshc", true
+	case 1076:
+		return "dab-sti-c", true
+	case 1077:
+		return "imgames", true
+	case 1078:
+		return "avocent-proxy", true
+	case 1079:
+		return "asprovatalk", true
+	case 1080:
+		return "socks", true
+	case 1081:
+		return "pvuniwien", true
+	case 1082:
+		return "amt-esd-prot", true
+	case 1083:
+		return "ansoft-lm-1", true
+	case 1084:
+		return "ansoft-lm-2", true
+	case 1085:
+		return "webobjects", true
+	case 1086:
+		return "cplscrambler-lg", true
+	case 1087:
+		return "cplscrambler-in", true
+	case 1088:
+		return "cplscrambler-al", true
+	case 1089:
+		return "ff-annunc", true
+	case 1090:
+		return "ff-fms", true
+	case 1091:
+		return "ff-sm", true
+	case 1092:
+		return "obrpd", true
+	case 1093:
+		return "proofd", true
+	case 1094:
+		return "rootd", true
+	case 1095:
+		return "nicelink", true
+	case 1096:
+		return "cnrprotocol", true
+	case 1097:
+		return "sunclustermgr", true
+	case 1098:
+		return "rmiactivation", true
+	case 1099:
+		return "rmiregistry", true
+	case 1100:
+		return "mctp", true
+	case 1101:
+		return "pt2-discover", true
+	case 1102:
+		return "adobeserver-1", true
+	case 1103:
+		return "adobeserver-2", true
+	case 1104:
+		return "xrl", true
+	case 1105:
+		return "ftranhc", true
+	case 1106:
+		return "isoipsigport-1", true
+	case 1107:
+		return "isoipsigport-2", true
+	case 1108:
+		return "ratio-adp", true
+	case 1110:
+		return "nfsd-keepalive", true
+	case 1111:
+		return "lmsocialserver", true
+	case 1112:
+		return "icp", true
+	case 1113:
+		return "ltp-deepspace", true
+	case 1114:
+		return "mini-sql", true
+	case 1115:
+		return "ardus-trns", true
+	case 1116:
+		return "ardus-cntl", true
+	case 1117:
+		return "ardus-mtrns", true
+	case 1118:
+		return "sacred", true
+	case 1119:
+		return "bnetgame", true
+	case 1120:
+		return "bnetfile", true
+	case 1121:
+		return "rmpp", true
+	case 1122:
+		return "availant-mgr", true
+	case 1123:
+		return "murray", true
+	case 1124:
+		return "hpvmmcontrol", true
+	case 1125:
+		return "hpvmmagent", true
+	case 1126:
+		return "hpvmmdata", true
+	case 1127:
+		return "kwdb-commn", true
+	case 1128:
+		return "saphostctrl", true
+	case 1129:
+		return "saphostctrls", true
+	case 1130:
+		return "casp", true
+	case 1131:
+		return "caspssl", true
+	case 1132:
+		return "kvm-via-ip", true
+	case 1133:
+		return "dfn", true
+	case 1134:
+		return "aplx", true
+	case 1135:
+		return "omnivision", true
+	case 1136:
+		return "hhb-gateway", true
+	case 1137:
+		return "trim", true
+	case 1138:
+		return "encrypted-admin", true
+	case 1139:
+		return "evm", true
+	case 1140:
+		return "autonoc", true
+	case 1141:
+		return "mxomss", true
+	case 1142:
+		return "edtools", true
+	case 1143:
+		return "imyx", true
+	case 1144:
+		return "fuscript", true
+	case 1145:
+		return "x9-icue", true
+	case 1146:
+		return "audit-transfer", true
+	case 1147:
+		return "capioverlan", true
+	case 1148:
+		return "elfiq-repl", true
+	case 1149:
+		return "bvtsonar", true
+	case 1150:
+		return "blaze", true
+	case 1151:
+		return "unizensus", true
+	case 1152:
+		return "winpoplanmess", true
+	case 1153:
+		return "c1222-acse", true
+	case 1154:
+		return "resacommunity", true
+	case 1155:
+		return "nfa", true
+	case 1156:
+		return "iascontrol-oms", true
+	case 1157:
+		return "iascontrol", true
+	case 1158:
+		return "dbcontrol-oms", true
+	case 1159:
+		return "oracle-oms", true
+	case 1160:
+		return "olsv", true
+	case 1161:
+		return "health-polling", true
+	case 1162:
+		return "health-trap", true
+	case 1163:
+		return "sddp", true
+	case 1164:
+		return "qsm-proxy", true
+	case 1165:
+		return "qsm-gui", true
+	case 1166:
+		return "qsm-remote", true
+	case 1167:
+		return "cisco-ipsla", true
+	case 1168:
+		return "vchat", true
+	case 1169:
+		return "tripwire", true
+	case 1170:
+		return "atc-lm", true
+	case 1171:
+		return "atc-appserver", true
+	case 1172:
+		return "dnap", true
+	case 1173:
+		return "d-cinema-rrp", true
+	case 1174:
+		return "fnet-remote-ui", true
+	case 1175:
+		return "dossier", true
+	case 1176:
+		return "indigo-server", true
+	case 1177:
+		return "dkmessenger", true
+	case 1178:
+		return "sgi-storman", true
+	case 1179:
+		return "b2n", true
+	case 1180:
+		return "mc-client", true
+	case 1181:
+		return "3comnetman", true
+	case 1182:
+		return "accelenet-data", true
+	case 1183:
+		return "llsurfup-http", true
+	case 1184:
+		return "llsurfup-https", true
+	case 1185:
+		return "catchpole", true
+	case 1186:
+		return "mysql-cluster", true
+	case 1187:
+		return "alias", true
+	case 1188:
+		return "hp-webadmin", true
+	case 1189:
+		return "unet", true
+	case 1190:
+		return "commlinx-avl", true
+	case 1191:
+		return "gpfs", true
+	case 1192:
+		return "caids-sensor", true
+	case 1193:
+		return "fiveacross", true
+	case 1194:
+		return "openvpn", true
+	case 1195:
+		return "rsf-1", true
+	case 1196:
+		return "netmagic", true
+	case 1197:
+		return "carrius-rshell", true
+	case 1198:
+		return "cajo-discovery", true
+	case 1199:
+		return "dmidi", true
+	case 1200:
+		return "scol", true
+	case 1201:
+		return "nucleus-sand", true
+	case 1202:
+		return "caiccipc", true
+	case 1203:
+		return "ssslic-mgr", true
+	case 1204:
+		return "ssslog-mgr", true
+	case 1205:
+		return "accord-mgc", true
+	case 1206:
+		return "anthony-data", true
+	case 1207:
+		return "metasage", true
+	case 1208:
+		return "seagull-ais", true
+	case 1209:
+		return "ipcd3", true
+	case 1210:
+		return "eoss", true
+	case 1211:
+		return "groove-dpp", true
+	case 1212:
+		return "lupa", true
+	case 1213:
+		return "mpc-lifenet", true
+	case 1214:
+		return "kazaa", true
+	case 1215:
+		return "scanstat-1", true
+	case 1216:
+		return "etebac5", true
+	case 1217:
+		return "hpss-ndapi", true
+	case 1218:
+		return "aeroflight-ads", true
+	case 1219:
+		return "aeroflight-ret", true
+	case 1220:
+		return "qt-serveradmin", true
+	case 1221:
+		return "sweetware-apps", true
+	case 1222:
+		return "nerv", true
+	case 1223:
+		return "tgp", true
+	case 1224:
+		return "vpnz", true
+	case 1225:
+		return "slinkysearch", true
+	case 1226:
+		return "stgxfws", true
+	case 1227:
+		return "dns2go", true
+	case 1228:
+		return "florence", true
+	case 1229:
+		return "zented", true
+	case 1230:
+		return "periscope", true
+	case 1231:
+		return "menandmice-lpm", true
+	case 1232:
+		return "first-defense", true
+	case 1233:
+		return "univ-appserver", true
+	case 1234:
+		return "search-agent", true
+	case 1235:
+		return "mosaicsyssvc1", true
+	case 1236:
+		return "bvcontrol", true
+	case 1237:
+		return "tsdos390", true
+	case 1238:
+		return "hacl-qs", true
+	case 1239:
+		return "nmsd", true
+	case 1240:
+		return "instantia", true
+	case 1241:
+		return "nessus", true
+	case 1242:
+		return "nmasoverip", true
+	case 1243:
+		return "serialgateway", true
+	case 1244:
+		return "isbconference1", true
+	case 1245:
+		return "isbconference2", true
+	case 1246:
+		return "payrouter", true
+	case 1247:
+		return "visionpyramid", true
+	case 1248:
+		return "hermes", true
+	case 1249:
+		return "mesavistaco", true
+	case 1250:
+		return "swldy-sias", true
+	case 1251:
+		return "servergraph", true
+	case 1252:
+		return "bspne-pcc", true
+	case 1253:
+		return "q55-pcc", true
+	case 1254:
+		return "de-noc", true
+	case 1255:
+		return "de-cache-query", true
+	case 1256:
+		return "de-server", true
+	case 1257:
+		return "shockwave2", true
+	case 1258:
+		return "opennl", true
+	case 1259:
+		return "opennl-voice", true
+	case 1260:
+		return "ibm-ssd", true
+	case 1261:
+		return "mpshrsv", true
+	case 1262:
+		return "qnts-orb", true
+	case 1263:
+		return "dka", true
+	case 1264:
+		return "prat", true
+	case 1265:
+		return "dssiapi", true
+	case 1266:
+		return "dellpwrappks", true
+	case 1267:
+		return "epc", true
+	case 1268:
+		return "propel-msgsys", true
+	case 1269:
+		return "watilapp", true
+	case 1270:
+		return "opsmgr", true
+	case 1271:
+		return "excw", true
+	case 1272:
+		return "cspmlockmgr", true
+	case 1273:
+		return "emc-gateway", true
+	case 1274:
+		return "t1distproc", true
+	case 1275:
+		return "ivcollector", true
+	case 1277:
+		return "miva-mqs", true
+	case 1278:
+		return "dellwebadmin-1", true
+	case 1279:
+		return "dellwebadmin-2", true
+	case 1280:
+		return "pictrography", true
+	case 1281:
+		return "healthd", true
+	case 1282:
+		return "emperion", true
+	case 1283:
+		return "productinfo", true
+	case 1284:
+		return "iee-qfx", true
+	case 1285:
+		return "neoiface", true
+	case 1286:
+		return "netuitive", true
+	case 1287:
+		return "routematch", true
+	case 1288:
+		return "navbuddy", true
+	case 1289:
+		return "jwalkserver", true
+	case 1290:
+		return "winjaserver", true
+	case 1291:
+		return "seagulllms", true
+	case 1292:
+		return "dsdn", true
+	case 1293:
+		return "pkt-krb-ipsec", true
+	case 1294:
+		return "cmmdriver", true
+	case 1295:
+		return "ehtp", true
+	case 1296:
+		return "dproxy", true
+	case 1297:
+		return "sdproxy", true
+	case 1298:
+		return "lpcp", true
+	case 1299:
+		return "hp-sci", true
+	case 1300:
+		return "h323hostcallsc", true
+	case 1303:
+		return "sftsrv", true
+	case 1304:
+		return "boomerang", true
+	case 1305:
+		return "pe-mike", true
+	case 1306:
+		return "re-conn-proto", true
+	case 1307:
+		return "pacmand", true
+	case 1308:
+		return "odsi", true
+	case 1309:
+		return "jtag-server", true
+	case 1310:
+		return "husky", true
+	case 1311:
+		return "rxmon", true
+	case 1312:
+		return "sti-envision", true
+	case 1313:
+		return "bmc-patroldb", true
+	case 1314:
+		return "pdps", true
+	case 1315:
+		return "els", true
+	case 1316:
+		return "exbit-escp", true
+	case 1317:
+		return "vrts-ipcserver", true
+	case 1318:
+		return "krb5gatekeeper", true
+	case 1319:
+		return "amx-icsp", true
+	case 1320:
+		return "amx-axbnet", true
+	case 1321:
+		return "pip", true
+	case 1322:
+		return "novation", true
+	case 1323:
+		return "brcd", true
+	case 1324:
+		return "delta-mcp", true
+	case 1325:
+		return "dx-instrument", true
+	case 1326:
+		return "wimsic", true
+	case 1327:
+		return "ultrex", true
+	case 1328:
+		return "ewall", true
+	case 1329:
+		return "netdb-export", true
+	case 1330:
+		return "streetperfect", true
+	case 1331:
+		return "intersan", true
+	case 1332:
+		return "pcia-rxp-b", true
+	case 1333:
+		return "passwrd-policy", true
+	case 1334:
+		return "writesrv", true
+	case 1335:
+		return "digital-notary", true
+	case 1336:
+		return "ischat", true
+	case 1337:
+		return "menandmice-dns", true
+	case 1338:
+		return "wmc-log-svc", true
+	case 1339:
+		return "kjtsiteserver", true
+	case 1340:
+		return "naap", true
+	case 1341:
+		return "qubes", true
+	case 1342:
+		return "esbroker", true
+	case 1343:
+		return "re101", true
+	case 1344:
+		return "icap", true
+	case 1345:
+		return "vpjp", true
+	case 1346:
+		return "alta-ana-lm", true
+	case 1347:
+		return "bbn-mmc", true
+	case 1348:
+		return "bbn-mmx", true
+	case 1349:
+		return "sbook", true
+	case 1350:
+		return "editbench", true
+	case 1351:
+		return "equationbuilder", true
+	case 1352:
+		return "lotusnote", true
+	case 1353:
+		return "relief", true
+	case 1354:
+		return "XSIP-network", true
+	case 1355:
+		return "intuitive-edge", true
+	case 1356:
+		return "cuillamartin", true
+	case 1357:
+		return "pegboard", true
+	case 1358:
+		return "connlcli", true
+	case 1359:
+		return "ftsrv", true
+	case 1360:
+		return "mimer", true
+	case 1361:
+		return "linx", true
+	case 1362:
+		return "timeflies", true
+	case 1363:
+		return "ndm-requester", true
+	case 1364:
+		return "ndm-server", true
+	case 1365:
+		return "adapt-sna", true
+	case 1366:
+		return "netware-csp", true
+	case 1367:
+		return "dcs", true
+	case 1368:
+		return "screencast", true
+	case 1369:
+		return "gv-us", true
+	case 1370:
+		return "us-gv", true
+	case 1371:
+		return "fc-cli", true
+	case 1372:
+		return "fc-ser", true
+	case 1373:
+		return "chromagrafx", true
+	case 1374:
+		return "molly", true
+	case 1375:
+		return "bytex", true
+	case 1376:
+		return "ibm-pps", true
+	case 1377:
+		return "cichlid", true
+	case 1378:
+		return "elan", true
+	case 1379:
+		return "dbreporter", true
+	case 1380:
+		return "telesis-licman", true
+	case 1381:
+		return "apple-licman", true
+	case 1382:
+		return "udt-os", true
+	case 1383:
+		return "gwha", true
+	case 1384:
+		return "os-licman", true
+	case 1385:
+		return "atex-elmd", true
+	case 1386:
+		return "checksum", true
+	case 1387:
+		return "cadsi-lm", true
+	case 1388:
+		return "objective-dbc", true
+	case 1389:
+		return "iclpv-dm", true
+	case 1390:
+		return "iclpv-sc", true
+	case 1391:
+		return "iclpv-sas", true
+	case 1392:
+		return "iclpv-pm", true
+	case 1393:
+		return "iclpv-nls", true
+	case 1394:
+		return "iclpv-nlc", true
+	case 1395:
+		return "iclpv-wsm", true
+	case 1396:
+		return "dvl-activemail", true
+	case 1397:
+		return "audio-activmail", true
+	case 1398:
+		return "video-activmail", true
+	case 1399:
+		return "cadkey-licman", true
+	case 1400:
+		return "cadkey-tablet", true
+	case 1401:
+		return "goldleaf-licman", true
+	case 1402:
+		return "prm-sm-np", true
+	case 1403:
+		return "prm-nm-np", true
+	case 1404:
+		return "igi-lm", true
+	case 1405:
+		return "ibm-res", true
+	case 1406:
+		return "netlabs-lm", true
+	case 1408:
+		return "sophia-lm", true
+	case 1409:
+		return "here-lm", true
+	case 1410:
+		return "hiq", true
+	case 1411:
+		return "af", true
+	case 1412:
+		return "innosys", true
+	case 1413:
+		return "innosys-acl", true
+	case 1414:
+		return "ibm-mqseries", true
+	case 1415:
+		return "dbstar", true
+	case 1416:
+		return "novell-lu6-2", true
+	case 1417:
+		return "timbuktu-srv1", true
+	case 1418:
+		return "timbuktu-srv2", true
+	case 1419:
+		return "timbuktu-srv3", true
+	case 1420:
+		return "timbuktu-srv4", true
+	case 1421:
+		return "gandalf-lm", true
+	case 1422:
+		return "autodesk-lm", true
+	case 1423:
+		return "essbase", true
+	case 1424:
+		return "hybrid", true
+	case 1425:
+		return "zion-lm", true
+	case 1426:
+		return "sais", true
+	case 1427:
+		return "mloadd", true
+	case 1428:
+		return "informatik-lm", true
+	case 1429:
+		return "nms", true
+	case 1430:
+		return "tpdu", true
+	case 1431:
+		return "rgtp", true
+	case 1432:
+		return "blueberry-lm", true
+	case 1433:
+		return "ms-sql-s", true
+	case 1434:
+		return "ms-sql-m", true
+	case 1435:
+		return "ibm-cics", true
+	case 1436:
+		return "saism", true
+	case 1437:
+		return "tabula", true
+	case 1438:
+		return "eicon-server", true
+	case 1439:
+		return "eicon-x25", true
+	case 1440:
+		return "eicon-slp", true
+	case 1441:
+		return "cadis-1", true
+	case 1442:
+		return "cadis-2", true
+	case 1443:
+		return "ies-lm", true
+	case 1444:
+		return "marcam-lm", true
+	case 1445:
+		return "proxima-lm", true
+	case 1446:
+		return "ora-lm", true
+	case 1447:
+		return "apri-lm", true
+	case 1448:
+		return "oc-lm", true
+	case 1449:
+		return "peport", true
+	case 1450:
+		return "dwf", true
+	case 1451:
+		return "infoman", true
+	case 1452:
+		return "gtegsc-lm", true
+	case 1453:
+		return "genie-lm", true
+	case 1454:
+		return "interhdl-elmd", true
+	case 1455:
+		return "esl-lm", true
+	case 1456:
+		return "dca", true
+	case 1457:
+		return "valisys-lm", true
+	case 1458:
+		return "nrcabq-lm", true
+	case 1459:
+		return "proshare1", true
+	case 1460:
+		return "proshare2", true
+	case 1461:
+		return "ibm-wrless-lan", true
+	case 1462:
+		return "world-lm", true
+	case 1463:
+		return "nucleus", true
+	case 1464:
+		return "msl-lmd", true
+	case 1465:
+		return "pipes", true
+	case 1466:
+		return "oceansoft-lm", true
+	case 1467:
+		return "csdmbase", true
+	case 1468:
+		return "csdm", true
+	case 1469:
+		return "aal-lm", true
+	case 1470:
+		return "uaiact", true
+	case 1471:
+		return "csdmbase", true
+	case 1472:
+		return "csdm", true
+	case 1473:
+		return "openmath", true
+	case 1474:
+		return "telefinder", true
+	case 1475:
+		return "taligent-lm", true
+	case 1476:
+		return "clvm-cfg", true
+	case 1477:
+		return "ms-sna-server", true
+	case 1478:
+		return "ms-sna-base", true
+	case 1479:
+		return "dberegister", true
+	case 1480:
+		return "pacerforum", true
+	case 1481:
+		return "airs", true
+	case 1482:
+		return "miteksys-lm", true
+	case 1483:
+		return "afs", true
+	case 1484:
+		return "confluent", true
+	case 1485:
+		return "lansource", true
+	case 1486:
+		return "nms-topo-serv", true
+	case 1487:
+		return "localinfosrvr", true
+	case 1488:
+		return "docstor", true
+	case 1489:
+		return "dmdocbroker", true
+	case 1490:
+		return "insitu-conf", true
+	case 1492:
+		return "stone-design-1", true
+	case 1493:
+		return "netmap-lm", true
+	case 1494:
+		return "ica", true
+	case 1495:
+		return "cvc", true
+	case 1496:
+		return "liberty-lm", true
+	case 1497:
+		return "rfx-lm", true
+	case 1498:
+		return "sybase-sqlany", true
+	case 1499:
+		return "fhc", true
+	case 1500:
+		return "vlsi-lm", true
+	case 1501:
+		return "saiscm", true
+	case 1502:
+		return "shivadiscovery", true
+	case 1503:
+		return "imtc-mcs", true
+	case 1504:
+		return "evb-elm", true
+	case 1505:
+		return "funkproxy", true
+	case 1506:
+		return "utcd", true
+	case 1507:
+		return "symplex", true
+	case 1508:
+		return "diagmond", true
+	case 1509:
+		return "robcad-lm", true
+	case 1510:
+		return "mvx-lm", true
+	case 1511:
+		return "3l-l1", true
+	case 1512:
+		return "wins", true
+	case 1513:
+		return "fujitsu-dtc", true
+	case 1514:
+		return "fujitsu-dtcns", true
+	case 1515:
+		return "ifor-protocol", true
+	case 1516:
+		return "vpad", true
+	case 1517:
+		return "vpac", true
+	case 1518:
+		return "vpvd", true
+	case 1519:
+		return "vpvc", true
+	case 1520:
+		return "atm-zip-office", true
+	case 1521:
+		return "ncube-lm", true
+	case 1522:
+		return "ricardo-lm", true
+	case 1523:
+		return "cichild-lm", true
+	case 1524:
+		return "ingreslock", true
+	case 1525:
+		return "orasrv", true
+	case 1526:
+		return "pdap-np", true
+	case 1527:
+		return "tlisrv", true
+	case 1528:
+		return "norp", true
+	case 1529:
+		return "coauthor", true
+	case 1530:
+		return "rap-service", true
+	case 1531:
+		return "rap-listen", true
+	case 1532:
+		return "miroconnect", true
+	case 1533:
+		return "virtual-places", true
+	case 1534:
+		return "micromuse-lm", true
+	case 1535:
+		return "ampr-info", true
+	case 1536:
+		return "ampr-inter", true
+	case 1537:
+		return "sdsc-lm", true
+	case 1538:
+		return "3ds-lm", true
+	case 1539:
+		return "intellistor-lm", true
+	case 1540:
+		return "rds", true
+	case 1541:
+		return "rds2", true
+	case 1542:
+		return "gridgen-elmd", true
+	case 1543:
+		return "simba-cs", true
+	case 1544:
+		return "aspeclmd", true
+	case 1545:
+		return "vistium-share", true
+	case 1546:
+		return "abbaccuray", true
+	case 1547:
+		return "laplink", true
+	case 1548:
+		return "axon-lm", true
+	case 1549:
+		return "shivasound", true
+	case 1550:
+		return "3m-image-lm", true
+	case 1551:
+		return "hecmtl-db", true
+	case 1552:
+		return "pciarray", true
+	case 1553:
+		return "sna-cs", true
+	case 1554:
+		return "caci-lm", true
+	case 1555:
+		return "livelan", true
+	case 1556:
+		return "veritas-pbx", true
+	case 1557:
+		return "arbortext-lm", true
+	case 1558:
+		return "xingmpeg", true
+	case 1559:
+		return "web2host", true
+	case 1560:
+		return "asci-val", true
+	case 1561:
+		return "facilityview", true
+	case 1562:
+		return "pconnectmgr", true
+	case 1563:
+		return "cadabra-lm", true
+	case 1564:
+		return "pay-per-view", true
+	case 1565:
+		return "winddlb", true
+	case 1566:
+		return "corelvideo", true
+	case 1567:
+		return "jlicelmd", true
+	case 1568:
+		return "tsspmap", true
+	case 1569:
+		return "ets", true
+	case 1570:
+		return "orbixd", true
+	case 1571:
+		return "rdb-dbs-disp", true
+	case 1572:
+		return "chip-lm", true
+	case 1573:
+		return "itscomm-ns", true
+	case 1574:
+		return "mvel-lm", true
+	case 1575:
+		return "oraclenames", true
+	case 1576:
+		return "moldflow-lm", true
+	case 1577:
+		return "hypercube-lm", true
+	case 1578:
+		return "jacobus-lm", true
+	case 1579:
+		return "ioc-sea-lm", true
+	case 1580:
+		return "tn-tl-r2", true
+	case 1581:
+		return "mil-2045-47001", true
+	case 1582:
+		return "msims", true
+	case 1583:
+		return "simbaexpress", true
+	case 1584:
+		return "tn-tl-fd2", true
+	case 1585:
+		return "intv", true
+	case 1586:
+		return "ibm-abtact", true
+	case 1587:
+		return "pra-elmd", true
+	case 1588:
+		return "triquest-lm", true
+	case 1589:
+		return "vqp", true
+	case 1590:
+		return "gemini-lm", true
+	case 1591:
+		return "ncpm-pm", true
+	case 1592:
+		return "commonspace", true
+	case 1593:
+		return "mainsoft-lm", true
+	case 1594:
+		return "sixtrak", true
+	case 1595:
+		return "radio", true
+	case 1596:
+		return "radio-bc", true
+	case 1597:
+		return "orbplus-iiop", true
+	case 1598:
+		return "picknfs", true
+	case 1599:
+		return "simbaservices", true
+	case 1600:
+		return "issd", true
+	case 1601:
+		return "aas", true
+	case 1602:
+		return "inspect", true
+	case 1603:
+		return "picodbc", true
+	case 1604:
+		return "icabrowser", true
+	case 1605:
+		return "slp", true
+	case 1606:
+		return "slm-api", true
+	case 1607:
+		return "stt", true
+	case 1608:
+		return "smart-lm", true
+	case 1609:
+		return "isysg-lm", true
+	case 1610:
+		return "taurus-wh", true
+	case 1611:
+		return "ill", true
+	case 1612:
+		return "netbill-trans", true
+	case 1613:
+		return "netbill-keyrep", true
+	case 1614:
+		return "netbill-cred", true
+	case 1615:
+		return "netbill-auth", true
+	case 1616:
+		return "netbill-prod", true
+	case 1617:
+		return "nimrod-agent", true
+	case 1618:
+		return "skytelnet", true
+	case 1619:
+		return "xs-openstorage", true
+	case 1620:
+		return "faxportwinport", true
+	case 1621:
+		return "softdataphone", true
+	case 1622:
+		return "ontime", true
+	case 1623:
+		return "jaleosnd", true
+	case 1624:
+		return "udp-sr-port", true
+	case 1625:
+		return "svs-omagent", true
+	case 1626:
+		return "shockwave", true
+	case 1627:
+		return "t128-gateway", true
+	case 1628:
+		return "lontalk-norm", true
+	case 1629:
+		return "lontalk-urgnt", true
+	case 1630:
+		return "oraclenet8cman", true
+	case 1631:
+		return "visitview", true
+	case 1632:
+		return "pammratc", true
+	case 1633:
+		return "pammrpc", true
+	case 1634:
+		return "loaprobe", true
+	case 1635:
+		return "edb-server1", true
+	case 1636:
+		return "isdc", true
+	case 1637:
+		return "islc", true
+	case 1638:
+		return "ismc", true
+	case 1639:
+		return "cert-initiator", true
+	case 1640:
+		return "cert-responder", true
+	case 1641:
+		return "invision", true
+	case 1642:
+		return "isis-am", true
+	case 1643:
+		return "isis-ambc", true
+	case 1644:
+		return "saiseh", true
+	case 1645:
+		return "sightline", true
+	case 1646:
+		return "sa-msg-port", true
+	case 1647:
+		return "rsap", true
+	case 1648:
+		return "concurrent-lm", true
+	case 1649:
+		return "kermit", true
+	case 1650:
+		return "nkd", true
+	case 1651:
+		return "shiva-confsrvr", true
+	case 1652:
+		return "xnmp", true
+	case 1653:
+		return "alphatech-lm", true
+	case 1654:
+		return "stargatealerts", true
+	case 1655:
+		return "dec-mbadmin", true
+	case 1656:
+		return "dec-mbadmin-h", true
+	case 1657:
+		return "fujitsu-mmpdc", true
+	case 1658:
+		return "sixnetudr", true
+	case 1659:
+		return "sg-lm", true
+	case 1660:
+		return "skip-mc-gikreq", true
+	case 1661:
+		return "netview-aix-1", true
+	case 1662:
+		return "netview-aix-2", true
+	case 1663:
+		return "netview-aix-3", true
+	case 1664:
+		return "netview-aix-4", true
+	case 1665:
+		return "netview-aix-5", true
+	case 1666:
+		return "netview-aix-6", true
+	case 1667:
+		return "netview-aix-7", true
+	case 1668:
+		return "netview-aix-8", true
+	case 1669:
+		return "netview-aix-9", true
+	case 1670:
+		return "netview-aix-10", true
+	case 1671:
+		return "netview-aix-11", true
+	case 1672:
+		return "netview-aix-12", true
+	case 1673:
+		return "proshare-mc-1", true
+	case 1674:
+		return "proshare-mc-2", true
+	case 1675:
+		return "pdp", true
+	case 1676:
+		return "netcomm2", true
+	case 1677:
+		return "groupwise", true
+	case 1678:
+		return "prolink", true
+	case 1679:
+		return "darcorp-lm", true
+	case 1680:
+		return "microcom-sbp", true
+	case 1681:
+		return "sd-elmd", true
+	case 1682:
+		return "lanyon-lantern", true
+	case 1683:
+		return "ncpm-hip", true
+	case 1684:
+		return "snaresecure", true
+	case 1685:
+		return "n2nremote", true
+	case 1686:
+		return "cvmon", true
+	case 1687:
+		return "nsjtp-ctrl", true
+	case 1688:
+		return "nsjtp-data", true
+	case 1689:
+		return "firefox", true
+	case 1690:
+		return "ng-umds", true
+	case 1691:
+		return "empire-empuma", true
+	case 1692:
+		return "sstsys-lm", true
+	case 1693:
+		return "rrirtr", true
+	case 1694:
+		return "rrimwm", true
+	case 1695:
+		return "rrilwm", true
+	case 1696:
+		return "rrifmm", true
+	case 1697:
+		return "rrisat", true
+	case 1698:
+		return "rsvp-encap-1", true
+	case 1699:
+		return "rsvp-encap-2", true
+	case 1700:
+		return "mps-raft", true
+	case 1701:
+		return "l2f", true
+	case 1702:
+		return "deskshare", true
+	case 1703:
+		return "hb-engine", true
+	case 1704:
+		return "bcs-broker", true
+	case 1705:
+		return "slingshot", true
+	case 1706:
+		return "jetform", true
+	case 1707:
+		return "vdmplay", true
+	case 1708:
+		return "gat-lmd", true
+	case 1709:
+		return "centra", true
+	case 1710:
+		return "impera", true
+	case 1711:
+		return "pptconference", true
+	case 1712:
+		return "registrar", true
+	case 1713:
+		return "conferencetalk", true
+	case 1714:
+		return "sesi-lm", true
+	case 1715:
+		return "houdini-lm", true
+	case 1716:
+		return "xmsg", true
+	case 1717:
+		return "fj-hdnet", true
+	case 1718:
+		return "h323gatedisc", true
+	case 1719:
+		return "h323gatestat", true
+	case 1720:
+		return "h323hostcall", true
+	case 1721:
+		return "caicci", true
+	case 1722:
+		return "hks-lm", true
+	case 1723:
+		return "pptp", true
+	case 1724:
+		return "csbphonemaster", true
+	case 1725:
+		return "iden-ralp", true
+	case 1726:
+		return "iberiagames", true
+	case 1727:
+		return "winddx", true
+	case 1728:
+		return "telindus", true
+	case 1729:
+		return "citynl", true
+	case 1730:
+		return "roketz", true
+	case 1731:
+		return "msiccp", true
+	case 1732:
+		return "proxim", true
+	case 1733:
+		return "siipat", true
+	case 1734:
+		return "cambertx-lm", true
+	case 1735:
+		return "privatechat", true
+	case 1736:
+		return "street-stream", true
+	case 1737:
+		return "ultimad", true
+	case 1738:
+		return "gamegen1", true
+	case 1739:
+		return "webaccess", true
+	case 1740:
+		return "encore", true
+	case 1741:
+		return "cisco-net-mgmt", true
+	case 1742:
+		return "3Com-nsd", true
+	case 1743:
+		return "cinegrfx-lm", true
+	case 1744:
+		return "ncpm-ft", true
+	case 1745:
+		return "remote-winsock", true
+	case 1746:
+		return "ftrapid-1", true
+	case 1747:
+		return "ftrapid-2", true
+	case 1748:
+		return "oracle-em1", true
+	case 1749:
+		return "aspen-services", true
+	case 1750:
+		return "sslp", true
+	case 1751:
+		return "swiftnet", true
+	case 1752:
+		return "lofr-lm", true
+	case 1754:
+		return "oracle-em2", true
+	case 1755:
+		return "ms-streaming", true
+	case 1756:
+		return "capfast-lmd", true
+	case 1757:
+		return "cnhrp", true
+	case 1758:
+		return "tftp-mcast", true
+	case 1759:
+		return "spss-lm", true
+	case 1760:
+		return "www-ldap-gw", true
+	case 1761:
+		return "cft-0", true
+	case 1762:
+		return "cft-1", true
+	case 1763:
+		return "cft-2", true
+	case 1764:
+		return "cft-3", true
+	case 1765:
+		return "cft-4", true
+	case 1766:
+		return "cft-5", true
+	case 1767:
+		return "cft-6", true
+	case 1768:
+		return "cft-7", true
+	case 1769:
+		return "bmc-net-adm", true
+	case 1770:
+		return "bmc-net-svc", true
+	case 1771:
+		return "vaultbase", true
+	case 1772:
+		return "essweb-gw", true
+	case 1773:
+		return "kmscontrol", true
+	case 1774:
+		return "global-dtserv", true
+	case 1776:
+		return "femis", true
+	case 1777:
+		return "powerguardian", true
+	case 1778:
+		return "prodigy-intrnet", true
+	case 1779:
+		return "pharmasoft", true
+	case 1780:
+		return "dpkeyserv", true
+	case 1781:
+		return "answersoft-lm", true
+	case 1782:
+		return "hp-hcip", true
+	case 1784:
+		return "finle-lm", true
+	case 1785:
+		return "windlm", true
+	case 1786:
+		return "funk-logger", true
+	case 1787:
+		return "funk-license", true
+	case 1788:
+		return "psmond", true
+	case 1789:
+		return "hello", true
+	case 1790:
+		return "nmsp", true
+	case 1791:
+		return "ea1", true
+	case 1792:
+		return "ibm-dt-2", true
+	case 1793:
+		return "rsc-robot", true
+	case 1794:
+		return "cera-bcm", true
+	case 1795:
+		return "dpi-proxy", true
+	case 1796:
+		return "vocaltec-admin", true
+	case 1797:
+		return "uma", true
+	case 1798:
+		return "etp", true
+	case 1799:
+		return "netrisk", true
+	case 1800:
+		return "ansys-lm", true
+	case 1801:
+		return "msmq", true
+	case 1802:
+		return "concomp1", true
+	case 1803:
+		return "hp-hcip-gwy", true
+	case 1804:
+		return "enl", true
+	case 1805:
+		return "enl-name", true
+	case 1806:
+		return "musiconline", true
+	case 1807:
+		return "fhsp", true
+	case 1808:
+		return "oracle-vp2", true
+	case 1809:
+		return "oracle-vp1", true
+	case 1810:
+		return "jerand-lm", true
+	case 1811:
+		return "scientia-sdb", true
+	case 1812:
+		return "radius", true
+	case 1813:
+		return "radius-acct", true
+	case 1814:
+		return "tdp-suite", true
+	case 1815:
+		return "mmpft", true
+	case 1816:
+		return "harp", true
+	case 1817:
+		return "rkb-oscs", true
+	case 1818:
+		return "etftp", true
+	case 1819:
+		return "plato-lm", true
+	case 1820:
+		return "mcagent", true
+	case 1821:
+		return "donnyworld", true
+	case 1822:
+		return "es-elmd", true
+	case 1823:
+		return "unisys-lm", true
+	case 1824:
+		return "metrics-pas", true
+	case 1825:
+		return "direcpc-video", true
+	case 1826:
+		return "ardt", true
+	case 1827:
+		return "asi", true
+	case 1828:
+		return "itm-mcell-u", true
+	case 1829:
+		return "optika-emedia", true
+	case 1830:
+		return "net8-cman", true
+	case 1831:
+		return "myrtle", true
+	case 1832:
+		return "tht-treasure", true
+	case 1833:
+		return "udpradio", true
+	case 1834:
+		return "ardusuni", true
+	case 1835:
+		return "ardusmul", true
+	case 1836:
+		return "ste-smsc", true
+	case 1837:
+		return "csoft1", true
+	case 1838:
+		return "talnet", true
+	case 1839:
+		return "netopia-vo1", true
+	case 1840:
+		return "netopia-vo2", true
+	case 1841:
+		return "netopia-vo3", true
+	case 1842:
+		return "netopia-vo4", true
+	case 1843:
+		return "netopia-vo5", true
+	case 1844:
+		return "direcpc-dll", true
+	case 1845:
+		return "altalink", true
+	case 1846:
+		return "tunstall-pnc", true
+	case 1847:
+		return "slp-notify", true
+	case 1848:
+		return "fjdocdist", true
+	case 1849:
+		return "alpha-sms", true
+	case 1850:
+		return "gsi", true
+	case 1851:
+		return "ctcd", true
+	case 1852:
+		return "virtual-time", true
+	case 1853:
+		return "vids-avtp", true
+	case 1854:
+		return "buddy-draw", true
+	case 1855:
+		return "fiorano-rtrsvc", true
+	case 1856:
+		return "fiorano-msgsvc", true
+	case 1857:
+		return "datacaptor", true
+	case 1858:
+		return "privateark", true
+	case 1859:
+		return "gammafetchsvr", true
+	case 1860:
+		return "sunscalar-svc", true
+	case 1861:
+		return "lecroy-vicp", true
+	case 1862:
+		return "mysql-cm-agent", true
+	case 1863:
+		return "msnp", true
+	case 1864:
+		return "paradym-31port", true
+	case 1865:
+		return "entp", true
+	case 1866:
+		return "swrmi", true
+	case 1867:
+		return "udrive", true
+	case 1868:
+		return "viziblebrowser", true
+	case 1869:
+		return "transact", true
+	case 1870:
+		return "sunscalar-dns", true
+	case 1871:
+		return "canocentral0", true
+	case 1872:
+		return "canocentral1", true
+	case 1873:
+		return "fjmpjps", true
+	case 1874:
+		return "fjswapsnp", true
+	case 1875:
+		return "westell-stats", true
+	case 1876:
+		return "ewcappsrv", true
+	case 1877:
+		return "hp-webqosdb", true
+	case 1878:
+		return "drmsmc", true
+	case 1879:
+		return "nettgain-nms", true
+	case 1880:
+		return "vsat-control", true
+	case 1881:
+		return "ibm-mqseries2", true
+	case 1882:
+		return "ecsqdmn", true
+	case 1883:
+		return "mqtt", true
+	case 1884:
+		return "idmaps", true
+	case 1885:
+		return "vrtstrapserver", true
+	case 1886:
+		return "leoip", true
+	case 1887:
+		return "filex-lport", true
+	case 1888:
+		return "ncconfig", true
+	case 1889:
+		return "unify-adapter", true
+	case 1890:
+		return "wilkenlistener", true
+	case 1891:
+		return "childkey-notif", true
+	case 1892:
+		return "childkey-ctrl", true
+	case 1893:
+		return "elad", true
+	case 1894:
+		return "o2server-port", true
+	case 1896:
+		return "b-novative-ls", true
+	case 1897:
+		return "metaagent", true
+	case 1898:
+		return "cymtec-port", true
+	case 1899:
+		return "mc2studios", true
+	case 1900:
+		return "ssdp", true
+	case 1901:
+		return "fjicl-tep-a", true
+	case 1902:
+		return "fjicl-tep-b", true
+	case 1903:
+		return "linkname", true
+	case 1904:
+		return "fjicl-tep-c", true
+	case 1905:
+		return "sugp", true
+	case 1906:
+		return "tpmd", true
+	case 1907:
+		return "intrastar", true
+	case 1908:
+		return "dawn", true
+	case 1909:
+		return "global-wlink", true
+	case 1910:
+		return "ultrabac", true
+	case 1911:
+		return "mtp", true
+	case 1912:
+		return "rhp-iibp", true
+	case 1913:
+		return "armadp", true
+	case 1914:
+		return "elm-momentum", true
+	case 1915:
+		return "facelink", true
+	case 1916:
+		return "persona", true
+	case 1917:
+		return "noagent", true
+	case 1918:
+		return "can-nds", true
+	case 1919:
+		return "can-dch", true
+	case 1920:
+		return "can-ferret", true
+	case 1921:
+		return "noadmin", true
+	case 1922:
+		return "tapestry", true
+	case 1923:
+		return "spice", true
+	case 1924:
+		return "xiip", true
+	case 1925:
+		return "discovery-port", true
+	case 1926:
+		return "egs", true
+	case 1927:
+		return "videte-cipc", true
+	case 1928:
+		return "emsd-port", true
+	case 1929:
+		return "bandwiz-system", true
+	case 1930:
+		return "driveappserver", true
+	case 1931:
+		return "amdsched", true
+	case 1932:
+		return "ctt-broker", true
+	case 1933:
+		return "xmapi", true
+	case 1934:
+		return "xaapi", true
+	case 1935:
+		return "macromedia-fcs", true
+	case 1936:
+		return "jetcmeserver", true
+	case 1937:
+		return "jwserver", true
+	case 1938:
+		return "jwclient", true
+	case 1939:
+		return "jvserver", true
+	case 1940:
+		return "jvclient", true
+	case 1941:
+		return "dic-aida", true
+	case 1942:
+		return "res", true
+	case 1943:
+		return "beeyond-media", true
+	case 1944:
+		return "close-combat", true
+	case 1945:
+		return "dialogic-elmd", true
+	case 1946:
+		return "tekpls", true
+	case 1947:
+		return "sentinelsrm", true
+	case 1948:
+		return "eye2eye", true
+	case 1949:
+		return "ismaeasdaqlive", true
+	case 1950:
+		return "ismaeasdaqtest", true
+	case 1951:
+		return "bcs-lmserver", true
+	case 1952:
+		return "mpnjsc", true
+	case 1953:
+		return "rapidbase", true
+	case 1954:
+		return "abr-api", true
+	case 1955:
+		return "abr-secure", true
+	case 1956:
+		return "vrtl-vmf-ds", true
+	case 1957:
+		return "unix-status", true
+	case 1958:
+		return "dxadmind", true
+	case 1959:
+		return "simp-all", true
+	case 1960:
+		return "nasmanager", true
+	case 1961:
+		return "bts-appserver", true
+	case 1962:
+		return "biap-mp", true
+	case 1963:
+		return "webmachine", true
+	case 1964:
+		return "solid-e-engine", true
+	case 1965:
+		return "tivoli-npm", true
+	case 1966:
+		return "slush", true
+	case 1967:
+		return "sns-quote", true
+	case 1968:
+		return "lipsinc", true
+	case 1969:
+		return "lipsinc1", true
+	case 1970:
+		return "netop-rc", true
+	case 1971:
+		return "netop-school", true
+	case 1972:
+		return "intersys-cache", true
+	case 1973:
+		return "dlsrap", true
+	case 1974:
+		return "drp", true
+	case 1975:
+		return "tcoflashagent", true
+	case 1976:
+		return "tcoregagent", true
+	case 1977:
+		return "tcoaddressbook", true
+	case 1978:
+		return "unisql", true
+	case 1979:
+		return "unisql-java", true
+	case 1980:
+		return "pearldoc-xact", true
+	case 1981:
+		return "p2pq", true
+	case 1982:
+		return "estamp", true
+	case 1983:
+		return "lhtp", true
+	case 1984:
+		return "bb", true
+	case 1985:
+		return "hsrp", true
+	case 1986:
+		return "licensedaemon", true
+	case 1987:
+		return "tr-rsrb-p1", true
+	case 1988:
+		return "tr-rsrb-p2", true
+	case 1989:
+		return "tr-rsrb-p3", true
+	case 1990:
+		return "stun-p1", true
+	case 1991:
+		return "stun-p2", true
+	case 1992:
+		return "stun-p3", true
+	case 1993:
+		return "snmp-tcp-port", true
+	case 1994:
+		return "stun-port", true
+	case 1995:
+		return "perf-port", true
+	case 1996:
+		return "tr-rsrb-port", true
+	case 1997:
+		return "gdp-port", true
+	case 1998:
+		return "x25-svc-port", true
+	case 1999:
+		return "tcp-id-port", true
+	case 2000:
+		return "cisco-sccp", true
+	case 2001:
+		return "wizard", true
+	case 2002:
+		return "globe", true
+	case 2003:
+		return "brutus", true
+	case 2004:
+		return "emce", true
+	case 2005:
+		return "oracle", true
+	case 2006:
+		return "raid-cd", true
+	case 2007:
+		return "raid-am", true
+	case 2008:
+		return "terminaldb", true
+	case 2009:
+		return "whosockami", true
+	case 2010:
+		return "pipe-server", true
+	case 2011:
+		return "servserv", true
+	case 2012:
+		return "raid-ac", true
+	case 2013:
+		return "raid-cd", true
+	case 2014:
+		return "raid-sf", true
+	case 2015:
+		return "raid-cs", true
+	case 2016:
+		return "bootserver", true
+	case 2017:
+		return "bootclient", true
+	case 2018:
+		return "rellpack", true
+	case 2019:
+		return "about", true
+	case 2020:
+		return "xinupageserver", true
+	case 2021:
+		return "xinuexpansion1", true
+	case 2022:
+		return "xinuexpansion2", true
+	case 2023:
+		return "xinuexpansion3", true
+	case 2024:
+		return "xinuexpansion4", true
+	case 2025:
+		return "xribs", true
+	case 2026:
+		return "scrabble", true
+	case 2027:
+		return "shadowserver", true
+	case 2028:
+		return "submitserver", true
+	case 2029:
+		return "hsrpv6", true
+	case 2030:
+		return "device2", true
+	case 2031:
+		return "mobrien-chat", true
+	case 2032:
+		return "blackboard", true
+	case 2033:
+		return "glogger", true
+	case 2034:
+		return "scoremgr", true
+	case 2035:
+		return "imsldoc", true
+	case 2036:
+		return "e-dpnet", true
+	case 2037:
+		return "applus", true
+	case 2038:
+		return "objectmanager", true
+	case 2039:
+		return "prizma", true
+	case 2040:
+		return "lam", true
+	case 2041:
+		return "interbase", true
+	case 2042:
+		return "isis", true
+	case 2043:
+		return "isis-bcast", true
+	case 2044:
+		return "rimsl", true
+	case 2045:
+		return "cdfunc", true
+	case 2046:
+		return "sdfunc", true
+	case 2047:
+		return "dls", true
+	case 2048:
+		return "dls-monitor", true
+	case 2049:
+		return "shilp", true
+	case 2050:
+		return "av-emb-config", true
+	case 2051:
+		return "epnsdp", true
+	case 2052:
+		return "clearvisn", true
+	case 2053:
+		return "lot105-ds-upd", true
+	case 2054:
+		return "weblogin", true
+	case 2055:
+		return "iop", true
+	case 2056:
+		return "omnisky", true
+	case 2057:
+		return "rich-cp", true
+	case 2058:
+		return "newwavesearch", true
+	case 2059:
+		return "bmc-messaging", true
+	case 2060:
+		return "teleniumdaemon", true
+	case 2061:
+		return "netmount", true
+	case 2062:
+		return "icg-swp", true
+	case 2063:
+		return "icg-bridge", true
+	case 2064:
+		return "icg-iprelay", true
+	case 2065:
+		return "dlsrpn", true
+	case 2066:
+		return "aura", true
+	case 2067:
+		return "dlswpn", true
+	case 2068:
+		return "avauthsrvprtcl", true
+	case 2069:
+		return "event-port", true
+	case 2070:
+		return "ah-esp-encap", true
+	case 2071:
+		return "acp-port", true
+	case 2072:
+		return "msync", true
+	case 2073:
+		return "gxs-data-port", true
+	case 2074:
+		return "vrtl-vmf-sa", true
+	case 2075:
+		return "newlixengine", true
+	case 2076:
+		return "newlixconfig", true
+	case 2077:
+		return "tsrmagt", true
+	case 2078:
+		return "tpcsrvr", true
+	case 2079:
+		return "idware-router", true
+	case 2080:
+		return "autodesk-nlm", true
+	case 2081:
+		return "kme-trap-port", true
+	case 2082:
+		return "infowave", true
+	case 2083:
+		return "radsec", true
+	case 2084:
+		return "sunclustergeo", true
+	case 2085:
+		return "ada-cip", true
+	case 2086:
+		return "gnunet", true
+	case 2087:
+		return "eli", true
+	case 2088:
+		return "ip-blf", true
+	case 2089:
+		return "sep", true
+	case 2090:
+		return "lrp", true
+	case 2091:
+		return "prp", true
+	case 2092:
+		return "descent3", true
+	case 2093:
+		return "nbx-cc", true
+	case 2094:
+		return "nbx-au", true
+	case 2095:
+		return "nbx-ser", true
+	case 2096:
+		return "nbx-dir", true
+	case 2097:
+		return "jetformpreview", true
+	case 2098:
+		return "dialog-port", true
+	case 2099:
+		return "h2250-annex-g", true
+	case 2100:
+		return "amiganetfs", true
+	case 2101:
+		return "rtcm-sc104", true
+	case 2102:
+		return "zephyr-srv", true
+	case 2103:
+		return "zephyr-clt", true
+	case 2104:
+		return "zephyr-hm", true
+	case 2105:
+		return "minipay", true
+	case 2106:
+		return "mzap", true
+	case 2107:
+		return "bintec-admin", true
+	case 2108:
+		return "comcam", true
+	case 2109:
+		return "ergolight", true
+	case 2110:
+		return "umsp", true
+	case 2111:
+		return "dsatp", true
+	case 2112:
+		return "idonix-metanet", true
+	case 2113:
+		return "hsl-storm", true
+	case 2114:
+		return "ariascribe", true
+	case 2115:
+		return "kdm", true
+	case 2116:
+		return "ccowcmr", true
+	case 2117:
+		return "mentaclient", true
+	case 2118:
+		return "mentaserver", true
+	case 2119:
+		return "gsigatekeeper", true
+	case 2120:
+		return "qencp", true
+	case 2121:
+		return "scientia-ssdb", true
+	case 2122:
+		return "caupc-remote", true
+	case 2123:
+		return "gtp-control", true
+	case 2124:
+		return "elatelink", true
+	case 2125:
+		return "lockstep", true
+	case 2126:
+		return "pktcable-cops", true
+	case 2127:
+		return "index-pc-wb", true
+	case 2128:
+		return "net-steward", true
+	case 2129:
+		return "cs-live", true
+	case 2130:
+		return "xds", true
+	case 2131:
+		return "avantageb2b", true
+	case 2132:
+		return "solera-epmap", true
+	case 2133:
+		return "zymed-zpp", true
+	case 2134:
+		return "avenue", true
+	case 2135:
+		return "gris", true
+	case 2136:
+		return "appworxsrv", true
+	case 2137:
+		return "connect", true
+	case 2138:
+		return "unbind-cluster", true
+	case 2139:
+		return "ias-auth", true
+	case 2140:
+		return "ias-reg", true
+	case 2141:
+		return "ias-admind", true
+	case 2142:
+		return "tdmoip", true
+	case 2143:
+		return "lv-jc", true
+	case 2144:
+		return "lv-ffx", true
+	case 2145:
+		return "lv-pici", true
+	case 2146:
+		return "lv-not", true
+	case 2147:
+		return "lv-auth", true
+	case 2148:
+		return "veritas-ucl", true
+	case 2149:
+		return "acptsys", true
+	case 2150:
+		return "dynamic3d", true
+	case 2151:
+		return "docent", true
+	case 2152:
+		return "gtp-user", true
+	case 2153:
+		return "ctlptc", true
+	case 2154:
+		return "stdptc", true
+	case 2155:
+		return "brdptc", true
+	case 2156:
+		return "trp", true
+	case 2157:
+		return "xnds", true
+	case 2158:
+		return "touchnetplus", true
+	case 2159:
+		return "gdbremote", true
+	case 2160:
+		return "apc-2160", true
+	case 2161:
+		return "apc-2161", true
+	case 2162:
+		return "navisphere", true
+	case 2163:
+		return "navisphere-sec", true
+	case 2164:
+		return "ddns-v3", true
+	case 2165:
+		return "x-bone-api", true
+	case 2166:
+		return "iwserver", true
+	case 2167:
+		return "raw-serial", true
+	case 2168:
+		return "easy-soft-mux", true
+	case 2169:
+		return "brain", true
+	case 2170:
+		return "eyetv", true
+	case 2171:
+		return "msfw-storage", true
+	case 2172:
+		return "msfw-s-storage", true
+	case 2173:
+		return "msfw-replica", true
+	case 2174:
+		return "msfw-array", true
+	case 2175:
+		return "airsync", true
+	case 2176:
+		return "rapi", true
+	case 2177:
+		return "qwave", true
+	case 2178:
+		return "bitspeer", true
+	case 2179:
+		return "vmrdp", true
+	case 2180:
+		return "mc-gt-srv", true
+	case 2181:
+		return "eforward", true
+	case 2182:
+		return "cgn-stat", true
+	case 2183:
+		return "cgn-config", true
+	case 2184:
+		return "nvd", true
+	case 2185:
+		return "onbase-dds", true
+	case 2186:
+		return "gtaua", true
+	case 2187:
+		return "ssmd", true
+	case 2190:
+		return "tivoconnect", true
+	case 2191:
+		return "tvbus", true
+	case 2192:
+		return "asdis", true
+	case 2193:
+		return "drwcs", true
+	case 2197:
+		return "mnp-exchange", true
+	case 2198:
+		return "onehome-remote", true
+	case 2199:
+		return "onehome-help", true
+	case 2201:
+		return "ats", true
+	case 2202:
+		return "imtc-map", true
+	case 2203:
+		return "b2-runtime", true
+	case 2204:
+		return "b2-license", true
+	case 2205:
+		return "jps", true
+	case 2206:
+		return "hpocbus", true
+	case 2207:
+		return "hpssd", true
+	case 2208:
+		return "hpiod", true
+	case 2209:
+		return "rimf-ps", true
+	case 2210:
+		return "noaaport", true
+	case 2211:
+		return "emwin", true
+	case 2212:
+		return "leecoposserver", true
+	case 2213:
+		return "kali", true
+	case 2214:
+		return "rpi", true
+	case 2215:
+		return "ipcore", true
+	case 2216:
+		return "vtu-comms", true
+	case 2217:
+		return "gotodevice", true
+	case 2218:
+		return "bounzza", true
+	case 2219:
+		return "netiq-ncap", true
+	case 2220:
+		return "netiq", true
+	case 2221:
+		return "ethernet-ip-s", true
+	case 2222:
+		return "EtherNet-IP-1", true
+	case 2223:
+		return "rockwell-csp2", true
+	case 2224:
+		return "efi-mg", true
+	case 2226:
+		return "di-drm", true
+	case 2227:
+		return "di-msg", true
+	case 2228:
+		return "ehome-ms", true
+	case 2229:
+		return "datalens", true
+	case 2230:
+		return "queueadm", true
+	case 2231:
+		return "wimaxasncp", true
+	case 2232:
+		return "ivs-video", true
+	case 2233:
+		return "infocrypt", true
+	case 2234:
+		return "directplay", true
+	case 2235:
+		return "sercomm-wlink", true
+	case 2236:
+		return "nani", true
+	case 2237:
+		return "optech-port1-lm", true
+	case 2238:
+		return "aviva-sna", true
+	case 2239:
+		return "imagequery", true
+	case 2240:
+		return "recipe", true
+	case 2241:
+		return "ivsd", true
+	case 2242:
+		return "foliocorp", true
+	case 2243:
+		return "magicom", true
+	case 2244:
+		return "nmsserver", true
+	case 2245:
+		return "hao", true
+	case 2246:
+		return "pc-mta-addrmap", true
+	case 2247:
+		return "antidotemgrsvr", true
+	case 2248:
+		return "ums", true
+	case 2249:
+		return "rfmp", true
+	case 2250:
+		return "remote-collab", true
+	case 2251:
+		return "dif-port", true
+	case 2252:
+		return "njenet-ssl", true
+	case 2253:
+		return "dtv-chan-req", true
+	case 2254:
+		return "seispoc", true
+	case 2255:
+		return "vrtp", true
+	case 2256:
+		return "pcc-mfp", true
+	case 2257:
+		return "simple-tx-rx", true
+	case 2258:
+		return "rcts", true
+	case 2259:
+		return "bid-serv", true
+	case 2260:
+		return "apc-2260", true
+	case 2261:
+		return "comotionmaster", true
+	case 2262:
+		return "comotionback", true
+	case 2263:
+		return "ecwcfg", true
+	case 2264:
+		return "apx500api-1", true
+	case 2265:
+		return "apx500api-2", true
+	case 2266:
+		return "mfserver", true
+	case 2267:
+		return "ontobroker", true
+	case 2268:
+		return "amt", true
+	case 2269:
+		return "mikey", true
+	case 2270:
+		return "starschool", true
+	case 2271:
+		return "mmcals", true
+	case 2272:
+		return "mmcal", true
+	case 2273:
+		return "mysql-im", true
+	case 2274:
+		return "pcttunnell", true
+	case 2275:
+		return "ibridge-data", true
+	case 2276:
+		return "ibridge-mgmt", true
+	case 2277:
+		return "bluectrlproxy", true
+	case 2278:
+		return "s3db", true
+	case 2279:
+		return "xmquery", true
+	case 2280:
+		return "lnvpoller", true
+	case 2281:
+		return "lnvconsole", true
+	case 2282:
+		return "lnvalarm", true
+	case 2283:
+		return "lnvstatus", true
+	case 2284:
+		return "lnvmaps", true
+	case 2285:
+		return "lnvmailmon", true
+	case 2286:
+		return "nas-metering", true
+	case 2287:
+		return "dna", true
+	case 2288:
+		return "netml", true
+	case 2289:
+		return "dict-lookup", true
+	case 2290:
+		return "sonus-logging", true
+	case 2291:
+		return "eapsp", true
+	case 2292:
+		return "mib-streaming", true
+	case 2293:
+		return "npdbgmngr", true
+	case 2294:
+		return "konshus-lm", true
+	case 2295:
+		return "advant-lm", true
+	case 2296:
+		return "theta-lm", true
+	case 2297:
+		return "d2k-datamover1", true
+	case 2298:
+		return "d2k-datamover2", true
+	case 2299:
+		return "pc-telecommute", true
+	case 2300:
+		return "cvmmon", true
+	case 2301:
+		return "cpq-wbem", true
+	case 2302:
+		return "binderysupport", true
+	case 2303:
+		return "proxy-gateway", true
+	case 2304:
+		return "attachmate-uts", true
+	case 2305:
+		return "mt-scaleserver", true
+	case 2306:
+		return "tappi-boxnet", true
+	case 2307:
+		return "pehelp", true
+	case 2308:
+		return "sdhelp", true
+	case 2309:
+		return "sdserver", true
+	case 2310:
+		return "sdclient", true
+	case 2311:
+		return "messageservice", true
+	case 2312:
+		return "wanscaler", true
+	case 2313:
+		return "iapp", true
+	case 2314:
+		return "cr-websystems", true
+	case 2315:
+		return "precise-sft", true
+	case 2316:
+		return "sent-lm", true
+	case 2317:
+		return "attachmate-g32", true
+	case 2318:
+		return "cadencecontrol", true
+	case 2319:
+		return "infolibria", true
+	case 2320:
+		return "siebel-ns", true
+	case 2321:
+		return "rdlap", true
+	case 2322:
+		return "ofsd", true
+	case 2323:
+		return "3d-nfsd", true
+	case 2324:
+		return "cosmocall", true
+	case 2325:
+		return "ansysli", true
+	case 2326:
+		return "idcp", true
+	case 2327:
+		return "xingcsm", true
+	case 2328:
+		return "netrix-sftm", true
+	case 2329:
+		return "nvd", true
+	case 2330:
+		return "tscchat", true
+	case 2331:
+		return "agentview", true
+	case 2332:
+		return "rcc-host", true
+	case 2333:
+		return "snapp", true
+	case 2334:
+		return "ace-client", true
+	case 2335:
+		return "ace-proxy", true
+	case 2336:
+		return "appleugcontrol", true
+	case 2337:
+		return "ideesrv", true
+	case 2338:
+		return "norton-lambert", true
+	case 2339:
+		return "3com-webview", true
+	case 2340:
+		return "wrs-registry", true
+	case 2341:
+		return "xiostatus", true
+	case 2342:
+		return "manage-exec", true
+	case 2343:
+		return "nati-logos", true
+	case 2344:
+		return "fcmsys", true
+	case 2345:
+		return "dbm", true
+	case 2346:
+		return "redstorm-join", true
+	case 2347:
+		return "redstorm-find", true
+	case 2348:
+		return "redstorm-info", true
+	case 2349:
+		return "redstorm-diag", true
+	case 2350:
+		return "psbserver", true
+	case 2351:
+		return "psrserver", true
+	case 2352:
+		return "pslserver", true
+	case 2353:
+		return "pspserver", true
+	case 2354:
+		return "psprserver", true
+	case 2355:
+		return "psdbserver", true
+	case 2356:
+		return "gxtelmd", true
+	case 2357:
+		return "unihub-server", true
+	case 2358:
+		return "futrix", true
+	case 2359:
+		return "flukeserver", true
+	case 2360:
+		return "nexstorindltd", true
+	case 2361:
+		return "tl1", true
+	case 2362:
+		return "digiman", true
+	case 2363:
+		return "mediacntrlnfsd", true
+	case 2364:
+		return "oi-2000", true
+	case 2365:
+		return "dbref", true
+	case 2366:
+		return "qip-login", true
+	case 2367:
+		return "service-ctrl", true
+	case 2368:
+		return "opentable", true
+	case 2369:
+		return "bif-p2p", true
+	case 2370:
+		return "l3-hbmon", true
+	case 2372:
+		return "lanmessenger", true
+	case 2378:
+		return "dali", true
+	case 2381:
+		return "compaq-https", true
+	case 2382:
+		return "ms-olap3", true
+	case 2383:
+		return "ms-olap4", true
+	case 2384:
+		return "sd-capacity", true
+	case 2385:
+		return "sd-data", true
+	case 2386:
+		return "virtualtape", true
+	case 2387:
+		return "vsamredirector", true
+	case 2388:
+		return "mynahautostart", true
+	case 2389:
+		return "ovsessionmgr", true
+	case 2390:
+		return "rsmtp", true
+	case 2391:
+		return "3com-net-mgmt", true
+	case 2392:
+		return "tacticalauth", true
+	case 2393:
+		return "ms-olap1", true
+	case 2394:
+		return "ms-olap2", true
+	case 2395:
+		return "lan900-remote", true
+	case 2396:
+		return "wusage", true
+	case 2397:
+		return "ncl", true
+	case 2398:
+		return "orbiter", true
+	case 2399:
+		return "fmpro-fdal", true
+	case 2400:
+		return "opequus-server", true
+	case 2401:
+		return "cvspserver", true
+	case 2402:
+		return "taskmaster2000", true
+	case 2403:
+		return "taskmaster2000", true
+	case 2404:
+		return "iec-104", true
+	case 2405:
+		return "trc-netpoll", true
+	case 2406:
+		return "jediserver", true
+	case 2407:
+		return "orion", true
+	case 2409:
+		return "sns-protocol", true
+	case 2410:
+		return "vrts-registry", true
+	case 2411:
+		return "netwave-ap-mgmt", true
+	case 2412:
+		return "cdn", true
+	case 2413:
+		return "orion-rmi-reg", true
+	case 2414:
+		return "beeyond", true
+	case 2415:
+		return "codima-rtp", true
+	case 2416:
+		return "rmtserver", true
+	case 2417:
+		return "composit-server", true
+	case 2418:
+		return "cas", true
+	case 2419:
+		return "attachmate-s2s", true
+	case 2420:
+		return "dslremote-mgmt", true
+	case 2421:
+		return "g-talk", true
+	case 2422:
+		return "crmsbits", true
+	case 2423:
+		return "rnrp", true
+	case 2424:
+		return "kofax-svr", true
+	case 2425:
+		return "fjitsuappmgr", true
+	case 2426:
+		return "vcmp", true
+	case 2427:
+		return "mgcp-gateway", true
+	case 2428:
+		return "ott", true
+	case 2429:
+		return "ft-role", true
+	case 2430:
+		return "venus", true
+	case 2431:
+		return "venus-se", true
+	case 2432:
+		return "codasrv", true
+	case 2433:
+		return "codasrv-se", true
+	case 2434:
+		return "pxc-epmap", true
+	case 2435:
+		return "optilogic", true
+	case 2436:
+		return "topx", true
+	case 2437:
+		return "unicontrol", true
+	case 2438:
+		return "msp", true
+	case 2439:
+		return "sybasedbsynch", true
+	case 2440:
+		return "spearway", true
+	case 2441:
+		return "pvsw-inet", true
+	case 2442:
+		return "netangel", true
+	case 2443:
+		return "powerclientcsf", true
+	case 2444:
+		return "btpp2sectrans", true
+	case 2445:
+		return "dtn1", true
+	case 2446:
+		return "bues-service", true
+	case 2447:
+		return "ovwdb", true
+	case 2448:
+		return "hpppssvr", true
+	case 2449:
+		return "ratl", true
+	case 2450:
+		return "netadmin", true
+	case 2451:
+		return "netchat", true
+	case 2452:
+		return "snifferclient", true
+	case 2453:
+		return "madge-ltd", true
+	case 2454:
+		return "indx-dds", true
+	case 2455:
+		return "wago-io-system", true
+	case 2456:
+		return "altav-remmgt", true
+	case 2457:
+		return "rapido-ip", true
+	case 2458:
+		return "griffin", true
+	case 2459:
+		return "xrpl", true
+	case 2460:
+		return "ms-theater", true
+	case 2461:
+		return "qadmifoper", true
+	case 2462:
+		return "qadmifevent", true
+	case 2463:
+		return "lsi-raid-mgmt", true
+	case 2464:
+		return "direcpc-si", true
+	case 2465:
+		return "lbm", true
+	case 2466:
+		return "lbf", true
+	case 2467:
+		return "high-criteria", true
+	case 2468:
+		return "qip-msgd", true
+	case 2469:
+		return "mti-tcs-comm", true
+	case 2470:
+		return "taskman-port", true
+	case 2471:
+		return "seaodbc", true
+	case 2472:
+		return "c3", true
+	case 2473:
+		return "aker-cdp", true
+	case 2474:
+		return "vitalanalysis", true
+	case 2475:
+		return "ace-server", true
+	case 2476:
+		return "ace-svr-prop", true
+	case 2477:
+		return "ssm-cvs", true
+	case 2478:
+		return "ssm-cssps", true
+	case 2479:
+		return "ssm-els", true
+	case 2480:
+		return "powerexchange", true
+	case 2481:
+		return "giop", true
+	case 2482:
+		return "giop-ssl", true
+	case 2483:
+		return "ttc", true
+	case 2484:
+		return "ttc-ssl", true
+	case 2485:
+		return "netobjects1", true
+	case 2486:
+		return "netobjects2", true
+	case 2487:
+		return "pns", true
+	case 2488:
+		return "moy-corp", true
+	case 2489:
+		return "tsilb", true
+	case 2490:
+		return "qip-qdhcp", true
+	case 2491:
+		return "conclave-cpp", true
+	case 2492:
+		return "groove", true
+	case 2493:
+		return "talarian-mqs", true
+	case 2494:
+		return "bmc-ar", true
+	case 2495:
+		return "fast-rem-serv", true
+	case 2496:
+		return "dirgis", true
+	case 2497:
+		return "quaddb", true
+	case 2498:
+		return "odn-castraq", true
+	case 2499:
+		return "unicontrol", true
+	case 2500:
+		return "rtsserv", true
+	case 2501:
+		return "rtsclient", true
+	case 2502:
+		return "kentrox-prot", true
+	case 2503:
+		return "nms-dpnss", true
+	case 2504:
+		return "wlbs", true
+	case 2505:
+		return "ppcontrol", true
+	case 2506:
+		return "jbroker", true
+	case 2507:
+		return "spock", true
+	case 2508:
+		return "jdatastore", true
+	case 2509:
+		return "fjmpss", true
+	case 2510:
+		return "fjappmgrbulk", true
+	case 2511:
+		return "metastorm", true
+	case 2512:
+		return "citrixima", true
+	case 2513:
+		return "citrixadmin", true
+	case 2514:
+		return "facsys-ntp", true
+	case 2515:
+		return "facsys-router", true
+	case 2516:
+		return "maincontrol", true
+	case 2517:
+		return "call-sig-trans", true
+	case 2518:
+		return "willy", true
+	case 2519:
+		return "globmsgsvc", true
+	case 2520:
+		return "pvsw", true
+	case 2521:
+		return "adaptecmgr", true
+	case 2522:
+		return "windb", true
+	case 2523:
+		return "qke-llc-v3", true
+	case 2524:
+		return "optiwave-lm", true
+	case 2525:
+		return "ms-v-worlds", true
+	case 2526:
+		return "ema-sent-lm", true
+	case 2527:
+		return "iqserver", true
+	case 2528:
+		return "ncr-ccl", true
+	case 2529:
+		return "utsftp", true
+	case 2530:
+		return "vrcommerce", true
+	case 2531:
+		return "ito-e-gui", true
+	case 2532:
+		return "ovtopmd", true
+	case 2533:
+		return "snifferserver", true
+	case 2534:
+		return "combox-web-acc", true
+	case 2535:
+		return "madcap", true
+	case 2536:
+		return "btpp2audctr1", true
+	case 2537:
+		return "upgrade", true
+	case 2538:
+		return "vnwk-prapi", true
+	case 2539:
+		return "vsiadmin", true
+	case 2540:
+		return "lonworks", true
+	case 2541:
+		return "lonworks2", true
+	case 2542:
+		return "udrawgraph", true
+	case 2543:
+		return "reftek", true
+	case 2544:
+		return "novell-zen", true
+	case 2545:
+		return "sis-emt", true
+	case 2546:
+		return "vytalvaultbrtp", true
+	case 2547:
+		return "vytalvaultvsmp", true
+	case 2548:
+		return "vytalvaultpipe", true
+	case 2549:
+		return "ipass", true
+	case 2550:
+		return "ads", true
+	case 2551:
+		return "isg-uda-server", true
+	case 2552:
+		return "call-logging", true
+	case 2553:
+		return "efidiningport", true
+	case 2554:
+		return "vcnet-link-v10", true
+	case 2555:
+		return "compaq-wcp", true
+	case 2556:
+		return "nicetec-nmsvc", true
+	case 2557:
+		return "nicetec-mgmt", true
+	case 2558:
+		return "pclemultimedia", true
+	case 2559:
+		return "lstp", true
+	case 2560:
+		return "labrat", true
+	case 2561:
+		return "mosaixcc", true
+	case 2562:
+		return "delibo", true
+	case 2563:
+		return "cti-redwood", true
+	case 2564:
+		return "hp-3000-telnet", true
+	case 2565:
+		return "coord-svr", true
+	case 2566:
+		return "pcs-pcw", true
+	case 2567:
+		return "clp", true
+	case 2568:
+		return "spamtrap", true
+	case 2569:
+		return "sonuscallsig", true
+	case 2570:
+		return "hs-port", true
+	case 2571:
+		return "cecsvc", true
+	case 2572:
+		return "ibp", true
+	case 2573:
+		return "trustestablish", true
+	case 2574:
+		return "blockade-bpsp", true
+	case 2575:
+		return "hl7", true
+	case 2576:
+		return "tclprodebugger", true
+	case 2577:
+		return "scipticslsrvr", true
+	case 2578:
+		return "rvs-isdn-dcp", true
+	case 2579:
+		return "mpfoncl", true
+	case 2580:
+		return "tributary", true
+	case 2581:
+		return "argis-te", true
+	case 2582:
+		return "argis-ds", true
+	case 2583:
+		return "mon", true
+	case 2584:
+		return "cyaserv", true
+	case 2585:
+		return "netx-server", true
+	case 2586:
+		return "netx-agent", true
+	case 2587:
+		return "masc", true
+	case 2588:
+		return "privilege", true
+	case 2589:
+		return "quartus-tcl", true
+	case 2590:
+		return "idotdist", true
+	case 2591:
+		return "maytagshuffle", true
+	case 2592:
+		return "netrek", true
+	case 2593:
+		return "mns-mail", true
+	case 2594:
+		return "dts", true
+	case 2595:
+		return "worldfusion1", true
+	case 2596:
+		return "worldfusion2", true
+	case 2597:
+		return "homesteadglory", true
+	case 2598:
+		return "citriximaclient", true
+	case 2599:
+		return "snapd", true
+	case 2600:
+		return "hpstgmgr", true
+	case 2601:
+		return "discp-client", true
+	case 2602:
+		return "discp-server", true
+	case 2603:
+		return "servicemeter", true
+	case 2604:
+		return "nsc-ccs", true
+	case 2605:
+		return "nsc-posa", true
+	case 2606:
+		return "netmon", true
+	case 2607:
+		return "connection", true
+	case 2608:
+		return "wag-service", true
+	case 2609:
+		return "system-monitor", true
+	case 2610:
+		return "versa-tek", true
+	case 2611:
+		return "lionhead", true
+	case 2612:
+		return "qpasa-agent", true
+	case 2613:
+		return "smntubootstrap", true
+	case 2614:
+		return "neveroffline", true
+	case 2615:
+		return "firepower", true
+	case 2616:
+		return "appswitch-emp", true
+	case 2617:
+		return "cmadmin", true
+	case 2618:
+		return "priority-e-com", true
+	case 2619:
+		return "bruce", true
+	case 2620:
+		return "lpsrecommender", true
+	case 2621:
+		return "miles-apart", true
+	case 2622:
+		return "metricadbc", true
+	case 2623:
+		return "lmdp", true
+	case 2624:
+		return "aria", true
+	case 2625:
+		return "blwnkl-port", true
+	case 2626:
+		return "gbjd816", true
+	case 2627:
+		return "moshebeeri", true
+	case 2628:
+		return "dict", true
+	case 2629:
+		return "sitaraserver", true
+	case 2630:
+		return "sitaramgmt", true
+	case 2631:
+		return "sitaradir", true
+	case 2632:
+		return "irdg-post", true
+	case 2633:
+		return "interintelli", true
+	case 2634:
+		return "pk-electronics", true
+	case 2635:
+		return "backburner", true
+	case 2636:
+		return "solve", true
+	case 2637:
+		return "imdocsvc", true
+	case 2638:
+		return "sybaseanywhere", true
+	case 2639:
+		return "aminet", true
+	case 2640:
+		return "ami-control", true
+	case 2641:
+		return "hdl-srv", true
+	case 2642:
+		return "tragic", true
+	case 2643:
+		return "gte-samp", true
+	case 2644:
+		return "travsoft-ipx-t", true
+	case 2645:
+		return "novell-ipx-cmd", true
+	case 2646:
+		return "and-lm", true
+	case 2647:
+		return "syncserver", true
+	case 2648:
+		return "upsnotifyprot", true
+	case 2649:
+		return "vpsipport", true
+	case 2650:
+		return "eristwoguns", true
+	case 2651:
+		return "ebinsite", true
+	case 2652:
+		return "interpathpanel", true
+	case 2653:
+		return "sonus", true
+	case 2654:
+		return "corel-vncadmin", true
+	case 2655:
+		return "unglue", true
+	case 2656:
+		return "kana", true
+	case 2657:
+		return "sns-dispatcher", true
+	case 2658:
+		return "sns-admin", true
+	case 2659:
+		return "sns-query", true
+	case 2660:
+		return "gcmonitor", true
+	case 2661:
+		return "olhost", true
+	case 2662:
+		return "bintec-capi", true
+	case 2663:
+		return "bintec-tapi", true
+	case 2664:
+		return "patrol-mq-gm", true
+	case 2665:
+		return "patrol-mq-nm", true
+	case 2666:
+		return "extensis", true
+	case 2667:
+		return "alarm-clock-s", true
+	case 2668:
+		return "alarm-clock-c", true
+	case 2669:
+		return "toad", true
+	case 2670:
+		return "tve-announce", true
+	case 2671:
+		return "newlixreg", true
+	case 2672:
+		return "nhserver", true
+	case 2673:
+		return "firstcall42", true
+	case 2674:
+		return "ewnn", true
+	case 2675:
+		return "ttc-etap", true
+	case 2676:
+		return "simslink", true
+	case 2677:
+		return "gadgetgate1way", true
+	case 2678:
+		return "gadgetgate2way", true
+	case 2679:
+		return "syncserverssl", true
+	case 2680:
+		return "pxc-sapxom", true
+	case 2681:
+		return "mpnjsomb", true
+	case 2683:
+		return "ncdloadbalance", true
+	case 2684:
+		return "mpnjsosv", true
+	case 2685:
+		return "mpnjsocl", true
+	case 2686:
+		return "mpnjsomg", true
+	case 2687:
+		return "pq-lic-mgmt", true
+	case 2688:
+		return "md-cg-http", true
+	case 2689:
+		return "fastlynx", true
+	case 2690:
+		return "hp-nnm-data", true
+	case 2691:
+		return "itinternet", true
+	case 2692:
+		return "admins-lms", true
+	case 2694:
+		return "pwrsevent", true
+	case 2695:
+		return "vspread", true
+	case 2696:
+		return "unifyadmin", true
+	case 2697:
+		return "oce-snmp-trap", true
+	case 2698:
+		return "mck-ivpip", true
+	case 2699:
+		return "csoft-plusclnt", true
+	case 2700:
+		return "tqdata", true
+	case 2701:
+		return "sms-rcinfo", true
+	case 2702:
+		return "sms-xfer", true
+	case 2703:
+		return "sms-chat", true
+	case 2704:
+		return "sms-remctrl", true
+	case 2705:
+		return "sds-admin", true
+	case 2706:
+		return "ncdmirroring", true
+	case 2707:
+		return "emcsymapiport", true
+	case 2708:
+		return "banyan-net", true
+	case 2709:
+		return "supermon", true
+	case 2710:
+		return "sso-service", true
+	case 2711:
+		return "sso-control", true
+	case 2712:
+		return "aocp", true
+	case 2713:
+		return "raventbs", true
+	case 2714:
+		return "raventdm", true
+	case 2715:
+		return "hpstgmgr2", true
+	case 2716:
+		return "inova-ip-disco", true
+	case 2717:
+		return "pn-requester", true
+	case 2718:
+		return "pn-requester2", true
+	case 2719:
+		return "scan-change", true
+	case 2720:
+		return "wkars", true
+	case 2721:
+		return "smart-diagnose", true
+	case 2722:
+		return "proactivesrvr", true
+	case 2723:
+		return "watchdog-nt", true
+	case 2724:
+		return "qotps", true
+	case 2725:
+		return "msolap-ptp2", true
+	case 2726:
+		return "tams", true
+	case 2727:
+		return "mgcp-callagent", true
+	case 2728:
+		return "sqdr", true
+	case 2729:
+		return "tcim-control", true
+	case 2730:
+		return "nec-raidplus", true
+	case 2731:
+		return "fyre-messanger", true
+	case 2732:
+		return "g5m", true
+	case 2733:
+		return "signet-ctf", true
+	case 2734:
+		return "ccs-software", true
+	case 2735:
+		return "netiq-mc", true
+	case 2736:
+		return "radwiz-nms-srv", true
+	case 2737:
+		return "srp-feedback", true
+	case 2738:
+		return "ndl-tcp-ois-gw", true
+	case 2739:
+		return "tn-timing", true
+	case 2740:
+		return "alarm", true
+	case 2741:
+		return "tsb", true
+	case 2742:
+		return "tsb2", true
+	case 2743:
+		return "murx", true
+	case 2744:
+		return "honyaku", true
+	case 2745:
+		return "urbisnet", true
+	case 2746:
+		return "cpudpencap", true
+	case 2747:
+		return "fjippol-swrly", true
+	case 2748:
+		return "fjippol-polsvr", true
+	case 2749:
+		return "fjippol-cnsl", true
+	case 2750:
+		return "fjippol-port1", true
+	case 2751:
+		return "fjippol-port2", true
+	case 2752:
+		return "rsisysaccess", true
+	case 2753:
+		return "de-spot", true
+	case 2754:
+		return "apollo-cc", true
+	case 2755:
+		return "expresspay", true
+	case 2756:
+		return "simplement-tie", true
+	case 2757:
+		return "cnrp", true
+	case 2758:
+		return "apollo-status", true
+	case 2759:
+		return "apollo-gms", true
+	case 2760:
+		return "sabams", true
+	case 2761:
+		return "dicom-iscl", true
+	case 2762:
+		return "dicom-tls", true
+	case 2763:
+		return "desktop-dna", true
+	case 2764:
+		return "data-insurance", true
+	case 2765:
+		return "qip-audup", true
+	case 2766:
+		return "compaq-scp", true
+	case 2767:
+		return "uadtc", true
+	case 2768:
+		return "uacs", true
+	case 2769:
+		return "exce", true
+	case 2770:
+		return "veronica", true
+	case 2771:
+		return "vergencecm", true
+	case 2772:
+		return "auris", true
+	case 2773:
+		return "rbakcup1", true
+	case 2774:
+		return "rbakcup2", true
+	case 2775:
+		return "smpp", true
+	case 2776:
+		return "ridgeway1", true
+	case 2777:
+		return "ridgeway2", true
+	case 2778:
+		return "gwen-sonya", true
+	case 2779:
+		return "lbc-sync", true
+	case 2780:
+		return "lbc-control", true
+	case 2781:
+		return "whosells", true
+	case 2782:
+		return "everydayrc", true
+	case 2783:
+		return "aises", true
+	case 2784:
+		return "www-dev", true
+	case 2785:
+		return "aic-np", true
+	case 2786:
+		return "aic-oncrpc", true
+	case 2787:
+		return "piccolo", true
+	case 2788:
+		return "fryeserv", true
+	case 2789:
+		return "media-agent", true
+	case 2790:
+		return "plgproxy", true
+	case 2791:
+		return "mtport-regist", true
+	case 2792:
+		return "f5-globalsite", true
+	case 2793:
+		return "initlsmsad", true
+	case 2795:
+		return "livestats", true
+	case 2796:
+		return "ac-tech", true
+	case 2797:
+		return "esp-encap", true
+	case 2798:
+		return "tmesis-upshot", true
+	case 2799:
+		return "icon-discover", true
+	case 2800:
+		return "acc-raid", true
+	case 2801:
+		return "igcp", true
+	case 2802:
+		return "veritas-udp1", true
+	case 2803:
+		return "btprjctrl", true
+	case 2804:
+		return "dvr-esm", true
+	case 2805:
+		return "wta-wsp-s", true
+	case 2806:
+		return "cspuni", true
+	case 2807:
+		return "cspmulti", true
+	case 2808:
+		return "j-lan-p", true
+	case 2809:
+		return "corbaloc", true
+	case 2810:
+		return "netsteward", true
+	case 2811:
+		return "gsiftp", true
+	case 2812:
+		return "atmtcp", true
+	case 2813:
+		return "llm-pass", true
+	case 2814:
+		return "llm-csv", true
+	case 2815:
+		return "lbc-measure", true
+	case 2816:
+		return "lbc-watchdog", true
+	case 2817:
+		return "nmsigport", true
+	case 2818:
+		return "rmlnk", true
+	case 2819:
+		return "fc-faultnotify", true
+	case 2820:
+		return "univision", true
+	case 2821:
+		return "vrts-at-port", true
+	case 2822:
+		return "ka0wuc", true
+	case 2823:
+		return "cqg-netlan", true
+	case 2824:
+		return "cqg-netlan-1", true
+	case 2826:
+		return "slc-systemlog", true
+	case 2827:
+		return "slc-ctrlrloops", true
+	case 2828:
+		return "itm-lm", true
+	case 2829:
+		return "silkp1", true
+	case 2830:
+		return "silkp2", true
+	case 2831:
+		return "silkp3", true
+	case 2832:
+		return "silkp4", true
+	case 2833:
+		return "glishd", true
+	case 2834:
+		return "evtp", true
+	case 2835:
+		return "evtp-data", true
+	case 2836:
+		return "catalyst", true
+	case 2837:
+		return "repliweb", true
+	case 2838:
+		return "starbot", true
+	case 2839:
+		return "nmsigport", true
+	case 2840:
+		return "l3-exprt", true
+	case 2841:
+		return "l3-ranger", true
+	case 2842:
+		return "l3-hawk", true
+	case 2843:
+		return "pdnet", true
+	case 2844:
+		return "bpcp-poll", true
+	case 2845:
+		return "bpcp-trap", true
+	case 2846:
+		return "aimpp-hello", true
+	case 2847:
+		return "aimpp-port-req", true
+	case 2848:
+		return "amt-blc-port", true
+	case 2849:
+		return "fxp", true
+	case 2850:
+		return "metaconsole", true
+	case 2851:
+		return "webemshttp", true
+	case 2852:
+		return "bears-01", true
+	case 2853:
+		return "ispipes", true
+	case 2854:
+		return "infomover", true
+	case 2856:
+		return "cesdinv", true
+	case 2857:
+		return "simctlp", true
+	case 2858:
+		return "ecnp", true
+	case 2859:
+		return "activememory", true
+	case 2860:
+		return "dialpad-voice1", true
+	case 2861:
+		return "dialpad-voice2", true
+	case 2862:
+		return "ttg-protocol", true
+	case 2863:
+		return "sonardata", true
+	case 2864:
+		return "astronova-main", true
+	case 2865:
+		return "pit-vpn", true
+	case 2866:
+		return "iwlistener", true
+	case 2867:
+		return "esps-portal", true
+	case 2868:
+		return "npep-messaging", true
+	case 2869:
+		return "icslap", true
+	case 2870:
+		return "daishi", true
+	case 2871:
+		return "msi-selectplay", true
+	case 2872:
+		return "radix", true
+	case 2873:
+		return "psrt", true
+	case 2874:
+		return "dxmessagebase1", true
+	case 2875:
+		return "dxmessagebase2", true
+	case 2876:
+		return "sps-tunnel", true
+	case 2877:
+		return "bluelance", true
+	case 2878:
+		return "aap", true
+	case 2879:
+		return "ucentric-ds", true
+	case 2880:
+		return "synapse", true
+	case 2881:
+		return "ndsp", true
+	case 2882:
+		return "ndtp", true
+	case 2883:
+		return "ndnp", true
+	case 2884:
+		return "flashmsg", true
+	case 2885:
+		return "topflow", true
+	case 2886:
+		return "responselogic", true
+	case 2887:
+		return "aironetddp", true
+	case 2888:
+		return "spcsdlobby", true
+	case 2889:
+		return "rsom", true
+	case 2890:
+		return "cspclmulti", true
+	case 2891:
+		return "cinegrfx-elmd", true
+	case 2892:
+		return "snifferdata", true
+	case 2893:
+		return "vseconnector", true
+	case 2894:
+		return "abacus-remote", true
+	case 2895:
+		return "natuslink", true
+	case 2896:
+		return "ecovisiong6-1", true
+	case 2897:
+		return "citrix-rtmp", true
+	case 2898:
+		return "appliance-cfg", true
+	case 2899:
+		return "powergemplus", true
+	case 2900:
+		return "quicksuite", true
+	case 2901:
+		return "allstorcns", true
+	case 2902:
+		return "netaspi", true
+	case 2903:
+		return "suitcase", true
+	case 2904:
+		return "m2ua", true
+	case 2906:
+		return "caller9", true
+	case 2907:
+		return "webmethods-b2b", true
+	case 2908:
+		return "mao", true
+	case 2909:
+		return "funk-dialout", true
+	case 2910:
+		return "tdaccess", true
+	case 2911:
+		return "blockade", true
+	case 2912:
+		return "epicon", true
+	case 2913:
+		return "boosterware", true
+	case 2914:
+		return "gamelobby", true
+	case 2915:
+		return "tksocket", true
+	case 2916:
+		return "elvin-server", true
+	case 2917:
+		return "elvin-client", true
+	case 2918:
+		return "kastenchasepad", true
+	case 2919:
+		return "roboer", true
+	case 2920:
+		return "roboeda", true
+	case 2921:
+		return "cesdcdman", true
+	case 2922:
+		return "cesdcdtrn", true
+	case 2923:
+		return "wta-wsp-wtp-s", true
+	case 2924:
+		return "precise-vip", true
+	case 2926:
+		return "mobile-file-dl", true
+	case 2927:
+		return "unimobilectrl", true
+	case 2928:
+		return "redstone-cpss", true
+	case 2929:
+		return "amx-webadmin", true
+	case 2930:
+		return "amx-weblinx", true
+	case 2931:
+		return "circle-x", true
+	case 2932:
+		return "incp", true
+	case 2933:
+		return "4-tieropmgw", true
+	case 2934:
+		return "4-tieropmcli", true
+	case 2935:
+		return "qtp", true
+	case 2936:
+		return "otpatch", true
+	case 2937:
+		return "pnaconsult-lm", true
+	case 2938:
+		return "sm-pas-1", true
+	case 2939:
+		return "sm-pas-2", true
+	case 2940:
+		return "sm-pas-3", true
+	case 2941:
+		return "sm-pas-4", true
+	case 2942:
+		return "sm-pas-5", true
+	case 2943:
+		return "ttnrepository", true
+	case 2944:
+		return "megaco-h248", true
+	case 2945:
+		return "h248-binary", true
+	case 2946:
+		return "fjsvmpor", true
+	case 2947:
+		return "gpsd", true
+	case 2948:
+		return "wap-push", true
+	case 2949:
+		return "wap-pushsecure", true
+	case 2950:
+		return "esip", true
+	case 2951:
+		return "ottp", true
+	case 2952:
+		return "mpfwsas", true
+	case 2953:
+		return "ovalarmsrv", true
+	case 2954:
+		return "ovalarmsrv-cmd", true
+	case 2955:
+		return "csnotify", true
+	case 2956:
+		return "ovrimosdbman", true
+	case 2957:
+		return "jmact5", true
+	case 2958:
+		return "jmact6", true
+	case 2959:
+		return "rmopagt", true
+	case 2960:
+		return "dfoxserver", true
+	case 2961:
+		return "boldsoft-lm", true
+	case 2962:
+		return "iph-policy-cli", true
+	case 2963:
+		return "iph-policy-adm", true
+	case 2964:
+		return "bullant-srap", true
+	case 2965:
+		return "bullant-rap", true
+	case 2966:
+		return "idp-infotrieve", true
+	case 2967:
+		return "ssc-agent", true
+	case 2968:
+		return "enpp", true
+	case 2969:
+		return "essp", true
+	case 2970:
+		return "index-net", true
+	case 2971:
+		return "netclip", true
+	case 2972:
+		return "pmsm-webrctl", true
+	case 2973:
+		return "svnetworks", true
+	case 2974:
+		return "signal", true
+	case 2975:
+		return "fjmpcm", true
+	case 2976:
+		return "cns-srv-port", true
+	case 2977:
+		return "ttc-etap-ns", true
+	case 2978:
+		return "ttc-etap-ds", true
+	case 2979:
+		return "h263-video", true
+	case 2980:
+		return "wimd", true
+	case 2981:
+		return "mylxamport", true
+	case 2982:
+		return "iwb-whiteboard", true
+	case 2983:
+		return "netplan", true
+	case 2984:
+		return "hpidsadmin", true
+	case 2985:
+		return "hpidsagent", true
+	case 2986:
+		return "stonefalls", true
+	case 2987:
+		return "identify", true
+	case 2988:
+		return "hippad", true
+	case 2989:
+		return "zarkov", true
+	case 2990:
+		return "boscap", true
+	case 2991:
+		return "wkstn-mon", true
+	case 2992:
+		return "avenyo", true
+	case 2993:
+		return "veritas-vis1", true
+	case 2994:
+		return "veritas-vis2", true
+	case 2995:
+		return "idrs", true
+	case 2996:
+		return "vsixml", true
+	case 2997:
+		return "rebol", true
+	case 2998:
+		return "realsecure", true
+	case 2999:
+		return "remoteware-un", true
+	case 3000:
+		return "hbci", true
+	case 3002:
+		return "exlm-agent", true
+	case 3003:
+		return "cgms", true
+	case 3004:
+		return "csoftragent", true
+	case 3005:
+		return "geniuslm", true
+	case 3006:
+		return "ii-admin", true
+	case 3007:
+		return "lotusmtap", true
+	case 3008:
+		return "midnight-tech", true
+	case 3009:
+		return "pxc-ntfy", true
+	case 3010:
+		return "ping-pong", true
+	case 3011:
+		return "trusted-web", true
+	case 3012:
+		return "twsdss", true
+	case 3013:
+		return "gilatskysurfer", true
+	case 3014:
+		return "broker-service", true
+	case 3015:
+		return "nati-dstp", true
+	case 3016:
+		return "notify-srvr", true
+	case 3017:
+		return "event-listener", true
+	case 3018:
+		return "srvc-registry", true
+	case 3019:
+		return "resource-mgr", true
+	case 3020:
+		return "cifs", true
+	case 3021:
+		return "agriserver", true
+	case 3022:
+		return "csregagent", true
+	case 3023:
+		return "magicnotes", true
+	case 3024:
+		return "nds-sso", true
+	case 3025:
+		return "arepa-raft", true
+	case 3026:
+		return "agri-gateway", true
+	case 3027:
+		return "LiebDevMgmt-C", true
+	case 3028:
+		return "LiebDevMgmt-DM", true
+	case 3029:
+		return "LiebDevMgmt-A", true
+	case 3030:
+		return "arepa-cas", true
+	case 3031:
+		return "eppc", true
+	case 3032:
+		return "redwood-chat", true
+	case 3033:
+		return "pdb", true
+	case 3034:
+		return "osmosis-aeea", true
+	case 3035:
+		return "fjsv-gssagt", true
+	case 3036:
+		return "hagel-dump", true
+	case 3037:
+		return "hp-san-mgmt", true
+	case 3038:
+		return "santak-ups", true
+	case 3039:
+		return "cogitate", true
+	case 3040:
+		return "tomato-springs", true
+	case 3041:
+		return "di-traceware", true
+	case 3042:
+		return "journee", true
+	case 3043:
+		return "brp", true
+	case 3044:
+		return "epp", true
+	case 3045:
+		return "responsenet", true
+	case 3046:
+		return "di-ase", true
+	case 3047:
+		return "hlserver", true
+	case 3048:
+		return "pctrader", true
+	case 3049:
+		return "nsws", true
+	case 3050:
+		return "gds-db", true
+	case 3051:
+		return "galaxy-server", true
+	case 3052:
+		return "apc-3052", true
+	case 3053:
+		return "dsom-server", true
+	case 3054:
+		return "amt-cnf-prot", true
+	case 3055:
+		return "policyserver", true
+	case 3056:
+		return "cdl-server", true
+	case 3057:
+		return "goahead-fldup", true
+	case 3058:
+		return "videobeans", true
+	case 3059:
+		return "qsoft", true
+	case 3060:
+		return "interserver", true
+	case 3061:
+		return "cautcpd", true
+	case 3062:
+		return "ncacn-ip-tcp", true
+	case 3063:
+		return "ncadg-ip-udp", true
+	case 3064:
+		return "rprt", true
+	case 3065:
+		return "slinterbase", true
+	case 3066:
+		return "netattachsdmp", true
+	case 3067:
+		return "fjhpjp", true
+	case 3068:
+		return "ls3bcast", true
+	case 3069:
+		return "ls3", true
+	case 3070:
+		return "mgxswitch", true
+	case 3072:
+		return "csd-monitor", true
+	case 3073:
+		return "vcrp", true
+	case 3074:
+		return "xbox", true
+	case 3075:
+		return "orbix-locator", true
+	case 3076:
+		return "orbix-config", true
+	case 3077:
+		return "orbix-loc-ssl", true
+	case 3078:
+		return "orbix-cfg-ssl", true
+	case 3079:
+		return "lv-frontpanel", true
+	case 3080:
+		return "stm-pproc", true
+	case 3081:
+		return "tl1-lv", true
+	case 3082:
+		return "tl1-raw", true
+	case 3083:
+		return "tl1-telnet", true
+	case 3084:
+		return "itm-mccs", true
+	case 3085:
+		return "pcihreq", true
+	case 3086:
+		return "jdl-dbkitchen", true
+	case 3087:
+		return "asoki-sma", true
+	case 3088:
+		return "xdtp", true
+	case 3089:
+		return "ptk-alink", true
+	case 3090:
+		return "stss", true
+	case 3091:
+		return "1ci-smcs", true
+	case 3093:
+		return "rapidmq-center", true
+	case 3094:
+		return "rapidmq-reg", true
+	case 3095:
+		return "panasas", true
+	case 3096:
+		return "ndl-aps", true
+	case 3098:
+		return "umm-port", true
+	case 3099:
+		return "chmd", true
+	case 3100:
+		return "opcon-xps", true
+	case 3101:
+		return "hp-pxpib", true
+	case 3102:
+		return "slslavemon", true
+	case 3103:
+		return "autocuesmi", true
+	case 3104:
+		return "autocuetime", true
+	case 3105:
+		return "cardbox", true
+	case 3106:
+		return "cardbox-http", true
+	case 3107:
+		return "business", true
+	case 3108:
+		return "geolocate", true
+	case 3109:
+		return "personnel", true
+	case 3110:
+		return "sim-control", true
+	case 3111:
+		return "wsynch", true
+	case 3112:
+		return "ksysguard", true
+	case 3113:
+		return "cs-auth-svr", true
+	case 3114:
+		return "ccmad", true
+	case 3115:
+		return "mctet-master", true
+	case 3116:
+		return "mctet-gateway", true
+	case 3117:
+		return "mctet-jserv", true
+	case 3118:
+		return "pkagent", true
+	case 3119:
+		return "d2000kernel", true
+	case 3120:
+		return "d2000webserver", true
+	case 3122:
+		return "vtr-emulator", true
+	case 3123:
+		return "edix", true
+	case 3124:
+		return "beacon-port", true
+	case 3125:
+		return "a13-an", true
+	case 3127:
+		return "ctx-bridge", true
+	case 3128:
+		return "ndl-aas", true
+	case 3129:
+		return "netport-id", true
+	case 3130:
+		return "icpv2", true
+	case 3131:
+		return "netbookmark", true
+	case 3132:
+		return "ms-rule-engine", true
+	case 3133:
+		return "prism-deploy", true
+	case 3134:
+		return "ecp", true
+	case 3135:
+		return "peerbook-port", true
+	case 3136:
+		return "grubd", true
+	case 3137:
+		return "rtnt-1", true
+	case 3138:
+		return "rtnt-2", true
+	case 3139:
+		return "incognitorv", true
+	case 3140:
+		return "ariliamulti", true
+	case 3141:
+		return "vmodem", true
+	case 3142:
+		return "rdc-wh-eos", true
+	case 3143:
+		return "seaview", true
+	case 3144:
+		return "tarantella", true
+	case 3145:
+		return "csi-lfap", true
+	case 3146:
+		return "bears-02", true
+	case 3147:
+		return "rfio", true
+	case 3148:
+		return "nm-game-admin", true
+	case 3149:
+		return "nm-game-server", true
+	case 3150:
+		return "nm-asses-admin", true
+	case 3151:
+		return "nm-assessor", true
+	case 3152:
+		return "feitianrockey", true
+	case 3153:
+		return "s8-client-port", true
+	case 3154:
+		return "ccmrmi", true
+	case 3155:
+		return "jpegmpeg", true
+	case 3156:
+		return "indura", true
+	case 3157:
+		return "e3consultants", true
+	case 3158:
+		return "stvp", true
+	case 3159:
+		return "navegaweb-port", true
+	case 3160:
+		return "tip-app-server", true
+	case 3161:
+		return "doc1lm", true
+	case 3162:
+		return "sflm", true
+	case 3163:
+		return "res-sap", true
+	case 3164:
+		return "imprs", true
+	case 3165:
+		return "newgenpay", true
+	case 3166:
+		return "sossecollector", true
+	case 3167:
+		return "nowcontact", true
+	case 3168:
+		return "poweronnud", true
+	case 3169:
+		return "serverview-as", true
+	case 3170:
+		return "serverview-asn", true
+	case 3171:
+		return "serverview-gf", true
+	case 3172:
+		return "serverview-rm", true
+	case 3173:
+		return "serverview-icc", true
+	case 3174:
+		return "armi-server", true
+	case 3175:
+		return "t1-e1-over-ip", true
+	case 3176:
+		return "ars-master", true
+	case 3177:
+		return "phonex-port", true
+	case 3178:
+		return "radclientport", true
+	case 3179:
+		return "h2gf-w-2m", true
+	case 3180:
+		return "mc-brk-srv", true
+	case 3181:
+		return "bmcpatrolagent", true
+	case 3182:
+		return "bmcpatrolrnvu", true
+	case 3183:
+		return "cops-tls", true
+	case 3184:
+		return "apogeex-port", true
+	case 3185:
+		return "smpppd", true
+	case 3186:
+		return "iiw-port", true
+	case 3187:
+		return "odi-port", true
+	case 3188:
+		return "brcm-comm-port", true
+	case 3189:
+		return "pcle-infex", true
+	case 3190:
+		return "csvr-proxy", true
+	case 3191:
+		return "csvr-sslproxy", true
+	case 3192:
+		return "firemonrcc", true
+	case 3193:
+		return "spandataport", true
+	case 3194:
+		return "magbind", true
+	case 3195:
+		return "ncu-1", true
+	case 3196:
+		return "ncu-2", true
+	case 3197:
+		return "embrace-dp-s", true
+	case 3198:
+		return "embrace-dp-c", true
+	case 3199:
+		return "dmod-workspace", true
+	case 3200:
+		return "tick-port", true
+	case 3201:
+		return "cpq-tasksmart", true
+	case 3202:
+		return "intraintra", true
+	case 3203:
+		return "netwatcher-mon", true
+	case 3204:
+		return "netwatcher-db", true
+	case 3205:
+		return "isns", true
+	case 3206:
+		return "ironmail", true
+	case 3207:
+		return "vx-auth-port", true
+	case 3208:
+		return "pfu-prcallback", true
+	case 3209:
+		return "netwkpathengine", true
+	case 3210:
+		return "flamenco-proxy", true
+	case 3211:
+		return "avsecuremgmt", true
+	case 3212:
+		return "surveyinst", true
+	case 3213:
+		return "neon24x7", true
+	case 3214:
+		return "jmq-daemon-1", true
+	case 3215:
+		return "jmq-daemon-2", true
+	case 3216:
+		return "ferrari-foam", true
+	case 3217:
+		return "unite", true
+	case 3218:
+		return "smartpackets", true
+	case 3219:
+		return "wms-messenger", true
+	case 3220:
+		return "xnm-ssl", true
+	case 3221:
+		return "xnm-clear-text", true
+	case 3222:
+		return "glbp", true
+	case 3223:
+		return "digivote", true
+	case 3224:
+		return "aes-discovery", true
+	case 3225:
+		return "fcip-port", true
+	case 3226:
+		return "isi-irp", true
+	case 3227:
+		return "dwnmshttp", true
+	case 3228:
+		return "dwmsgserver", true
+	case 3229:
+		return "global-cd-port", true
+	case 3230:
+		return "sftdst-port", true
+	case 3231:
+		return "vidigo", true
+	case 3232:
+		return "mdtp", true
+	case 3233:
+		return "whisker", true
+	case 3234:
+		return "alchemy", true
+	case 3235:
+		return "mdap-port", true
+	case 3236:
+		return "apparenet-ts", true
+	case 3237:
+		return "apparenet-tps", true
+	case 3238:
+		return "apparenet-as", true
+	case 3239:
+		return "apparenet-ui", true
+	case 3240:
+		return "triomotion", true
+	case 3241:
+		return "sysorb", true
+	case 3242:
+		return "sdp-id-port", true
+	case 3243:
+		return "timelot", true
+	case 3244:
+		return "onesaf", true
+	case 3245:
+		return "vieo-fe", true
+	case 3246:
+		return "dvt-system", true
+	case 3247:
+		return "dvt-data", true
+	case 3248:
+		return "procos-lm", true
+	case 3249:
+		return "ssp", true
+	case 3250:
+		return "hicp", true
+	case 3251:
+		return "sysscanner", true
+	case 3252:
+		return "dhe", true
+	case 3253:
+		return "pda-data", true
+	case 3254:
+		return "pda-sys", true
+	case 3255:
+		return "semaphore", true
+	case 3256:
+		return "cpqrpm-agent", true
+	case 3257:
+		return "cpqrpm-server", true
+	case 3258:
+		return "ivecon-port", true
+	case 3259:
+		return "epncdp2", true
+	case 3260:
+		return "iscsi-target", true
+	case 3261:
+		return "winshadow", true
+	case 3262:
+		return "necp", true
+	case 3263:
+		return "ecolor-imager", true
+	case 3264:
+		return "ccmail", true
+	case 3265:
+		return "altav-tunnel", true
+	case 3266:
+		return "ns-cfg-server", true
+	case 3267:
+		return "ibm-dial-out", true
+	case 3268:
+		return "msft-gc", true
+	case 3269:
+		return "msft-gc-ssl", true
+	case 3270:
+		return "verismart", true
+	case 3271:
+		return "csoft-prev", true
+	case 3272:
+		return "user-manager", true
+	case 3273:
+		return "sxmp", true
+	case 3274:
+		return "ordinox-server", true
+	case 3275:
+		return "samd", true
+	case 3276:
+		return "maxim-asics", true
+	case 3277:
+		return "awg-proxy", true
+	case 3278:
+		return "lkcmserver", true
+	case 3279:
+		return "admind", true
+	case 3280:
+		return "vs-server", true
+	case 3281:
+		return "sysopt", true
+	case 3282:
+		return "datusorb", true
+	case 3283:
+		return "Apple Remote Desktop (Net Assistant)", true
+	case 3284:
+		return "4talk", true
+	case 3285:
+		return "plato", true
+	case 3286:
+		return "e-net", true
+	case 3287:
+		return "directvdata", true
+	case 3288:
+		return "cops", true
+	case 3289:
+		return "enpc", true
+	case 3290:
+		return "caps-lm", true
+	case 3291:
+		return "sah-lm", true
+	case 3292:
+		return "cart-o-rama", true
+	case 3293:
+		return "fg-fps", true
+	case 3294:
+		return "fg-gip", true
+	case 3295:
+		return "dyniplookup", true
+	case 3296:
+		return "rib-slm", true
+	case 3297:
+		return "cytel-lm", true
+	case 3298:
+		return "deskview", true
+	case 3299:
+		return "pdrncs", true
+	case 3301:
+		return "tarantool", true
+	case 3302:
+		return "mcs-fastmail", true
+	case 3303:
+		return "opsession-clnt", true
+	case 3304:
+		return "opsession-srvr", true
+	case 3305:
+		return "odette-ftp", true
+	case 3306:
+		return "mysql", true
+	case 3307:
+		return "opsession-prxy", true
+	case 3308:
+		return "tns-server", true
+	case 3309:
+		return "tns-adv", true
+	case 3310:
+		return "dyna-access", true
+	case 3311:
+		return "mcns-tel-ret", true
+	case 3312:
+		return "appman-server", true
+	case 3313:
+		return "uorb", true
+	case 3314:
+		return "uohost", true
+	case 3315:
+		return "cdid", true
+	case 3316:
+		return "aicc-cmi", true
+	case 3317:
+		return "vsaiport", true
+	case 3318:
+		return "ssrip", true
+	case 3319:
+		return "sdt-lmd", true
+	case 3320:
+		return "officelink2000", true
+	case 3321:
+		return "vnsstr", true
+	case 3326:
+		return "sftu", true
+	case 3327:
+		return "bbars", true
+	case 3328:
+		return "egptlm", true
+	case 3329:
+		return "hp-device-disc", true
+	case 3330:
+		return "mcs-calypsoicf", true
+	case 3331:
+		return "mcs-messaging", true
+	case 3332:
+		return "mcs-mailsvr", true
+	case 3333:
+		return "dec-notes", true
+	case 3334:
+		return "directv-web", true
+	case 3335:
+		return "directv-soft", true
+	case 3336:
+		return "directv-tick", true
+	case 3337:
+		return "directv-catlg", true
+	case 3338:
+		return "anet-b", true
+	case 3339:
+		return "anet-l", true
+	case 3340:
+		return "anet-m", true
+	case 3341:
+		return "anet-h", true
+	case 3342:
+		return "webtie", true
+	case 3343:
+		return "ms-cluster-net", true
+	case 3344:
+		return "bnt-manager", true
+	case 3345:
+		return "influence", true
+	case 3346:
+		return "trnsprntproxy", true
+	case 3347:
+		return "phoenix-rpc", true
+	case 3348:
+		return "pangolin-laser", true
+	case 3349:
+		return "chevinservices", true
+	case 3350:
+		return "findviatv", true
+	case 3351:
+		return "btrieve", true
+	case 3352:
+		return "ssql", true
+	case 3353:
+		return "fatpipe", true
+	case 3354:
+		return "suitjd", true
+	case 3355:
+		return "ordinox-dbase", true
+	case 3356:
+		return "upnotifyps", true
+	case 3357:
+		return "adtech-test", true
+	case 3358:
+		return "mpsysrmsvr", true
+	case 3359:
+		return "wg-netforce", true
+	case 3360:
+		return "kv-server", true
+	case 3361:
+		return "kv-agent", true
+	case 3362:
+		return "dj-ilm", true
+	case 3363:
+		return "nati-vi-server", true
+	case 3364:
+		return "creativeserver", true
+	case 3365:
+		return "contentserver", true
+	case 3366:
+		return "creativepartnr", true
+	case 3372:
+		return "tip2", true
+	case 3373:
+		return "lavenir-lm", true
+	case 3374:
+		return "cluster-disc", true
+	case 3375:
+		return "vsnm-agent", true
+	case 3376:
+		return "cdbroker", true
+	case 3377:
+		return "cogsys-lm", true
+	case 3378:
+		return "wsicopy", true
+	case 3379:
+		return "socorfs", true
+	case 3380:
+		return "sns-channels", true
+	case 3381:
+		return "geneous", true
+	case 3382:
+		return "fujitsu-neat", true
+	case 3383:
+		return "esp-lm", true
+	case 3384:
+		return "hp-clic", true
+	case 3385:
+		return "qnxnetman", true
+	case 3386:
+		return "gprs-sig", true
+	case 3387:
+		return "backroomnet", true
+	case 3388:
+		return "cbserver", true
+	case 3389:
+		return "ms-wbt-server", true
+	case 3390:
+		return "dsc", true
+	case 3391:
+		return "savant", true
+	case 3392:
+		return "efi-lm", true
+	case 3393:
+		return "d2k-tapestry1", true
+	case 3394:
+		return "d2k-tapestry2", true
+	case 3395:
+		return "dyna-lm", true
+	case 3396:
+		return "printer-agent", true
+	case 3397:
+		return "cloanto-lm", true
+	case 3398:
+		return "mercantile", true
+	case 3399:
+		return "csms", true
+	case 3400:
+		return "csms2", true
+	case 3401:
+		return "filecast", true
+	case 3402:
+		return "fxaengine-net", true
+	case 3405:
+		return "nokia-ann-ch1", true
+	case 3406:
+		return "nokia-ann-ch2", true
+	case 3407:
+		return "ldap-admin", true
+	case 3408:
+		return "BESApi", true
+	case 3409:
+		return "networklens", true
+	case 3410:
+		return "networklenss", true
+	case 3411:
+		return "biolink-auth", true
+	case 3412:
+		return "xmlblaster", true
+	case 3413:
+		return "svnet", true
+	case 3414:
+		return "wip-port", true
+	case 3415:
+		return "bcinameservice", true
+	case 3416:
+		return "commandport", true
+	case 3417:
+		return "csvr", true
+	case 3418:
+		return "rnmap", true
+	case 3419:
+		return "softaudit", true
+	case 3420:
+		return "ifcp-port", true
+	case 3421:
+		return "bmap", true
+	case 3422:
+		return "rusb-sys-port", true
+	case 3423:
+		return "xtrm", true
+	case 3424:
+		return "xtrms", true
+	case 3425:
+		return "agps-port", true
+	case 3426:
+		return "arkivio", true
+	case 3427:
+		return "websphere-snmp", true
+	case 3428:
+		return "twcss", true
+	case 3429:
+		return "gcsp", true
+	case 3430:
+		return "ssdispatch", true
+	case 3431:
+		return "ndl-als", true
+	case 3432:
+		return "osdcp", true
+	case 3433:
+		return "opnet-smp", true
+	case 3434:
+		return "opencm", true
+	case 3435:
+		return "pacom", true
+	case 3436:
+		return "gc-config", true
+	case 3437:
+		return "autocueds", true
+	case 3438:
+		return "spiral-admin", true
+	case 3439:
+		return "hri-port", true
+	case 3440:
+		return "ans-console", true
+	case 3441:
+		return "connect-client", true
+	case 3442:
+		return "connect-server", true
+	case 3443:
+		return "ov-nnm-websrv", true
+	case 3444:
+		return "denali-server", true
+	case 3445:
+		return "monp", true
+	case 3446:
+		return "3comfaxrpc", true
+	case 3447:
+		return "directnet", true
+	case 3448:
+		return "dnc-port", true
+	case 3449:
+		return "hotu-chat", true
+	case 3450:
+		return "castorproxy", true
+	case 3451:
+		return "asam", true
+	case 3452:
+		return "sabp-signal", true
+	case 3453:
+		return "pscupd", true
+	case 3454:
+		return "mira", true
+	case 3455:
+		return "prsvp", true
+	case 3456:
+		return "vat", true
+	case 3457:
+		return "vat-control", true
+	case 3458:
+		return "d3winosfi", true
+	case 3459:
+		return "integral", true
+	case 3460:
+		return "edm-manager", true
+	case 3461:
+		return "edm-stager", true
+	case 3462:
+		return "edm-std-notify", true
+	case 3463:
+		return "edm-adm-notify", true
+	case 3464:
+		return "edm-mgr-sync", true
+	case 3465:
+		return "edm-mgr-cntrl", true
+	case 3466:
+		return "workflow", true
+	case 3467:
+		return "rcst", true
+	case 3468:
+		return "ttcmremotectrl", true
+	case 3469:
+		return "pluribus", true
+	case 3470:
+		return "jt400", true
+	case 3471:
+		return "jt400-ssl", true
+	case 3472:
+		return "jaugsremotec-1", true
+	case 3473:
+		return "jaugsremotec-2", true
+	case 3474:
+		return "ttntspauto", true
+	case 3475:
+		return "genisar-port", true
+	case 3476:
+		return "nppmp", true
+	case 3477:
+		return "ecomm", true
+	case 3478:
+		return "stun", true
+	case 3479:
+		return "twrpc", true
+	case 3480:
+		return "plethora", true
+	case 3481:
+		return "cleanerliverc", true
+	case 3482:
+		return "vulture", true
+	case 3483:
+		return "slim-devices", true
+	case 3484:
+		return "gbs-stp", true
+	case 3485:
+		return "celatalk", true
+	case 3486:
+		return "ifsf-hb-port", true
+	case 3487:
+		return "ltcudp", true
+	case 3488:
+		return "fs-rh-srv", true
+	case 3489:
+		return "dtp-dia", true
+	case 3490:
+		return "colubris", true
+	case 3491:
+		return "swr-port", true
+	case 3492:
+		return "tvdumtray-port", true
+	case 3493:
+		return "nut", true
+	case 3494:
+		return "ibm3494", true
+	case 3495:
+		return "seclayer-tcp", true
+	case 3496:
+		return "seclayer-tls", true
+	case 3497:
+		return "ipether232port", true
+	case 3498:
+		return "dashpas-port", true
+	case 3499:
+		return "sccip-media", true
+	case 3500:
+		return "rtmp-port", true
+	case 3501:
+		return "isoft-p2p", true
+	case 3502:
+		return "avinstalldisc", true
+	case 3503:
+		return "lsp-ping", true
+	case 3504:
+		return "ironstorm", true
+	case 3505:
+		return "ccmcomm", true
+	case 3506:
+		return "apc-3506", true
+	case 3507:
+		return "nesh-broker", true
+	case 3508:
+		return "interactionweb", true
+	case 3509:
+		return "vt-ssl", true
+	case 3510:
+		return "xss-port", true
+	case 3511:
+		return "webmail-2", true
+	case 3512:
+		return "aztec", true
+	case 3513:
+		return "arcpd", true
+	case 3514:
+		return "must-p2p", true
+	case 3515:
+		return "must-backplane", true
+	case 3516:
+		return "smartcard-port", true
+	case 3517:
+		return "802-11-iapp", true
+	case 3518:
+		return "artifact-msg", true
+	case 3519:
+		return "galileo", true
+	case 3520:
+		return "galileolog", true
+	case 3521:
+		return "mc3ss", true
+	case 3522:
+		return "nssocketport", true
+	case 3523:
+		return "odeumservlink", true
+	case 3524:
+		return "ecmport", true
+	case 3525:
+		return "eisport", true
+	case 3526:
+		return "starquiz-port", true
+	case 3527:
+		return "beserver-msg-q", true
+	case 3528:
+		return "jboss-iiop", true
+	case 3529:
+		return "jboss-iiop-ssl", true
+	case 3530:
+		return "gf", true
+	case 3531:
+		return "joltid", true
+	case 3532:
+		return "raven-rmp", true
+	case 3533:
+		return "raven-rdp", true
+	case 3534:
+		return "urld-port", true
+	case 3535:
+		return "ms-la", true
+	case 3536:
+		return "snac", true
+	case 3537:
+		return "ni-visa-remote", true
+	case 3538:
+		return "ibm-diradm", true
+	case 3539:
+		return "ibm-diradm-ssl", true
+	case 3540:
+		return "pnrp-port", true
+	case 3541:
+		return "voispeed-port", true
+	case 3542:
+		return "hacl-monitor", true
+	case 3543:
+		return "qftest-lookup", true
+	case 3544:
+		return "teredo", true
+	case 3545:
+		return "camac", true
+	case 3547:
+		return "symantec-sim", true
+	case 3548:
+		return "interworld", true
+	case 3549:
+		return "tellumat-nms", true
+	case 3550:
+		return "ssmpp", true
+	case 3551:
+		return "apcupsd", true
+	case 3552:
+		return "taserver", true
+	case 3553:
+		return "rbr-discovery", true
+	case 3554:
+		return "questnotify", true
+	case 3555:
+		return "razor", true
+	case 3556:
+		return "sky-transport", true
+	case 3557:
+		return "personalos-001", true
+	case 3558:
+		return "mcp-port", true
+	case 3559:
+		return "cctv-port", true
+	case 3560:
+		return "iniserve-port", true
+	case 3561:
+		return "bmc-onekey", true
+	case 3562:
+		return "sdbproxy", true
+	case 3563:
+		return "watcomdebug", true
+	case 3564:
+		return "esimport", true
+	case 3567:
+		return "dof-eps", true
+	case 3568:
+		return "dof-tunnel-sec", true
+	case 3569:
+		return "mbg-ctrl", true
+	case 3570:
+		return "mccwebsvr-port", true
+	case 3571:
+		return "megardsvr-port", true
+	case 3572:
+		return "megaregsvrport", true
+	case 3573:
+		return "tag-ups-1", true
+	case 3574:
+		return "dmaf-caster", true
+	case 3575:
+		return "ccm-port", true
+	case 3576:
+		return "cmc-port", true
+	case 3577:
+		return "config-port", true
+	case 3578:
+		return "data-port", true
+	case 3579:
+		return "ttat3lb", true
+	case 3580:
+		return "nati-svrloc", true
+	case 3581:
+		return "kfxaclicensing", true
+	case 3582:
+		return "press", true
+	case 3583:
+		return "canex-watch", true
+	case 3584:
+		return "u-dbap", true
+	case 3585:
+		return "emprise-lls", true
+	case 3586:
+		return "emprise-lsc", true
+	case 3587:
+		return "p2pgroup", true
+	case 3588:
+		return "sentinel", true
+	case 3589:
+		return "isomair", true
+	case 3590:
+		return "wv-csp-sms", true
+	case 3591:
+		return "gtrack-server", true
+	case 3592:
+		return "gtrack-ne", true
+	case 3593:
+		return "bpmd", true
+	case 3594:
+		return "mediaspace", true
+	case 3595:
+		return "shareapp", true
+	case 3596:
+		return "iw-mmogame", true
+	case 3597:
+		return "a14", true
+	case 3598:
+		return "a15", true
+	case 3599:
+		return "quasar-server", true
+	case 3600:
+		return "trap-daemon", true
+	case 3601:
+		return "visinet-gui", true
+	case 3602:
+		return "infiniswitchcl", true
+	case 3603:
+		return "int-rcv-cntrl", true
+	case 3604:
+		return "bmc-jmx-port", true
+	case 3605:
+		return "comcam-io", true
+	case 3606:
+		return "splitlock", true
+	case 3607:
+		return "precise-i3", true
+	case 3608:
+		return "trendchip-dcp", true
+	case 3609:
+		return "cpdi-pidas-cm", true
+	case 3610:
+		return "echonet", true
+	case 3611:
+		return "six-degrees", true
+	case 3612:
+		return "dataprotector", true
+	case 3613:
+		return "alaris-disc", true
+	case 3614:
+		return "sigma-port", true
+	case 3615:
+		return "start-network", true
+	case 3616:
+		return "cd3o-protocol", true
+	case 3617:
+		return "sharp-server", true
+	case 3618:
+		return "aairnet-1", true
+	case 3619:
+		return "aairnet-2", true
+	case 3620:
+		return "ep-pcp", true
+	case 3621:
+		return "ep-nsp", true
+	case 3622:
+		return "ff-lr-port", true
+	case 3623:
+		return "haipe-discover", true
+	case 3624:
+		return "dist-upgrade", true
+	case 3625:
+		return "volley", true
+	case 3626:
+		return "bvcdaemon-port", true
+	case 3627:
+		return "jamserverport", true
+	case 3628:
+		return "ept-machine", true
+	case 3629:
+		return "escvpnet", true
+	case 3630:
+		return "cs-remote-db", true
+	case 3631:
+		return "cs-services", true
+	case 3632:
+		return "distcc", true
+	case 3633:
+		return "wacp", true
+	case 3634:
+		return "hlibmgr", true
+	case 3635:
+		return "sdo", true
+	case 3636:
+		return "servistaitsm", true
+	case 3637:
+		return "scservp", true
+	case 3638:
+		return "ehp-backup", true
+	case 3639:
+		return "xap-ha", true
+	case 3640:
+		return "netplay-port1", true
+	case 3641:
+		return "netplay-port2", true
+	case 3642:
+		return "juxml-port", true
+	case 3643:
+		return "audiojuggler", true
+	case 3644:
+		return "ssowatch", true
+	case 3645:
+		return "cyc", true
+	case 3646:
+		return "xss-srv-port", true
+	case 3647:
+		return "splitlock-gw", true
+	case 3648:
+		return "fjcp", true
+	case 3649:
+		return "nmmp", true
+	case 3650:
+		return "prismiq-plugin", true
+	case 3651:
+		return "xrpc-registry", true
+	case 3652:
+		return "vxcrnbuport", true
+	case 3653:
+		return "tsp", true
+	case 3654:
+		return "vaprtm", true
+	case 3655:
+		return "abatemgr", true
+	case 3656:
+		return "abatjss", true
+	case 3657:
+		return "immedianet-bcn", true
+	case 3658:
+		return "ps-ams", true
+	case 3659:
+		return "apple-sasl", true
+	case 3660:
+		return "can-nds-ssl", true
+	case 3661:
+		return "can-ferret-ssl", true
+	case 3662:
+		return "pserver", true
+	case 3663:
+		return "dtp", true
+	case 3664:
+		return "ups-engine", true
+	case 3665:
+		return "ent-engine", true
+	case 3666:
+		return "eserver-pap", true
+	case 3667:
+		return "infoexch", true
+	case 3668:
+		return "dell-rm-port", true
+	case 3669:
+		return "casanswmgmt", true
+	case 3670:
+		return "smile", true
+	case 3671:
+		return "efcp", true
+	case 3672:
+		return "lispworks-orb", true
+	case 3673:
+		return "mediavault-gui", true
+	case 3674:
+		return "wininstall-ipc", true
+	case 3675:
+		return "calltrax", true
+	case 3676:
+		return "va-pacbase", true
+	case 3677:
+		return "roverlog", true
+	case 3678:
+		return "ipr-dglt", true
+	case 3679:
+		return "Escale (Newton Dock)", true
+	case 3680:
+		return "npds-tracker", true
+	case 3681:
+		return "bts-x73", true
+	case 3682:
+		return "cas-mapi", true
+	case 3683:
+		return "bmc-ea", true
+	case 3684:
+		return "faxstfx-port", true
+	case 3685:
+		return "dsx-agent", true
+	case 3686:
+		return "tnmpv2", true
+	case 3687:
+		return "simple-push", true
+	case 3688:
+		return "simple-push-s", true
+	case 3689:
+		return "daap", true
+	case 3690:
+		return "svn", true
+	case 3691:
+		return "magaya-network", true
+	case 3692:
+		return "intelsync", true
+	case 3695:
+		return "bmc-data-coll", true
+	case 3696:
+		return "telnetcpcd", true
+	case 3697:
+		return "nw-license", true
+	case 3698:
+		return "sagectlpanel", true
+	case 3699:
+		return "kpn-icw", true
+	case 3700:
+		return "lrs-paging", true
+	case 3701:
+		return "netcelera", true
+	case 3702:
+		return "ws-discovery", true
+	case 3703:
+		return "adobeserver-3", true
+	case 3704:
+		return "adobeserver-4", true
+	case 3705:
+		return "adobeserver-5", true
+	case 3706:
+		return "rt-event", true
+	case 3707:
+		return "rt-event-s", true
+	case 3708:
+		return "sun-as-iiops", true
+	case 3709:
+		return "ca-idms", true
+	case 3710:
+		return "portgate-auth", true
+	case 3711:
+		return "edb-server2", true
+	case 3712:
+		return "sentinel-ent", true
+	case 3713:
+		return "tftps", true
+	case 3714:
+		return "delos-dms", true
+	case 3715:
+		return "anoto-rendezv", true
+	case 3716:
+		return "wv-csp-sms-cir", true
+	case 3717:
+		return "wv-csp-udp-cir", true
+	case 3718:
+		return "opus-services", true
+	case 3719:
+		return "itelserverport", true
+	case 3720:
+		return "ufastro-instr", true
+	case 3721:
+		return "xsync", true
+	case 3722:
+		return "xserveraid", true
+	case 3723:
+		return "sychrond", true
+	case 3724:
+		return "blizwow", true
+	case 3725:
+		return "na-er-tip", true
+	case 3726:
+		return "array-manager", true
+	case 3727:
+		return "e-mdu", true
+	case 3728:
+		return "e-woa", true
+	case 3729:
+		return "fksp-audit", true
+	case 3730:
+		return "client-ctrl", true
+	case 3731:
+		return "smap", true
+	case 3732:
+		return "m-wnn", true
+	case 3733:
+		return "multip-msg", true
+	case 3734:
+		return "synel-data", true
+	case 3735:
+		return "pwdis", true
+	case 3736:
+		return "rs-rmi", true
+	case 3738:
+		return "versatalk", true
+	case 3739:
+		return "launchbird-lm", true
+	case 3740:
+		return "heartbeat", true
+	case 3741:
+		return "wysdma", true
+	case 3742:
+		return "cst-port", true
+	case 3743:
+		return "ipcs-command", true
+	case 3744:
+		return "sasg", true
+	case 3745:
+		return "gw-call-port", true
+	case 3746:
+		return "linktest", true
+	case 3747:
+		return "linktest-s", true
+	case 3748:
+		return "webdata", true
+	case 3749:
+		return "cimtrak", true
+	case 3750:
+		return "cbos-ip-port", true
+	case 3751:
+		return "gprs-cube", true
+	case 3752:
+		return "vipremoteagent", true
+	case 3753:
+		return "nattyserver", true
+	case 3754:
+		return "timestenbroker", true
+	case 3755:
+		return "sas-remote-hlp", true
+	case 3756:
+		return "canon-capt", true
+	case 3757:
+		return "grf-port", true
+	case 3758:
+		return "apw-registry", true
+	case 3759:
+		return "exapt-lmgr", true
+	case 3760:
+		return "adtempusclient", true
+	case 3761:
+		return "gsakmp", true
+	case 3762:
+		return "gbs-smp", true
+	case 3763:
+		return "xo-wave", true
+	case 3764:
+		return "mni-prot-rout", true
+	case 3765:
+		return "rtraceroute", true
+	case 3767:
+		return "listmgr-port", true
+	case 3768:
+		return "rblcheckd", true
+	case 3769:
+		return "haipe-otnk", true
+	case 3770:
+		return "cindycollab", true
+	case 3771:
+		return "paging-port", true
+	case 3772:
+		return "ctp", true
+	case 3773:
+		return "ctdhercules", true
+	case 3774:
+		return "zicom", true
+	case 3775:
+		return "ispmmgr", true
+	case 3776:
+		return "dvcprov-port", true
+	case 3777:
+		return "jibe-eb", true
+	case 3778:
+		return "c-h-it-port", true
+	case 3779:
+		return "cognima", true
+	case 3780:
+		return "nnp", true
+	case 3781:
+		return "abcvoice-port", true
+	case 3782:
+		return "iso-tp0s", true
+	case 3783:
+		return "bim-pem", true
+	case 3784:
+		return "bfd-control", true
+	case 3785:
+		return "bfd-echo", true
+	case 3786:
+		return "upstriggervsw", true
+	case 3787:
+		return "fintrx", true
+	case 3788:
+		return "isrp-port", true
+	case 3789:
+		return "remotedeploy", true
+	case 3790:
+		return "quickbooksrds", true
+	case 3791:
+		return "tvnetworkvideo", true
+	case 3792:
+		return "sitewatch", true
+	case 3793:
+		return "dcsoftware", true
+	case 3794:
+		return "jaus", true
+	case 3795:
+		return "myblast", true
+	case 3796:
+		return "spw-dialer", true
+	case 3797:
+		return "idps", true
+	case 3798:
+		return "minilock", true
+	case 3799:
+		return "radius-dynauth", true
+	case 3800:
+		return "pwgpsi", true
+	case 3801:
+		return "ibm-mgr", true
+	case 3802:
+		return "vhd", true
+	case 3803:
+		return "soniqsync", true
+	case 3804:
+		return "iqnet-port", true
+	case 3805:
+		return "tcpdataserver", true
+	case 3806:
+		return "wsmlb", true
+	case 3807:
+		return "spugna", true
+	case 3808:
+		return "sun-as-iiops-ca", true
+	case 3809:
+		return "apocd", true
+	case 3810:
+		return "wlanauth", true
+	case 3811:
+		return "amp", true
+	case 3812:
+		return "neto-wol-server", true
+	case 3813:
+		return "rap-ip", true
+	case 3814:
+		return "neto-dcs", true
+	case 3815:
+		return "lansurveyorxml", true
+	case 3816:
+		return "sunlps-http", true
+	case 3817:
+		return "tapeware", true
+	case 3818:
+		return "crinis-hb", true
+	case 3819:
+		return "epl-slp", true
+	case 3820:
+		return "scp", true
+	case 3821:
+		return "pmcp", true
+	case 3822:
+		return "acp-discovery", true
+	case 3823:
+		return "acp-conduit", true
+	case 3824:
+		return "acp-policy", true
+	case 3825:
+		return "ffserver", true
+	case 3826:
+		return "warmux", true
+	case 3827:
+		return "netmpi", true
+	case 3828:
+		return "neteh", true
+	case 3829:
+		return "neteh-ext", true
+	case 3830:
+		return "cernsysmgmtagt", true
+	case 3831:
+		return "dvapps", true
+	case 3832:
+		return "xxnetserver", true
+	case 3833:
+		return "aipn-auth", true
+	case 3834:
+		return "spectardata", true
+	case 3835:
+		return "spectardb", true
+	case 3836:
+		return "markem-dcp", true
+	case 3837:
+		return "mkm-discovery", true
+	case 3838:
+		return "sos", true
+	case 3839:
+		return "amx-rms", true
+	case 3840:
+		return "flirtmitmir", true
+	case 3842:
+		return "nhci", true
+	case 3843:
+		return "quest-agent", true
+	case 3844:
+		return "rnm", true
+	case 3845:
+		return "v-one-spp", true
+	case 3846:
+		return "an-pcp", true
+	case 3847:
+		return "msfw-control", true
+	case 3848:
+		return "item", true
+	case 3849:
+		return "spw-dnspreload", true
+	case 3850:
+		return "qtms-bootstrap", true
+	case 3851:
+		return "spectraport", true
+	case 3852:
+		return "sse-app-config", true
+	case 3853:
+		return "sscan", true
+	case 3854:
+		return "stryker-com", true
+	case 3855:
+		return "opentrac", true
+	case 3856:
+		return "informer", true
+	case 3857:
+		return "trap-port", true
+	case 3858:
+		return "trap-port-mom", true
+	case 3859:
+		return "nav-port", true
+	case 3860:
+		return "sasp", true
+	case 3861:
+		return "winshadow-hd", true
+	case 3862:
+		return "giga-pocket", true
+	case 3863:
+		return "asap-udp", true
+	case 3865:
+		return "xpl", true
+	case 3866:
+		return "dzdaemon", true
+	case 3867:
+		return "dzoglserver", true
+	case 3869:
+		return "ovsam-mgmt", true
+	case 3870:
+		return "ovsam-d-agent", true
+	case 3871:
+		return "avocent-adsap", true
+	case 3872:
+		return "oem-agent", true
+	case 3873:
+		return "fagordnc", true
+	case 3874:
+		return "sixxsconfig", true
+	case 3875:
+		return "pnbscada", true
+	case 3876:
+		return "dl-agent", true
+	case 3877:
+		return "xmpcr-interface", true
+	case 3878:
+		return "fotogcad", true
+	case 3879:
+		return "appss-lm", true
+	case 3880:
+		return "igrs", true
+	case 3881:
+		return "idac", true
+	case 3882:
+		return "msdts1", true
+	case 3883:
+		return "vrpn", true
+	case 3884:
+		return "softrack-meter", true
+	case 3885:
+		return "topflow-ssl", true
+	case 3886:
+		return "nei-management", true
+	case 3887:
+		return "ciphire-data", true
+	case 3888:
+		return "ciphire-serv", true
+	case 3889:
+		return "dandv-tester", true
+	case 3890:
+		return "ndsconnect", true
+	case 3891:
+		return "rtc-pm-port", true
+	case 3892:
+		return "pcc-image-port", true
+	case 3893:
+		return "cgi-starapi", true
+	case 3894:
+		return "syam-agent", true
+	case 3895:
+		return "syam-smc", true
+	case 3896:
+		return "sdo-tls", true
+	case 3897:
+		return "sdo-ssh", true
+	case 3898:
+		return "senip", true
+	case 3899:
+		return "itv-control", true
+	case 3900:
+		return "udt-os", true
+	case 3901:
+		return "nimsh", true
+	case 3902:
+		return "nimaux", true
+	case 3903:
+		return "charsetmgr", true
+	case 3904:
+		return "omnilink-port", true
+	case 3905:
+		return "mupdate", true
+	case 3906:
+		return "topovista-data", true
+	case 3907:
+		return "imoguia-port", true
+	case 3908:
+		return "hppronetman", true
+	case 3909:
+		return "surfcontrolcpa", true
+	case 3910:
+		return "prnrequest", true
+	case 3911:
+		return "prnstatus", true
+	case 3912:
+		return "gbmt-stars", true
+	case 3913:
+		return "listcrt-port", true
+	case 3914:
+		return "listcrt-port-2", true
+	case 3915:
+		return "agcat", true
+	case 3916:
+		return "wysdmc", true
+	case 3917:
+		return "aftmux", true
+	case 3918:
+		return "pktcablemmcops", true
+	case 3919:
+		return "hyperip", true
+	case 3920:
+		return "exasoftport1", true
+	case 3921:
+		return "herodotus-net", true
+	case 3922:
+		return "sor-update", true
+	case 3923:
+		return "symb-sb-port", true
+	case 3924:
+		return "mpl-gprs-port", true
+	case 3925:
+		return "zmp", true
+	case 3926:
+		return "winport", true
+	case 3927:
+		return "natdataservice", true
+	case 3928:
+		return "netboot-pxe", true
+	case 3929:
+		return "smauth-port", true
+	case 3930:
+		return "syam-webserver", true
+	case 3931:
+		return "msr-plugin-port", true
+	case 3932:
+		return "dyn-site", true
+	case 3933:
+		return "plbserve-port", true
+	case 3934:
+		return "sunfm-port", true
+	case 3935:
+		return "sdp-portmapper", true
+	case 3936:
+		return "mailprox", true
+	case 3937:
+		return "dvbservdsc", true
+	case 3938:
+		return "dbcontrol-agent", true
+	case 3939:
+		return "aamp", true
+	case 3940:
+		return "xecp-node", true
+	case 3941:
+		return "homeportal-web", true
+	case 3942:
+		return "srdp", true
+	case 3943:
+		return "tig", true
+	case 3944:
+		return "sops", true
+	case 3945:
+		return "emcads", true
+	case 3946:
+		return "backupedge", true
+	case 3947:
+		return "ccp", true
+	case 3948:
+		return "apdap", true
+	case 3949:
+		return "drip", true
+	case 3950:
+		return "namemunge", true
+	case 3951:
+		return "pwgippfax", true
+	case 3952:
+		return "i3-sessionmgr", true
+	case 3953:
+		return "xmlink-connect", true
+	case 3954:
+		return "adrep", true
+	case 3955:
+		return "p2pcommunity", true
+	case 3956:
+		return "gvcp", true
+	case 3957:
+		return "mqe-broker", true
+	case 3958:
+		return "mqe-agent", true
+	case 3959:
+		return "treehopper", true
+	case 3960:
+		return "bess", true
+	case 3961:
+		return "proaxess", true
+	case 3962:
+		return "sbi-agent", true
+	case 3963:
+		return "thrp", true
+	case 3964:
+		return "sasggprs", true
+	case 3965:
+		return "ati-ip-to-ncpe", true
+	case 3966:
+		return "bflckmgr", true
+	case 3967:
+		return "ppsms", true
+	case 3968:
+		return "ianywhere-dbns", true
+	case 3969:
+		return "landmarks", true
+	case 3970:
+		return "lanrevagent", true
+	case 3971:
+		return "lanrevserver", true
+	case 3972:
+		return "iconp", true
+	case 3973:
+		return "progistics", true
+	case 3974:
+		return "xk22", true
+	case 3975:
+		return "airshot", true
+	case 3976:
+		return "opswagent", true
+	case 3977:
+		return "opswmanager", true
+	case 3978:
+		return "secure-cfg-svr", true
+	case 3979:
+		return "smwan", true
+	case 3981:
+		return "starfish", true
+	case 3982:
+		return "eis", true
+	case 3983:
+		return "eisp", true
+	case 3984:
+		return "mapper-nodemgr", true
+	case 3985:
+		return "mapper-mapethd", true
+	case 3986:
+		return "mapper-ws-ethd", true
+	case 3987:
+		return "centerline", true
+	case 3988:
+		return "dcs-config", true
+	case 3989:
+		return "bv-queryengine", true
+	case 3990:
+		return "bv-is", true
+	case 3991:
+		return "bv-smcsrv", true
+	case 3992:
+		return "bv-ds", true
+	case 3993:
+		return "bv-agent", true
+	case 3995:
+		return "iss-mgmt-ssl", true
+	case 3996:
+		return "abcsoftware", true
+	case 3997:
+		return "agentsease-db", true
+	case 3998:
+		return "dnx", true
+	case 3999:
+		return "nvcnet", true
+	case 4000:
+		return "terabase", true
+	case 4001:
+		return "newoak", true
+	case 4002:
+		return "pxc-spvr-ft", true
+	case 4003:
+		return "pxc-splr-ft", true
+	case 4004:
+		return "pxc-roid", true
+	case 4005:
+		return "pxc-pin", true
+	case 4006:
+		return "pxc-spvr", true
+	case 4007:
+		return "pxc-splr", true
+	case 4008:
+		return "netcheque", true
+	case 4009:
+		return "chimera-hwm", true
+	case 4010:
+		return "samsung-unidex", true
+	case 4011:
+		return "altserviceboot", true
+	case 4012:
+		return "pda-gate", true
+	case 4013:
+		return "acl-manager", true
+	case 4014:
+		return "taiclock", true
+	case 4015:
+		return "talarian-mcast1", true
+	case 4016:
+		return "talarian-mcast2", true
+	case 4017:
+		return "talarian-mcast3", true
+	case 4018:
+		return "talarian-mcast4", true
+	case 4019:
+		return "talarian-mcast5", true
+	case 4020:
+		return "trap", true
+	case 4021:
+		return "nexus-portal", true
+	case 4022:
+		return "dnox", true
+	case 4023:
+		return "esnm-zoning", true
+	case 4024:
+		return "tnp1-port", true
+	case 4025:
+		return "partimage", true
+	case 4026:
+		return "as-debug", true
+	case 4027:
+		return "bxp", true
+	case 4028:
+		return "dtserver-port", true
+	case 4029:
+		return "ip-qsig", true
+	case 4030:
+		return "jdmn-port", true
+	case 4031:
+		return "suucp", true
+	case 4032:
+		return "vrts-auth-port", true
+	case 4033:
+		return "sanavigator", true
+	case 4034:
+		return "ubxd", true
+	case 4035:
+		return "wap-push-http", true
+	case 4036:
+		return "wap-push-https", true
+	case 4037:
+		return "ravehd", true
+	case 4038:
+		return "fazzt-ptp", true
+	case 4039:
+		return "fazzt-admin", true
+	case 4040:
+		return "yo-main", true
+	case 4041:
+		return "houston", true
+	case 4042:
+		return "ldxp", true
+	case 4043:
+		return "nirp", true
+	case 4044:
+		return "ltp", true
+	case 4045:
+		return "npp", true
+	case 4046:
+		return "acp-proto", true
+	case 4047:
+		return "ctp-state", true
+	case 4049:
+		return "wafs", true
+	case 4050:
+		return "cisco-wafs", true
+	case 4051:
+		return "cppdp", true
+	case 4052:
+		return "interact", true
+	case 4053:
+		return "ccu-comm-1", true
+	case 4054:
+		return "ccu-comm-2", true
+	case 4055:
+		return "ccu-comm-3", true
+	case 4056:
+		return "lms", true
+	case 4057:
+		return "wfm", true
+	case 4058:
+		return "kingfisher", true
+	case 4059:
+		return "dlms-cosem", true
+	case 4060:
+		return "dsmeter-iatc", true
+	case 4061:
+		return "ice-location", true
+	case 4062:
+		return "ice-slocation", true
+	case 4063:
+		return "ice-router", true
+	case 4064:
+		return "ice-srouter", true
+	case 4065:
+		return "avanti-cdp", true
+	case 4066:
+		return "pmas", true
+	case 4067:
+		return "idp", true
+	case 4068:
+		return "ipfltbcst", true
+	case 4069:
+		return "minger", true
+	case 4070:
+		return "tripe", true
+	case 4071:
+		return "aibkup", true
+	case 4072:
+		return "zieto-sock", true
+	case 4073:
+		return "iRAPP", true
+	case 4074:
+		return "cequint-cityid", true
+	case 4075:
+		return "perimlan", true
+	case 4076:
+		return "seraph", true
+	case 4077:
+		return "ascomalarm", true
+	case 4079:
+		return "santools", true
+	case 4080:
+		return "lorica-in", true
+	case 4081:
+		return "lorica-in-sec", true
+	case 4082:
+		return "lorica-out", true
+	case 4083:
+		return "lorica-out-sec", true
+	case 4084:
+		return "fortisphere-vm", true
+	case 4086:
+		return "ftsync", true
+	case 4089:
+		return "opencore", true
+	case 4090:
+		return "omasgport", true
+	case 4091:
+		return "ewinstaller", true
+	case 4092:
+		return "ewdgs", true
+	case 4093:
+		return "pvxpluscs", true
+	case 4094:
+		return "sysrqd", true
+	case 4095:
+		return "xtgui", true
+	case 4096:
+		return "bre", true
+	case 4097:
+		return "patrolview", true
+	case 4098:
+		return "drmsfsd", true
+	case 4099:
+		return "dpcp", true
+	case 4100:
+		return "igo-incognito", true
+	case 4101:
+		return "brlp-0", true
+	case 4102:
+		return "brlp-1", true
+	case 4103:
+		return "brlp-2", true
+	case 4104:
+		return "brlp-3", true
+	case 4105:
+		return "shofar", true
+	case 4106:
+		return "synchronite", true
+	case 4107:
+		return "j-ac", true
+	case 4108:
+		return "accel", true
+	case 4109:
+		return "izm", true
+	case 4110:
+		return "g2tag", true
+	case 4111:
+		return "xgrid", true
+	case 4112:
+		return "apple-vpns-rp", true
+	case 4113:
+		return "aipn-reg", true
+	case 4114:
+		return "jomamqmonitor", true
+	case 4115:
+		return "cds", true
+	case 4116:
+		return "smartcard-tls", true
+	case 4117:
+		return "hillrserv", true
+	case 4118:
+		return "netscript", true
+	case 4119:
+		return "assuria-slm", true
+	case 4121:
+		return "e-builder", true
+	case 4122:
+		return "fprams", true
+	case 4123:
+		return "z-wave", true
+	case 4124:
+		return "tigv2", true
+	case 4125:
+		return "opsview-envoy", true
+	case 4126:
+		return "ddrepl", true
+	case 4127:
+		return "unikeypro", true
+	case 4128:
+		return "nufw", true
+	case 4129:
+		return "nuauth", true
+	case 4130:
+		return "fronet", true
+	case 4131:
+		return "stars", true
+	case 4132:
+		return "nuts-dem", true
+	case 4133:
+		return "nuts-bootp", true
+	case 4134:
+		return "nifty-hmi", true
+	case 4135:
+		return "cl-db-attach", true
+	case 4136:
+		return "cl-db-request", true
+	case 4137:
+		return "cl-db-remote", true
+	case 4138:
+		return "nettest", true
+	case 4139:
+		return "thrtx", true
+	case 4140:
+		return "cedros-fds", true
+	case 4141:
+		return "oirtgsvc", true
+	case 4142:
+		return "oidocsvc", true
+	case 4143:
+		return "oidsr", true
+	case 4145:
+		return "vvr-control", true
+	case 4146:
+		return "tgcconnect", true
+	case 4147:
+		return "vrxpservman", true
+	case 4148:
+		return "hhb-handheld", true
+	case 4149:
+		return "agslb", true
+	case 4150:
+		return "PowerAlert-nsa", true
+	case 4151:
+		return "menandmice-noh", true
+	case 4152:
+		return "idig-mux", true
+	case 4153:
+		return "mbl-battd", true
+	case 4154:
+		return "atlinks", true
+	case 4155:
+		return "bzr", true
+	case 4156:
+		return "stat-results", true
+	case 4157:
+		return "stat-scanner", true
+	case 4158:
+		return "stat-cc", true
+	case 4159:
+		return "nss", true
+	case 4160:
+		return "jini-discovery", true
+	case 4161:
+		return "omscontact", true
+	case 4162:
+		return "omstopology", true
+	case 4163:
+		return "silverpeakpeer", true
+	case 4164:
+		return "silverpeakcomm", true
+	case 4165:
+		return "altcp", true
+	case 4166:
+		return "joost", true
+	case 4167:
+		return "ddgn", true
+	case 4168:
+		return "pslicser", true
+	case 4169:
+		return "iadt-disc", true
+	case 4172:
+		return "pcoip", true
+	case 4173:
+		return "mma-discovery", true
+	case 4174:
+		return "sm-disc", true
+	case 4177:
+		return "wello", true
+	case 4178:
+		return "storman", true
+	case 4179:
+		return "MaxumSP", true
+	case 4180:
+		return "httpx", true
+	case 4181:
+		return "macbak", true
+	case 4182:
+		return "pcptcpservice", true
+	case 4183:
+		return "cyborgnet", true
+	case 4184:
+		return "universe-suite", true
+	case 4185:
+		return "wcpp", true
+	case 4188:
+		return "vatata", true
+	case 4191:
+		return "dsmipv6", true
+	case 4192:
+		return "azeti-bd", true
+	case 4195:
+		return "aws-wsp", true
+	case 4197:
+		return "hctl", true
+	case 4199:
+		return "eims-admin", true
+	case 4300:
+		return "corelccam", true
+	case 4301:
+		return "d-data", true
+	case 4302:
+		return "d-data-control", true
+	case 4303:
+		return "srcp", true
+	case 4304:
+		return "owserver", true
+	case 4305:
+		return "batman", true
+	case 4306:
+		return "pinghgl", true
+	case 4307:
+		return "trueconf", true
+	case 4308:
+		return "compx-lockview", true
+	case 4309:
+		return "dserver", true
+	case 4310:
+		return "mirrtex", true
+	case 4319:
+		return "fox-skytale", true
+	case 4320:
+		return "fdt-rcatp", true
+	case 4321:
+		return "rwhois", true
+	case 4322:
+		return "trim-event", true
+	case 4323:
+		return "trim-ice", true
+	case 4325:
+		return "geognosisman", true
+	case 4326:
+		return "geognosis", true
+	case 4327:
+		return "jaxer-web", true
+	case 4328:
+		return "jaxer-manager", true
+	case 4333:
+		return "ahsp", true
+	case 4340:
+		return "gaia", true
+	case 4341:
+		return "lisp-data", true
+	case 4342:
+		return "lisp-control", true
+	case 4343:
+		return "unicall", true
+	case 4344:
+		return "vinainstall", true
+	case 4345:
+		return "m4-network-as", true
+	case 4346:
+		return "elanlm", true
+	case 4347:
+		return "lansurveyor", true
+	case 4348:
+		return "itose", true
+	case 4349:
+		return "fsportmap", true
+	case 4350:
+		return "net-device", true
+	case 4351:
+		return "plcy-net-svcs", true
+	case 4352:
+		return "pjlink", true
+	case 4353:
+		return "f5-iquery", true
+	case 4354:
+		return "qsnet-trans", true
+	case 4355:
+		return "qsnet-workst", true
+	case 4356:
+		return "qsnet-assist", true
+	case 4357:
+		return "qsnet-cond", true
+	case 4358:
+		return "qsnet-nucl", true
+	case 4359:
+		return "omabcastltkm", true
+	case 4361:
+		return "nacnl", true
+	case 4362:
+		return "afore-vdp-disc", true
+	case 4366:
+		return "shadowstream", true
+	case 4368:
+		return "wxbrief", true
+	case 4369:
+		return "epmd", true
+	case 4370:
+		return "elpro-tunnel", true
+	case 4371:
+		return "l2c-disc", true
+	case 4372:
+		return "l2c-data", true
+	case 4373:
+		return "remctl", true
+	case 4375:
+		return "tolteces", true
+	case 4376:
+		return "bip", true
+	case 4377:
+		return "cp-spxsvr", true
+	case 4378:
+		return "cp-spxdpy", true
+	case 4379:
+		return "ctdb", true
+	case 4389:
+		return "xandros-cms", true
+	case 4390:
+		return "wiegand", true
+	case 4394:
+		return "apwi-disc", true
+	case 4395:
+		return "omnivisionesx", true
+	case 4400:
+		return "ds-srv", true
+	case 4401:
+		return "ds-srvr", true
+	case 4402:
+		return "ds-clnt", true
+	case 4403:
+		return "ds-user", true
+	case 4404:
+		return "ds-admin", true
+	case 4405:
+		return "ds-mail", true
+	case 4406:
+		return "ds-slp", true
+	case 4412:
+		return "smallchat", true
+	case 4413:
+		return "avi-nms-disc", true
+	case 4416:
+		return "pjj-player-disc", true
+	case 4418:
+		return "axysbridge", true
+	case 4420:
+		return "nvme", true
+	case 4425:
+		return "netrockey6", true
+	case 4426:
+		return "beacon-port-2", true
+	case 4430:
+		return "rsqlserver", true
+	case 4432:
+		return "l-acoustics", true
+	case 4441:
+		return "netblox", true
+	case 4442:
+		return "saris", true
+	case 4443:
+		return "pharos", true
+	case 4444:
+		return "krb524", true
+	case 4445:
+		return "upnotifyp", true
+	case 4446:
+		return "n1-fwp", true
+	case 4447:
+		return "n1-rmgmt", true
+	case 4448:
+		return "asc-slmd", true
+	case 4449:
+		return "privatewire", true
+	case 4450:
+		return "camp", true
+	case 4451:
+		return "ctisystemmsg", true
+	case 4452:
+		return "ctiprogramload", true
+	case 4453:
+		return "nssalertmgr", true
+	case 4454:
+		return "nssagentmgr", true
+	case 4455:
+		return "prchat-user", true
+	case 4456:
+		return "prchat-server", true
+	case 4457:
+		return "prRegister", true
+	case 4458:
+		return "mcp", true
+	case 4484:
+		return "hpssmgmt", true
+	case 4486:
+		return "icms", true
+	case 4488:
+		return "awacs-ice", true
+	case 4500:
+		return "ipsec-nat-t", true
+	case 4534:
+		return "armagetronad", true
+	case 4535:
+		return "ehs", true
+	case 4536:
+		return "ehs-ssl", true
+	case 4537:
+		return "wssauthsvc", true
+	case 4538:
+		return "swx-gate", true
+	case 4545:
+		return "worldscores", true
+	case 4546:
+		return "sf-lm", true
+	case 4547:
+		return "lanner-lm", true
+	case 4548:
+		return "synchromesh", true
+	case 4549:
+		return "aegate", true
+	case 4550:
+		return "gds-adppiw-db", true
+	case 4551:
+		return "ieee-mih", true
+	case 4552:
+		return "menandmice-mon", true
+	case 4554:
+		return "msfrs", true
+	case 4555:
+		return "rsip", true
+	case 4556:
+		return "dtn-bundle", true
+	case 4557:
+		return "mtcevrunqss", true
+	case 4558:
+		return "mtcevrunqman", true
+	case 4559:
+		return "hylafax", true
+	case 4566:
+		return "kwtc", true
+	case 4567:
+		return "tram", true
+	case 4568:
+		return "bmc-reporting", true
+	case 4569:
+		return "iax", true
+	case 4591:
+		return "l3t-at-an", true
+	case 4592:
+		return "hrpd-ith-at-an", true
+	case 4593:
+		return "ipt-anri-anri", true
+	case 4594:
+		return "ias-session", true
+	case 4595:
+		return "ias-paging", true
+	case 4596:
+		return "ias-neighbor", true
+	case 4597:
+		return "a21-an-1xbs", true
+	case 4598:
+		return "a16-an-an", true
+	case 4599:
+		return "a17-an-an", true
+	case 4600:
+		return "piranha1", true
+	case 4601:
+		return "piranha2", true
+	case 4621:
+		return "ventoso", true
+	case 4646:
+		return "dots-signal", true
+	case 4658:
+		return "playsta2-app", true
+	case 4659:
+		return "playsta2-lob", true
+	case 4660:
+		return "smaclmgr", true
+	case 4661:
+		return "kar2ouche", true
+	case 4662:
+		return "oms", true
+	case 4663:
+		return "noteit", true
+	case 4664:
+		return "ems", true
+	case 4665:
+		return "contclientms", true
+	case 4666:
+		return "eportcomm", true
+	case 4667:
+		return "mmacomm", true
+	case 4668:
+		return "mmaeds", true
+	case 4669:
+		return "eportcommdata", true
+	case 4670:
+		return "light", true
+	case 4671:
+		return "acter", true
+	case 4672:
+		return "rfa", true
+	case 4673:
+		return "cxws", true
+	case 4674:
+		return "appiq-mgmt", true
+	case 4675:
+		return "dhct-status", true
+	case 4676:
+		return "dhct-alerts", true
+	case 4677:
+		return "bcs", true
+	case 4678:
+		return "traversal", true
+	case 4679:
+		return "mgesupervision", true
+	case 4680:
+		return "mgemanagement", true
+	case 4681:
+		return "parliant", true
+	case 4682:
+		return "finisar", true
+	case 4683:
+		return "spike", true
+	case 4684:
+		return "rfid-rp1", true
+	case 4685:
+		return "autopac", true
+	case 4686:
+		return "msp-os", true
+	case 4687:
+		return "nst", true
+	case 4688:
+		return "mobile-p2p", true
+	case 4689:
+		return "altovacentral", true
+	case 4690:
+		return "prelude", true
+	case 4691:
+		return "mtn", true
+	case 4692:
+		return "conspiracy", true
+	case 4700:
+		return "netxms-agent", true
+	case 4701:
+		return "netxms-mgmt", true
+	case 4702:
+		return "netxms-sync", true
+	case 4711:
+		return "trinity-dist", true
+	case 4725:
+		return "truckstar", true
+	case 4726:
+		return "a26-fap-fgw", true
+	case 4727:
+		return "fcis-disc", true
+	case 4728:
+		return "capmux", true
+	case 4729:
+		return "gsmtap", true
+	case 4730:
+		return "gearman", true
+	case 4732:
+		return "ohmtrigger", true
+	case 4737:
+		return "ipdr-sp", true
+	case 4738:
+		return "solera-lpn", true
+	case 4739:
+		return "ipfix", true
+	case 4740:
+		return "ipfixs", true
+	case 4741:
+		return "lumimgrd", true
+	case 4742:
+		return "sicct-sdp", true
+	case 4743:
+		return "openhpid", true
+	case 4744:
+		return "ifsp", true
+	case 4745:
+		return "fmp", true
+	case 4746:
+		return "intelliadm-disc", true
+	case 4747:
+		return "buschtrommel", true
+	case 4749:
+		return "profilemac", true
+	case 4750:
+		return "ssad", true
+	case 4751:
+		return "spocp", true
+	case 4752:
+		return "snap", true
+	case 4753:
+		return "simon-disc", true
+	case 4754:
+		return "gre-in-udp", true
+	case 4755:
+		return "gre-udp-dtls", true
+	case 4784:
+		return "bfd-multi-ctl", true
+	case 4785:
+		return "cncp", true
+	case 4789:
+		return "vxlan", true
+	case 4790:
+		return "vxlan-gpe", true
+	case 4791:
+		return "roce", true
+	case 4792:
+		return "unified-bus", true
+	case 4800:
+		return "iims", true
+	case 4801:
+		return "iwec", true
+	case 4802:
+		return "ilss", true
+	case 4803:
+		return "notateit-disc", true
+	case 4804:
+		return "aja-ntv4-disc", true
+	case 4827:
+		return "htcp", true
+	case 4837:
+		return "varadero-0", true
+	case 4838:
+		return "varadero-1", true
+	case 4839:
+		return "varadero-2", true
+	case 4840:
+		return "opcua-udp", true
+	case 4841:
+		return "quosa", true
+	case 4842:
+		return "gw-asv", true
+	case 4843:
+		return "opcua-tls", true
+	case 4844:
+		return "gw-log", true
+	case 4845:
+		return "wcr-remlib", true
+	case 4846:
+		return "contamac-icm", true
+	case 4847:
+		return "wfc", true
+	case 4848:
+		return "appserv-http", true
+	case 4849:
+		return "appserv-https", true
+	case 4850:
+		return "sun-as-nodeagt", true
+	case 4851:
+		return "derby-repli", true
+	case 4867:
+		return "unify-debug", true
+	case 4868:
+		return "phrelay", true
+	case 4869:
+		return "phrelaydbg", true
+	case 4870:
+		return "cc-tracking", true
+	case 4871:
+		return "wired", true
+	case 4876:
+		return "tritium-can", true
+	case 4877:
+		return "lmcs", true
+	case 4878:
+		return "inst-discovery", true
+	case 4881:
+		return "socp-t", true
+	case 4882:
+		return "socp-c", true
+	case 4884:
+		return "hivestor", true
+	case 4885:
+		return "abbs", true
+	case 4894:
+		return "lyskom", true
+	case 4899:
+		return "radmin-port", true
+	case 4900:
+		return "hfcs", true
+	case 4914:
+		return "bones", true
+	case 4936:
+		return "an-signaling", true
+	case 4937:
+		return "atsc-mh-ssc", true
+	case 4940:
+		return "eq-office-4940", true
+	case 4941:
+		return "eq-office-4941", true
+	case 4942:
+		return "eq-office-4942", true
+	case 4949:
+		return "munin", true
+	case 4950:
+		return "sybasesrvmon", true
+	case 4951:
+		return "pwgwims", true
+	case 4952:
+		return "sagxtsds", true
+	case 4969:
+		return "ccss-qmm", true
+	case 4970:
+		return "ccss-qsm", true
+	case 4980:
+		return "ctxs-vpp", true
+	case 4986:
+		return "mrip", true
+	case 4987:
+		return "smar-se-port1", true
+	case 4988:
+		return "smar-se-port2", true
+	case 4989:
+		return "parallel", true
+	case 4990:
+		return "busycal", true
+	case 4991:
+		return "vrt", true
+	case 4999:
+		return "hfcs-manager", true
+	case 5000:
+		return "commplex-main", true
+	case 5001:
+		return "commplex-link", true
+	case 5002:
+		return "rfe", true
+	case 5003:
+		return "fmpro-internal", true
+	case 5004:
+		return "avt-profile-1", true
+	case 5005:
+		return "avt-profile-2", true
+	case 5006:
+		return "wsm-server", true
+	case 5007:
+		return "wsm-server-ssl", true
+	case 5008:
+		return "synapsis-edge", true
+	case 5009:
+		return "winfs", true
+	case 5010:
+		return "telelpathstart", true
+	case 5011:
+		return "telelpathattack", true
+	case 5012:
+		return "nsp", true
+	case 5013:
+		return "fmpro-v6", true
+	case 5014:
+		return "onpsocket", true
+	case 5020:
+		return "zenginkyo-1", true
+	case 5021:
+		return "zenginkyo-2", true
+	case 5022:
+		return "mice", true
+	case 5023:
+		return "htuilsrv", true
+	case 5024:
+		return "scpi-telnet", true
+	case 5025:
+		return "scpi-raw", true
+	case 5026:
+		return "strexec-d", true
+	case 5027:
+		return "strexec-s", true
+	case 5029:
+		return "infobright", true
+	case 5031:
+		return "dmp", true
+	case 5042:
+		return "asnaacceler8db", true
+	case 5043:
+		return "swxadmin", true
+	case 5044:
+		return "lxi-evntsvc", true
+	case 5046:
+		return "vpm-udp", true
+	case 5047:
+		return "iscape", true
+	case 5049:
+		return "ivocalize", true
+	case 5050:
+		return "mmcc", true
+	case 5051:
+		return "ita-agent", true
+	case 5052:
+		return "ita-manager", true
+	case 5053:
+		return "rlm-disc", true
+	case 5055:
+		return "unot", true
+	case 5056:
+		return "intecom-ps1", true
+	case 5057:
+		return "intecom-ps2", true
+	case 5058:
+		return "locus-disc", true
+	case 5059:
+		return "sds", true
+	case 5060:
+		return "sip", true
+	case 5061:
+		return "sips", true
+	case 5062:
+		return "na-localise", true
+	case 5064:
+		return "ca-1", true
+	case 5065:
+		return "ca-2", true
+	case 5066:
+		return "stanag-5066", true
+	case 5067:
+		return "authentx", true
+	case 5069:
+		return "i-net-2000-npr", true
+	case 5070:
+		return "vtsas", true
+	case 5071:
+		return "powerschool", true
+	case 5072:
+		return "ayiya", true
+	case 5073:
+		return "tag-pm", true
+	case 5074:
+		return "alesquery", true
+	case 5078:
+		return "pixelpusher", true
+	case 5079:
+		return "cp-spxrpts", true
+	case 5080:
+		return "onscreen", true
+	case 5081:
+		return "sdl-ets", true
+	case 5082:
+		return "qcp", true
+	case 5083:
+		return "qfp", true
+	case 5084:
+		return "llrp", true
+	case 5085:
+		return "encrypted-llrp", true
+	case 5092:
+		return "magpie", true
+	case 5093:
+		return "sentinel-lm", true
+	case 5094:
+		return "hart-ip", true
+	case 5099:
+		return "sentlm-srv2srv", true
+	case 5100:
+		return "socalia", true
+	case 5101:
+		return "talarian-udp", true
+	case 5102:
+		return "oms-nonsecure", true
+	case 5104:
+		return "tinymessage", true
+	case 5105:
+		return "hughes-ap", true
+	case 5111:
+		return "taep-as-svc", true
+	case 5112:
+		return "pm-cmdsvr", true
+	case 5116:
+		return "emb-proj-cmd", true
+	case 5120:
+		return "barracuda-bbs", true
+	case 5133:
+		return "nbt-pc", true
+	case 5136:
+		return "minotaur-sa", true
+	case 5137:
+		return "ctsd", true
+	case 5145:
+		return "rmonitor-secure", true
+	case 5150:
+		return "atmp", true
+	case 5151:
+		return "esri-sde", true
+	case 5152:
+		return "sde-discovery", true
+	case 5154:
+		return "bzflag", true
+	case 5155:
+		return "asctrl-agent", true
+	case 5164:
+		return "vpa-disc", true
+	case 5165:
+		return "ife-icorp", true
+	case 5166:
+		return "winpcs", true
+	case 5167:
+		return "scte104", true
+	case 5168:
+		return "scte30", true
+	case 5190:
+		return "aol", true
+	case 5191:
+		return "aol-1", true
+	case 5192:
+		return "aol-2", true
+	case 5193:
+		return "aol-3", true
+	case 5200:
+		return "targus-getdata", true
+	case 5201:
+		return "targus-getdata1", true
+	case 5202:
+		return "targus-getdata2", true
+	case 5203:
+		return "targus-getdata3", true
+	case 5223:
+		return "hpvirtgrp", true
+	case 5224:
+		return "hpvirtctrl", true
+	case 5225:
+		return "hp-server", true
+	case 5226:
+		return "hp-status", true
+	case 5227:
+		return "perfd", true
+	case 5234:
+		return "eenet", true
+	case 5235:
+		return "galaxy-network", true
+	case 5236:
+		return "padl2sim", true
+	case 5237:
+		return "mnet-discovery", true
+	case 5245:
+		return "downtools-disc", true
+	case 5246:
+		return "capwap-control", true
+	case 5247:
+		return "capwap-data", true
+	case 5248:
+		return "caacws", true
+	case 5249:
+		return "caaclang2", true
+	case 5250:
+		return "soagateway", true
+	case 5251:
+		return "caevms", true
+	case 5252:
+		return "movaz-ssc", true
+	case 5264:
+		return "3com-njack-1", true
+	case 5265:
+		return "3com-njack-2", true
+	case 5270:
+		return "cartographerxmp", true
+	case 5271:
+		return "cuelink-disc", true
+	case 5272:
+		return "pk", true
+	case 5282:
+		return "transmit-port", true
+	case 5298:
+		return "presence", true
+	case 5299:
+		return "nlg-data", true
+	case 5300:
+		return "hacl-hb", true
+	case 5301:
+		return "hacl-gs", true
+	case 5302:
+		return "hacl-cfg", true
+	case 5303:
+		return "hacl-probe", true
+	case 5304:
+		return "hacl-local", true
+	case 5305:
+		return "hacl-test", true
+	case 5306:
+		return "sun-mc-grp", true
+	case 5307:
+		return "sco-aip", true
+	case 5308:
+		return "cfengine", true
+	case 5309:
+		return "jprinter", true
+	case 5310:
+		return "outlaws", true
+	case 5312:
+		return "permabit-cs", true
+	case 5313:
+		return "rrdp", true
+	case 5314:
+		return "opalis-rbt-ipc", true
+	case 5315:
+		return "hacl-poll", true
+	case 5343:
+		return "kfserver", true
+	case 5344:
+		return "xkotodrcp", true
+	case 5349:
+		return "stuns", true
+	case 5350:
+		return "pcp-multicast", true
+	case 5351:
+		return "pcp", true
+	case 5352:
+		return "dns-llq", true
+	case 5353:
+		return "mdns", true
+	case 5354:
+		return "mdnsresponder", true
+	case 5355:
+		return "llmnr", true
+	case 5356:
+		return "ms-smlbiz", true
+	case 5357:
+		return "wsdapi", true
+	case 5358:
+		return "wsdapi-s", true
+	case 5359:
+		return "ms-alerter", true
+	case 5360:
+		return "ms-sideshow", true
+	case 5361:
+		return "ms-s-sideshow", true
+	case 5362:
+		return "serverwsd2", true
+	case 5363:
+		return "net-projection", true
+	case 5364:
+		return "kdnet", true
+	case 5397:
+		return "stresstester", true
+	case 5398:
+		return "elektron-admin", true
+	case 5399:
+		return "securitychase", true
+	case 5400:
+		return "excerpt", true
+	case 5401:
+		return "excerpts", true
+	case 5402:
+		return "mftp", true
+	case 5403:
+		return "hpoms-ci-lstn", true
+	case 5404:
+		return "hpoms-dps-lstn", true
+	case 5405:
+		return "netsupport", true
+	case 5406:
+		return "systemics-sox", true
+	case 5407:
+		return "foresyte-clear", true
+	case 5408:
+		return "foresyte-sec", true
+	case 5409:
+		return "salient-dtasrv", true
+	case 5410:
+		return "salient-usrmgr", true
+	case 5411:
+		return "actnet", true
+	case 5412:
+		return "continuus", true
+	case 5413:
+		return "wwiotalk", true
+	case 5414:
+		return "statusd", true
+	case 5415:
+		return "ns-server", true
+	case 5416:
+		return "sns-gateway", true
+	case 5417:
+		return "sns-agent", true
+	case 5418:
+		return "mcntp", true
+	case 5419:
+		return "dj-ice", true
+	case 5420:
+		return "cylink-c", true
+	case 5421:
+		return "netsupport2", true
+	case 5422:
+		return "salient-mux", true
+	case 5423:
+		return "virtualuser", true
+	case 5424:
+		return "beyond-remote", true
+	case 5425:
+		return "br-channel", true
+	case 5426:
+		return "devbasic", true
+	case 5427:
+		return "sco-peer-tta", true
+	case 5428:
+		return "telaconsole", true
+	case 5429:
+		return "base", true
+	case 5430:
+		return "radec-corp", true
+	case 5431:
+		return "park-agent", true
+	case 5432:
+		return "postgresql", true
+	case 5433:
+		return "pyrrho", true
+	case 5434:
+		return "sgi-arrayd", true
+	case 5435:
+		return "sceanics", true
+	case 5436:
+		return "pmip6-cntl", true
+	case 5437:
+		return "pmip6-data", true
+	case 5443:
+		return "spss", true
+	case 5450:
+		return "tiepie-disc", true
+	case 5453:
+		return "surebox", true
+	case 5454:
+		return "apc-5454", true
+	case 5455:
+		return "apc-5455", true
+	case 5456:
+		return "apc-5456", true
+	case 5461:
+		return "silkmeter", true
+	case 5462:
+		return "ttl-publisher", true
+	case 5463:
+		return "ttlpriceproxy", true
+	case 5464:
+		return "quailnet", true
+	case 5465:
+		return "netops-broker", true
+	case 5474:
+		return "apsolab-rpc", true
+	case 5500:
+		return "fcp-addr-srvr1", true
+	case 5501:
+		return "fcp-addr-srvr2", true
+	case 5502:
+		return "fcp-srvr-inst1", true
+	case 5503:
+		return "fcp-srvr-inst2", true
+	case 5504:
+		return "fcp-cics-gw1", true
+	case 5505:
+		return "checkoutdb", true
+	case 5506:
+		return "amc", true
+	case 5540:
+		return "matter", true
+	case 5553:
+		return "sgi-eventmond", true
+	case 5554:
+		return "sgi-esphttp", true
+	case 5555:
+		return "personal-agent", true
+	case 5556:
+		return "freeciv", true
+	case 5567:
+		return "dof-dps-mc-sec", true
+	case 5568:
+		return "sdt", true
+	case 5569:
+		return "rdmnet-device", true
+	case 5573:
+		return "sdmmp", true
+	case 5580:
+		return "tmosms0", true
+	case 5581:
+		return "tmosms1", true
+	case 5582:
+		return "fac-restore", true
+	case 5583:
+		return "tmo-icon-sync", true
+	case 5584:
+		return "bis-web", true
+	case 5585:
+		return "bis-sync", true
+	case 5597:
+		return "ininmessaging", true
+	case 5598:
+		return "mctfeed", true
+	case 5599:
+		return "esinstall", true
+	case 5600:
+		return "esmmanager", true
+	case 5601:
+		return "esmagent", true
+	case 5602:
+		return "a1-msc", true
+	case 5603:
+		return "a1-bs", true
+	case 5604:
+		return "a3-sdunode", true
+	case 5605:
+		return "a4-sdunode", true
+	case 5627:
+		return "ninaf", true
+	case 5628:
+		return "htrust", true
+	case 5629:
+		return "symantec-sfdb", true
+	case 5630:
+		return "precise-comm", true
+	case 5631:
+		return "pcanywheredata", true
+	case 5632:
+		return "pcanywherestat", true
+	case 5633:
+		return "beorl", true
+	case 5634:
+		return "xprtld", true
+	case 5670:
+		return "zre-disc", true
+	case 5671:
+		return "amqps", true
+	case 5672:
+		return "amqp", true
+	case 5673:
+		return "jms", true
+	case 5674:
+		return "hyperscsi-port", true
+	case 5675:
+		return "v5ua", true
+	case 5676:
+		return "raadmin", true
+	case 5677:
+		return "questdb2-lnchr", true
+	case 5678:
+		return "rrac", true
+	case 5679:
+		return "dccm", true
+	case 5680:
+		return "auriga-router", true
+	case 5681:
+		return "ncxcp", true
+	case 5682:
+		return "brightcore", true
+	case 5683:
+		return "coap", true
+	case 5684:
+		return "coaps", true
+	case 5687:
+		return "gog-multiplayer", true
+	case 5688:
+		return "ggz", true
+	case 5689:
+		return "qmvideo", true
+	case 5713:
+		return "proshareaudio", true
+	case 5714:
+		return "prosharevideo", true
+	case 5715:
+		return "prosharedata", true
+	case 5716:
+		return "prosharerequest", true
+	case 5717:
+		return "prosharenotify", true
+	case 5718:
+		return "dpm", true
+	case 5719:
+		return "dpm-agent", true
+	case 5720:
+		return "ms-licensing", true
+	case 5721:
+		return "dtpt", true
+	case 5722:
+		return "msdfsr", true
+	case 5723:
+		return "omhs", true
+	case 5724:
+		return "omsdk", true
+	case 5728:
+		return "io-dist-group", true
+	case 5729:
+		return "openmail", true
+	case 5730:
+		return "unieng", true
+	case 5741:
+		return "ida-discover1", true
+	case 5742:
+		return "ida-discover2", true
+	case 5743:
+		return "watchdoc-pod", true
+	case 5744:
+		return "watchdoc", true
+	case 5745:
+		return "fcopy-server", true
+	case 5746:
+		return "fcopys-server", true
+	case 5747:
+		return "tunatic", true
+	case 5748:
+		return "tunalyzer", true
+	case 5750:
+		return "rscd", true
+	case 5755:
+		return "openmailg", true
+	case 5757:
+		return "x500ms", true
+	case 5766:
+		return "openmailns", true
+	case 5767:
+		return "s-openmail", true
+	case 5768:
+		return "openmailpxy", true
+	case 5769:
+		return "spramsca", true
+	case 5770:
+		return "spramsd", true
+	case 5771:
+		return "netagent", true
+	case 5777:
+		return "starfield-io", true
+	case 5781:
+		return "3par-evts", true
+	case 5782:
+		return "3par-mgmt", true
+	case 5783:
+		return "3par-mgmt-ssl", true
+	case 5784:
+		return "ibar", true
+	case 5785:
+		return "3par-rcopy", true
+	case 5786:
+		return "cisco-redu", true
+	case 5787:
+		return "waascluster", true
+	case 5793:
+		return "xtreamx", true
+	case 5794:
+		return "spdp", true
+	case 5813:
+		return "icmpd", true
+	case 5814:
+		return "spt-automation", true
+	case 5859:
+		return "wherehoo", true
+	case 5863:
+		return "ppsuitemsg", true
+	case 5900:
+		return "rfb", true
+	case 5903:
+		return "ff-ice", true
+	case 5904:
+		return "ag-swim", true
+	case 5905:
+		return "asmgcs", true
+	case 5906:
+		return "rpas-c2", true
+	case 5907:
+		return "dsd", true
+	case 5908:
+		return "ipsma", true
+	case 5909:
+		return "agma", true
+	case 5910:
+		return "ats-atn", true
+	case 5911:
+		return "ats-acars", true
+	case 5912:
+		return "ais-met", true
+	case 5913:
+		return "aoc-acars", true
+	case 5963:
+		return "indy", true
+	case 5968:
+		return "mppolicy-v5", true
+	case 5969:
+		return "mppolicy-mgr", true
+	case 5984:
+		return "couchdb", true
+	case 5985:
+		return "wsman", true
+	case 5986:
+		return "wsmans", true
+	case 5987:
+		return "wbem-rmi", true
+	case 5988:
+		return "wbem-http", true
+	case 5989:
+		return "wbem-https", true
+	case 5990:
+		return "wbem-exp-https", true
+	case 5991:
+		return "nuxsl", true
+	case 5992:
+		return "consul-insight", true
+	case 5999:
+		return "cvsup", true
+	case 6064:
+		return "ndl-ahp-svc", true
+	case 6065:
+		return "winpharaoh", true
+	case 6066:
+		return "ewctsp", true
+	case 6069:
+		return "trip", true
+	case 6070:
+		return "messageasap", true
+	case 6071:
+		return "ssdtp", true
+	case 6072:
+		return "diagnose-proc", true
+	case 6073:
+		return "directplay8", true
+	case 6074:
+		return "max", true
+	case 6080:
+		return "gue", true
+	case 6081:
+		return "geneve", true
+	case 6082:
+		return "p25cai", true
+	case 6083:
+		return "miami-bcast", true
+	case 6085:
+		return "konspire2b", true
+	case 6086:
+		return "pdtp", true
+	case 6087:
+		return "ldss", true
+	case 6088:
+		return "doglms-notify", true
+	case 6100:
+		return "synchronet-db", true
+	case 6101:
+		return "synchronet-rtc", true
+	case 6102:
+		return "synchronet-upd", true
+	case 6103:
+		return "rets", true
+	case 6104:
+		return "dbdb", true
+	case 6105:
+		return "primaserver", true
+	case 6106:
+		return "mpsserver", true
+	case 6107:
+		return "etc-control", true
+	case 6108:
+		return "sercomm-scadmin", true
+	case 6109:
+		return "globecast-id", true
+	case 6110:
+		return "softcm", true
+	case 6111:
+		return "spc", true
+	case 6112:
+		return "dtspcd", true
+	case 6118:
+		return "tipc", true
+	case 6122:
+		return "bex-webadmin", true
+	case 6123:
+		return "backup-express", true
+	case 6124:
+		return "pnbs", true
+	case 6133:
+		return "nbt-wol", true
+	case 6140:
+		return "pulsonixnls", true
+	case 6141:
+		return "meta-corp", true
+	case 6142:
+		return "aspentec-lm", true
+	case 6143:
+		return "watershed-lm", true
+	case 6144:
+		return "statsci1-lm", true
+	case 6145:
+		return "statsci2-lm", true
+	case 6146:
+		return "lonewolf-lm", true
+	case 6147:
+		return "montage-lm", true
+	case 6148:
+		return "ricardo-lm", true
+	case 6149:
+		return "tal-pod", true
+	case 6160:
+		return "ecmp-data", true
+	case 6161:
+		return "patrol-ism", true
+	case 6162:
+		return "patrol-coll", true
+	case 6163:
+		return "pscribe", true
+	case 6200:
+		return "lm-x", true
+	case 6201:
+		return "thermo-calc", true
+	case 6209:
+		return "qmtps", true
+	case 6222:
+		return "radmind", true
+	case 6241:
+		return "jeol-nsddp-1", true
+	case 6242:
+		return "jeol-nsddp-2", true
+	case 6243:
+		return "jeol-nsddp-3", true
+	case 6244:
+		return "jeol-nsddp-4", true
+	case 6251:
+		return "tl1-raw-ssl", true
+	case 6252:
+		return "tl1-ssh", true
+	case 6253:
+		return "crip", true
+	case 6268:
+		return "grid", true
+	case 6269:
+		return "grid-alt", true
+	case 6300:
+		return "bmc-grx", true
+	case 6301:
+		return "bmc-ctd-ldap", true
+	case 6306:
+		return "ufmp", true
+	case 6315:
+		return "scup-disc", true
+	case 6316:
+		return "abb-escp", true
+	case 6317:
+		return "nav-data", true
+	case 6320:
+		return "repsvc", true
+	case 6321:
+		return "emp-server1", true
+	case 6322:
+		return "emp-server2", true
+	case 6324:
+		return "hrd-ns-disc", true
+	case 6343:
+		return "sflow", true
+	case 6346:
+		return "gnutella-svc", true
+	case 6347:
+		return "gnutella-rtr", true
+	case 6350:
+		return "adap", true
+	case 6355:
+		return "pmcs", true
+	case 6360:
+		return "metaedit-mu", true
+	case 6363:
+		return "ndn", true
+	case 6370:
+		return "metaedit-se", true
+	case 6382:
+		return "metatude-mds", true
+	case 6389:
+		return "clariion-evr01", true
+	case 6390:
+		return "metaedit-ws", true
+	case 6417:
+		return "faxcomservice", true
+	case 6419:
+		return "svdrp-disc", true
+	case 6420:
+		return "nim-vdrshell", true
+	case 6421:
+		return "nim-wan", true
+	case 6443:
+		return "sun-sr-https", true
+	case 6444:
+		return "sge-qmaster", true
+	case 6445:
+		return "sge-execd", true
+	case 6446:
+		return "mysql-proxy", true
+	case 6455:
+		return "skip-cert-recv", true
+	case 6456:
+		return "skip-cert-send", true
+	case 6464:
+		return "ieee11073-20701", true
+	case 6471:
+		return "lvision-lm", true
+	case 6480:
+		return "sun-sr-http", true
+	case 6481:
+		return "servicetags", true
+	case 6482:
+		return "ldoms-mgmt", true
+	case 6483:
+		return "SunVTS-RMI", true
+	case 6484:
+		return "sun-sr-jms", true
+	case 6485:
+		return "sun-sr-iiop", true
+	case 6486:
+		return "sun-sr-iiops", true
+	case 6487:
+		return "sun-sr-iiop-aut", true
+	case 6488:
+		return "sun-sr-jmx", true
+	case 6489:
+		return "sun-sr-admin", true
+	case 6500:
+		return "boks", true
+	case 6501:
+		return "boks-servc", true
+	case 6502:
+		return "boks-servm", true
+	case 6503:
+		return "boks-clntd", true
+	case 6505:
+		return "badm-priv", true
+	case 6506:
+		return "badm-pub", true
+	case 6507:
+		return "bdir-priv", true
+	case 6508:
+		return "bdir-pub", true
+	case 6509:
+		return "mgcs-mfp-port", true
+	case 6510:
+		return "mcer-port", true
+	case 6511:
+		return "dccp-udp", true
+	case 6514:
+		return "syslog-tls", true
+	case 6515:
+		return "elipse-rec", true
+	case 6543:
+		return "lds-distrib", true
+	case 6544:
+		return "lds-dump", true
+	case 6547:
+		return "apc-6547", true
+	case 6548:
+		return "apc-6548", true
+	case 6549:
+		return "apc-6549", true
+	case 6550:
+		return "fg-sysupdate", true
+	case 6551:
+		return "sum", true
+	case 6558:
+		return "xdsxdm", true
+	case 6566:
+		return "sane-port", true
+	case 6568:
+		return "rp-reputation", true
+	case 6579:
+		return "affiliate", true
+	case 6580:
+		return "parsec-master", true
+	case 6581:
+		return "parsec-peer", true
+	case 6582:
+		return "parsec-game", true
+	case 6583:
+		return "joaJewelSuite", true
+	case 6619:
+		return "odette-ftps", true
+	case 6620:
+		return "kftp-data", true
+	case 6621:
+		return "kftp", true
+	case 6622:
+		return "mcftp", true
+	case 6623:
+		return "ktelnet", true
+	case 6626:
+		return "wago-service", true
+	case 6627:
+		return "nexgen", true
+	case 6628:
+		return "afesc-mc", true
+	case 6629:
+		return "nexgen-aux", true
+	case 6633:
+		return "cisco-vpath-tun", true
+	case 6634:
+		return "mpls-pm", true
+	case 6635:
+		return "mpls-udp", true
+	case 6636:
+		return "mpls-udp-dtls", true
+	case 6653:
+		return "openflow", true
+	case 6657:
+		return "palcom-disc", true
+	case 6670:
+		return "vocaltec-gold", true
+	case 6671:
+		return "p4p-portal", true
+	case 6672:
+		return "vision-server", true
+	case 6673:
+		return "vision-elmd", true
+	case 6678:
+		return "vfbp-disc", true
+	case 6679:
+		return "osaut", true
+	case 6689:
+		return "tsa", true
+	case 6696:
+		return "babel", true
+	case 6699:
+		return "babel-dtls", true
+	case 6701:
+		return "kti-icad-srvr", true
+	case 6702:
+		return "e-design-net", true
+	case 6703:
+		return "e-design-web", true
+	case 6714:
+		return "ibprotocol", true
+	case 6715:
+		return "fibotrader-com", true
+	case 6767:
+		return "bmc-perf-agent", true
+	case 6768:
+		return "bmc-perf-mgrd", true
+	case 6769:
+		return "adi-gxp-srvprt", true
+	case 6770:
+		return "plysrv-http", true
+	case 6771:
+		return "plysrv-https", true
+	case 6784:
+		return "bfd-lag", true
+	case 6785:
+		return "dgpf-exchg", true
+	case 6786:
+		return "smc-jmx", true
+	case 6787:
+		return "smc-admin", true
+	case 6788:
+		return "smc-http", true
+	case 6790:
+		return "hnmp", true
+	case 6791:
+		return "hnm", true
+	case 6801:
+		return "acnet", true
+	case 6831:
+		return "ambit-lm", true
+	case 6841:
+		return "netmo-default", true
+	case 6842:
+		return "netmo-http", true
+	case 6850:
+		return "iccrushmore", true
+	case 6868:
+		return "acctopus-st", true
+	case 6888:
+		return "muse", true
+	case 6924:
+		return "split-ping", true
+	case 6935:
+		return "ethoscan", true
+	case 6936:
+		return "xsmsvc", true
+	case 6946:
+		return "bioserver", true
+	case 6951:
+		return "otlp", true
+	case 6961:
+		return "jmact3", true
+	case 6962:
+		return "jmevt2", true
+	case 6963:
+		return "swismgr1", true
+	case 6964:
+		return "swismgr2", true
+	case 6965:
+		return "swistrap", true
+	case 6966:
+		return "swispol", true
+	case 6969:
+		return "acmsoda", true
+	case 6980:
+		return "qolyester", true
+	case 6997:
+		return "MobilitySrv", true
+	case 6998:
+		return "iatp-highpri", true
+	case 6999:
+		return "iatp-normalpri", true
+	case 7000:
+		return "afs3-fileserver", true
+	case 7001:
+		return "afs3-callback", true
+	case 7002:
+		return "afs3-prserver", true
+	case 7003:
+		return "afs3-vlserver", true
+	case 7004:
+		return "afs3-kaserver", true
+	case 7005:
+		return "afs3-volser", true
+	case 7006:
+		return "afs3-errors", true
+	case 7007:
+		return "afs3-bos", true
+	case 7008:
+		return "afs3-update", true
+	case 7009:
+		return "afs3-rmtsys", true
+	case 7010:
+		return "ups-onlinet", true
+	case 7011:
+		return "talon-disc", true
+	case 7012:
+		return "talon-engine", true
+	case 7013:
+		return "microtalon-dis", true
+	case 7014:
+		return "microtalon-com", true
+	case 7015:
+		return "talon-webserver", true
+	case 7016:
+		return "spg", true
+	case 7017:
+		return "grasp", true
+	case 7019:
+		return "doceri-view", true
+	case 7020:
+		return "dpserve", true
+	case 7021:
+		return "dpserveadmin", true
+	case 7022:
+		return "ctdp", true
+	case 7023:
+		return "ct2nmcs", true
+	case 7024:
+		return "vmsvc", true
+	case 7025:
+		return "vmsvc-2", true
+	case 7030:
+		return "op-probe", true
+	case 7040:
+		return "quest-disc", true
+	case 7070:
+		return "arcp", true
+	case 7071:
+		return "iwg1", true
+	case 7072:
+		return "iba-cfg-disc", true
+	case 7080:
+		return "empowerid", true
+	case 7088:
+		return "zixi-transport", true
+	case 7095:
+		return "jdp-disc", true
+	case 7099:
+		return "lazy-ptop", true
+	case 7100:
+		return "font-service", true
+	case 7101:
+		return "elcn", true
+	case 7107:
+		return "aes-x170", true
+	case 7121:
+		return "virprot-lm", true
+	case 7128:
+		return "scenidm", true
+	case 7129:
+		return "scenccs", true
+	case 7161:
+		return "cabsm-comm", true
+	case 7162:
+		return "caistoragemgr", true
+	case 7163:
+		return "cacsambroker", true
+	case 7164:
+		return "fsr", true
+	case 7165:
+		return "doc-server", true
+	case 7166:
+		return "aruba-server", true
+	case 7169:
+		return "ccag-pib", true
+	case 7170:
+		return "nsrp", true
+	case 7171:
+		return "drm-production", true
+	case 7174:
+		return "clutild", true
+	case 7181:
+		return "janus-disc", true
+	case 7200:
+		return "fodms", true
+	case 7201:
+		return "dlip", true
+	case 7227:
+		return "ramp", true
+	case 7235:
+		return "aspcoordination", true
+	case 7244:
+		return "frc-hicp-disc", true
+	case 7262:
+		return "cnap", true
+	case 7272:
+		return "watchme-7272", true
+	case 7273:
+		return "oma-rlp", true
+	case 7274:
+		return "oma-rlp-s", true
+	case 7275:
+		return "oma-ulp", true
+	case 7276:
+		return "oma-ilp", true
+	case 7277:
+		return "oma-ilp-s", true
+	case 7278:
+		return "oma-dcdocbs", true
+	case 7279:
+		return "ctxlic", true
+	case 7280:
+		return "itactionserver1", true
+	case 7281:
+		return "itactionserver2", true
+	case 7282:
+		return "mzca-alert", true
+	case 7365:
+		return "lcm-server", true
+	case 7391:
+		return "mindfilesys", true
+	case 7392:
+		return "mrssrendezvous", true
+	case 7393:
+		return "nfoldman", true
+	case 7394:
+		return "fse", true
+	case 7395:
+		return "winqedit", true
+	case 7397:
+		return "hexarc", true
+	case 7400:
+		return "rtps-discovery", true
+	case 7401:
+		return "rtps-dd-ut", true
+	case 7402:
+		return "rtps-dd-mt", true
+	case 7410:
+		return "ionixnetmon", true
+	case 7411:
+		return "daqstream", true
+	case 7420:
+		return "ipluminary", true
+	case 7421:
+		return "mtportmon", true
+	case 7426:
+		return "pmdmgr", true
+	case 7427:
+		return "oveadmgr", true
+	case 7428:
+		return "ovladmgr", true
+	case 7429:
+		return "opi-sock", true
+	case 7430:
+		return "xmpv7", true
+	case 7431:
+		return "pmd", true
+	case 7437:
+		return "faximum", true
+	case 7443:
+		return "oracleas-https", true
+	case 7473:
+		return "rise", true
+	case 7491:
+		return "telops-lmd", true
+	case 7500:
+		return "silhouette", true
+	case 7501:
+		return "ovbus", true
+	case 7510:
+		return "ovhpas", true
+	case 7511:
+		return "pafec-lm", true
+	case 7542:
+		return "saratoga", true
+	case 7543:
+		return "atul", true
+	case 7544:
+		return "nta-ds", true
+	case 7545:
+		return "nta-us", true
+	case 7546:
+		return "cfs", true
+	case 7547:
+		return "cwmp", true
+	case 7548:
+		return "tidp", true
+	case 7549:
+		return "nls-tl", true
+	case 7550:
+		return "cloudsignaling", true
+	case 7560:
+		return "sncp", true
+	case 7566:
+		return "vsi-omega", true
+	case 7570:
+		return "aries-kfinder", true
+	case 7574:
+		return "coherence-disc", true
+	case 7588:
+		return "sun-lm", true
+	case 7606:
+		return "mipi-debug", true
+	case 7624:
+		return "indi", true
+	case 7627:
+		return "soap-http", true
+	case 7628:
+		return "zen-pawn", true
+	case 7629:
+		return "xdas", true
+	case 7633:
+		return "pmdfmgt", true
+	case 7648:
+		return "cuseeme", true
+	case 7663:
+		return "rome", true
+	case 7674:
+		return "imqtunnels", true
+	case 7675:
+		return "imqtunnel", true
+	case 7676:
+		return "imqbrokerd", true
+	case 7677:
+		return "sun-user-https", true
+	case 7680:
+		return "ms-do", true
+	case 7689:
+		return "collaber", true
+	case 7697:
+		return "klio", true
+	case 7707:
+		return "sync-em7", true
+	case 7708:
+		return "scinet", true
+	case 7720:
+		return "medimageportal", true
+	case 7724:
+		return "nsdeepfreezectl", true
+	case 7725:
+		return "nitrogen", true
+	case 7726:
+		return "freezexservice", true
+	case 7727:
+		return "trident-data", true
+	case 7728:
+		return "osvr", true
+	case 7734:
+		return "smip", true
+	case 7738:
+		return "aiagent", true
+	case 7741:
+		return "scriptview", true
+	case 7743:
+		return "sstp-1", true
+	case 7744:
+		return "raqmon-pdu", true
+	case 7747:
+		return "prgp", true
+	case 7777:
+		return "cbt", true
+	case 7778:
+		return "interwise", true
+	case 7779:
+		return "vstat", true
+	case 7781:
+		return "accu-lmgr", true
+	case 7784:
+		return "s-bfd", true
+	case 7786:
+		return "minivend", true
+	case 7787:
+		return "popup-reminders", true
+	case 7789:
+		return "office-tools", true
+	case 7794:
+		return "q3ade", true
+	case 7797:
+		return "pnet-conn", true
+	case 7798:
+		return "pnet-enc", true
+	case 7799:
+		return "altbsdp", true
+	case 7800:
+		return "asr", true
+	case 7801:
+		return "ssp-client", true
+	case 7802:
+		return "vns-tp", true
+	case 7810:
+		return "rbt-wanopt", true
+	case 7845:
+		return "apc-7845", true
+	case 7846:
+		return "apc-7846", true
+	case 7872:
+		return "mipv6tls", true
+	case 7880:
+		return "pss", true
+	case 7887:
+		return "ubroker", true
+	case 7900:
+		return "mevent", true
+	case 7901:
+		return "tnos-sp", true
+	case 7902:
+		return "tnos-dp", true
+	case 7903:
+		return "tnos-dps", true
+	case 7913:
+		return "qo-secure", true
+	case 7932:
+		return "t2-drm", true
+	case 7933:
+		return "t2-brm", true
+	case 7962:
+		return "generalsync", true
+	case 7967:
+		return "supercell", true
+	case 7979:
+		return "micromuse-ncps", true
+	case 7980:
+		return "quest-vista", true
+	case 7982:
+		return "sossd-disc", true
+	case 7998:
+		return "usicontentpush", true
+	case 7999:
+		return "irdmi2", true
+	case 8000:
+		return "irdmi", true
+	case 8001:
+		return "vcom-tunnel", true
+	case 8002:
+		return "teradataordbms", true
+	case 8003:
+		return "mcreport", true
+	case 8005:
+		return "mxi", true
+	case 8006:
+		return "wpl-disc", true
+	case 8007:
+		return "warppipe", true
+	case 8008:
+		return "http-alt", true
+	case 8017:
+		return "cisco-cloudsec", true
+	case 8019:
+		return "qbdb", true
+	case 8020:
+		return "intu-ec-svcdisc", true
+	case 8021:
+		return "intu-ec-client", true
+	case 8022:
+		return "oa-system", true
+	case 8023:
+		return "arca-api", true
+	case 8025:
+		return "ca-audit-da", true
+	case 8026:
+		return "ca-audit-ds", true
+	case 8027:
+		return "papachi-p2p-srv", true
+	case 8032:
+		return "pro-ed", true
+	case 8033:
+		return "mindprint", true
+	case 8034:
+		return "vantronix-mgmt", true
+	case 8040:
+		return "ampify", true
+	case 8041:
+		return "enguity-xccetp", true
+	case 8052:
+		return "senomix01", true
+	case 8053:
+		return "senomix02", true
+	case 8054:
+		return "senomix03", true
+	case 8055:
+		return "senomix04", true
+	case 8056:
+		return "senomix05", true
+	case 8057:
+		return "senomix06", true
+	case 8058:
+		return "senomix07", true
+	case 8059:
+		return "senomix08", true
+	case 8060:
+		return "aero", true
+	case 8074:
+		return "gadugadu", true
+	case 8080:
+		return "http-alt", true
+	case 8081:
+		return "sunproxyadmin", true
+	case 8082:
+		return "us-cli", true
+	case 8083:
+		return "us-srv", true
+	case 8086:
+		return "d-s-n", true
+	case 8087:
+		return "simplifymedia", true
+	case 8088:
+		return "radan-http", true
+	case 8097:
+		return "sac", true
+	case 8100:
+		return "xprint-server", true
+	case 8111:
+		return "skynetflow", true
+	case 8115:
+		return "mtl8000-matrix", true
+	case 8116:
+		return "cp-cluster", true
+	case 8118:
+		return "privoxy", true
+	case 8121:
+		return "apollo-data", true
+	case 8122:
+		return "apollo-admin", true
+	case 8128:
+		return "paycash-online", true
+	case 8129:
+		return "paycash-wbp", true
+	case 8130:
+		return "indigo-vrmi", true
+	case 8131:
+		return "indigo-vbcp", true
+	case 8132:
+		return "dbabble", true
+	case 8148:
+		return "isdd", true
+	case 8149:
+		return "eor-game", true
+	case 8160:
+		return "patrol", true
+	case 8161:
+		return "patrol-snmp", true
+	case 8182:
+		return "vmware-fdm", true
+	case 8184:
+		return "itach", true
+	case 8192:
+		return "spytechphone", true
+	case 8194:
+		return "blp1", true
+	case 8195:
+		return "blp2", true
+	case 8199:
+		return "vvr-data", true
+	case 8200:
+		return "trivnet1", true
+	case 8201:
+		return "trivnet2", true
+	case 8202:
+		return "aesop", true
+	case 8204:
+		return "lm-perfworks", true
+	case 8205:
+		return "lm-instmgr", true
+	case 8206:
+		return "lm-dta", true
+	case 8207:
+		return "lm-sserver", true
+	case 8208:
+		return "lm-webwatcher", true
+	case 8211:
+		return "aruba-papi", true
+	case 8230:
+		return "rexecj", true
+	case 8231:
+		return "hncp-udp-port", true
+	case 8232:
+		return "hncp-dtls-port", true
+	case 8243:
+		return "synapse-nhttps", true
+	case 8266:
+		return "espeasy-p2p", true
+	case 8276:
+		return "ms-mcc", true
+	case 8280:
+		return "synapse-nhttp", true
+	case 8282:
+		return "libelle-disc", true
+	case 8292:
+		return "blp3", true
+	case 8294:
+		return "blp4", true
+	case 8300:
+		return "tmi", true
+	case 8301:
+		return "amberon", true
+	case 8320:
+		return "tnp-discover", true
+	case 8321:
+		return "tnp", true
+	case 8322:
+		return "garmin-marine", true
+	case 8351:
+		return "server-find", true
+	case 8376:
+		return "cruise-enum", true
+	case 8377:
+		return "cruise-swroute", true
+	case 8378:
+		return "cruise-config", true
+	case 8379:
+		return "cruise-diags", true
+	case 8380:
+		return "cruise-update", true
+	case 8383:
+		return "m2mservices", true
+	case 8384:
+		return "marathontp", true
+	case 8400:
+		return "cvd", true
+	case 8401:
+		return "sabarsd", true
+	case 8402:
+		return "abarsd", true
+	case 8403:
+		return "admind", true
+	case 8416:
+		return "espeech", true
+	case 8417:
+		return "espeech-rtp", true
+	case 8433:
+		return "aws-as2", true
+	case 8442:
+		return "cybro-a-bus", true
+	case 8443:
+		return "pcsync-https", true
+	case 8444:
+		return "pcsync-http", true
+	case 8445:
+		return "copy-disc", true
+	case 8450:
+		return "npmp", true
+	case 8472:
+		return "otv", true
+	case 8473:
+		return "vp2p", true
+	case 8474:
+		return "noteshare", true
+	case 8500:
+		return "fmtp", true
+	case 8501:
+		return "cmtp-av", true
+	case 8503:
+		return "lsp-self-ping", true
+	case 8554:
+		return "rtsp-alt", true
+	case 8555:
+		return "d-fence", true
+	case 8567:
+		return "dof-tunnel", true
+	case 8600:
+		return "asterix", true
+	case 8609:
+		return "canon-cpp-disc", true
+	case 8610:
+		return "canon-mfnp", true
+	case 8611:
+		return "canon-bjnp1", true
+	case 8612:
+		return "canon-bjnp2", true
+	case 8613:
+		return "canon-bjnp3", true
+	case 8614:
+		return "canon-bjnp4", true
+	case 8675:
+		return "msi-cps-rm-disc", true
+	case 8686:
+		return "sun-as-jmxrmi", true
+	case 8732:
+		return "dtp-net", true
+	case 8733:
+		return "ibus", true
+	case 8763:
+		return "mc-appserver", true
+	case 8764:
+		return "openqueue", true
+	case 8765:
+		return "ultraseek-http", true
+	case 8766:
+		return "amcs", true
+	case 8770:
+		return "dpap", true
+	case 8786:
+		return "msgclnt", true
+	case 8787:
+		return "msgsrvr", true
+	case 8793:
+		return "acd-pm", true
+	case 8800:
+		return "sunwebadmin", true
+	case 8804:
+		return "truecm", true
+	case 8805:
+		return "pfcp", true
+	case 8807:
+		return "hes-clip", true
+	case 8808:
+		return "ssports-bcast", true
+	case 8809:
+		return "3gpp-monp", true
+	case 8873:
+		return "dxspider", true
+	case 8880:
+		return "cddbp-alt", true
+	case 8883:
+		return "secure-mqtt", true
+	case 8888:
+		return "ddi-udp-1", true
+	case 8889:
+		return "ddi-udp-2", true
+	case 8890:
+		return "ddi-udp-3", true
+	case 8891:
+		return "ddi-udp-4", true
+	case 8892:
+		return "ddi-udp-5", true
+	case 8893:
+		return "ddi-udp-6", true
+	case 8894:
+		return "ddi-udp-7", true
+	case 8899:
+		return "ospf-lite", true
+	case 8900:
+		return "jmb-cds1", true
+	case 8901:
+		return "jmb-cds2", true
+	case 8910:
+		return "manyone-http", true
+	case 8911:
+		return "manyone-xml", true
+	case 8912:
+		return "wcbackup", true
+	case 8913:
+		return "dragonfly", true
+	case 8954:
+		return "cumulus-admin", true
+	case 8980:
+		return "nod-provider", true
+	case 8981:
+		return "nod-client", true
+	case 8989:
+		return "sunwebadmins", true
+	case 8990:
+		return "http-wmap", true
+	case 8991:
+		return "https-wmap", true
+	case 8999:
+		return "bctp", true
+	case 9000:
+		return "cslistener", true
+	case 9001:
+		return "etlservicemgr", true
+	case 9002:
+		return "dynamid", true
+	case 9007:
+		return "ogs-client", true
+	case 9009:
+		return "pichat", true
+	case 9011:
+		return "d-star", true
+	case 9020:
+		return "tambora", true
+	case 9021:
+		return "panagolin-ident", true
+	case 9022:
+		return "paragent", true
+	case 9023:
+		return "swa-1", true
+	case 9024:
+		return "swa-2", true
+	case 9025:
+		return "swa-3", true
+	case 9026:
+		return "swa-4", true
+	case 9060:
+		return "CardWeb-RT", true
+	case 9080:
+		return "glrpc", true
+	case 9081:
+		return "cisco-aqos", true
+	case 9084:
+		return "aurora", true
+	case 9085:
+		return "ibm-rsyscon", true
+	case 9086:
+		return "net2display", true
+	case 9087:
+		return "classic", true
+	case 9088:
+		return "sqlexec", true
+	case 9089:
+		return "sqlexec-ssl", true
+	case 9090:
+		return "websm", true
+	case 9091:
+		return "xmltec-xmlmail", true
+	case 9092:
+		return "XmlIpcRegSvc", true
+	case 9100:
+		return "hp-pdl-datastr", true
+	case 9101:
+		return "bacula-dir", true
+	case 9102:
+		return "bacula-fd", true
+	case 9103:
+		return "bacula-sd", true
+	case 9104:
+		return "peerwire", true
+	case 9105:
+		return "xadmin", true
+	case 9106:
+		return "astergate-disc", true
+	case 9111:
+		return "hexxorecore", true
+	case 9119:
+		return "mxit", true
+	case 9131:
+		return "dddp", true
+	case 9160:
+		return "apani1", true
+	case 9161:
+		return "apani2", true
+	case 9162:
+		return "apani3", true
+	case 9163:
+		return "apani4", true
+	case 9164:
+		return "apani5", true
+	case 9191:
+		return "sun-as-jpda", true
+	case 9200:
+		return "wap-wsp", true
+	case 9201:
+		return "wap-wsp-wtp", true
+	case 9202:
+		return "wap-wsp-s", true
+	case 9203:
+		return "wap-wsp-wtp-s", true
+	case 9204:
+		return "wap-vcard", true
+	case 9205:
+		return "wap-vcal", true
+	case 9206:
+		return "wap-vcard-s", true
+	case 9207:
+		return "wap-vcal-s", true
+	case 9208:
+		return "rjcdb-vcards", true
+	case 9209:
+		return "almobile-system", true
+	case 9210:
+		return "oma-mlp", true
+	case 9211:
+		return "oma-mlp-s", true
+	case 9212:
+		return "serverviewdbms", true
+	case 9213:
+		return "serverstart", true
+	case 9214:
+		return "ipdcesgbs", true
+	case 9215:
+		return "insis", true
+	case 9216:
+		return "acme", true
+	case 9217:
+		return "fsc-port", true
+	case 9222:
+		return "teamcoherence", true
+	case 9255:
+		return "mon", true
+	case 9277:
+		return "traingpsdata", true
+	case 9278:
+		return "pegasus", true
+	case 9279:
+		return "pegasus-ctl", true
+	case 9280:
+		return "pgps", true
+	case 9281:
+		return "swtp-port1", true
+	case 9282:
+		return "swtp-port2", true
+	case 9283:
+		return "callwaveiam", true
+	case 9284:
+		return "visd", true
+	case 9285:
+		return "n2h2server", true
+	case 9286:
+		return "n2receive", true
+	case 9287:
+		return "cumulus", true
+	case 9292:
+		return "armtechdaemon", true
+	case 9293:
+		return "storview", true
+	case 9294:
+		return "armcenterhttp", true
+	case 9295:
+		return "armcenterhttps", true
+	case 9300:
+		return "vrace", true
+	case 9318:
+		return "secure-ts", true
+	case 9321:
+		return "guibase", true
+	case 9343:
+		return "mpidcmgr", true
+	case 9344:
+		return "mphlpdmc", true
+	case 9346:
+		return "ctechlicensing", true
+	case 9374:
+		return "fjdmimgr", true
+	case 9380:
+		return "boxp", true
+	case 9396:
+		return "fjinvmgr", true
+	case 9397:
+		return "mpidcagt", true
+	case 9400:
+		return "sec-t4net-srv", true
+	case 9401:
+		return "sec-t4net-clt", true
+	case 9402:
+		return "sec-pc2fax-srv", true
+	case 9418:
+		return "git", true
+	case 9443:
+		return "tungsten-https", true
+	case 9444:
+		return "wso2esb-console", true
+	case 9450:
+		return "sntlkeyssrvr", true
+	case 9500:
+		return "ismserver", true
+	case 9522:
+		return "sma-spw", true
+	case 9535:
+		return "mngsuite", true
+	case 9536:
+		return "laes-bf", true
+	case 9555:
+		return "trispen-sra", true
+	case 9592:
+		return "ldgateway", true
+	case 9593:
+		return "cba8", true
+	case 9594:
+		return "msgsys", true
+	case 9595:
+		return "pds", true
+	case 9596:
+		return "mercury-disc", true
+	case 9597:
+		return "pd-admin", true
+	case 9598:
+		return "vscp", true
+	case 9599:
+		return "robix", true
+	case 9600:
+		return "micromuse-ncpw", true
+	case 9612:
+		return "streamcomm-ds", true
+	case 9618:
+		return "condor", true
+	case 9628:
+		return "odbcpathway", true
+	case 9629:
+		return "uniport", true
+	case 9632:
+		return "mc-comm", true
+	case 9667:
+		return "xmms2", true
+	case 9668:
+		return "tec5-sdctp", true
+	case 9694:
+		return "client-wakeup", true
+	case 9695:
+		return "ccnx", true
+	case 9700:
+		return "board-roar", true
+	case 9747:
+		return "l5nas-parchan", true
+	case 9750:
+		return "board-voip", true
+	case 9753:
+		return "rasadv", true
+	case 9762:
+		return "tungsten-http", true
+	case 9800:
+		return "davsrc", true
+	case 9801:
+		return "sstp-2", true
+	case 9802:
+		return "davsrcs", true
+	case 9875:
+		return "sapv1", true
+	case 9878:
+		return "kca-service", true
+	case 9888:
+		return "cyborg-systems", true
+	case 9889:
+		return "gt-proxy", true
+	case 9898:
+		return "monkeycom", true
+	case 9899:
+		return "sctp-tunneling", true
+	case 9900:
+		return "iua", true
+	case 9901:
+		return "enrp", true
+	case 9903:
+		return "multicast-ping", true
+	case 9909:
+		return "domaintime", true
+	case 9911:
+		return "sype-transport", true
+	case 9950:
+		return "apc-9950", true
+	case 9951:
+		return "apc-9951", true
+	case 9952:
+		return "apc-9952", true
+	case 9953:
+		return "acis", true
+	case 9955:
+		return "alljoyn-mcm", true
+	case 9956:
+		return "alljoyn", true
+	case 9966:
+		return "odnsp", true
+	case 9987:
+		return "dsm-scm-target", true
+	case 9990:
+		return "osm-appsrvr", true
+	case 9991:
+		return "osm-oev", true
+	case 9992:
+		return "palace-1", true
+	case 9993:
+		return "palace-2", true
+	case 9994:
+		return "palace-3", true
+	case 9995:
+		return "palace-4", true
+	case 9996:
+		return "palace-5", true
+	case 9997:
+		return "palace-6", true
+	case 9998:
+		return "distinct32", true
+	case 9999:
+		return "distinct", true
+	case 10000:
+		return "ndmp", true
+	case 10001:
+		return "scp-config", true
+	case 10002:
+		return "documentum", true
+	case 10003:
+		return "documentum-s", true
+	case 10007:
+		return "mvs-capacity", true
+	case 10008:
+		return "octopus", true
+	case 10009:
+		return "swdtp-sv", true
+	case 10023:
+		return "cefd-vmp", true
+	case 10050:
+		return "zabbix-agent", true
+	case 10051:
+		return "zabbix-trapper", true
+	case 10080:
+		return "amanda", true
+	case 10081:
+		return "famdc", true
+	case 10100:
+		return "itap-ddtp", true
+	case 10101:
+		return "ezmeeting-2", true
+	case 10102:
+		return "ezproxy-2", true
+	case 10103:
+		return "ezrelay", true
+	case 10104:
+		return "swdtp", true
+	case 10107:
+		return "bctp-server", true
+	case 10110:
+		return "nmea-0183", true
+	case 10111:
+		return "nmea-onenet", true
+	case 10113:
+		return "netiq-endpoint", true
+	case 10114:
+		return "netiq-qcheck", true
+	case 10115:
+		return "netiq-endpt", true
+	case 10116:
+		return "netiq-voipa", true
+	case 10117:
+		return "iqrm", true
+	case 10128:
+		return "bmc-perf-sd", true
+	case 10160:
+		return "qb-db-server", true
+	case 10161:
+		return "snmpdtls", true
+	case 10162:
+		return "snmpdtls-trap", true
+	case 10200:
+		return "trisoap", true
+	case 10201:
+		return "rscs", true
+	case 10252:
+		return "apollo-relay", true
+	case 10253:
+		return "eapol-relay", true
+	case 10260:
+		return "axis-wimp-port", true
+	case 10288:
+		return "blocks", true
+	case 10439:
+		return "bngsync", true
+	case 10500:
+		return "hip-nat-t", true
+	case 10540:
+		return "MOS-lower", true
+	case 10541:
+		return "MOS-upper", true
+	case 10542:
+		return "MOS-aux", true
+	case 10543:
+		return "MOS-soap", true
+	case 10544:
+		return "MOS-soap-opt", true
+	case 10800:
+		return "gap", true
+	case 10805:
+		return "lpdg", true
+	case 10810:
+		return "nmc-disc", true
+	case 10860:
+		return "helix", true
+	case 10880:
+		return "bveapi", true
+	case 10990:
+		return "rmiaux", true
+	case 11000:
+		return "irisa", true
+	case 11001:
+		return "metasys", true
+	case 11095:
+		return "weave", true
+	case 11106:
+		return "sgi-lk", true
+	case 11108:
+		return "myq-termlink", true
+	case 11111:
+		return "vce", true
+	case 11112:
+		return "dicom", true
+	case 11161:
+		return "suncacao-snmp", true
+	case 11162:
+		return "suncacao-jmxmp", true
+	case 11163:
+		return "suncacao-rmi", true
+	case 11164:
+		return "suncacao-csa", true
+	case 11165:
+		return "suncacao-websvc", true
+	case 11171:
+		return "snss", true
+	case 11201:
+		return "smsqp", true
+	case 11208:
+		return "wifree", true
+	case 11211:
+		return "memcache", true
+	case 11319:
+		return "imip", true
+	case 11320:
+		return "imip-channels", true
+	case 11321:
+		return "arena-server", true
+	case 11367:
+		return "atm-uhas", true
+	case 11371:
+		return "hkp", true
+	case 11430:
+		return "lsdp", true
+	case 11600:
+		return "tempest-port", true
+	case 11720:
+		return "h323callsigalt", true
+	case 11723:
+		return "emc-xsw-dcache", true
+	case 11751:
+		return "intrepid-ssl", true
+	case 11796:
+		return "lanschool-mpt", true
+	case 11876:
+		return "xoraya", true
+	case 11877:
+		return "x2e-disc", true
+	case 11967:
+		return "sysinfo-sp", true
+	case 12000:
+		return "entextxid", true
+	case 12001:
+		return "entextnetwk", true
+	case 12002:
+		return "entexthigh", true
+	case 12003:
+		return "entextmed", true
+	case 12004:
+		return "entextlow", true
+	case 12005:
+		return "dbisamserver1", true
+	case 12006:
+		return "dbisamserver2", true
+	case 12007:
+		return "accuracer", true
+	case 12008:
+		return "accuracer-dbms", true
+	case 12009:
+		return "ghvpn", true
+	case 12012:
+		return "vipera", true
+	case 12013:
+		return "vipera-ssl", true
+	case 12109:
+		return "rets-ssl", true
+	case 12121:
+		return "nupaper-ss", true
+	case 12168:
+		return "cawas", true
+	case 12172:
+		return "hivep", true
+	case 12300:
+		return "linogridengine", true
+	case 12321:
+		return "warehouse-sss", true
+	case 12322:
+		return "warehouse", true
+	case 12345:
+		return "italk", true
+	case 12753:
+		return "tsaf", true
+	case 13160:
+		return "i-zipqd", true
+	case 13216:
+		return "bcslogc", true
+	case 13217:
+		return "rs-pias", true
+	case 13218:
+		return "emc-vcas-udp", true
+	case 13223:
+		return "powwow-client", true
+	case 13224:
+		return "powwow-server", true
+	case 13400:
+		return "doip-disc", true
+	case 13720:
+		return "bprd", true
+	case 13721:
+		return "bpdbm", true
+	case 13722:
+		return "bpjava-msvc", true
+	case 13724:
+		return "vnetd", true
+	case 13782:
+		return "bpcd", true
+	case 13783:
+		return "vopied", true
+	case 13785:
+		return "nbdb", true
+	case 13786:
+		return "nomdb", true
+	case 13818:
+		return "dsmcc-config", true
+	case 13819:
+		return "dsmcc-session", true
+	case 13820:
+		return "dsmcc-passthru", true
+	case 13821:
+		return "dsmcc-download", true
+	case 13822:
+		return "dsmcc-ccp", true
+	case 13894:
+		return "ucontrol", true
+	case 13929:
+		return "dta-systems", true
+	case 14000:
+		return "scotty-ft", true
+	case 14001:
+		return "sua", true
+	case 14002:
+		return "scotty-disc", true
+	case 14033:
+		return "sage-best-com1", true
+	case 14034:
+		return "sage-best-com2", true
+	case 14141:
+		return "vcs-app", true
+	case 14142:
+		return "icpp", true
+	case 14145:
+		return "gcm-app", true
+	case 14149:
+		return "vrts-tdd", true
+	case 14154:
+		return "vad", true
+	case 14250:
+		return "cps", true
+	case 14414:
+		return "ca-web-update", true
+	case 14936:
+		return "hde-lcesrvr-1", true
+	case 14937:
+		return "hde-lcesrvr-2", true
+	case 15000:
+		return "hydap", true
+	case 15118:
+		return "v2g-secc", true
+	case 15345:
+		return "xpilot", true
+	case 15363:
+		return "3link", true
+	case 15555:
+		return "cisco-snat", true
+	case 15660:
+		return "bex-xr", true
+	case 15740:
+		return "ptp", true
+	case 15998:
+		return "2ping", true
+	case 16003:
+		return "alfin", true
+	case 16161:
+		return "sun-sea-port", true
+	case 16309:
+		return "etb4j", true
+	case 16310:
+		return "pduncs", true
+	case 16311:
+		return "pdefmns", true
+	case 16360:
+		return "netserialext1", true
+	case 16361:
+		return "netserialext2", true
+	case 16367:
+		return "netserialext3", true
+	case 16368:
+		return "netserialext4", true
+	case 16384:
+		return "connected", true
+	case 16666:
+		return "vtp", true
+	case 16900:
+		return "newbay-snc-mc", true
+	case 16950:
+		return "sgcip", true
+	case 16991:
+		return "intel-rci-mp", true
+	case 16992:
+		return "amt-soap-http", true
+	case 16993:
+		return "amt-soap-https", true
+	case 16994:
+		return "amt-redir-tcp", true
+	case 16995:
+		return "amt-redir-tls", true
+	case 17007:
+		return "isode-dua", true
+	case 17185:
+		return "soundsvirtual", true
+	case 17219:
+		return "chipper", true
+	case 17220:
+		return "avtp", true
+	case 17221:
+		return "avdecc", true
+	case 17222:
+		return "cpsp", true
+	case 17224:
+		return "trdp-pd", true
+	case 17225:
+		return "trdp-md", true
+	case 17234:
+		return "integrius-stp", true
+	case 17235:
+		return "ssh-mgmt", true
+	case 17500:
+		return "db-lsp-disc", true
+	case 17729:
+		return "ea", true
+	case 17754:
+		return "zep", true
+	case 17755:
+		return "zigbee-ip", true
+	case 17756:
+		return "zigbee-ips", true
+	case 18000:
+		return "biimenu", true
+	case 18181:
+		return "opsec-cvp", true
+	case 18182:
+		return "opsec-ufp", true
+	case 18183:
+		return "opsec-sam", true
+	case 18184:
+		return "opsec-lea", true
+	case 18185:
+		return "opsec-omi", true
+	case 18186:
+		return "ohsc", true
+	case 18187:
+		return "opsec-ela", true
+	case 18241:
+		return "checkpoint-rtm", true
+	case 18262:
+		return "gv-pf", true
+	case 18463:
+		return "ac-cluster", true
+	case 18516:
+		return "heythings", true
+	case 18634:
+		return "rds-ib", true
+	case 18635:
+		return "rds-ip", true
+	case 18668:
+		return "vdmmesh-disc", true
+	case 18769:
+		return "ique", true
+	case 18881:
+		return "infotos", true
+	case 18888:
+		return "apc-necmp", true
+	case 19000:
+		return "igrid", true
+	case 19007:
+		return "scintilla", true
+	case 19191:
+		return "opsec-uaa", true
+	case 19194:
+		return "ua-secureagent", true
+	case 19220:
+		return "cora-disc", true
+	case 19283:
+		return "keysrvr", true
+	case 19315:
+		return "keyshadow", true
+	case 19398:
+		return "mtrgtrans", true
+	case 19410:
+		return "hp-sco", true
+	case 19411:
+		return "hp-sca", true
+	case 19412:
+		return "hp-sessmon", true
+	case 19539:
+		return "fxuptp", true
+	case 19540:
+		return "sxuptp", true
+	case 19541:
+		return "jcp", true
+	case 19788:
+		return "mle", true
+	case 19999:
+		return "dnp-sec", true
+	case 20000:
+		return "dnp", true
+	case 20001:
+		return "microsan", true
+	case 20002:
+		return "commtact-http", true
+	case 20003:
+		return "commtact-https", true
+	case 20005:
+		return "openwebnet", true
+	case 20012:
+		return "ss-idi-disc", true
+	case 20014:
+		return "opendeploy", true
+	case 20034:
+		return "nburn-id", true
+	case 20046:
+		return "tmophl7mts", true
+	case 20048:
+		return "mountd", true
+	case 20049:
+		return "nfsrdma", true
+	case 20167:
+		return "tolfab", true
+	case 20202:
+		return "ipdtp-port", true
+	case 20222:
+		return "ipulse-ics", true
+	case 20480:
+		return "emwavemsg", true
+	case 20670:
+		return "track", true
+	case 20999:
+		return "athand-mmp", true
+	case 21000:
+		return "irtrans", true
+	case 21554:
+		return "dfserver", true
+	case 21590:
+		return "vofr-gateway", true
+	case 21800:
+		return "tvpm", true
+	case 21845:
+		return "webphone", true
+	case 21846:
+		return "netspeak-is", true
+	case 21847:
+		return "netspeak-cs", true
+	case 21848:
+		return "netspeak-acd", true
+	case 21849:
+		return "netspeak-cps", true
+	case 22000:
+		return "snapenetio", true
+	case 22001:
+		return "optocontrol", true
+	case 22002:
+		return "optohost002", true
+	case 22003:
+		return "optohost003", true
+	case 22004:
+		return "optohost004", true
+	case 22005:
+		return "optohost004", true
+	case 22273:
+		return "wnn6", true
+	case 22305:
+		return "cis", true
+	case 22333:
+		return "showcockpit-net", true
+	case 22335:
+		return "shrewd-stream", true
+	case 22343:
+		return "cis-secure", true
+	case 22347:
+		return "wibukey", true
+	case 22350:
+		return "codemeter", true
+	case 22555:
+		return "vocaltec-phone", true
+	case 22763:
+		return "talikaserver", true
+	case 22800:
+		return "aws-brf", true
+	case 22951:
+		return "brf-gw", true
+	case 23000:
+		return "inovaport1", true
+	case 23001:
+		return "inovaport2", true
+	case 23002:
+		return "inovaport3", true
+	case 23003:
+		return "inovaport4", true
+	case 23004:
+		return "inovaport5", true
+	case 23005:
+		return "inovaport6", true
+	case 23272:
+		return "s102", true
+	case 23294:
+		return "5afe-disc", true
+	case 23333:
+		return "elxmgmt", true
+	case 23400:
+		return "novar-dbase", true
+	case 23401:
+		return "novar-alarm", true
+	case 23402:
+		return "novar-global", true
+	case 24000:
+		return "med-ltp", true
+	case 24001:
+		return "med-fsp-rx", true
+	case 24002:
+		return "med-fsp-tx", true
+	case 24003:
+		return "med-supp", true
+	case 24004:
+		return "med-ovw", true
+	case 24005:
+		return "med-ci", true
+	case 24006:
+		return "med-net-svc", true
+	case 24242:
+		return "filesphere", true
+	case 24249:
+		return "vista-4gl", true
+	case 24321:
+		return "ild", true
+	case 24322:
+		return "hid", true
+	case 24386:
+		return "intel-rci", true
+	case 24465:
+		return "tonidods", true
+	case 24554:
+		return "binkp", true
+	case 24577:
+		return "bilobit-update", true
+	case 24676:
+		return "canditv", true
+	case 24677:
+		return "flashfiler", true
+	case 24678:
+		return "proactivate", true
+	case 24680:
+		return "tcc-http", true
+	case 24850:
+		return "assoc-disc", true
+	case 24922:
+		return "find", true
+	case 25000:
+		return "icl-twobase1", true
+	case 25001:
+		return "icl-twobase2", true
+	case 25002:
+		return "icl-twobase3", true
+	case 25003:
+		return "icl-twobase4", true
+	case 25004:
+		return "icl-twobase5", true
+	case 25005:
+		return "icl-twobase6", true
+	case 25006:
+		return "icl-twobase7", true
+	case 25007:
+		return "icl-twobase8", true
+	case 25008:
+		return "icl-twobase9", true
+	case 25009:
+		return "icl-twobase10", true
+	case 25793:
+		return "vocaltec-hos", true
+	case 25900:
+		return "tasp-net", true
+	case 25901:
+		return "niobserver", true
+	case 25902:
+		return "nilinkanalyst", true
+	case 25903:
+		return "niprobe", true
+	case 25954:
+		return "bf-game", true
+	case 25955:
+		return "bf-master", true
+	case 26000:
+		return "quake", true
+	case 26133:
+		return "scscp", true
+	case 26208:
+		return "wnn6-ds", true
+	case 26260:
+		return "ezproxy", true
+	case 26261:
+		return "ezmeeting", true
+	case 26262:
+		return "k3software-svr", true
+	case 26263:
+		return "k3software-cli", true
+	case 26486:
+		return "exoline-udp", true
+	case 26487:
+		return "exoconfig", true
+	case 26489:
+		return "exonet", true
+	case 27345:
+		return "imagepump", true
+	case 27442:
+		return "jesmsjc", true
+	case 27504:
+		return "kopek-httphead", true
+	case 27782:
+		return "ars-vista", true
+	case 27999:
+		return "tw-auth-key", true
+	case 28000:
+		return "nxlmd", true
+	case 28119:
+		return "a27-ran-ran", true
+	case 28200:
+		return "voxelstorm", true
+	case 28240:
+		return "siemensgsm", true
+	case 29167:
+		return "otmp", true
+	case 30001:
+		return "pago-services1", true
+	case 30002:
+		return "pago-services2", true
+	case 30003:
+		return "amicon-fpsu-ra", true
+	case 30004:
+		return "amicon-fpsu-s", true
+	case 30260:
+		return "kingdomsonline", true
+	case 30832:
+		return "samsung-disc", true
+	case 30999:
+		return "ovobs", true
+	case 31016:
+		return "ka-kdp", true
+	case 31029:
+		return "yawn", true
+	case 31337:
+		return "eldim", true
+	case 31416:
+		return "xqosd", true
+	case 31457:
+		return "tetrinet", true
+	case 31620:
+		return "lm-mon", true
+	case 31765:
+		return "gamesmith-port", true
+	case 31948:
+		return "iceedcp-tx", true
+	case 31949:
+		return "iceedcp-rx", true
+	case 32034:
+		return "iracinghelper", true
+	case 32249:
+		return "t1distproc60", true
+	case 32483:
+		return "apm-link", true
+	case 32635:
+		return "sec-ntb-clnt", true
+	case 32636:
+		return "DMExpress", true
+	case 32767:
+		return "filenet-powsrm", true
+	case 32768:
+		return "filenet-tms", true
+	case 32769:
+		return "filenet-rpc", true
+	case 32770:
+		return "filenet-nch", true
+	case 32771:
+		return "filenet-rmi", true
+	case 32772:
+		return "filenet-pa", true
+	case 32773:
+		return "filenet-cm", true
+	case 32774:
+		return "filenet-re", true
+	case 32775:
+		return "filenet-pch", true
+	case 32776:
+		return "filenet-peior", true
+	case 32777:
+		return "filenet-obrok", true
+	case 32801:
+		return "mlsn", true
+	case 32896:
+		return "idmgratm", true
+	case 33123:
+		return "aurora-balaena", true
+	case 33331:
+		return "diamondport", true
+	case 33334:
+		return "speedtrace-disc", true
+	case 33434:
+		return "traceroute", true
+	case 33435:
+		return "mtrace", true
+	case 33656:
+		return "snip-slave", true
+	case 34249:
+		return "turbonote-2", true
+	case 34378:
+		return "p-net-local", true
+	case 34379:
+		return "p-net-remote", true
+	case 34567:
+		return "edi_service", true
+	case 34962:
+		return "profinet-rt", true
+	case 34963:
+		return "profinet-rtm", true
+	case 34964:
+		return "profinet-cm", true
+	case 34980:
+		return "ethercat", true
+	case 35001:
+		return "rt-viewer", true
+	case 35004:
+		return "rt-classmanager", true
+	case 35100:
+		return "axio-disc", true
+	case 35355:
+		return "altova-lm-disc", true
+	case 36001:
+		return "allpeers", true
+	case 36411:
+		return "wlcp", true
+	case 36865:
+		return "kastenxpipe", true
+	case 37475:
+		return "neckar", true
+	case 37654:
+		return "unisys-eportal", true
+	case 38002:
+		return "crescoctrl-disc", true
+	case 38201:
+		return "galaxy7-data", true
+	case 38202:
+		return "fairview", true
+	case 38203:
+		return "agpolicy", true
+	case 39681:
+		return "turbonote-1", true
+	case 40000:
+		return "safetynetp", true
+	case 40023:
+		return "k-patentssensor", true
+	case 40841:
+		return "cscp", true
+	case 40842:
+		return "csccredir", true
+	case 40843:
+		return "csccfirewall", true
+	case 40853:
+		return "ortec-disc", true
+	case 41111:
+		return "fs-qos", true
+	case 41230:
+		return "z-wave-s", true
+	case 41794:
+		return "crestron-cip", true
+	case 41795:
+		return "crestron-ctp", true
+	case 42508:
+		return "candp", true
+	case 42509:
+		return "candrp", true
+	case 42510:
+		return "caerpc", true
+	case 43000:
+		return "recvr-rc-disc", true
+	case 43188:
+		return "reachout", true
+	case 43189:
+		return "ndm-agent-port", true
+	case 43190:
+		return "ip-provision", true
+	case 43210:
+		return "shaperai-disc", true
+	case 43438:
+		return "hmip-routing", true
+	case 43439:
+		return "eq3-config", true
+	case 43440:
+		return "ew-disc-cmd", true
+	case 43441:
+		return "ciscocsdb", true
+	case 44321:
+		return "pmcd", true
+	case 44322:
+		return "pmcdproxy", true
+	case 44544:
+		return "domiq", true
+	case 44553:
+		return "rbr-debug", true
+	case 44600:
+		return "asihpi", true
+	case 44818:
+		return "EtherNet-IP-2", true
+	case 44900:
+		return "m3da-disc", true
+	case 45000:
+		return "asmp-mon", true
+	case 45054:
+		return "invision-ag", true
+	case 45514:
+		return "cloudcheck-ping", true
+	case 45678:
+		return "eba", true
+	case 45825:
+		return "qdb2service", true
+	case 45966:
+		return "ssr-servermgr", true
+	case 46999:
+		return "mediabox", true
+	case 47000:
+		return "mbus", true
+	case 47100:
+		return "jvl-mactalk", true
+	case 47557:
+		return "dbbrowse", true
+	case 47624:
+		return "directplaysrvr", true
+	case 47806:
+		return "ap", true
+	case 47808:
+		return "bacnet", true
+	case 47809:
+		return "presonus-ucnet", true
+	case 48000:
+		return "nimcontroller", true
+	case 48001:
+		return "nimspooler", true
+	case 48002:
+		return "nimhub", true
+	case 48003:
+		return "nimgtw", true
+	case 48128:
+		return "isnetserv", true
+	case 48129:
+		return "blp5", true
+	case 48556:
+		return "com-bardac-dw", true
+	case 48619:
+		return "iqobject", true
+	case 48653:
+		return "robotraconteur", true
+	case 49001:
+		return "nusdp-disc", true
+
+	}
+
+	return "", false
+}
 
 // SCTPPortNames contains the port names for all SCTP ports.
-var SCTPPortNames = sctpPortNames
+func SCTPPortNames(port SCTPPort) (string, bool) {
+	switch port {
+	case 9:
+		return "discard", true
+	case 20:
+		return "ftp-data", true
+	case 21:
+		return "ftp", true
+	case 22:
+		return "ssh", true
+	case 80:
+		return "http", true
+	case 179:
+		return "bgp", true
+	case 443:
+		return "https", true
+	case 1021:
+		return "exp1", true
+	case 1022:
+		return "exp2", true
+	case 1167:
+		return "cisco-ipsla", true
+	case 1528:
+		return "norp", true
+	case 1720:
+		return "h323hostcall", true
+	case 2049:
+		return "nfs", true
+	case 2225:
+		return "rcip-itu", true
+	case 2904:
+		return "m2ua", true
+	case 2905:
+		return "m3ua", true
+	case 2944:
+		return "megaco-h248", true
+	case 2945:
+		return "h248-binary", true
+	case 3097:
+		return "itu-bicc-stc", true
+	case 3565:
+		return "m2pa", true
+	case 3863:
+		return "asap-sctp", true
+	case 3864:
+		return "asap-sctp-tls", true
+	case 3868:
+		return "diameter", true
+	case 4195:
+		return "aws-wsp", true
+	case 4333:
+		return "ahsp", true
+	case 4502:
+		return "a25-fap-fgw", true
+	case 4711:
+		return "trinity-dist", true
+	case 4739:
+		return "ipfix", true
+	case 4740:
+		return "ipfixs", true
+	case 5060:
+		return "sip", true
+	case 5061:
+		return "sips", true
+	case 5090:
+		return "car", true
+	case 5091:
+		return "cxtp", true
+	case 5215:
+		return "noteza", true
+	case 5445:
+		return "smbdirect", true
+	case 5672:
+		return "amqp", true
+	case 5675:
+		return "v5ua", true
+	case 5868:
+		return "diameters", true
+	case 5903:
+		return "ff-ice", true
+	case 5904:
+		return "ag-swim", true
+	case 5905:
+		return "asmgcs", true
+	case 5906:
+		return "rpas-c2", true
+	case 5907:
+		return "dsd", true
+	case 5908:
+		return "ipsma", true
+	case 5909:
+		return "agma", true
+	case 5910:
+		return "cm", true
+	case 5911:
+		return "cpdlc", true
+	case 5912:
+		return "fis", true
+	case 5913:
+		return "ads-c", true
+	case 6704:
+		return "frc-hp", true
+	case 6705:
+		return "frc-mp", true
+	case 6706:
+		return "frc-lp", true
+	case 6970:
+		return "conductor-mpx", true
+	case 7626:
+		return "simco", true
+	case 7701:
+		return "nfapi", true
+	case 7728:
+		return "osvr", true
+	case 8471:
+		return "pim-port", true
+	case 9082:
+		return "lcs-ap", true
+	case 9084:
+		return "aurora", true
+	case 9900:
+		return "iua", true
+	case 9901:
+		return "enrp-sctp", true
+	case 9902:
+		return "enrp-sctp-tls", true
+	case 11235:
+		return "xcompute", true
+	case 11997:
+		return "wmereceiving", true
+	case 11998:
+		return "wmedistribution", true
+	case 11999:
+		return "wmereporting", true
+	case 14001:
+		return "sua", true
+	case 19999:
+		return "dnp-sec", true
+	case 20000:
+		return "dnp", true
+	case 20049:
+		return "nfsrdma", true
+	case 25471:
+		return "rna", true
+	case 29118:
+		return "sgsap", true
+	case 29168:
+		return "sbcap", true
+	case 29169:
+		return "iuhsctpassoc", true
+	case 30100:
+		return "rwp", true
+	case 36412:
+		return "s1-control", true
+	case 36422:
+		return "x2-control", true
+	case 36423:
+		return "slmap", true
+	case 36424:
+		return "nq-ap", true
+	case 36443:
+		return "m2ap", true
+	case 36444:
+		return "m3ap", true
+	case 36462:
+		return "xw-control", true
+	case 37472:
+		return "3gpp-w1ap", true
+	case 38412:
+		return "ng-control", true
+	case 38422:
+		return "xn-control", true
+	case 38462:
+		return "e1-interface", true
+	case 38472:
+		return "f1-control", true
 
-var tcpPortNames = map[TCPPort]string{
-	1:     "tcpmux",
-	2:     "compressnet",
-	3:     "compressnet",
-	5:     "rje",
-	7:     "echo",
-	9:     "discard",
-	11:    "systat",
-	13:    "daytime",
-	17:    "qotd",
-	18:    "msp",
-	19:    "chargen",
-	20:    "ftp-data",
-	21:    "ftp",
-	22:    "ssh",
-	23:    "telnet",
-	25:    "smtp",
-	27:    "nsw-fe",
-	29:    "msg-icp",
-	31:    "msg-auth",
-	33:    "dsp",
-	37:    "time",
-	38:    "rap",
-	39:    "rlp",
-	41:    "graphics",
-	42:    "name",
-	43:    "nicname",
-	44:    "mpm-flags",
-	45:    "mpm",
-	46:    "mpm-snd",
-	48:    "auditd",
-	49:    "tacacs",
-	50:    "re-mail-ck",
-	52:    "xns-time",
-	53:    "domain",
-	54:    "xns-ch",
-	55:    "isi-gl",
-	56:    "xns-auth",
-	58:    "xns-mail",
-	62:    "acas",
-	63:    "whoispp",
-	64:    "covia",
-	65:    "tacacs-ds",
-	66:    "sql-net",
-	67:    "bootps",
-	68:    "bootpc",
-	69:    "tftp",
-	70:    "gopher",
-	71:    "netrjs-1",
-	72:    "netrjs-2",
-	73:    "netrjs-3",
-	74:    "netrjs-4",
-	76:    "deos",
-	78:    "vettcp",
-	79:    "finger",
-	80:    "http",
-	82:    "xfer",
-	83:    "mit-ml-dev",
-	84:    "ctf",
-	85:    "mit-ml-dev",
-	86:    "mfcobol",
-	88:    "kerberos",
-	89:    "su-mit-tg",
-	90:    "dnsix",
-	91:    "mit-dov",
-	92:    "npp",
-	93:    "dcp",
-	94:    "objcall",
-	95:    "supdup",
-	96:    "dixie",
-	97:    "swift-rvf",
-	98:    "tacnews",
-	99:    "metagram",
-	101:   "hostname",
-	102:   "iso-tsap",
-	103:   "gppitnp",
-	104:   "acr-nema",
-	105:   "cso",
-	106:   "3com-tsmux",
-	107:   "rtelnet",
-	108:   "snagas",
-	109:   "pop2",
-	110:   "pop3",
-	111:   "sunrpc",
-	112:   "mcidas",
-	113:   "ident",
-	115:   "sftp",
-	116:   "ansanotify",
-	117:   "uucp-path",
-	118:   "sqlserv",
-	119:   "nntp",
-	120:   "cfdptkt",
-	121:   "erpc",
-	122:   "smakynet",
-	123:   "ntp",
-	124:   "ansatrader",
-	125:   "locus-map",
-	126:   "nxedit",
-	127:   "locus-con",
-	128:   "gss-xlicen",
-	129:   "pwdgen",
-	130:   "cisco-fna",
-	131:   "cisco-tna",
-	132:   "cisco-sys",
-	133:   "statsrv",
-	134:   "ingres-net",
-	135:   "epmap",
-	136:   "profile",
-	137:   "netbios-ns",
-	138:   "netbios-dgm",
-	139:   "netbios-ssn",
-	140:   "emfis-data",
-	141:   "emfis-cntl",
-	142:   "bl-idm",
-	143:   "imap",
-	144:   "uma",
-	145:   "uaac",
-	146:   "iso-tp0",
-	147:   "iso-ip",
-	148:   "jargon",
-	149:   "aed-512",
-	150:   "sql-net",
-	151:   "hems",
-	152:   "bftp",
-	153:   "sgmp",
-	154:   "netsc-prod",
-	155:   "netsc-dev",
-	156:   "sqlsrv",
-	157:   "knet-cmp",
-	158:   "pcmail-srv",
-	159:   "nss-routing",
-	160:   "sgmp-traps",
-	161:   "snmp",
-	162:   "snmptrap",
-	163:   "cmip-man",
-	164:   "cmip-agent",
-	165:   "xns-courier",
-	166:   "s-net",
-	167:   "namp",
-	168:   "rsvd",
-	169:   "send",
-	170:   "print-srv",
-	171:   "multiplex",
-	172:   "cl-1",
-	173:   "xyplex-mux",
-	174:   "mailq",
-	175:   "vmnet",
-	176:   "genrad-mux",
-	177:   "xdmcp",
-	178:   "nextstep",
-	179:   "bgp",
-	180:   "ris",
-	181:   "unify",
-	182:   "audit",
-	183:   "ocbinder",
-	184:   "ocserver",
-	185:   "remote-kis",
-	186:   "kis",
-	187:   "aci",
-	188:   "mumps",
-	189:   "qft",
-	190:   "gacp",
-	191:   "prospero",
-	192:   "osu-nms",
-	193:   "srmp",
-	194:   "irc",
-	195:   "dn6-nlm-aud",
-	196:   "dn6-smm-red",
-	197:   "dls",
-	198:   "dls-mon",
-	199:   "smux",
-	200:   "src",
-	201:   "at-rtmp",
-	202:   "at-nbp",
-	203:   "at-3",
-	204:   "at-echo",
-	205:   "at-5",
-	206:   "at-zis",
-	207:   "at-7",
-	208:   "at-8",
-	209:   "qmtp",
-	210:   "z39-50",
-	211:   "914c-g",
-	212:   "anet",
-	213:   "ipx",
-	214:   "vmpwscs",
-	215:   "softpc",
-	216:   "CAIlic",
-	217:   "dbase",
-	218:   "mpp",
-	219:   "uarps",
-	220:   "imap3",
-	221:   "fln-spx",
-	222:   "rsh-spx",
-	223:   "cdc",
-	224:   "masqdialer",
-	242:   "direct",
-	243:   "sur-meas",
-	244:   "inbusiness",
-	245:   "link",
-	246:   "dsp3270",
-	247:   "subntbcst-tftp",
-	248:   "bhfhs",
-	256:   "rap",
-	257:   "set",
-	259:   "esro-gen",
-	260:   "openport",
-	261:   "nsiiops",
-	262:   "arcisdms",
-	263:   "hdap",
-	264:   "bgmp",
-	265:   "x-bone-ctl",
-	266:   "sst",
-	267:   "td-service",
-	268:   "td-replica",
-	269:   "manet",
-	271:   "pt-tls",
-	280:   "http-mgmt",
-	281:   "personal-link",
-	282:   "cableport-ax",
-	283:   "rescap",
-	284:   "corerjd",
-	286:   "fxp",
-	287:   "k-block",
-	308:   "novastorbakcup",
-	309:   "entrusttime",
-	310:   "bhmds",
-	311:   "asip-webadmin",
-	312:   "vslmp",
-	313:   "magenta-logic",
-	314:   "opalis-robot",
-	315:   "dpsi",
-	316:   "decauth",
-	317:   "zannet",
-	318:   "pkix-timestamp",
-	319:   "ptp-event",
-	320:   "ptp-general",
-	321:   "pip",
-	322:   "rtsps",
-	323:   "rpki-rtr",
-	324:   "rpki-rtr-tls",
-	333:   "texar",
-	344:   "pdap",
-	345:   "pawserv",
-	346:   "zserv",
-	347:   "fatserv",
-	348:   "csi-sgwp",
-	349:   "mftp",
-	350:   "matip-type-a",
-	351:   "matip-type-b",
-	352:   "dtag-ste-sb",
-	353:   "ndsauth",
-	354:   "bh611",
-	355:   "datex-asn",
-	356:   "cloanto-net-1",
-	357:   "bhevent",
-	358:   "shrinkwrap",
-	359:   "nsrmp",
-	360:   "scoi2odialog",
-	361:   "semantix",
-	362:   "srssend",
-	363:   "rsvp-tunnel",
-	364:   "aurora-cmgr",
-	365:   "dtk",
-	366:   "odmr",
-	367:   "mortgageware",
-	368:   "qbikgdp",
-	369:   "rpc2portmap",
-	370:   "codaauth2",
-	371:   "clearcase",
-	372:   "ulistproc",
-	373:   "legent-1",
-	374:   "legent-2",
-	375:   "hassle",
-	376:   "nip",
-	377:   "tnETOS",
-	378:   "dsETOS",
-	379:   "is99c",
-	380:   "is99s",
-	381:   "hp-collector",
-	382:   "hp-managed-node",
-	383:   "hp-alarm-mgr",
-	384:   "arns",
-	385:   "ibm-app",
-	386:   "asa",
-	387:   "aurp",
-	388:   "unidata-ldm",
-	389:   "ldap",
-	390:   "uis",
-	391:   "synotics-relay",
-	392:   "synotics-broker",
-	393:   "meta5",
-	394:   "embl-ndt",
-	395:   "netcp",
-	396:   "netware-ip",
-	397:   "mptn",
-	398:   "kryptolan",
-	399:   "iso-tsap-c2",
-	400:   "osb-sd",
-	401:   "ups",
-	402:   "genie",
-	403:   "decap",
-	404:   "nced",
-	405:   "ncld",
-	406:   "imsp",
-	407:   "timbuktu",
-	408:   "prm-sm",
-	409:   "prm-nm",
-	410:   "decladebug",
-	411:   "rmt",
-	412:   "synoptics-trap",
-	413:   "smsp",
-	414:   "infoseek",
-	415:   "bnet",
-	416:   "silverplatter",
-	417:   "onmux",
-	418:   "hyper-g",
-	419:   "ariel1",
-	420:   "smpte",
-	421:   "ariel2",
-	422:   "ariel3",
-	423:   "opc-job-start",
-	424:   "opc-job-track",
-	425:   "icad-el",
-	426:   "smartsdp",
-	427:   "svrloc",
-	428:   "ocs-cmu",
-	429:   "ocs-amu",
-	430:   "utmpsd",
-	431:   "utmpcd",
-	432:   "iasd",
-	433:   "nnsp",
-	434:   "mobileip-agent",
-	435:   "mobilip-mn",
-	436:   "dna-cml",
-	437:   "comscm",
-	438:   "dsfgw",
-	439:   "dasp",
-	440:   "sgcp",
-	441:   "decvms-sysmgt",
-	442:   "cvc-hostd",
-	443:   "https",
-	444:   "snpp",
-	445:   "microsoft-ds",
-	446:   "ddm-rdb",
-	447:   "ddm-dfm",
-	448:   "ddm-ssl",
-	449:   "as-servermap",
-	450:   "tserver",
-	451:   "sfs-smp-net",
-	452:   "sfs-config",
-	453:   "creativeserver",
-	454:   "contentserver",
-	455:   "creativepartnr",
-	456:   "macon-tcp",
-	457:   "scohelp",
-	458:   "appleqtc",
-	459:   "ampr-rcmd",
-	460:   "skronk",
-	461:   "datasurfsrv",
-	462:   "datasurfsrvsec",
-	463:   "alpes",
-	464:   "kpasswd",
-	465:   "urd",
-	466:   "digital-vrc",
-	467:   "mylex-mapd",
-	468:   "photuris",
-	469:   "rcp",
-	470:   "scx-proxy",
-	471:   "mondex",
-	472:   "ljk-login",
-	473:   "hybrid-pop",
-	474:   "tn-tl-w1",
-	475:   "tcpnethaspsrv",
-	476:   "tn-tl-fd1",
-	477:   "ss7ns",
-	478:   "spsc",
-	479:   "iafserver",
-	480:   "iafdbase",
-	481:   "ph",
-	482:   "bgs-nsi",
-	483:   "ulpnet",
-	484:   "integra-sme",
-	485:   "powerburst",
-	486:   "avian",
-	487:   "saft",
-	488:   "gss-http",
-	489:   "nest-protocol",
-	490:   "micom-pfs",
-	491:   "go-login",
-	492:   "ticf-1",
-	493:   "ticf-2",
-	494:   "pov-ray",
-	495:   "intecourier",
-	496:   "pim-rp-disc",
-	497:   "retrospect",
-	498:   "siam",
-	499:   "iso-ill",
-	500:   "isakmp",
-	501:   "stmf",
-	502:   "mbap",
-	503:   "intrinsa",
-	504:   "citadel",
-	505:   "mailbox-lm",
-	506:   "ohimsrv",
-	507:   "crs",
-	508:   "xvttp",
-	509:   "snare",
-	510:   "fcp",
-	511:   "passgo",
-	512:   "exec",
-	513:   "login",
-	514:   "shell",
-	515:   "printer",
-	516:   "videotex",
-	517:   "talk",
-	518:   "ntalk",
-	519:   "utime",
-	520:   "efs",
-	521:   "ripng",
-	522:   "ulp",
-	523:   "ibm-db2",
-	524:   "ncp",
-	525:   "timed",
-	526:   "tempo",
-	527:   "stx",
-	528:   "custix",
-	529:   "irc-serv",
-	530:   "courier",
-	531:   "conference",
-	532:   "netnews",
-	533:   "netwall",
-	534:   "windream",
-	535:   "iiop",
-	536:   "opalis-rdv",
-	537:   "nmsp",
-	538:   "gdomap",
-	539:   "apertus-ldp",
-	540:   "uucp",
-	541:   "uucp-rlogin",
-	542:   "commerce",
-	543:   "klogin",
-	544:   "kshell",
-	545:   "appleqtcsrvr",
-	546:   "dhcpv6-client",
-	547:   "dhcpv6-server",
-	548:   "afpovertcp",
-	549:   "idfp",
-	550:   "new-rwho",
-	551:   "cybercash",
-	552:   "devshr-nts",
-	553:   "pirp",
-	554:   "rtsp",
-	555:   "dsf",
-	556:   "remotefs",
-	557:   "openvms-sysipc",
-	558:   "sdnskmp",
-	559:   "teedtap",
-	560:   "rmonitor",
-	561:   "monitor",
-	562:   "chshell",
-	563:   "nntps",
-	564:   "9pfs",
-	565:   "whoami",
-	566:   "streettalk",
-	567:   "banyan-rpc",
-	568:   "ms-shuttle",
-	569:   "ms-rome",
-	570:   "meter",
-	571:   "meter",
-	572:   "sonar",
-	573:   "banyan-vip",
-	574:   "ftp-agent",
-	575:   "vemmi",
-	576:   "ipcd",
-	577:   "vnas",
-	578:   "ipdd",
-	579:   "decbsrv",
-	580:   "sntp-heartbeat",
-	581:   "bdp",
-	582:   "scc-security",
-	583:   "philips-vc",
-	584:   "keyserver",
-	586:   "password-chg",
-	587:   "submission",
-	588:   "cal",
-	589:   "eyelink",
-	590:   "tns-cml",
-	591:   "http-alt",
-	592:   "eudora-set",
-	593:   "http-rpc-epmap",
-	594:   "tpip",
-	595:   "cab-protocol",
-	596:   "smsd",
-	597:   "ptcnameservice",
-	598:   "sco-websrvrmg3",
-	599:   "acp",
-	600:   "ipcserver",
-	601:   "syslog-conn",
-	602:   "xmlrpc-beep",
-	603:   "idxp",
-	604:   "tunnel",
-	605:   "soap-beep",
-	606:   "urm",
-	607:   "nqs",
-	608:   "sift-uft",
-	609:   "npmp-trap",
-	610:   "npmp-local",
-	611:   "npmp-gui",
-	612:   "hmmp-ind",
-	613:   "hmmp-op",
-	614:   "sshell",
-	615:   "sco-inetmgr",
-	616:   "sco-sysmgr",
-	617:   "sco-dtmgr",
-	618:   "dei-icda",
-	619:   "compaq-evm",
-	620:   "sco-websrvrmgr",
-	621:   "escp-ip",
-	622:   "collaborator",
-	623:   "oob-ws-http",
-	624:   "cryptoadmin",
-	625:   "dec-dlm",
-	626:   "asia",
-	627:   "passgo-tivoli",
-	628:   "qmqp",
-	629:   "3com-amp3",
-	630:   "rda",
-	631:   "ipp",
-	632:   "bmpp",
-	633:   "servstat",
-	634:   "ginad",
-	635:   "rlzdbase",
-	636:   "ldaps",
-	637:   "lanserver",
-	638:   "mcns-sec",
-	639:   "msdp",
-	640:   "entrust-sps",
-	641:   "repcmd",
-	642:   "esro-emsdp",
-	643:   "sanity",
-	644:   "dwr",
-	645:   "pssc",
-	646:   "ldp",
-	647:   "dhcp-failover",
-	648:   "rrp",
-	649:   "cadview-3d",
-	650:   "obex",
-	651:   "ieee-mms",
-	652:   "hello-port",
-	653:   "repscmd",
-	654:   "aodv",
-	655:   "tinc",
-	656:   "spmp",
-	657:   "rmc",
-	658:   "tenfold",
-	660:   "mac-srvr-admin",
-	661:   "hap",
-	662:   "pftp",
-	663:   "purenoise",
-	664:   "oob-ws-https",
-	665:   "sun-dr",
-	666:   "mdqs",
-	667:   "disclose",
-	668:   "mecomm",
-	669:   "meregister",
-	670:   "vacdsm-sws",
-	671:   "vacdsm-app",
-	672:   "vpps-qua",
-	673:   "cimplex",
-	674:   "acap",
-	675:   "dctp",
-	676:   "vpps-via",
-	677:   "vpp",
-	678:   "ggf-ncp",
-	679:   "mrm",
-	680:   "entrust-aaas",
-	681:   "entrust-aams",
-	682:   "xfr",
-	683:   "corba-iiop",
-	684:   "corba-iiop-ssl",
-	685:   "mdc-portmapper",
-	686:   "hcp-wismar",
-	687:   "asipregistry",
-	688:   "realm-rusd",
-	689:   "nmap",
-	690:   "vatp",
-	691:   "msexch-routing",
-	692:   "hyperwave-isp",
-	693:   "connendp",
-	694:   "ha-cluster",
-	695:   "ieee-mms-ssl",
-	696:   "rushd",
-	697:   "uuidgen",
-	698:   "olsr",
-	699:   "accessnetwork",
-	700:   "epp",
-	701:   "lmp",
-	702:   "iris-beep",
-	704:   "elcsd",
-	705:   "agentx",
-	706:   "silc",
-	707:   "borland-dsj",
-	709:   "entrust-kmsh",
-	710:   "entrust-ash",
-	711:   "cisco-tdp",
-	712:   "tbrpf",
-	713:   "iris-xpc",
-	714:   "iris-xpcs",
-	715:   "iris-lwz",
-	729:   "netviewdm1",
-	730:   "netviewdm2",
-	731:   "netviewdm3",
-	741:   "netgw",
-	742:   "netrcs",
-	744:   "flexlm",
-	747:   "fujitsu-dev",
-	748:   "ris-cm",
-	749:   "kerberos-adm",
-	750:   "rfile",
-	751:   "pump",
-	752:   "qrh",
-	753:   "rrh",
-	754:   "tell",
-	758:   "nlogin",
-	759:   "con",
-	760:   "ns",
-	761:   "rxe",
-	762:   "quotad",
-	763:   "cycleserv",
-	764:   "omserv",
-	765:   "webster",
-	767:   "phonebook",
-	769:   "vid",
-	770:   "cadlock",
-	771:   "rtip",
-	772:   "cycleserv2",
-	773:   "submit",
-	774:   "rpasswd",
-	775:   "entomb",
-	776:   "wpages",
-	777:   "multiling-http",
-	780:   "wpgs",
-	800:   "mdbs-daemon",
-	801:   "device",
-	802:   "mbap-s",
-	810:   "fcp-udp",
-	828:   "itm-mcell-s",
-	829:   "pkix-3-ca-ra",
-	830:   "netconf-ssh",
-	831:   "netconf-beep",
-	832:   "netconfsoaphttp",
-	833:   "netconfsoapbeep",
-	847:   "dhcp-failover2",
-	848:   "gdoi",
-	853:   "domain-s",
-	854:   "dlep",
-	860:   "iscsi",
-	861:   "owamp-control",
-	862:   "twamp-control",
-	873:   "rsync",
-	886:   "iclcnet-locate",
-	887:   "iclcnet-svinfo",
-	888:   "accessbuilder",
-	900:   "omginitialrefs",
-	901:   "smpnameres",
-	902:   "ideafarm-door",
-	903:   "ideafarm-panic",
-	910:   "kink",
-	911:   "xact-backup",
-	912:   "apex-mesh",
-	913:   "apex-edge",
-	953:   "rndc",
-	989:   "ftps-data",
-	990:   "ftps",
-	991:   "nas",
-	992:   "telnets",
-	993:   "imaps",
-	995:   "pop3s",
-	996:   "vsinet",
-	997:   "maitrd",
-	998:   "busboy",
-	999:   "garcon",
-	1000:  "cadlock2",
-	1001:  "webpush",
-	1010:  "surf",
-	1021:  "exp1",
-	1022:  "exp2",
-	1025:  "blackjack",
-	1026:  "cap",
-	1029:  "solid-mux",
-	1033:  "netinfo-local",
-	1034:  "activesync",
-	1035:  "mxxrlogin",
-	1036:  "nsstp",
-	1037:  "ams",
-	1038:  "mtqp",
-	1039:  "sbl",
-	1040:  "netarx",
-	1041:  "danf-ak2",
-	1042:  "afrog",
-	1043:  "boinc-client",
-	1044:  "dcutility",
-	1045:  "fpitp",
-	1046:  "wfremotertm",
-	1047:  "neod1",
-	1048:  "neod2",
-	1049:  "td-postman",
-	1050:  "cma",
-	1051:  "optima-vnet",
-	1052:  "ddt",
-	1053:  "remote-as",
-	1054:  "brvread",
-	1055:  "ansyslmd",
-	1056:  "vfo",
-	1057:  "startron",
-	1058:  "nim",
-	1059:  "nimreg",
-	1060:  "polestar",
-	1061:  "kiosk",
-	1062:  "veracity",
-	1063:  "kyoceranetdev",
-	1064:  "jstel",
-	1065:  "syscomlan",
-	1066:  "fpo-fns",
-	1067:  "instl-boots",
-	1068:  "instl-bootc",
-	1069:  "cognex-insight",
-	1070:  "gmrupdateserv",
-	1071:  "bsquare-voip",
-	1072:  "cardax",
-	1073:  "bridgecontrol",
-	1074:  "warmspotMgmt",
-	1075:  "rdrmshc",
-	1076:  "dab-sti-c",
-	1077:  "imgames",
-	1078:  "avocent-proxy",
-	1079:  "asprovatalk",
-	1080:  "socks",
-	1081:  "pvuniwien",
-	1082:  "amt-esd-prot",
-	1083:  "ansoft-lm-1",
-	1084:  "ansoft-lm-2",
-	1085:  "webobjects",
-	1086:  "cplscrambler-lg",
-	1087:  "cplscrambler-in",
-	1088:  "cplscrambler-al",
-	1089:  "ff-annunc",
-	1090:  "ff-fms",
-	1091:  "ff-sm",
-	1092:  "obrpd",
-	1093:  "proofd",
-	1094:  "rootd",
-	1095:  "nicelink",
-	1096:  "cnrprotocol",
-	1097:  "sunclustermgr",
-	1098:  "rmiactivation",
-	1099:  "rmiregistry",
-	1100:  "mctp",
-	1101:  "pt2-discover",
-	1102:  "adobeserver-1",
-	1103:  "adobeserver-2",
-	1104:  "xrl",
-	1105:  "ftranhc",
-	1106:  "isoipsigport-1",
-	1107:  "isoipsigport-2",
-	1108:  "ratio-adp",
-	1110:  "webadmstart",
-	1111:  "lmsocialserver",
-	1112:  "icp",
-	1113:  "ltp-deepspace",
-	1114:  "mini-sql",
-	1115:  "ardus-trns",
-	1116:  "ardus-cntl",
-	1117:  "ardus-mtrns",
-	1118:  "sacred",
-	1119:  "bnetgame",
-	1120:  "bnetfile",
-	1121:  "rmpp",
-	1122:  "availant-mgr",
-	1123:  "murray",
-	1124:  "hpvmmcontrol",
-	1125:  "hpvmmagent",
-	1126:  "hpvmmdata",
-	1127:  "kwdb-commn",
-	1128:  "saphostctrl",
-	1129:  "saphostctrls",
-	1130:  "casp",
-	1131:  "caspssl",
-	1132:  "kvm-via-ip",
-	1133:  "dfn",
-	1134:  "aplx",
-	1135:  "omnivision",
-	1136:  "hhb-gateway",
-	1137:  "trim",
-	1138:  "encrypted-admin",
-	1139:  "evm",
-	1140:  "autonoc",
-	1141:  "mxomss",
-	1142:  "edtools",
-	1143:  "imyx",
-	1144:  "fuscript",
-	1145:  "x9-icue",
-	1146:  "audit-transfer",
-	1147:  "capioverlan",
-	1148:  "elfiq-repl",
-	1149:  "bvtsonar",
-	1150:  "blaze",
-	1151:  "unizensus",
-	1152:  "winpoplanmess",
-	1153:  "c1222-acse",
-	1154:  "resacommunity",
-	1155:  "nfa",
-	1156:  "iascontrol-oms",
-	1157:  "iascontrol",
-	1158:  "dbcontrol-oms",
-	1159:  "oracle-oms",
-	1160:  "olsv",
-	1161:  "health-polling",
-	1162:  "health-trap",
-	1163:  "sddp",
-	1164:  "qsm-proxy",
-	1165:  "qsm-gui",
-	1166:  "qsm-remote",
-	1167:  "cisco-ipsla",
-	1168:  "vchat",
-	1169:  "tripwire",
-	1170:  "atc-lm",
-	1171:  "atc-appserver",
-	1172:  "dnap",
-	1173:  "d-cinema-rrp",
-	1174:  "fnet-remote-ui",
-	1175:  "dossier",
-	1176:  "indigo-server",
-	1177:  "dkmessenger",
-	1178:  "sgi-storman",
-	1179:  "b2n",
-	1180:  "mc-client",
-	1181:  "3comnetman",
-	1182:  "accelenet",
-	1183:  "llsurfup-http",
-	1184:  "llsurfup-https",
-	1185:  "catchpole",
-	1186:  "mysql-cluster",
-	1187:  "alias",
-	1188:  "hp-webadmin",
-	1189:  "unet",
-	1190:  "commlinx-avl",
-	1191:  "gpfs",
-	1192:  "caids-sensor",
-	1193:  "fiveacross",
-	1194:  "openvpn",
-	1195:  "rsf-1",
-	1196:  "netmagic",
-	1197:  "carrius-rshell",
-	1198:  "cajo-discovery",
-	1199:  "dmidi",
-	1200:  "scol",
-	1201:  "nucleus-sand",
-	1202:  "caiccipc",
-	1203:  "ssslic-mgr",
-	1204:  "ssslog-mgr",
-	1205:  "accord-mgc",
-	1206:  "anthony-data",
-	1207:  "metasage",
-	1208:  "seagull-ais",
-	1209:  "ipcd3",
-	1210:  "eoss",
-	1211:  "groove-dpp",
-	1212:  "lupa",
-	1213:  "mpc-lifenet",
-	1214:  "kazaa",
-	1215:  "scanstat-1",
-	1216:  "etebac5",
-	1217:  "hpss-ndapi",
-	1218:  "aeroflight-ads",
-	1219:  "aeroflight-ret",
-	1220:  "qt-serveradmin",
-	1221:  "sweetware-apps",
-	1222:  "nerv",
-	1223:  "tgp",
-	1224:  "vpnz",
-	1225:  "slinkysearch",
-	1226:  "stgxfws",
-	1227:  "dns2go",
-	1228:  "florence",
-	1229:  "zented",
-	1230:  "periscope",
-	1231:  "menandmice-lpm",
-	1232:  "first-defense",
-	1233:  "univ-appserver",
-	1234:  "search-agent",
-	1235:  "mosaicsyssvc1",
-	1236:  "bvcontrol",
-	1237:  "tsdos390",
-	1238:  "hacl-qs",
-	1239:  "nmsd",
-	1240:  "instantia",
-	1241:  "nessus",
-	1242:  "nmasoverip",
-	1243:  "serialgateway",
-	1244:  "isbconference1",
-	1245:  "isbconference2",
-	1246:  "payrouter",
-	1247:  "visionpyramid",
-	1248:  "hermes",
-	1249:  "mesavistaco",
-	1250:  "swldy-sias",
-	1251:  "servergraph",
-	1252:  "bspne-pcc",
-	1253:  "q55-pcc",
-	1254:  "de-noc",
-	1255:  "de-cache-query",
-	1256:  "de-server",
-	1257:  "shockwave2",
-	1258:  "opennl",
-	1259:  "opennl-voice",
-	1260:  "ibm-ssd",
-	1261:  "mpshrsv",
-	1262:  "qnts-orb",
-	1263:  "dka",
-	1264:  "prat",
-	1265:  "dssiapi",
-	1266:  "dellpwrappks",
-	1267:  "epc",
-	1268:  "propel-msgsys",
-	1269:  "watilapp",
-	1270:  "opsmgr",
-	1271:  "excw",
-	1272:  "cspmlockmgr",
-	1273:  "emc-gateway",
-	1274:  "t1distproc",
-	1275:  "ivcollector",
-	1277:  "miva-mqs",
-	1278:  "dellwebadmin-1",
-	1279:  "dellwebadmin-2",
-	1280:  "pictrography",
-	1281:  "healthd",
-	1282:  "emperion",
-	1283:  "productinfo",
-	1284:  "iee-qfx",
-	1285:  "neoiface",
-	1286:  "netuitive",
-	1287:  "routematch",
-	1288:  "navbuddy",
-	1289:  "jwalkserver",
-	1290:  "winjaserver",
-	1291:  "seagulllms",
-	1292:  "dsdn",
-	1293:  "pkt-krb-ipsec",
-	1294:  "cmmdriver",
-	1295:  "ehtp",
-	1296:  "dproxy",
-	1297:  "sdproxy",
-	1298:  "lpcp",
-	1299:  "hp-sci",
-	1300:  "h323hostcallsc",
-	1301:  "ci3-software-1",
-	1302:  "ci3-software-2",
-	1303:  "sftsrv",
-	1304:  "boomerang",
-	1305:  "pe-mike",
-	1306:  "re-conn-proto",
-	1307:  "pacmand",
-	1308:  "odsi",
-	1309:  "jtag-server",
-	1310:  "husky",
-	1311:  "rxmon",
-	1312:  "sti-envision",
-	1313:  "bmc-patroldb",
-	1314:  "pdps",
-	1315:  "els",
-	1316:  "exbit-escp",
-	1317:  "vrts-ipcserver",
-	1318:  "krb5gatekeeper",
-	1319:  "amx-icsp",
-	1320:  "amx-axbnet",
-	1321:  "pip",
-	1322:  "novation",
-	1323:  "brcd",
-	1324:  "delta-mcp",
-	1325:  "dx-instrument",
-	1326:  "wimsic",
-	1327:  "ultrex",
-	1328:  "ewall",
-	1329:  "netdb-export",
-	1330:  "streetperfect",
-	1331:  "intersan",
-	1332:  "pcia-rxp-b",
-	1333:  "passwrd-policy",
-	1334:  "writesrv",
-	1335:  "digital-notary",
-	1336:  "ischat",
-	1337:  "menandmice-dns",
-	1338:  "wmc-log-svc",
-	1339:  "kjtsiteserver",
-	1340:  "naap",
-	1341:  "qubes",
-	1342:  "esbroker",
-	1343:  "re101",
-	1344:  "icap",
-	1345:  "vpjp",
-	1346:  "alta-ana-lm",
-	1347:  "bbn-mmc",
-	1348:  "bbn-mmx",
-	1349:  "sbook",
-	1350:  "editbench",
-	1351:  "equationbuilder",
-	1352:  "lotusnote",
-	1353:  "relief",
-	1354:  "XSIP-network",
-	1355:  "intuitive-edge",
-	1356:  "cuillamartin",
-	1357:  "pegboard",
-	1358:  "connlcli",
-	1359:  "ftsrv",
-	1360:  "mimer",
-	1361:  "linx",
-	1362:  "timeflies",
-	1363:  "ndm-requester",
-	1364:  "ndm-server",
-	1365:  "adapt-sna",
-	1366:  "netware-csp",
-	1367:  "dcs",
-	1368:  "screencast",
-	1369:  "gv-us",
-	1370:  "us-gv",
-	1371:  "fc-cli",
-	1372:  "fc-ser",
-	1373:  "chromagrafx",
-	1374:  "molly",
-	1375:  "bytex",
-	1376:  "ibm-pps",
-	1377:  "cichlid",
-	1378:  "elan",
-	1379:  "dbreporter",
-	1380:  "telesis-licman",
-	1381:  "apple-licman",
-	1382:  "udt-os",
-	1383:  "gwha",
-	1384:  "os-licman",
-	1385:  "atex-elmd",
-	1386:  "checksum",
-	1387:  "cadsi-lm",
-	1388:  "objective-dbc",
-	1389:  "iclpv-dm",
-	1390:  "iclpv-sc",
-	1391:  "iclpv-sas",
-	1392:  "iclpv-pm",
-	1393:  "iclpv-nls",
-	1394:  "iclpv-nlc",
-	1395:  "iclpv-wsm",
-	1396:  "dvl-activemail",
-	1397:  "audio-activmail",
-	1398:  "video-activmail",
-	1399:  "cadkey-licman",
-	1400:  "cadkey-tablet",
-	1401:  "goldleaf-licman",
-	1402:  "prm-sm-np",
-	1403:  "prm-nm-np",
-	1404:  "igi-lm",
-	1405:  "ibm-res",
-	1406:  "netlabs-lm",
-	1407:  "tibet-server",
-	1408:  "sophia-lm",
-	1409:  "here-lm",
-	1410:  "hiq",
-	1411:  "af",
-	1412:  "innosys",
-	1413:  "innosys-acl",
-	1414:  "ibm-mqseries",
-	1415:  "dbstar",
-	1416:  "novell-lu6-2",
-	1417:  "timbuktu-srv1",
-	1418:  "timbuktu-srv2",
-	1419:  "timbuktu-srv3",
-	1420:  "timbuktu-srv4",
-	1421:  "gandalf-lm",
-	1422:  "autodesk-lm",
-	1423:  "essbase",
-	1424:  "hybrid",
-	1425:  "zion-lm",
-	1426:  "sais",
-	1427:  "mloadd",
-	1428:  "informatik-lm",
-	1429:  "nms",
-	1430:  "tpdu",
-	1431:  "rgtp",
-	1432:  "blueberry-lm",
-	1433:  "ms-sql-s",
-	1434:  "ms-sql-m",
-	1435:  "ibm-cics",
-	1436:  "saism",
-	1437:  "tabula",
-	1438:  "eicon-server",
-	1439:  "eicon-x25",
-	1440:  "eicon-slp",
-	1441:  "cadis-1",
-	1442:  "cadis-2",
-	1443:  "ies-lm",
-	1444:  "marcam-lm",
-	1445:  "proxima-lm",
-	1446:  "ora-lm",
-	1447:  "apri-lm",
-	1448:  "oc-lm",
-	1449:  "peport",
-	1450:  "dwf",
-	1451:  "infoman",
-	1452:  "gtegsc-lm",
-	1453:  "genie-lm",
-	1454:  "interhdl-elmd",
-	1455:  "esl-lm",
-	1456:  "dca",
-	1457:  "valisys-lm",
-	1458:  "nrcabq-lm",
-	1459:  "proshare1",
-	1460:  "proshare2",
-	1461:  "ibm-wrless-lan",
-	1462:  "world-lm",
-	1463:  "nucleus",
-	1464:  "msl-lmd",
-	1465:  "pipes",
-	1466:  "oceansoft-lm",
-	1467:  "csdmbase",
-	1468:  "csdm",
-	1469:  "aal-lm",
-	1470:  "uaiact",
-	1471:  "csdmbase",
-	1472:  "csdm",
-	1473:  "openmath",
-	1474:  "telefinder",
-	1475:  "taligent-lm",
-	1476:  "clvm-cfg",
-	1477:  "ms-sna-server",
-	1478:  "ms-sna-base",
-	1479:  "dberegister",
-	1480:  "pacerforum",
-	1481:  "airs",
-	1482:  "miteksys-lm",
-	1483:  "afs",
-	1484:  "confluent",
-	1485:  "lansource",
-	1486:  "nms-topo-serv",
-	1487:  "localinfosrvr",
-	1488:  "docstor",
-	1489:  "dmdocbroker",
-	1490:  "insitu-conf",
-	1492:  "stone-design-1",
-	1493:  "netmap-lm",
-	1494:  "ica",
-	1495:  "cvc",
-	1496:  "liberty-lm",
-	1497:  "rfx-lm",
-	1498:  "sybase-sqlany",
-	1499:  "fhc",
-	1500:  "vlsi-lm",
-	1501:  "saiscm",
-	1502:  "shivadiscovery",
-	1503:  "imtc-mcs",
-	1504:  "evb-elm",
-	1505:  "funkproxy",
-	1506:  "utcd",
-	1507:  "symplex",
-	1508:  "diagmond",
-	1509:  "robcad-lm",
-	1510:  "mvx-lm",
-	1511:  "3l-l1",
-	1512:  "wins",
-	1513:  "fujitsu-dtc",
-	1514:  "fujitsu-dtcns",
-	1515:  "ifor-protocol",
-	1516:  "vpad",
-	1517:  "vpac",
-	1518:  "vpvd",
-	1519:  "vpvc",
-	1520:  "atm-zip-office",
-	1521:  "ncube-lm",
-	1522:  "ricardo-lm",
-	1523:  "cichild-lm",
-	1524:  "ingreslock",
-	1525:  "orasrv",
-	1526:  "pdap-np",
-	1527:  "tlisrv",
-	1529:  "coauthor",
-	1530:  "rap-service",
-	1531:  "rap-listen",
-	1532:  "miroconnect",
-	1533:  "virtual-places",
-	1534:  "micromuse-lm",
-	1535:  "ampr-info",
-	1536:  "ampr-inter",
-	1537:  "sdsc-lm",
-	1538:  "3ds-lm",
-	1539:  "intellistor-lm",
-	1540:  "rds",
-	1541:  "rds2",
-	1542:  "gridgen-elmd",
-	1543:  "simba-cs",
-	1544:  "aspeclmd",
-	1545:  "vistium-share",
-	1546:  "abbaccuray",
-	1547:  "laplink",
-	1548:  "axon-lm",
-	1549:  "shivahose",
-	1550:  "3m-image-lm",
-	1551:  "hecmtl-db",
-	1552:  "pciarray",
-	1553:  "sna-cs",
-	1554:  "caci-lm",
-	1555:  "livelan",
-	1556:  "veritas-pbx",
-	1557:  "arbortext-lm",
-	1558:  "xingmpeg",
-	1559:  "web2host",
-	1560:  "asci-val",
-	1561:  "facilityview",
-	1562:  "pconnectmgr",
-	1563:  "cadabra-lm",
-	1564:  "pay-per-view",
-	1565:  "winddlb",
-	1566:  "corelvideo",
-	1567:  "jlicelmd",
-	1568:  "tsspmap",
-	1569:  "ets",
-	1570:  "orbixd",
-	1571:  "rdb-dbs-disp",
-	1572:  "chip-lm",
-	1573:  "itscomm-ns",
-	1574:  "mvel-lm",
-	1575:  "oraclenames",
-	1576:  "moldflow-lm",
-	1577:  "hypercube-lm",
-	1578:  "jacobus-lm",
-	1579:  "ioc-sea-lm",
-	1580:  "tn-tl-r1",
-	1581:  "mil-2045-47001",
-	1582:  "msims",
-	1583:  "simbaexpress",
-	1584:  "tn-tl-fd2",
-	1585:  "intv",
-	1586:  "ibm-abtact",
-	1587:  "pra-elmd",
-	1588:  "triquest-lm",
-	1589:  "vqp",
-	1590:  "gemini-lm",
-	1591:  "ncpm-pm",
-	1592:  "commonspace",
-	1593:  "mainsoft-lm",
-	1594:  "sixtrak",
-	1595:  "radio",
-	1596:  "radio-sm",
-	1597:  "orbplus-iiop",
-	1598:  "picknfs",
-	1599:  "simbaservices",
-	1600:  "issd",
-	1601:  "aas",
-	1602:  "inspect",
-	1603:  "picodbc",
-	1604:  "icabrowser",
-	1605:  "slp",
-	1606:  "slm-api",
-	1607:  "stt",
-	1608:  "smart-lm",
-	1609:  "isysg-lm",
-	1610:  "taurus-wh",
-	1611:  "ill",
-	1612:  "netbill-trans",
-	1613:  "netbill-keyrep",
-	1614:  "netbill-cred",
-	1615:  "netbill-auth",
-	1616:  "netbill-prod",
-	1617:  "nimrod-agent",
-	1618:  "skytelnet",
-	1619:  "xs-openstorage",
-	1620:  "faxportwinport",
-	1621:  "softdataphone",
-	1622:  "ontime",
-	1623:  "jaleosnd",
-	1624:  "udp-sr-port",
-	1625:  "svs-omagent",
-	1626:  "shockwave",
-	1627:  "t128-gateway",
-	1628:  "lontalk-norm",
-	1629:  "lontalk-urgnt",
-	1630:  "oraclenet8cman",
-	1631:  "visitview",
-	1632:  "pammratc",
-	1633:  "pammrpc",
-	1634:  "loaprobe",
-	1635:  "edb-server1",
-	1636:  "isdc",
-	1637:  "islc",
-	1638:  "ismc",
-	1639:  "cert-initiator",
-	1640:  "cert-responder",
-	1641:  "invision",
-	1642:  "isis-am",
-	1643:  "isis-ambc",
-	1644:  "saiseh",
-	1645:  "sightline",
-	1646:  "sa-msg-port",
-	1647:  "rsap",
-	1648:  "concurrent-lm",
-	1649:  "kermit",
-	1650:  "nkd",
-	1651:  "shiva-confsrvr",
-	1652:  "xnmp",
-	1653:  "alphatech-lm",
-	1654:  "stargatealerts",
-	1655:  "dec-mbadmin",
-	1656:  "dec-mbadmin-h",
-	1657:  "fujitsu-mmpdc",
-	1658:  "sixnetudr",
-	1659:  "sg-lm",
-	1660:  "skip-mc-gikreq",
-	1661:  "netview-aix-1",
-	1662:  "netview-aix-2",
-	1663:  "netview-aix-3",
-	1664:  "netview-aix-4",
-	1665:  "netview-aix-5",
-	1666:  "netview-aix-6",
-	1667:  "netview-aix-7",
-	1668:  "netview-aix-8",
-	1669:  "netview-aix-9",
-	1670:  "netview-aix-10",
-	1671:  "netview-aix-11",
-	1672:  "netview-aix-12",
-	1673:  "proshare-mc-1",
-	1674:  "proshare-mc-2",
-	1675:  "pdp",
-	1676:  "netcomm1",
-	1677:  "groupwise",
-	1678:  "prolink",
-	1679:  "darcorp-lm",
-	1680:  "microcom-sbp",
-	1681:  "sd-elmd",
-	1682:  "lanyon-lantern",
-	1683:  "ncpm-hip",
-	1684:  "snaresecure",
-	1685:  "n2nremote",
-	1686:  "cvmon",
-	1687:  "nsjtp-ctrl",
-	1688:  "nsjtp-data",
-	1689:  "firefox",
-	1690:  "ng-umds",
-	1691:  "empire-empuma",
-	1692:  "sstsys-lm",
-	1693:  "rrirtr",
-	1694:  "rrimwm",
-	1695:  "rrilwm",
-	1696:  "rrifmm",
-	1697:  "rrisat",
-	1698:  "rsvp-encap-1",
-	1699:  "rsvp-encap-2",
-	1700:  "mps-raft",
-	1701:  "l2f",
-	1702:  "deskshare",
-	1703:  "hb-engine",
-	1704:  "bcs-broker",
-	1705:  "slingshot",
-	1706:  "jetform",
-	1707:  "vdmplay",
-	1708:  "gat-lmd",
-	1709:  "centra",
-	1710:  "impera",
-	1711:  "pptconference",
-	1712:  "registrar",
-	1713:  "conferencetalk",
-	1714:  "sesi-lm",
-	1715:  "houdini-lm",
-	1716:  "xmsg",
-	1717:  "fj-hdnet",
-	1718:  "h323gatedisc",
-	1719:  "h323gatestat",
-	1720:  "h323hostcall",
-	1721:  "caicci",
-	1722:  "hks-lm",
-	1723:  "pptp",
-	1724:  "csbphonemaster",
-	1725:  "iden-ralp",
-	1726:  "iberiagames",
-	1727:  "winddx",
-	1728:  "telindus",
-	1729:  "citynl",
-	1730:  "roketz",
-	1731:  "msiccp",
-	1732:  "proxim",
-	1733:  "siipat",
-	1734:  "cambertx-lm",
-	1735:  "privatechat",
-	1736:  "street-stream",
-	1737:  "ultimad",
-	1738:  "gamegen1",
-	1739:  "webaccess",
-	1740:  "encore",
-	1741:  "cisco-net-mgmt",
-	1742:  "3Com-nsd",
-	1743:  "cinegrfx-lm",
-	1744:  "ncpm-ft",
-	1745:  "remote-winsock",
-	1746:  "ftrapid-1",
-	1747:  "ftrapid-2",
-	1748:  "oracle-em1",
-	1749:  "aspen-services",
-	1750:  "sslp",
-	1751:  "swiftnet",
-	1752:  "lofr-lm",
-	1753:  "predatar-comms",
-	1754:  "oracle-em2",
-	1755:  "ms-streaming",
-	1756:  "capfast-lmd",
-	1757:  "cnhrp",
-	1758:  "tftp-mcast",
-	1759:  "spss-lm",
-	1760:  "www-ldap-gw",
-	1761:  "cft-0",
-	1762:  "cft-1",
-	1763:  "cft-2",
-	1764:  "cft-3",
-	1765:  "cft-4",
-	1766:  "cft-5",
-	1767:  "cft-6",
-	1768:  "cft-7",
-	1769:  "bmc-net-adm",
-	1770:  "bmc-net-svc",
-	1771:  "vaultbase",
-	1772:  "essweb-gw",
-	1773:  "kmscontrol",
-	1774:  "global-dtserv",
-	1775:  "vdab",
-	1776:  "femis",
-	1777:  "powerguardian",
-	1778:  "prodigy-intrnet",
-	1779:  "pharmasoft",
-	1780:  "dpkeyserv",
-	1781:  "answersoft-lm",
-	1782:  "hp-hcip",
-	1784:  "finle-lm",
-	1785:  "windlm",
-	1786:  "funk-logger",
-	1787:  "funk-license",
-	1788:  "psmond",
-	1789:  "hello",
-	1790:  "nmsp",
-	1791:  "ea1",
-	1792:  "ibm-dt-2",
-	1793:  "rsc-robot",
-	1794:  "cera-bcm",
-	1795:  "dpi-proxy",
-	1796:  "vocaltec-admin",
-	1797:  "uma",
-	1798:  "etp",
-	1799:  "netrisk",
-	1800:  "ansys-lm",
-	1801:  "msmq",
-	1802:  "concomp1",
-	1803:  "hp-hcip-gwy",
-	1804:  "enl",
-	1805:  "enl-name",
-	1806:  "musiconline",
-	1807:  "fhsp",
-	1808:  "oracle-vp2",
-	1809:  "oracle-vp1",
-	1810:  "jerand-lm",
-	1811:  "scientia-sdb",
-	1812:  "radius",
-	1813:  "radius-acct",
-	1814:  "tdp-suite",
-	1815:  "mmpft",
-	1816:  "harp",
-	1817:  "rkb-oscs",
-	1818:  "etftp",
-	1819:  "plato-lm",
-	1820:  "mcagent",
-	1821:  "donnyworld",
-	1822:  "es-elmd",
-	1823:  "unisys-lm",
-	1824:  "metrics-pas",
-	1825:  "direcpc-video",
-	1826:  "ardt",
-	1827:  "asi",
-	1828:  "itm-mcell-u",
-	1829:  "optika-emedia",
-	1830:  "net8-cman",
-	1831:  "myrtle",
-	1832:  "tht-treasure",
-	1833:  "udpradio",
-	1834:  "ardusuni",
-	1835:  "ardusmul",
-	1836:  "ste-smsc",
-	1837:  "csoft1",
-	1838:  "talnet",
-	1839:  "netopia-vo1",
-	1840:  "netopia-vo2",
-	1841:  "netopia-vo3",
-	1842:  "netopia-vo4",
-	1843:  "netopia-vo5",
-	1844:  "direcpc-dll",
-	1845:  "altalink",
-	1846:  "tunstall-pnc",
-	1847:  "slp-notify",
-	1848:  "fjdocdist",
-	1849:  "alpha-sms",
-	1850:  "gsi",
-	1851:  "ctcd",
-	1852:  "virtual-time",
-	1853:  "vids-avtp",
-	1854:  "buddy-draw",
-	1855:  "fiorano-rtrsvc",
-	1856:  "fiorano-msgsvc",
-	1857:  "datacaptor",
-	1858:  "privateark",
-	1859:  "gammafetchsvr",
-	1860:  "sunscalar-svc",
-	1861:  "lecroy-vicp",
-	1862:  "mysql-cm-agent",
-	1863:  "msnp",
-	1864:  "paradym-31port",
-	1865:  "entp",
-	1866:  "swrmi",
-	1867:  "udrive",
-	1868:  "viziblebrowser",
-	1869:  "transact",
-	1870:  "sunscalar-dns",
-	1871:  "canocentral0",
-	1872:  "canocentral1",
-	1873:  "fjmpjps",
-	1874:  "fjswapsnp",
-	1875:  "westell-stats",
-	1876:  "ewcappsrv",
-	1877:  "hp-webqosdb",
-	1878:  "drmsmc",
-	1879:  "nettgain-nms",
-	1880:  "vsat-control",
-	1881:  "ibm-mqseries2",
-	1882:  "ecsqdmn",
-	1883:  "mqtt",
-	1884:  "idmaps",
-	1885:  "vrtstrapserver",
-	1886:  "leoip",
-	1887:  "filex-lport",
-	1888:  "ncconfig",
-	1889:  "unify-adapter",
-	1890:  "wilkenlistener",
-	1891:  "childkey-notif",
-	1892:  "childkey-ctrl",
-	1893:  "elad",
-	1894:  "o2server-port",
-	1896:  "b-novative-ls",
-	1897:  "metaagent",
-	1898:  "cymtec-port",
-	1899:  "mc2studios",
-	1900:  "ssdp",
-	1901:  "fjicl-tep-a",
-	1902:  "fjicl-tep-b",
-	1903:  "linkname",
-	1904:  "fjicl-tep-c",
-	1905:  "sugp",
-	1906:  "tpmd",
-	1907:  "intrastar",
-	1908:  "dawn",
-	1909:  "global-wlink",
-	1910:  "ultrabac",
-	1911:  "mtp",
-	1912:  "rhp-iibp",
-	1913:  "armadp",
-	1914:  "elm-momentum",
-	1915:  "facelink",
-	1916:  "persona",
-	1917:  "noagent",
-	1918:  "can-nds",
-	1919:  "can-dch",
-	1920:  "can-ferret",
-	1921:  "noadmin",
-	1922:  "tapestry",
-	1923:  "spice",
-	1924:  "xiip",
-	1925:  "discovery-port",
-	1926:  "egs",
-	1927:  "videte-cipc",
-	1928:  "emsd-port",
-	1929:  "bandwiz-system",
-	1930:  "driveappserver",
-	1931:  "amdsched",
-	1932:  "ctt-broker",
-	1933:  "xmapi",
-	1934:  "xaapi",
-	1935:  "macromedia-fcs",
-	1936:  "jetcmeserver",
-	1937:  "jwserver",
-	1938:  "jwclient",
-	1939:  "jvserver",
-	1940:  "jvclient",
-	1941:  "dic-aida",
-	1942:  "res",
-	1943:  "beeyond-media",
-	1944:  "close-combat",
-	1945:  "dialogic-elmd",
-	1946:  "tekpls",
-	1947:  "sentinelsrm",
-	1948:  "eye2eye",
-	1949:  "ismaeasdaqlive",
-	1950:  "ismaeasdaqtest",
-	1951:  "bcs-lmserver",
-	1952:  "mpnjsc",
-	1953:  "rapidbase",
-	1954:  "abr-api",
-	1955:  "abr-secure",
-	1956:  "vrtl-vmf-ds",
-	1957:  "unix-status",
-	1958:  "dxadmind",
-	1959:  "simp-all",
-	1960:  "nasmanager",
-	1961:  "bts-appserver",
-	1962:  "biap-mp",
-	1963:  "webmachine",
-	1964:  "solid-e-engine",
-	1965:  "tivoli-npm",
-	1966:  "slush",
-	1967:  "sns-quote",
-	1968:  "lipsinc",
-	1969:  "lipsinc1",
-	1970:  "netop-rc",
-	1971:  "netop-school",
-	1972:  "intersys-cache",
-	1973:  "dlsrap",
-	1974:  "drp",
-	1975:  "tcoflashagent",
-	1976:  "tcoregagent",
-	1977:  "tcoaddressbook",
-	1978:  "unisql",
-	1979:  "unisql-java",
-	1980:  "pearldoc-xact",
-	1981:  "p2pq",
-	1982:  "estamp",
-	1983:  "lhtp",
-	1984:  "bb",
-	1985:  "hsrp",
-	1986:  "licensedaemon",
-	1987:  "tr-rsrb-p1",
-	1988:  "tr-rsrb-p2",
-	1989:  "tr-rsrb-p3",
-	1990:  "stun-p1",
-	1991:  "stun-p2",
-	1992:  "stun-p3",
-	1993:  "snmp-tcp-port",
-	1994:  "stun-port",
-	1995:  "perf-port",
-	1996:  "tr-rsrb-port",
-	1997:  "gdp-port",
-	1998:  "x25-svc-port",
-	1999:  "tcp-id-port",
-	2000:  "cisco-sccp",
-	2001:  "dc",
-	2002:  "globe",
-	2003:  "brutus",
-	2004:  "mailbox",
-	2005:  "berknet",
-	2006:  "invokator",
-	2007:  "dectalk",
-	2008:  "conf",
-	2009:  "news",
-	2010:  "search",
-	2011:  "raid-cc",
-	2012:  "ttyinfo",
-	2013:  "raid-am",
-	2014:  "troff",
-	2015:  "cypress",
-	2016:  "bootserver",
-	2017:  "cypress-stat",
-	2018:  "terminaldb",
-	2019:  "whosockami",
-	2020:  "xinupageserver",
-	2021:  "servexec",
-	2022:  "down",
-	2023:  "xinuexpansion3",
-	2024:  "xinuexpansion4",
-	2025:  "ellpack",
-	2026:  "scrabble",
-	2027:  "shadowserver",
-	2028:  "submitserver",
-	2029:  "hsrpv6",
-	2030:  "device2",
-	2031:  "mobrien-chat",
-	2032:  "blackboard",
-	2033:  "glogger",
-	2034:  "scoremgr",
-	2035:  "imsldoc",
-	2036:  "e-dpnet",
-	2037:  "applus",
-	2038:  "objectmanager",
-	2039:  "prizma",
-	2040:  "lam",
-	2041:  "interbase",
-	2042:  "isis",
-	2043:  "isis-bcast",
-	2044:  "rimsl",
-	2045:  "cdfunc",
-	2046:  "sdfunc",
-	2047:  "dls",
-	2048:  "dls-monitor",
-	2049:  "shilp",
-	2050:  "av-emb-config",
-	2051:  "epnsdp",
-	2052:  "clearvisn",
-	2053:  "lot105-ds-upd",
-	2054:  "weblogin",
-	2055:  "iop",
-	2056:  "omnisky",
-	2057:  "rich-cp",
-	2058:  "newwavesearch",
-	2059:  "bmc-messaging",
-	2060:  "teleniumdaemon",
-	2061:  "netmount",
-	2062:  "icg-swp",
-	2063:  "icg-bridge",
-	2064:  "icg-iprelay",
-	2065:  "dlsrpn",
-	2066:  "aura",
-	2067:  "dlswpn",
-	2068:  "avauthsrvprtcl",
-	2069:  "event-port",
-	2070:  "ah-esp-encap",
-	2071:  "acp-port",
-	2072:  "msync",
-	2073:  "gxs-data-port",
-	2074:  "vrtl-vmf-sa",
-	2075:  "newlixengine",
-	2076:  "newlixconfig",
-	2077:  "tsrmagt",
-	2078:  "tpcsrvr",
-	2079:  "idware-router",
-	2080:  "autodesk-nlm",
-	2081:  "kme-trap-port",
-	2082:  "infowave",
-	2083:  "radsec",
-	2084:  "sunclustergeo",
-	2085:  "ada-cip",
-	2086:  "gnunet",
-	2087:  "eli",
-	2088:  "ip-blf",
-	2089:  "sep",
-	2090:  "lrp",
-	2091:  "prp",
-	2092:  "descent3",
-	2093:  "nbx-cc",
-	2094:  "nbx-au",
-	2095:  "nbx-ser",
-	2096:  "nbx-dir",
-	2097:  "jetformpreview",
-	2098:  "dialog-port",
-	2099:  "h2250-annex-g",
-	2100:  "amiganetfs",
-	2101:  "rtcm-sc104",
-	2102:  "zephyr-srv",
-	2103:  "zephyr-clt",
-	2104:  "zephyr-hm",
-	2105:  "minipay",
-	2106:  "mzap",
-	2107:  "bintec-admin",
-	2108:  "comcam",
-	2109:  "ergolight",
-	2110:  "umsp",
-	2111:  "dsatp",
-	2112:  "idonix-metanet",
-	2113:  "hsl-storm",
-	2114:  "newheights",
-	2115:  "kdm",
-	2116:  "ccowcmr",
-	2117:  "mentaclient",
-	2118:  "mentaserver",
-	2119:  "gsigatekeeper",
-	2120:  "qencp",
-	2121:  "scientia-ssdb",
-	2122:  "caupc-remote",
-	2123:  "gtp-control",
-	2124:  "elatelink",
-	2125:  "lockstep",
-	2126:  "pktcable-cops",
-	2127:  "index-pc-wb",
-	2128:  "net-steward",
-	2129:  "cs-live",
-	2130:  "xds",
-	2131:  "avantageb2b",
-	2132:  "solera-epmap",
-	2133:  "zymed-zpp",
-	2134:  "avenue",
-	2135:  "gris",
-	2136:  "appworxsrv",
-	2137:  "connect",
-	2138:  "unbind-cluster",
-	2139:  "ias-auth",
-	2140:  "ias-reg",
-	2141:  "ias-admind",
-	2142:  "tdmoip",
-	2143:  "lv-jc",
-	2144:  "lv-ffx",
-	2145:  "lv-pici",
-	2146:  "lv-not",
-	2147:  "lv-auth",
-	2148:  "veritas-ucl",
-	2149:  "acptsys",
-	2150:  "dynamic3d",
-	2151:  "docent",
-	2152:  "gtp-user",
-	2153:  "ctlptc",
-	2154:  "stdptc",
-	2155:  "brdptc",
-	2156:  "trp",
-	2157:  "xnds",
-	2158:  "touchnetplus",
-	2159:  "gdbremote",
-	2160:  "apc-2160",
-	2161:  "apc-2161",
-	2162:  "navisphere",
-	2163:  "navisphere-sec",
-	2164:  "ddns-v3",
-	2165:  "x-bone-api",
-	2166:  "iwserver",
-	2167:  "raw-serial",
-	2168:  "easy-soft-mux",
-	2169:  "brain",
-	2170:  "eyetv",
-	2171:  "msfw-storage",
-	2172:  "msfw-s-storage",
-	2173:  "msfw-replica",
-	2174:  "msfw-array",
-	2175:  "airsync",
-	2176:  "rapi",
-	2177:  "qwave",
-	2178:  "bitspeer",
-	2179:  "vmrdp",
-	2180:  "mc-gt-srv",
-	2181:  "eforward",
-	2182:  "cgn-stat",
-	2183:  "cgn-config",
-	2184:  "nvd",
-	2185:  "onbase-dds",
-	2186:  "gtaua",
-	2187:  "ssmc",
-	2188:  "radware-rpm",
-	2189:  "radware-rpm-s",
-	2190:  "tivoconnect",
-	2191:  "tvbus",
-	2192:  "asdis",
-	2193:  "drwcs",
-	2197:  "mnp-exchange",
-	2198:  "onehome-remote",
-	2199:  "onehome-help",
-	2200:  "ici",
-	2201:  "ats",
-	2202:  "imtc-map",
-	2203:  "b2-runtime",
-	2204:  "b2-license",
-	2205:  "jps",
-	2206:  "hpocbus",
-	2207:  "hpssd",
-	2208:  "hpiod",
-	2209:  "rimf-ps",
-	2210:  "noaaport",
-	2211:  "emwin",
-	2212:  "leecoposserver",
-	2213:  "kali",
-	2214:  "rpi",
-	2215:  "ipcore",
-	2216:  "vtu-comms",
-	2217:  "gotodevice",
-	2218:  "bounzza",
-	2219:  "netiq-ncap",
-	2220:  "netiq",
-	2221:  "ethernet-ip-s",
-	2222:  "EtherNet-IP-1",
-	2223:  "rockwell-csp2",
-	2224:  "efi-mg",
-	2225:  "rcip-itu",
-	2226:  "di-drm",
-	2227:  "di-msg",
-	2228:  "ehome-ms",
-	2229:  "datalens",
-	2230:  "queueadm",
-	2231:  "wimaxasncp",
-	2232:  "ivs-video",
-	2233:  "infocrypt",
-	2234:  "directplay",
-	2235:  "sercomm-wlink",
-	2236:  "nani",
-	2237:  "optech-port1-lm",
-	2238:  "aviva-sna",
-	2239:  "imagequery",
-	2240:  "recipe",
-	2241:  "ivsd",
-	2242:  "foliocorp",
-	2243:  "magicom",
-	2244:  "nmsserver",
-	2245:  "hao",
-	2246:  "pc-mta-addrmap",
-	2247:  "antidotemgrsvr",
-	2248:  "ums",
-	2249:  "rfmp",
-	2250:  "remote-collab",
-	2251:  "dif-port",
-	2252:  "njenet-ssl",
-	2253:  "dtv-chan-req",
-	2254:  "seispoc",
-	2255:  "vrtp",
-	2256:  "pcc-mfp",
-	2257:  "simple-tx-rx",
-	2258:  "rcts",
-	2260:  "apc-2260",
-	2261:  "comotionmaster",
-	2262:  "comotionback",
-	2263:  "ecwcfg",
-	2264:  "apx500api-1",
-	2265:  "apx500api-2",
-	2266:  "mfserver",
-	2267:  "ontobroker",
-	2268:  "amt",
-	2269:  "mikey",
-	2270:  "starschool",
-	2271:  "mmcals",
-	2272:  "mmcal",
-	2273:  "mysql-im",
-	2274:  "pcttunnell",
-	2275:  "ibridge-data",
-	2276:  "ibridge-mgmt",
-	2277:  "bluectrlproxy",
-	2278:  "s3db",
-	2279:  "xmquery",
-	2280:  "lnvpoller",
-	2281:  "lnvconsole",
-	2282:  "lnvalarm",
-	2283:  "lnvstatus",
-	2284:  "lnvmaps",
-	2285:  "lnvmailmon",
-	2286:  "nas-metering",
-	2287:  "dna",
-	2288:  "netml",
-	2289:  "dict-lookup",
-	2290:  "sonus-logging",
-	2291:  "eapsp",
-	2292:  "mib-streaming",
-	2293:  "npdbgmngr",
-	2294:  "konshus-lm",
-	2295:  "advant-lm",
-	2296:  "theta-lm",
-	2297:  "d2k-datamover1",
-	2298:  "d2k-datamover2",
-	2299:  "pc-telecommute",
-	2300:  "cvmmon",
-	2301:  "cpq-wbem",
-	2302:  "binderysupport",
-	2303:  "proxy-gateway",
-	2304:  "attachmate-uts",
-	2305:  "mt-scaleserver",
-	2306:  "tappi-boxnet",
-	2307:  "pehelp",
-	2308:  "sdhelp",
-	2309:  "sdserver",
-	2310:  "sdclient",
-	2311:  "messageservice",
-	2312:  "wanscaler",
-	2313:  "iapp",
-	2314:  "cr-websystems",
-	2315:  "precise-sft",
-	2316:  "sent-lm",
-	2317:  "attachmate-g32",
-	2318:  "cadencecontrol",
-	2319:  "infolibria",
-	2320:  "siebel-ns",
-	2321:  "rdlap",
-	2322:  "ofsd",
-	2323:  "3d-nfsd",
-	2324:  "cosmocall",
-	2325:  "ansysli",
-	2326:  "idcp",
-	2327:  "xingcsm",
-	2328:  "netrix-sftm",
-	2329:  "nvd",
-	2330:  "tscchat",
-	2331:  "agentview",
-	2332:  "rcc-host",
-	2333:  "snapp",
-	2334:  "ace-client",
-	2335:  "ace-proxy",
-	2336:  "appleugcontrol",
-	2337:  "ideesrv",
-	2338:  "norton-lambert",
-	2339:  "3com-webview",
-	2340:  "wrs-registry",
-	2341:  "xiostatus",
-	2342:  "manage-exec",
-	2343:  "nati-logos",
-	2344:  "fcmsys",
-	2345:  "dbm",
-	2346:  "redstorm-join",
-	2347:  "redstorm-find",
-	2348:  "redstorm-info",
-	2349:  "redstorm-diag",
-	2350:  "psbserver",
-	2351:  "psrserver",
-	2352:  "pslserver",
-	2353:  "pspserver",
-	2354:  "psprserver",
-	2355:  "psdbserver",
-	2356:  "gxtelmd",
-	2357:  "unihub-server",
-	2358:  "futrix",
-	2359:  "flukeserver",
-	2360:  "nexstorindltd",
-	2361:  "tl1",
-	2362:  "digiman",
-	2363:  "mediacntrlnfsd",
-	2364:  "oi-2000",
-	2365:  "dbref",
-	2366:  "qip-login",
-	2367:  "service-ctrl",
-	2368:  "opentable",
-	2370:  "l3-hbmon",
-	2371:  "hp-rda",
-	2372:  "lanmessenger",
-	2373:  "remographlm",
-	2374:  "hydra",
-	2375:  "docker",
-	2376:  "docker-s",
-	2377:  "swarm",
-	2379:  "etcd-client",
-	2380:  "etcd-server",
-	2381:  "compaq-https",
-	2382:  "ms-olap3",
-	2383:  "ms-olap4",
-	2384:  "sd-request",
-	2385:  "sd-data",
-	2386:  "virtualtape",
-	2387:  "vsamredirector",
-	2388:  "mynahautostart",
-	2389:  "ovsessionmgr",
-	2390:  "rsmtp",
-	2391:  "3com-net-mgmt",
-	2392:  "tacticalauth",
-	2393:  "ms-olap1",
-	2394:  "ms-olap2",
-	2395:  "lan900-remote",
-	2396:  "wusage",
-	2397:  "ncl",
-	2398:  "orbiter",
-	2399:  "fmpro-fdal",
-	2400:  "opequus-server",
-	2401:  "cvspserver",
-	2402:  "taskmaster2000",
-	2403:  "taskmaster2000",
-	2404:  "iec-104",
-	2405:  "trc-netpoll",
-	2406:  "jediserver",
-	2407:  "orion",
-	2408:  "railgun-webaccl",
-	2409:  "sns-protocol",
-	2410:  "vrts-registry",
-	2411:  "netwave-ap-mgmt",
-	2412:  "cdn",
-	2413:  "orion-rmi-reg",
-	2414:  "beeyond",
-	2415:  "codima-rtp",
-	2416:  "rmtserver",
-	2417:  "composit-server",
-	2418:  "cas",
-	2419:  "attachmate-s2s",
-	2420:  "dslremote-mgmt",
-	2421:  "g-talk",
-	2422:  "crmsbits",
-	2423:  "rnrp",
-	2424:  "kofax-svr",
-	2425:  "fjitsuappmgr",
-	2426:  "vcmp",
-	2427:  "mgcp-gateway",
-	2428:  "ott",
-	2429:  "ft-role",
-	2430:  "venus",
-	2431:  "venus-se",
-	2432:  "codasrv",
-	2433:  "codasrv-se",
-	2434:  "pxc-epmap",
-	2435:  "optilogic",
-	2436:  "topx",
-	2437:  "unicontrol",
-	2438:  "msp",
-	2439:  "sybasedbsynch",
-	2440:  "spearway",
-	2441:  "pvsw-inet",
-	2442:  "netangel",
-	2443:  "powerclientcsf",
-	2444:  "btpp2sectrans",
-	2445:  "dtn1",
-	2446:  "bues-service",
-	2447:  "ovwdb",
-	2448:  "hpppssvr",
-	2449:  "ratl",
-	2450:  "netadmin",
-	2451:  "netchat",
-	2452:  "snifferclient",
-	2453:  "madge-ltd",
-	2454:  "indx-dds",
-	2455:  "wago-io-system",
-	2456:  "altav-remmgt",
-	2457:  "rapido-ip",
-	2458:  "griffin",
-	2459:  "community",
-	2460:  "ms-theater",
-	2461:  "qadmifoper",
-	2462:  "qadmifevent",
-	2463:  "lsi-raid-mgmt",
-	2464:  "direcpc-si",
-	2465:  "lbm",
-	2466:  "lbf",
-	2467:  "high-criteria",
-	2468:  "qip-msgd",
-	2469:  "mti-tcs-comm",
-	2470:  "taskman-port",
-	2471:  "seaodbc",
-	2472:  "c3",
-	2473:  "aker-cdp",
-	2474:  "vitalanalysis",
-	2475:  "ace-server",
-	2476:  "ace-svr-prop",
-	2477:  "ssm-cvs",
-	2478:  "ssm-cssps",
-	2479:  "ssm-els",
-	2480:  "powerexchange",
-	2481:  "giop",
-	2482:  "giop-ssl",
-	2483:  "ttc",
-	2484:  "ttc-ssl",
-	2485:  "netobjects1",
-	2486:  "netobjects2",
-	2487:  "pns",
-	2488:  "moy-corp",
-	2489:  "tsilb",
-	2490:  "qip-qdhcp",
-	2491:  "conclave-cpp",
-	2492:  "groove",
-	2493:  "talarian-mqs",
-	2494:  "bmc-ar",
-	2495:  "fast-rem-serv",
-	2496:  "dirgis",
-	2497:  "quaddb",
-	2498:  "odn-castraq",
-	2499:  "unicontrol",
-	2500:  "rtsserv",
-	2501:  "rtsclient",
-	2502:  "kentrox-prot",
-	2503:  "nms-dpnss",
-	2504:  "wlbs",
-	2505:  "ppcontrol",
-	2506:  "jbroker",
-	2507:  "spock",
-	2508:  "jdatastore",
-	2509:  "fjmpss",
-	2510:  "fjappmgrbulk",
-	2511:  "metastorm",
-	2512:  "citrixima",
-	2513:  "citrixadmin",
-	2514:  "facsys-ntp",
-	2515:  "facsys-router",
-	2516:  "maincontrol",
-	2517:  "call-sig-trans",
-	2518:  "willy",
-	2519:  "globmsgsvc",
-	2520:  "pvsw",
-	2521:  "adaptecmgr",
-	2522:  "windb",
-	2523:  "qke-llc-v3",
-	2524:  "optiwave-lm",
-	2525:  "ms-v-worlds",
-	2526:  "ema-sent-lm",
-	2527:  "iqserver",
-	2528:  "ncr-ccl",
-	2529:  "utsftp",
-	2530:  "vrcommerce",
-	2531:  "ito-e-gui",
-	2532:  "ovtopmd",
-	2533:  "snifferserver",
-	2534:  "combox-web-acc",
-	2535:  "madcap",
-	2536:  "btpp2audctr1",
-	2537:  "upgrade",
-	2538:  "vnwk-prapi",
-	2539:  "vsiadmin",
-	2540:  "lonworks",
-	2541:  "lonworks2",
-	2542:  "udrawgraph",
-	2543:  "reftek",
-	2544:  "novell-zen",
-	2545:  "sis-emt",
-	2546:  "vytalvaultbrtp",
-	2547:  "vytalvaultvsmp",
-	2548:  "vytalvaultpipe",
-	2549:  "ipass",
-	2550:  "ads",
-	2551:  "isg-uda-server",
-	2552:  "call-logging",
-	2553:  "efidiningport",
-	2554:  "vcnet-link-v10",
-	2555:  "compaq-wcp",
-	2556:  "nicetec-nmsvc",
-	2557:  "nicetec-mgmt",
-	2558:  "pclemultimedia",
-	2559:  "lstp",
-	2560:  "labrat",
-	2561:  "mosaixcc",
-	2562:  "delibo",
-	2563:  "cti-redwood",
-	2564:  "hp-3000-telnet",
-	2565:  "coord-svr",
-	2566:  "pcs-pcw",
-	2567:  "clp",
-	2568:  "spamtrap",
-	2569:  "sonuscallsig",
-	2570:  "hs-port",
-	2571:  "cecsvc",
-	2572:  "ibp",
-	2573:  "trustestablish",
-	2574:  "blockade-bpsp",
-	2575:  "hl7",
-	2576:  "tclprodebugger",
-	2577:  "scipticslsrvr",
-	2578:  "rvs-isdn-dcp",
-	2579:  "mpfoncl",
-	2580:  "tributary",
-	2581:  "argis-te",
-	2582:  "argis-ds",
-	2583:  "mon",
-	2584:  "cyaserv",
-	2585:  "netx-server",
-	2586:  "netx-agent",
-	2587:  "masc",
-	2588:  "privilege",
-	2589:  "quartus-tcl",
-	2590:  "idotdist",
-	2591:  "maytagshuffle",
-	2592:  "netrek",
-	2593:  "mns-mail",
-	2594:  "dts",
-	2595:  "worldfusion1",
-	2596:  "worldfusion2",
-	2597:  "homesteadglory",
-	2598:  "citriximaclient",
-	2599:  "snapd",
-	2600:  "hpstgmgr",
-	2601:  "discp-client",
-	2602:  "discp-server",
-	2603:  "servicemeter",
-	2604:  "nsc-ccs",
-	2605:  "nsc-posa",
-	2606:  "netmon",
-	2607:  "connection",
-	2608:  "wag-service",
-	2609:  "system-monitor",
-	2610:  "versa-tek",
-	2611:  "lionhead",
-	2612:  "qpasa-agent",
-	2613:  "smntubootstrap",
-	2614:  "neveroffline",
-	2615:  "firepower",
-	2616:  "appswitch-emp",
-	2617:  "cmadmin",
-	2618:  "priority-e-com",
-	2619:  "bruce",
-	2620:  "lpsrecommender",
-	2621:  "miles-apart",
-	2622:  "metricadbc",
-	2623:  "lmdp",
-	2624:  "aria",
-	2625:  "blwnkl-port",
-	2626:  "gbjd816",
-	2627:  "moshebeeri",
-	2628:  "dict",
-	2629:  "sitaraserver",
-	2630:  "sitaramgmt",
-	2631:  "sitaradir",
-	2632:  "irdg-post",
-	2633:  "interintelli",
-	2634:  "pk-electronics",
-	2635:  "backburner",
-	2636:  "solve",
-	2637:  "imdocsvc",
-	2638:  "sybaseanywhere",
-	2639:  "aminet",
-	2640:  "ami-control",
-	2641:  "hdl-srv",
-	2642:  "tragic",
-	2643:  "gte-samp",
-	2644:  "travsoft-ipx-t",
-	2645:  "novell-ipx-cmd",
-	2646:  "and-lm",
-	2647:  "syncserver",
-	2648:  "upsnotifyprot",
-	2649:  "vpsipport",
-	2650:  "eristwoguns",
-	2651:  "ebinsite",
-	2652:  "interpathpanel",
-	2653:  "sonus",
-	2654:  "corel-vncadmin",
-	2655:  "unglue",
-	2656:  "kana",
-	2657:  "sns-dispatcher",
-	2658:  "sns-admin",
-	2659:  "sns-query",
-	2660:  "gcmonitor",
-	2661:  "olhost",
-	2662:  "bintec-capi",
-	2663:  "bintec-tapi",
-	2664:  "patrol-mq-gm",
-	2665:  "patrol-mq-nm",
-	2666:  "extensis",
-	2667:  "alarm-clock-s",
-	2668:  "alarm-clock-c",
-	2669:  "toad",
-	2670:  "tve-announce",
-	2671:  "newlixreg",
-	2672:  "nhserver",
-	2673:  "firstcall42",
-	2674:  "ewnn",
-	2675:  "ttc-etap",
-	2676:  "simslink",
-	2677:  "gadgetgate1way",
-	2678:  "gadgetgate2way",
-	2679:  "syncserverssl",
-	2680:  "pxc-sapxom",
-	2681:  "mpnjsomb",
-	2683:  "ncdloadbalance",
-	2684:  "mpnjsosv",
-	2685:  "mpnjsocl",
-	2686:  "mpnjsomg",
-	2687:  "pq-lic-mgmt",
-	2688:  "md-cg-http",
-	2689:  "fastlynx",
-	2690:  "hp-nnm-data",
-	2691:  "itinternet",
-	2692:  "admins-lms",
-	2694:  "pwrsevent",
-	2695:  "vspread",
-	2696:  "unifyadmin",
-	2697:  "oce-snmp-trap",
-	2698:  "mck-ivpip",
-	2699:  "csoft-plusclnt",
-	2700:  "tqdata",
-	2701:  "sms-rcinfo",
-	2702:  "sms-xfer",
-	2703:  "sms-chat",
-	2704:  "sms-remctrl",
-	2705:  "sds-admin",
-	2706:  "ncdmirroring",
-	2707:  "emcsymapiport",
-	2708:  "banyan-net",
-	2709:  "supermon",
-	2710:  "sso-service",
-	2711:  "sso-control",
-	2712:  "aocp",
-	2713:  "raventbs",
-	2714:  "raventdm",
-	2715:  "hpstgmgr2",
-	2716:  "inova-ip-disco",
-	2717:  "pn-requester",
-	2718:  "pn-requester2",
-	2719:  "scan-change",
-	2720:  "wkars",
-	2721:  "smart-diagnose",
-	2722:  "proactivesrvr",
-	2723:  "watchdog-nt",
-	2724:  "qotps",
-	2725:  "msolap-ptp2",
-	2726:  "tams",
-	2727:  "mgcp-callagent",
-	2728:  "sqdr",
-	2729:  "tcim-control",
-	2730:  "nec-raidplus",
-	2731:  "fyre-messanger",
-	2732:  "g5m",
-	2733:  "signet-ctf",
-	2734:  "ccs-software",
-	2735:  "netiq-mc",
-	2736:  "radwiz-nms-srv",
-	2737:  "srp-feedback",
-	2738:  "ndl-tcp-ois-gw",
-	2739:  "tn-timing",
-	2740:  "alarm",
-	2741:  "tsb",
-	2742:  "tsb2",
-	2743:  "murx",
-	2744:  "honyaku",
-	2745:  "urbisnet",
-	2746:  "cpudpencap",
-	2747:  "fjippol-swrly",
-	2748:  "fjippol-polsvr",
-	2749:  "fjippol-cnsl",
-	2750:  "fjippol-port1",
-	2751:  "fjippol-port2",
-	2752:  "rsisysaccess",
-	2753:  "de-spot",
-	2754:  "apollo-cc",
-	2755:  "expresspay",
-	2756:  "simplement-tie",
-	2757:  "cnrp",
-	2758:  "apollo-status",
-	2759:  "apollo-gms",
-	2760:  "sabams",
-	2761:  "dicom-iscl",
-	2762:  "dicom-tls",
-	2763:  "desktop-dna",
-	2764:  "data-insurance",
-	2765:  "qip-audup",
-	2766:  "compaq-scp",
-	2767:  "uadtc",
-	2768:  "uacs",
-	2769:  "exce",
-	2770:  "veronica",
-	2771:  "vergencecm",
-	2772:  "auris",
-	2773:  "rbakcup1",
-	2774:  "rbakcup2",
-	2775:  "smpp",
-	2776:  "ridgeway1",
-	2777:  "ridgeway2",
-	2778:  "gwen-sonya",
-	2779:  "lbc-sync",
-	2780:  "lbc-control",
-	2781:  "whosells",
-	2782:  "everydayrc",
-	2783:  "aises",
-	2784:  "www-dev",
-	2785:  "aic-np",
-	2786:  "aic-oncrpc",
-	2787:  "piccolo",
-	2788:  "fryeserv",
-	2789:  "media-agent",
-	2790:  "plgproxy",
-	2791:  "mtport-regist",
-	2792:  "f5-globalsite",
-	2793:  "initlsmsad",
-	2795:  "livestats",
-	2796:  "ac-tech",
-	2797:  "esp-encap",
-	2798:  "tmesis-upshot",
-	2799:  "icon-discover",
-	2800:  "acc-raid",
-	2801:  "igcp",
-	2802:  "veritas-tcp1",
-	2803:  "btprjctrl",
-	2804:  "dvr-esm",
-	2805:  "wta-wsp-s",
-	2806:  "cspuni",
-	2807:  "cspmulti",
-	2808:  "j-lan-p",
-	2809:  "corbaloc",
-	2810:  "netsteward",
-	2811:  "gsiftp",
-	2812:  "atmtcp",
-	2813:  "llm-pass",
-	2814:  "llm-csv",
-	2815:  "lbc-measure",
-	2816:  "lbc-watchdog",
-	2817:  "nmsigport",
-	2818:  "rmlnk",
-	2819:  "fc-faultnotify",
-	2820:  "univision",
-	2821:  "vrts-at-port",
-	2822:  "ka0wuc",
-	2823:  "cqg-netlan",
-	2824:  "cqg-netlan-1",
-	2826:  "slc-systemlog",
-	2827:  "slc-ctrlrloops",
-	2828:  "itm-lm",
-	2829:  "silkp1",
-	2830:  "silkp2",
-	2831:  "silkp3",
-	2832:  "silkp4",
-	2833:  "glishd",
-	2834:  "evtp",
-	2835:  "evtp-data",
-	2836:  "catalyst",
-	2837:  "repliweb",
-	2838:  "starbot",
-	2839:  "nmsigport",
-	2840:  "l3-exprt",
-	2841:  "l3-ranger",
-	2842:  "l3-hawk",
-	2843:  "pdnet",
-	2844:  "bpcp-poll",
-	2845:  "bpcp-trap",
-	2846:  "aimpp-hello",
-	2847:  "aimpp-port-req",
-	2848:  "amt-blc-port",
-	2849:  "fxp",
-	2850:  "metaconsole",
-	2851:  "webemshttp",
-	2852:  "bears-01",
-	2853:  "ispipes",
-	2854:  "infomover",
-	2855:  "msrp",
-	2856:  "cesdinv",
-	2857:  "simctlp",
-	2858:  "ecnp",
-	2859:  "activememory",
-	2860:  "dialpad-voice1",
-	2861:  "dialpad-voice2",
-	2862:  "ttg-protocol",
-	2863:  "sonardata",
-	2864:  "astromed-main",
-	2865:  "pit-vpn",
-	2866:  "iwlistener",
-	2867:  "esps-portal",
-	2868:  "npep-messaging",
-	2869:  "icslap",
-	2870:  "daishi",
-	2871:  "msi-selectplay",
-	2872:  "radix",
-	2874:  "dxmessagebase1",
-	2875:  "dxmessagebase2",
-	2876:  "sps-tunnel",
-	2877:  "bluelance",
-	2878:  "aap",
-	2879:  "ucentric-ds",
-	2880:  "synapse",
-	2881:  "ndsp",
-	2882:  "ndtp",
-	2883:  "ndnp",
-	2884:  "flashmsg",
-	2885:  "topflow",
-	2886:  "responselogic",
-	2887:  "aironetddp",
-	2888:  "spcsdlobby",
-	2889:  "rsom",
-	2890:  "cspclmulti",
-	2891:  "cinegrfx-elmd",
-	2892:  "snifferdata",
-	2893:  "vseconnector",
-	2894:  "abacus-remote",
-	2895:  "natuslink",
-	2896:  "ecovisiong6-1",
-	2897:  "citrix-rtmp",
-	2898:  "appliance-cfg",
-	2899:  "powergemplus",
-	2900:  "quicksuite",
-	2901:  "allstorcns",
-	2902:  "netaspi",
-	2903:  "suitcase",
-	2904:  "m2ua",
-	2905:  "m3ua",
-	2906:  "caller9",
-	2907:  "webmethods-b2b",
-	2908:  "mao",
-	2909:  "funk-dialout",
-	2910:  "tdaccess",
-	2911:  "blockade",
-	2912:  "epicon",
-	2913:  "boosterware",
-	2914:  "gamelobby",
-	2915:  "tksocket",
-	2916:  "elvin-server",
-	2917:  "elvin-client",
-	2918:  "kastenchasepad",
-	2919:  "roboer",
-	2920:  "roboeda",
-	2921:  "cesdcdman",
-	2922:  "cesdcdtrn",
-	2923:  "wta-wsp-wtp-s",
-	2924:  "precise-vip",
-	2926:  "mobile-file-dl",
-	2927:  "unimobilectrl",
-	2928:  "redstone-cpss",
-	2929:  "amx-webadmin",
-	2930:  "amx-weblinx",
-	2931:  "circle-x",
-	2932:  "incp",
-	2933:  "4-tieropmgw",
-	2934:  "4-tieropmcli",
-	2935:  "qtp",
-	2936:  "otpatch",
-	2937:  "pnaconsult-lm",
-	2938:  "sm-pas-1",
-	2939:  "sm-pas-2",
-	2940:  "sm-pas-3",
-	2941:  "sm-pas-4",
-	2942:  "sm-pas-5",
-	2943:  "ttnrepository",
-	2944:  "megaco-h248",
-	2945:  "h248-binary",
-	2946:  "fjsvmpor",
-	2947:  "gpsd",
-	2948:  "wap-push",
-	2949:  "wap-pushsecure",
-	2950:  "esip",
-	2951:  "ottp",
-	2952:  "mpfwsas",
-	2953:  "ovalarmsrv",
-	2954:  "ovalarmsrv-cmd",
-	2955:  "csnotify",
-	2956:  "ovrimosdbman",
-	2957:  "jmact5",
-	2958:  "jmact6",
-	2959:  "rmopagt",
-	2960:  "dfoxserver",
-	2961:  "boldsoft-lm",
-	2962:  "iph-policy-cli",
-	2963:  "iph-policy-adm",
-	2964:  "bullant-srap",
-	2965:  "bullant-rap",
-	2966:  "idp-infotrieve",
-	2967:  "ssc-agent",
-	2968:  "enpp",
-	2969:  "essp",
-	2970:  "index-net",
-	2971:  "netclip",
-	2972:  "pmsm-webrctl",
-	2973:  "svnetworks",
-	2974:  "signal",
-	2975:  "fjmpcm",
-	2976:  "cns-srv-port",
-	2977:  "ttc-etap-ns",
-	2978:  "ttc-etap-ds",
-	2979:  "h263-video",
-	2980:  "wimd",
-	2981:  "mylxamport",
-	2982:  "iwb-whiteboard",
-	2983:  "netplan",
-	2984:  "hpidsadmin",
-	2985:  "hpidsagent",
-	2986:  "stonefalls",
-	2987:  "identify",
-	2988:  "hippad",
-	2989:  "zarkov",
-	2990:  "boscap",
-	2991:  "wkstn-mon",
-	2992:  "avenyo",
-	2993:  "veritas-vis1",
-	2994:  "veritas-vis2",
-	2995:  "idrs",
-	2996:  "vsixml",
-	2997:  "rebol",
-	2998:  "realsecure",
-	2999:  "remoteware-un",
-	3000:  "hbci",
-	3001:  "origo-native",
-	3002:  "exlm-agent",
-	3003:  "cgms",
-	3004:  "csoftragent",
-	3005:  "geniuslm",
-	3006:  "ii-admin",
-	3007:  "lotusmtap",
-	3008:  "midnight-tech",
-	3009:  "pxc-ntfy",
-	3010:  "gw",
-	3011:  "trusted-web",
-	3012:  "twsdss",
-	3013:  "gilatskysurfer",
-	3014:  "broker-service",
-	3015:  "nati-dstp",
-	3016:  "notify-srvr",
-	3017:  "event-listener",
-	3018:  "srvc-registry",
-	3019:  "resource-mgr",
-	3020:  "cifs",
-	3021:  "agriserver",
-	3022:  "csregagent",
-	3023:  "magicnotes",
-	3024:  "nds-sso",
-	3025:  "arepa-raft",
-	3026:  "agri-gateway",
-	3027:  "LiebDevMgmt-C",
-	3028:  "LiebDevMgmt-DM",
-	3029:  "LiebDevMgmt-A",
-	3030:  "arepa-cas",
-	3031:  "eppc",
-	3032:  "redwood-chat",
-	3033:  "pdb",
-	3034:  "osmosis-aeea",
-	3035:  "fjsv-gssagt",
-	3036:  "hagel-dump",
-	3037:  "hp-san-mgmt",
-	3038:  "santak-ups",
-	3039:  "cogitate",
-	3040:  "tomato-springs",
-	3041:  "di-traceware",
-	3042:  "journee",
-	3043:  "brp",
-	3044:  "epp",
-	3045:  "responsenet",
-	3046:  "di-ase",
-	3047:  "hlserver",
-	3048:  "pctrader",
-	3049:  "nsws",
-	3050:  "gds-db",
-	3051:  "galaxy-server",
-	3052:  "apc-3052",
-	3053:  "dsom-server",
-	3054:  "amt-cnf-prot",
-	3055:  "policyserver",
-	3056:  "cdl-server",
-	3057:  "goahead-fldup",
-	3058:  "videobeans",
-	3059:  "qsoft",
-	3060:  "interserver",
-	3061:  "cautcpd",
-	3062:  "ncacn-ip-tcp",
-	3063:  "ncadg-ip-udp",
-	3064:  "rprt",
-	3065:  "slinterbase",
-	3066:  "netattachsdmp",
-	3067:  "fjhpjp",
-	3068:  "ls3bcast",
-	3069:  "ls3",
-	3070:  "mgxswitch",
-	3071:  "xplat-replicate",
-	3072:  "csd-monitor",
-	3073:  "vcrp",
-	3074:  "xbox",
-	3075:  "orbix-locator",
-	3076:  "orbix-config",
-	3077:  "orbix-loc-ssl",
-	3078:  "orbix-cfg-ssl",
-	3079:  "lv-frontpanel",
-	3080:  "stm-pproc",
-	3081:  "tl1-lv",
-	3082:  "tl1-raw",
-	3083:  "tl1-telnet",
-	3084:  "itm-mccs",
-	3085:  "pcihreq",
-	3086:  "jdl-dbkitchen",
-	3087:  "asoki-sma",
-	3088:  "xdtp",
-	3089:  "ptk-alink",
-	3090:  "stss",
-	3091:  "1ci-smcs",
-	3093:  "rapidmq-center",
-	3094:  "rapidmq-reg",
-	3095:  "panasas",
-	3096:  "ndl-aps",
-	3098:  "umm-port",
-	3099:  "chmd",
-	3100:  "opcon-xps",
-	3101:  "hp-pxpib",
-	3102:  "slslavemon",
-	3103:  "autocuesmi",
-	3104:  "autocuelog",
-	3105:  "cardbox",
-	3106:  "cardbox-http",
-	3107:  "business",
-	3108:  "geolocate",
-	3109:  "personnel",
-	3110:  "sim-control",
-	3111:  "wsynch",
-	3112:  "ksysguard",
-	3113:  "cs-auth-svr",
-	3114:  "ccmad",
-	3115:  "mctet-master",
-	3116:  "mctet-gateway",
-	3117:  "mctet-jserv",
-	3118:  "pkagent",
-	3119:  "d2000kernel",
-	3120:  "d2000webserver",
-	3121:  "pcmk-remote",
-	3122:  "vtr-emulator",
-	3123:  "edix",
-	3124:  "beacon-port",
-	3125:  "a13-an",
-	3127:  "ctx-bridge",
-	3128:  "ndl-aas",
-	3129:  "netport-id",
-	3130:  "icpv2",
-	3131:  "netbookmark",
-	3132:  "ms-rule-engine",
-	3133:  "prism-deploy",
-	3134:  "ecp",
-	3135:  "peerbook-port",
-	3136:  "grubd",
-	3137:  "rtnt-1",
-	3138:  "rtnt-2",
-	3139:  "incognitorv",
-	3140:  "ariliamulti",
-	3141:  "vmodem",
-	3142:  "rdc-wh-eos",
-	3143:  "seaview",
-	3144:  "tarantella",
-	3145:  "csi-lfap",
-	3146:  "bears-02",
-	3147:  "rfio",
-	3148:  "nm-game-admin",
-	3149:  "nm-game-server",
-	3150:  "nm-asses-admin",
-	3151:  "nm-assessor",
-	3152:  "feitianrockey",
-	3153:  "s8-client-port",
-	3154:  "ccmrmi",
-	3155:  "jpegmpeg",
-	3156:  "indura",
-	3157:  "e3consultants",
-	3158:  "stvp",
-	3159:  "navegaweb-port",
-	3160:  "tip-app-server",
-	3161:  "doc1lm",
-	3162:  "sflm",
-	3163:  "res-sap",
-	3164:  "imprs",
-	3165:  "newgenpay",
-	3166:  "sossecollector",
-	3167:  "nowcontact",
-	3168:  "poweronnud",
-	3169:  "serverview-as",
-	3170:  "serverview-asn",
-	3171:  "serverview-gf",
-	3172:  "serverview-rm",
-	3173:  "serverview-icc",
-	3174:  "armi-server",
-	3175:  "t1-e1-over-ip",
-	3176:  "ars-master",
-	3177:  "phonex-port",
-	3178:  "radclientport",
-	3179:  "h2gf-w-2m",
-	3180:  "mc-brk-srv",
-	3181:  "bmcpatrolagent",
-	3182:  "bmcpatrolrnvu",
-	3183:  "cops-tls",
-	3184:  "apogeex-port",
-	3185:  "smpppd",
-	3186:  "iiw-port",
-	3187:  "odi-port",
-	3188:  "brcm-comm-port",
-	3189:  "pcle-infex",
-	3190:  "csvr-proxy",
-	3191:  "csvr-sslproxy",
-	3192:  "firemonrcc",
-	3193:  "spandataport",
-	3194:  "magbind",
-	3195:  "ncu-1",
-	3196:  "ncu-2",
-	3197:  "embrace-dp-s",
-	3198:  "embrace-dp-c",
-	3199:  "dmod-workspace",
-	3200:  "tick-port",
-	3201:  "cpq-tasksmart",
-	3202:  "intraintra",
-	3203:  "netwatcher-mon",
-	3204:  "netwatcher-db",
-	3205:  "isns",
-	3206:  "ironmail",
-	3207:  "vx-auth-port",
-	3208:  "pfu-prcallback",
-	3209:  "netwkpathengine",
-	3210:  "flamenco-proxy",
-	3211:  "avsecuremgmt",
-	3212:  "surveyinst",
-	3213:  "neon24x7",
-	3214:  "jmq-daemon-1",
-	3215:  "jmq-daemon-2",
-	3216:  "ferrari-foam",
-	3217:  "unite",
-	3218:  "smartpackets",
-	3219:  "wms-messenger",
-	3220:  "xnm-ssl",
-	3221:  "xnm-clear-text",
-	3222:  "glbp",
-	3223:  "digivote",
-	3224:  "aes-discovery",
-	3225:  "fcip-port",
-	3226:  "isi-irp",
-	3227:  "dwnmshttp",
-	3228:  "dwmsgserver",
-	3229:  "global-cd-port",
-	3230:  "sftdst-port",
-	3231:  "vidigo",
-	3232:  "mdtp",
-	3233:  "whisker",
-	3234:  "alchemy",
-	3235:  "mdap-port",
-	3236:  "apparenet-ts",
-	3237:  "apparenet-tps",
-	3238:  "apparenet-as",
-	3239:  "apparenet-ui",
-	3240:  "triomotion",
-	3241:  "sysorb",
-	3242:  "sdp-id-port",
-	3243:  "timelot",
-	3244:  "onesaf",
-	3245:  "vieo-fe",
-	3246:  "dvt-system",
-	3247:  "dvt-data",
-	3248:  "procos-lm",
-	3249:  "ssp",
-	3250:  "hicp",
-	3251:  "sysscanner",
-	3252:  "dhe",
-	3253:  "pda-data",
-	3254:  "pda-sys",
-	3255:  "semaphore",
-	3256:  "cpqrpm-agent",
-	3257:  "cpqrpm-server",
-	3258:  "ivecon-port",
-	3259:  "epncdp2",
-	3260:  "iscsi-target",
-	3261:  "winshadow",
-	3262:  "necp",
-	3263:  "ecolor-imager",
-	3264:  "ccmail",
-	3265:  "altav-tunnel",
-	3266:  "ns-cfg-server",
-	3267:  "ibm-dial-out",
-	3268:  "msft-gc",
-	3269:  "msft-gc-ssl",
-	3270:  "verismart",
-	3271:  "csoft-prev",
-	3272:  "user-manager",
-	3273:  "sxmp",
-	3274:  "ordinox-server",
-	3275:  "samd",
-	3276:  "maxim-asics",
-	3277:  "awg-proxy",
-	3278:  "lkcmserver",
-	3279:  "admind",
-	3280:  "vs-server",
-	3281:  "sysopt",
-	3282:  "datusorb",
-	3283:  "Apple Remote Desktop (Net Assistant)",
-	3284:  "4talk",
-	3285:  "plato",
-	3286:  "e-net",
-	3287:  "directvdata",
-	3288:  "cops",
-	3289:  "enpc",
-	3290:  "caps-lm",
-	3291:  "sah-lm",
-	3292:  "cart-o-rama",
-	3293:  "fg-fps",
-	3294:  "fg-gip",
-	3295:  "dyniplookup",
-	3296:  "rib-slm",
-	3297:  "cytel-lm",
-	3298:  "deskview",
-	3299:  "pdrncs",
-	3300:  "ceph",
-	3302:  "mcs-fastmail",
-	3303:  "opsession-clnt",
-	3304:  "opsession-srvr",
-	3305:  "odette-ftp",
-	3306:  "mysql",
-	3307:  "opsession-prxy",
-	3308:  "tns-server",
-	3309:  "tns-adv",
-	3310:  "dyna-access",
-	3311:  "mcns-tel-ret",
-	3312:  "appman-server",
-	3313:  "uorb",
-	3314:  "uohost",
-	3315:  "cdid",
-	3316:  "aicc-cmi",
-	3317:  "vsaiport",
-	3318:  "ssrip",
-	3319:  "sdt-lmd",
-	3320:  "officelink2000",
-	3321:  "vnsstr",
-	3326:  "sftu",
-	3327:  "bbars",
-	3328:  "egptlm",
-	3329:  "hp-device-disc",
-	3330:  "mcs-calypsoicf",
-	3331:  "mcs-messaging",
-	3332:  "mcs-mailsvr",
-	3333:  "dec-notes",
-	3334:  "directv-web",
-	3335:  "directv-soft",
-	3336:  "directv-tick",
-	3337:  "directv-catlg",
-	3338:  "anet-b",
-	3339:  "anet-l",
-	3340:  "anet-m",
-	3341:  "anet-h",
-	3342:  "webtie",
-	3343:  "ms-cluster-net",
-	3344:  "bnt-manager",
-	3345:  "influence",
-	3346:  "trnsprntproxy",
-	3347:  "phoenix-rpc",
-	3348:  "pangolin-laser",
-	3349:  "chevinservices",
-	3350:  "findviatv",
-	3351:  "btrieve",
-	3352:  "ssql",
-	3353:  "fatpipe",
-	3354:  "suitjd",
-	3355:  "ordinox-dbase",
-	3356:  "upnotifyps",
-	3357:  "adtech-test",
-	3358:  "mpsysrmsvr",
-	3359:  "wg-netforce",
-	3360:  "kv-server",
-	3361:  "kv-agent",
-	3362:  "dj-ilm",
-	3363:  "nati-vi-server",
-	3364:  "creativeserver",
-	3365:  "contentserver",
-	3366:  "creativepartnr",
-	3372:  "tip2",
-	3373:  "lavenir-lm",
-	3374:  "cluster-disc",
-	3375:  "vsnm-agent",
-	3376:  "cdbroker",
-	3377:  "cogsys-lm",
-	3378:  "wsicopy",
-	3379:  "socorfs",
-	3380:  "sns-channels",
-	3381:  "geneous",
-	3382:  "fujitsu-neat",
-	3383:  "esp-lm",
-	3384:  "hp-clic",
-	3385:  "qnxnetman",
-	3386:  "gprs-data",
-	3387:  "backroomnet",
-	3388:  "cbserver",
-	3389:  "ms-wbt-server",
-	3390:  "dsc",
-	3391:  "savant",
-	3392:  "efi-lm",
-	3393:  "d2k-tapestry1",
-	3394:  "d2k-tapestry2",
-	3395:  "dyna-lm",
-	3396:  "printer-agent",
-	3397:  "cloanto-lm",
-	3398:  "mercantile",
-	3399:  "csms",
-	3400:  "csms2",
-	3401:  "filecast",
-	3402:  "fxaengine-net",
-	3405:  "nokia-ann-ch1",
-	3406:  "nokia-ann-ch2",
-	3407:  "ldap-admin",
-	3408:  "BESApi",
-	3409:  "networklens",
-	3410:  "networklenss",
-	3411:  "biolink-auth",
-	3412:  "xmlblaster",
-	3413:  "svnet",
-	3414:  "wip-port",
-	3415:  "bcinameservice",
-	3416:  "commandport",
-	3417:  "csvr",
-	3418:  "rnmap",
-	3419:  "softaudit",
-	3420:  "ifcp-port",
-	3421:  "bmap",
-	3422:  "rusb-sys-port",
-	3423:  "xtrm",
-	3424:  "xtrms",
-	3425:  "agps-port",
-	3426:  "arkivio",
-	3427:  "websphere-snmp",
-	3428:  "twcss",
-	3429:  "gcsp",
-	3430:  "ssdispatch",
-	3431:  "ndl-als",
-	3432:  "osdcp",
-	3433:  "opnet-smp",
-	3434:  "opencm",
-	3435:  "pacom",
-	3436:  "gc-config",
-	3437:  "autocueds",
-	3438:  "spiral-admin",
-	3439:  "hri-port",
-	3440:  "ans-console",
-	3441:  "connect-client",
-	3442:  "connect-server",
-	3443:  "ov-nnm-websrv",
-	3444:  "denali-server",
-	3445:  "monp",
-	3446:  "3comfaxrpc",
-	3447:  "directnet",
-	3448:  "dnc-port",
-	3449:  "hotu-chat",
-	3450:  "castorproxy",
-	3451:  "asam",
-	3452:  "sabp-signal",
-	3453:  "pscupd",
-	3454:  "mira",
-	3455:  "prsvp",
-	3456:  "vat",
-	3457:  "vat-control",
-	3458:  "d3winosfi",
-	3459:  "integral",
-	3460:  "edm-manager",
-	3461:  "edm-stager",
-	3462:  "edm-std-notify",
-	3463:  "edm-adm-notify",
-	3464:  "edm-mgr-sync",
-	3465:  "edm-mgr-cntrl",
-	3466:  "workflow",
-	3467:  "rcst",
-	3468:  "ttcmremotectrl",
-	3469:  "pluribus",
-	3470:  "jt400",
-	3471:  "jt400-ssl",
-	3472:  "jaugsremotec-1",
-	3473:  "jaugsremotec-2",
-	3474:  "ttntspauto",
-	3475:  "genisar-port",
-	3476:  "nppmp",
-	3477:  "ecomm",
-	3478:  "stun",
-	3479:  "twrpc",
-	3480:  "plethora",
-	3481:  "cleanerliverc",
-	3482:  "vulture",
-	3483:  "slim-devices",
-	3484:  "gbs-stp",
-	3485:  "celatalk",
-	3486:  "ifsf-hb-port",
-	3487:  "ltctcp",
-	3488:  "fs-rh-srv",
-	3489:  "dtp-dia",
-	3490:  "colubris",
-	3491:  "swr-port",
-	3492:  "tvdumtray-port",
-	3493:  "nut",
-	3494:  "ibm3494",
-	3495:  "seclayer-tcp",
-	3496:  "seclayer-tls",
-	3497:  "ipether232port",
-	3498:  "dashpas-port",
-	3499:  "sccip-media",
-	3500:  "rtmp-port",
-	3501:  "isoft-p2p",
-	3502:  "avinstalldisc",
-	3503:  "lsp-ping",
-	3504:  "ironstorm",
-	3505:  "ccmcomm",
-	3506:  "apc-3506",
-	3507:  "nesh-broker",
-	3508:  "interactionweb",
-	3509:  "vt-ssl",
-	3510:  "xss-port",
-	3511:  "webmail-2",
-	3512:  "aztec",
-	3513:  "arcpd",
-	3514:  "must-p2p",
-	3515:  "must-backplane",
-	3516:  "smartcard-port",
-	3517:  "802-11-iapp",
-	3518:  "artifact-msg",
-	3519:  "nvmsgd",
-	3520:  "galileolog",
-	3521:  "mc3ss",
-	3522:  "nssocketport",
-	3523:  "odeumservlink",
-	3524:  "ecmport",
-	3525:  "eisport",
-	3526:  "starquiz-port",
-	3527:  "beserver-msg-q",
-	3528:  "jboss-iiop",
-	3529:  "jboss-iiop-ssl",
-	3530:  "gf",
-	3531:  "joltid",
-	3532:  "raven-rmp",
-	3533:  "raven-rdp",
-	3534:  "urld-port",
-	3535:  "ms-la",
-	3536:  "snac",
-	3537:  "ni-visa-remote",
-	3538:  "ibm-diradm",
-	3539:  "ibm-diradm-ssl",
-	3540:  "pnrp-port",
-	3541:  "voispeed-port",
-	3542:  "hacl-monitor",
-	3543:  "qftest-lookup",
-	3544:  "teredo",
-	3545:  "camac",
-	3547:  "symantec-sim",
-	3548:  "interworld",
-	3549:  "tellumat-nms",
-	3550:  "ssmpp",
-	3551:  "apcupsd",
-	3552:  "taserver",
-	3553:  "rbr-discovery",
-	3554:  "questnotify",
-	3555:  "razor",
-	3556:  "sky-transport",
-	3557:  "personalos-001",
-	3558:  "mcp-port",
-	3559:  "cctv-port",
-	3560:  "iniserve-port",
-	3561:  "bmc-onekey",
-	3562:  "sdbproxy",
-	3563:  "watcomdebug",
-	3564:  "esimport",
-	3565:  "m2pa",
-	3566:  "quest-data-hub",
-	3567:  "dof-eps",
-	3568:  "dof-tunnel-sec",
-	3569:  "mbg-ctrl",
-	3570:  "mccwebsvr-port",
-	3571:  "megardsvr-port",
-	3572:  "megaregsvrport",
-	3573:  "tag-ups-1",
-	3574:  "dmaf-server",
-	3575:  "ccm-port",
-	3576:  "cmc-port",
-	3577:  "config-port",
-	3578:  "data-port",
-	3579:  "ttat3lb",
-	3580:  "nati-svrloc",
-	3581:  "kfxaclicensing",
-	3582:  "press",
-	3583:  "canex-watch",
-	3584:  "u-dbap",
-	3585:  "emprise-lls",
-	3586:  "emprise-lsc",
-	3587:  "p2pgroup",
-	3588:  "sentinel",
-	3589:  "isomair",
-	3590:  "wv-csp-sms",
-	3591:  "gtrack-server",
-	3592:  "gtrack-ne",
-	3593:  "bpmd",
-	3594:  "mediaspace",
-	3595:  "shareapp",
-	3596:  "iw-mmogame",
-	3597:  "a14",
-	3598:  "a15",
-	3599:  "quasar-server",
-	3600:  "trap-daemon",
-	3601:  "visinet-gui",
-	3602:  "infiniswitchcl",
-	3603:  "int-rcv-cntrl",
-	3604:  "bmc-jmx-port",
-	3605:  "comcam-io",
-	3606:  "splitlock",
-	3607:  "precise-i3",
-	3608:  "trendchip-dcp",
-	3609:  "cpdi-pidas-cm",
-	3610:  "echonet",
-	3611:  "six-degrees",
-	3612:  "hp-dataprotect",
-	3613:  "alaris-disc",
-	3614:  "sigma-port",
-	3615:  "start-network",
-	3616:  "cd3o-protocol",
-	3617:  "sharp-server",
-	3618:  "aairnet-1",
-	3619:  "aairnet-2",
-	3620:  "ep-pcp",
-	3621:  "ep-nsp",
-	3622:  "ff-lr-port",
-	3623:  "haipe-discover",
-	3624:  "dist-upgrade",
-	3625:  "volley",
-	3626:  "bvcdaemon-port",
-	3627:  "jamserverport",
-	3628:  "ept-machine",
-	3629:  "escvpnet",
-	3630:  "cs-remote-db",
-	3631:  "cs-services",
-	3632:  "distcc",
-	3633:  "wacp",
-	3634:  "hlibmgr",
-	3635:  "sdo",
-	3636:  "servistaitsm",
-	3637:  "scservp",
-	3638:  "ehp-backup",
-	3639:  "xap-ha",
-	3640:  "netplay-port1",
-	3641:  "netplay-port2",
-	3642:  "juxml-port",
-	3643:  "audiojuggler",
-	3644:  "ssowatch",
-	3645:  "cyc",
-	3646:  "xss-srv-port",
-	3647:  "splitlock-gw",
-	3648:  "fjcp",
-	3649:  "nmmp",
-	3650:  "prismiq-plugin",
-	3651:  "xrpc-registry",
-	3652:  "vxcrnbuport",
-	3653:  "tsp",
-	3654:  "vaprtm",
-	3655:  "abatemgr",
-	3656:  "abatjss",
-	3657:  "immedianet-bcn",
-	3658:  "ps-ams",
-	3659:  "apple-sasl",
-	3660:  "can-nds-ssl",
-	3661:  "can-ferret-ssl",
-	3662:  "pserver",
-	3663:  "dtp",
-	3664:  "ups-engine",
-	3665:  "ent-engine",
-	3666:  "eserver-pap",
-	3667:  "infoexch",
-	3668:  "dell-rm-port",
-	3669:  "casanswmgmt",
-	3670:  "smile",
-	3671:  "efcp",
-	3672:  "lispworks-orb",
-	3673:  "mediavault-gui",
-	3674:  "wininstall-ipc",
-	3675:  "calltrax",
-	3676:  "va-pacbase",
-	3677:  "roverlog",
-	3678:  "ipr-dglt",
-	3679:  "Escale (Newton Dock)",
-	3680:  "npds-tracker",
-	3681:  "bts-x73",
-	3682:  "cas-mapi",
-	3683:  "bmc-ea",
-	3684:  "faxstfx-port",
-	3685:  "dsx-agent",
-	3686:  "tnmpv2",
-	3687:  "simple-push",
-	3688:  "simple-push-s",
-	3689:  "daap",
-	3690:  "svn",
-	3691:  "magaya-network",
-	3692:  "intelsync",
-	3693:  "easl",
-	3695:  "bmc-data-coll",
-	3696:  "telnetcpcd",
-	3697:  "nw-license",
-	3698:  "sagectlpanel",
-	3699:  "kpn-icw",
-	3700:  "lrs-paging",
-	3701:  "netcelera",
-	3702:  "ws-discovery",
-	3703:  "adobeserver-3",
-	3704:  "adobeserver-4",
-	3705:  "adobeserver-5",
-	3706:  "rt-event",
-	3707:  "rt-event-s",
-	3708:  "sun-as-iiops",
-	3709:  "ca-idms",
-	3710:  "portgate-auth",
-	3711:  "edb-server2",
-	3712:  "sentinel-ent",
-	3713:  "tftps",
-	3714:  "delos-dms",
-	3715:  "anoto-rendezv",
-	3716:  "wv-csp-sms-cir",
-	3717:  "wv-csp-udp-cir",
-	3718:  "opus-services",
-	3719:  "itelserverport",
-	3720:  "ufastro-instr",
-	3721:  "xsync",
-	3722:  "xserveraid",
-	3723:  "sychrond",
-	3724:  "blizwow",
-	3725:  "na-er-tip",
-	3726:  "array-manager",
-	3727:  "e-mdu",
-	3728:  "e-woa",
-	3729:  "fksp-audit",
-	3730:  "client-ctrl",
-	3731:  "smap",
-	3732:  "m-wnn",
-	3733:  "multip-msg",
-	3734:  "synel-data",
-	3735:  "pwdis",
-	3736:  "rs-rmi",
-	3737:  "xpanel",
-	3738:  "versatalk",
-	3739:  "launchbird-lm",
-	3740:  "heartbeat",
-	3741:  "wysdma",
-	3742:  "cst-port",
-	3743:  "ipcs-command",
-	3744:  "sasg",
-	3745:  "gw-call-port",
-	3746:  "linktest",
-	3747:  "linktest-s",
-	3748:  "webdata",
-	3749:  "cimtrak",
-	3750:  "cbos-ip-port",
-	3751:  "gprs-cube",
-	3752:  "vipremoteagent",
-	3753:  "nattyserver",
-	3754:  "timestenbroker",
-	3755:  "sas-remote-hlp",
-	3756:  "canon-capt",
-	3757:  "grf-port",
-	3758:  "apw-registry",
-	3759:  "exapt-lmgr",
-	3760:  "adtempusclient",
-	3761:  "gsakmp",
-	3762:  "gbs-smp",
-	3763:  "xo-wave",
-	3764:  "mni-prot-rout",
-	3765:  "rtraceroute",
-	3766:  "sitewatch-s",
-	3767:  "listmgr-port",
-	3768:  "rblcheckd",
-	3769:  "haipe-otnk",
-	3770:  "cindycollab",
-	3771:  "paging-port",
-	3772:  "ctp",
-	3773:  "ctdhercules",
-	3774:  "zicom",
-	3775:  "ispmmgr",
-	3776:  "dvcprov-port",
-	3777:  "jibe-eb",
-	3778:  "c-h-it-port",
-	3779:  "cognima",
-	3780:  "nnp",
-	3781:  "abcvoice-port",
-	3782:  "iso-tp0s",
-	3783:  "bim-pem",
-	3784:  "bfd-control",
-	3785:  "bfd-echo",
-	3786:  "upstriggervsw",
-	3787:  "fintrx",
-	3788:  "isrp-port",
-	3789:  "remotedeploy",
-	3790:  "quickbooksrds",
-	3791:  "tvnetworkvideo",
-	3792:  "sitewatch",
-	3793:  "dcsoftware",
-	3794:  "jaus",
-	3795:  "myblast",
-	3796:  "spw-dialer",
-	3797:  "idps",
-	3798:  "minilock",
-	3799:  "radius-dynauth",
-	3800:  "pwgpsi",
-	3801:  "ibm-mgr",
-	3802:  "vhd",
-	3803:  "soniqsync",
-	3804:  "iqnet-port",
-	3805:  "tcpdataserver",
-	3806:  "wsmlb",
-	3807:  "spugna",
-	3808:  "sun-as-iiops-ca",
-	3809:  "apocd",
-	3810:  "wlanauth",
-	3811:  "amp",
-	3812:  "neto-wol-server",
-	3813:  "rap-ip",
-	3814:  "neto-dcs",
-	3815:  "lansurveyorxml",
-	3816:  "sunlps-http",
-	3817:  "tapeware",
-	3818:  "crinis-hb",
-	3819:  "epl-slp",
-	3820:  "scp",
-	3821:  "pmcp",
-	3822:  "acp-discovery",
-	3823:  "acp-conduit",
-	3824:  "acp-policy",
-	3825:  "ffserver",
-	3826:  "warmux",
-	3827:  "netmpi",
-	3828:  "neteh",
-	3829:  "neteh-ext",
-	3830:  "cernsysmgmtagt",
-	3831:  "dvapps",
-	3832:  "xxnetserver",
-	3833:  "aipn-auth",
-	3834:  "spectardata",
-	3835:  "spectardb",
-	3836:  "markem-dcp",
-	3837:  "mkm-discovery",
-	3838:  "sos",
-	3839:  "amx-rms",
-	3840:  "flirtmitmir",
-	3841:  "shiprush-db-svr",
-	3842:  "nhci",
-	3843:  "quest-agent",
-	3844:  "rnm",
-	3845:  "v-one-spp",
-	3846:  "an-pcp",
-	3847:  "msfw-control",
-	3848:  "item",
-	3849:  "spw-dnspreload",
-	3850:  "qtms-bootstrap",
-	3851:  "spectraport",
-	3852:  "sse-app-config",
-	3853:  "sscan",
-	3854:  "stryker-com",
-	3855:  "opentrac",
-	3856:  "informer",
-	3857:  "trap-port",
-	3858:  "trap-port-mom",
-	3859:  "nav-port",
-	3860:  "sasp",
-	3861:  "winshadow-hd",
-	3862:  "giga-pocket",
-	3863:  "asap-tcp",
-	3864:  "asap-tcp-tls",
-	3865:  "xpl",
-	3866:  "dzdaemon",
-	3867:  "dzoglserver",
-	3868:  "diameter",
-	3869:  "ovsam-mgmt",
-	3870:  "ovsam-d-agent",
-	3871:  "avocent-adsap",
-	3872:  "oem-agent",
-	3873:  "fagordnc",
-	3874:  "sixxsconfig",
-	3875:  "pnbscada",
-	3876:  "dl-agent",
-	3877:  "xmpcr-interface",
-	3878:  "fotogcad",
-	3879:  "appss-lm",
-	3880:  "igrs",
-	3881:  "idac",
-	3882:  "msdts1",
-	3883:  "vrpn",
-	3884:  "softrack-meter",
-	3885:  "topflow-ssl",
-	3886:  "nei-management",
-	3887:  "ciphire-data",
-	3888:  "ciphire-serv",
-	3889:  "dandv-tester",
-	3890:  "ndsconnect",
-	3891:  "rtc-pm-port",
-	3892:  "pcc-image-port",
-	3893:  "cgi-starapi",
-	3894:  "syam-agent",
-	3895:  "syam-smc",
-	3896:  "sdo-tls",
-	3897:  "sdo-ssh",
-	3898:  "senip",
-	3899:  "itv-control",
-	3900:  "udt-os",
-	3901:  "nimsh",
-	3902:  "nimaux",
-	3903:  "charsetmgr",
-	3904:  "omnilink-port",
-	3905:  "mupdate",
-	3906:  "topovista-data",
-	3907:  "imoguia-port",
-	3908:  "hppronetman",
-	3909:  "surfcontrolcpa",
-	3910:  "prnrequest",
-	3911:  "prnstatus",
-	3912:  "gbmt-stars",
-	3913:  "listcrt-port",
-	3914:  "listcrt-port-2",
-	3915:  "agcat",
-	3916:  "wysdmc",
-	3917:  "aftmux",
-	3918:  "pktcablemmcops",
-	3919:  "hyperip",
-	3920:  "exasoftport1",
-	3921:  "herodotus-net",
-	3922:  "sor-update",
-	3923:  "symb-sb-port",
-	3924:  "mpl-gprs-port",
-	3925:  "zmp",
-	3926:  "winport",
-	3927:  "natdataservice",
-	3928:  "netboot-pxe",
-	3929:  "smauth-port",
-	3930:  "syam-webserver",
-	3931:  "msr-plugin-port",
-	3932:  "dyn-site",
-	3933:  "plbserve-port",
-	3934:  "sunfm-port",
-	3935:  "sdp-portmapper",
-	3936:  "mailprox",
-	3937:  "dvbservdsc",
-	3938:  "dbcontrol-agent",
-	3939:  "aamp",
-	3940:  "xecp-node",
-	3941:  "homeportal-web",
-	3942:  "srdp",
-	3943:  "tig",
-	3944:  "sops",
-	3945:  "emcads",
-	3946:  "backupedge",
-	3947:  "ccp",
-	3948:  "apdap",
-	3949:  "drip",
-	3950:  "namemunge",
-	3951:  "pwgippfax",
-	3952:  "i3-sessionmgr",
-	3953:  "xmlink-connect",
-	3954:  "adrep",
-	3955:  "p2pcommunity",
-	3956:  "gvcp",
-	3957:  "mqe-broker",
-	3958:  "mqe-agent",
-	3959:  "treehopper",
-	3960:  "bess",
-	3961:  "proaxess",
-	3962:  "sbi-agent",
-	3963:  "thrp",
-	3964:  "sasggprs",
-	3965:  "ati-ip-to-ncpe",
-	3966:  "bflckmgr",
-	3967:  "ppsms",
-	3968:  "ianywhere-dbns",
-	3969:  "landmarks",
-	3970:  "lanrevagent",
-	3971:  "lanrevserver",
-	3972:  "iconp",
-	3973:  "progistics",
-	3974:  "citysearch",
-	3975:  "airshot",
-	3976:  "opswagent",
-	3977:  "opswmanager",
-	3978:  "secure-cfg-svr",
-	3979:  "smwan",
-	3980:  "acms",
-	3981:  "starfish",
-	3982:  "eis",
-	3983:  "eisp",
-	3984:  "mapper-nodemgr",
-	3985:  "mapper-mapethd",
-	3986:  "mapper-ws-ethd",
-	3987:  "centerline",
-	3988:  "dcs-config",
-	3989:  "bv-queryengine",
-	3990:  "bv-is",
-	3991:  "bv-smcsrv",
-	3992:  "bv-ds",
-	3993:  "bv-agent",
-	3995:  "iss-mgmt-ssl",
-	3996:  "abcsoftware",
-	3997:  "agentsease-db",
-	3998:  "dnx",
-	3999:  "nvcnet",
-	4000:  "terabase",
-	4001:  "newoak",
-	4002:  "pxc-spvr-ft",
-	4003:  "pxc-splr-ft",
-	4004:  "pxc-roid",
-	4005:  "pxc-pin",
-	4006:  "pxc-spvr",
-	4007:  "pxc-splr",
-	4008:  "netcheque",
-	4009:  "chimera-hwm",
-	4010:  "samsung-unidex",
-	4011:  "altserviceboot",
-	4012:  "pda-gate",
-	4013:  "acl-manager",
-	4014:  "taiclock",
-	4015:  "talarian-mcast1",
-	4016:  "talarian-mcast2",
-	4017:  "talarian-mcast3",
-	4018:  "talarian-mcast4",
-	4019:  "talarian-mcast5",
-	4020:  "trap",
-	4021:  "nexus-portal",
-	4022:  "dnox",
-	4023:  "esnm-zoning",
-	4024:  "tnp1-port",
-	4025:  "partimage",
-	4026:  "as-debug",
-	4027:  "bxp",
-	4028:  "dtserver-port",
-	4029:  "ip-qsig",
-	4030:  "jdmn-port",
-	4031:  "suucp",
-	4032:  "vrts-auth-port",
-	4033:  "sanavigator",
-	4034:  "ubxd",
-	4035:  "wap-push-http",
-	4036:  "wap-push-https",
-	4037:  "ravehd",
-	4038:  "fazzt-ptp",
-	4039:  "fazzt-admin",
-	4040:  "yo-main",
-	4041:  "houston",
-	4042:  "ldxp",
-	4043:  "nirp",
-	4044:  "ltp",
-	4045:  "npp",
-	4046:  "acp-proto",
-	4047:  "ctp-state",
-	4049:  "wafs",
-	4050:  "cisco-wafs",
-	4051:  "cppdp",
-	4052:  "interact",
-	4053:  "ccu-comm-1",
-	4054:  "ccu-comm-2",
-	4055:  "ccu-comm-3",
-	4056:  "lms",
-	4057:  "wfm",
-	4058:  "kingfisher",
-	4059:  "dlms-cosem",
-	4060:  "dsmeter-iatc",
-	4061:  "ice-location",
-	4062:  "ice-slocation",
-	4063:  "ice-router",
-	4064:  "ice-srouter",
-	4065:  "avanti-cdp",
-	4066:  "pmas",
-	4067:  "idp",
-	4068:  "ipfltbcst",
-	4069:  "minger",
-	4070:  "tripe",
-	4071:  "aibkup",
-	4072:  "zieto-sock",
-	4073:  "iRAPP",
-	4074:  "cequint-cityid",
-	4075:  "perimlan",
-	4076:  "seraph",
-	4078:  "cssp",
-	4079:  "santools",
-	4080:  "lorica-in",
-	4081:  "lorica-in-sec",
-	4082:  "lorica-out",
-	4083:  "lorica-out-sec",
-	4085:  "ezmessagesrv",
-	4087:  "applusservice",
-	4088:  "npsp",
-	4089:  "opencore",
-	4090:  "omasgport",
-	4091:  "ewinstaller",
-	4092:  "ewdgs",
-	4093:  "pvxpluscs",
-	4094:  "sysrqd",
-	4095:  "xtgui",
-	4096:  "bre",
-	4097:  "patrolview",
-	4098:  "drmsfsd",
-	4099:  "dpcp",
-	4100:  "igo-incognito",
-	4101:  "brlp-0",
-	4102:  "brlp-1",
-	4103:  "brlp-2",
-	4104:  "brlp-3",
-	4105:  "shofar",
-	4106:  "synchronite",
-	4107:  "j-ac",
-	4108:  "accel",
-	4109:  "izm",
-	4110:  "g2tag",
-	4111:  "xgrid",
-	4112:  "apple-vpns-rp",
-	4113:  "aipn-reg",
-	4114:  "jomamqmonitor",
-	4115:  "cds",
-	4116:  "smartcard-tls",
-	4117:  "hillrserv",
-	4118:  "netscript",
-	4119:  "assuria-slm",
-	4120:  "minirem",
-	4121:  "e-builder",
-	4122:  "fprams",
-	4123:  "z-wave",
-	4124:  "tigv2",
-	4125:  "opsview-envoy",
-	4126:  "ddrepl",
-	4127:  "unikeypro",
-	4128:  "nufw",
-	4129:  "nuauth",
-	4130:  "fronet",
-	4131:  "stars",
-	4132:  "nuts-dem",
-	4133:  "nuts-bootp",
-	4134:  "nifty-hmi",
-	4135:  "cl-db-attach",
-	4136:  "cl-db-request",
-	4137:  "cl-db-remote",
-	4138:  "nettest",
-	4139:  "thrtx",
-	4140:  "cedros-fds",
-	4141:  "oirtgsvc",
-	4142:  "oidocsvc",
-	4143:  "oidsr",
-	4145:  "vvr-control",
-	4146:  "tgcconnect",
-	4147:  "vrxpservman",
-	4148:  "hhb-handheld",
-	4149:  "agslb",
-	4150:  "PowerAlert-nsa",
-	4151:  "menandmice-noh",
-	4152:  "idig-mux",
-	4153:  "mbl-battd",
-	4154:  "atlinks",
-	4155:  "bzr",
-	4156:  "stat-results",
-	4157:  "stat-scanner",
-	4158:  "stat-cc",
-	4159:  "nss",
-	4160:  "jini-discovery",
-	4161:  "omscontact",
-	4162:  "omstopology",
-	4163:  "silverpeakpeer",
-	4164:  "silverpeakcomm",
-	4165:  "altcp",
-	4166:  "joost",
-	4167:  "ddgn",
-	4168:  "pslicser",
-	4169:  "iadt",
-	4170:  "d-cinema-csp",
-	4171:  "ml-svnet",
-	4172:  "pcoip",
-	4174:  "smcluster",
-	4175:  "bccp",
-	4176:  "tl-ipcproxy",
-	4177:  "wello",
-	4178:  "storman",
-	4179:  "MaxumSP",
-	4180:  "httpx",
-	4181:  "macbak",
-	4182:  "pcptcpservice",
-	4183:  "cyborgnet",
-	4184:  "universe-suite",
-	4185:  "wcpp",
-	4186:  "boxbackupstore",
-	4187:  "csc-proxy",
-	4188:  "vatata",
-	4189:  "pcep",
-	4190:  "sieve",
-	4192:  "azeti",
-	4193:  "pvxplusio",
-	4197:  "hctl",
-	4199:  "eims-admin",
-	4300:  "corelccam",
-	4301:  "d-data",
-	4302:  "d-data-control",
-	4303:  "srcp",
-	4304:  "owserver",
-	4305:  "batman",
-	4306:  "pinghgl",
-	4307:  "trueconf",
-	4308:  "compx-lockview",
-	4309:  "dserver",
-	4310:  "mirrtex",
-	4311:  "p6ssmc",
-	4312:  "pscl-mgt",
-	4313:  "perrla",
-	4314:  "choiceview-agt",
-	4316:  "choiceview-clt",
-	4320:  "fdt-rcatp",
-	4321:  "rwhois",
-	4322:  "trim-event",
-	4323:  "trim-ice",
-	4325:  "geognosisman",
-	4326:  "geognosis",
-	4327:  "jaxer-web",
-	4328:  "jaxer-manager",
-	4329:  "publiqare-sync",
-	4330:  "dey-sapi",
-	4331:  "ktickets-rest",
-	4333:  "ahsp",
-	4334:  "netconf-ch-ssh",
-	4335:  "netconf-ch-tls",
-	4336:  "restconf-ch-tls",
-	4340:  "gaia",
-	4341:  "lisp-data",
-	4342:  "lisp-cons",
-	4343:  "unicall",
-	4344:  "vinainstall",
-	4345:  "m4-network-as",
-	4346:  "elanlm",
-	4347:  "lansurveyor",
-	4348:  "itose",
-	4349:  "fsportmap",
-	4350:  "net-device",
-	4351:  "plcy-net-svcs",
-	4352:  "pjlink",
-	4353:  "f5-iquery",
-	4354:  "qsnet-trans",
-	4355:  "qsnet-workst",
-	4356:  "qsnet-assist",
-	4357:  "qsnet-cond",
-	4358:  "qsnet-nucl",
-	4359:  "omabcastltkm",
-	4360:  "matrix-vnet",
-	4368:  "wxbrief",
-	4369:  "epmd",
-	4370:  "elpro-tunnel",
-	4371:  "l2c-control",
-	4372:  "l2c-data",
-	4373:  "remctl",
-	4374:  "psi-ptt",
-	4375:  "tolteces",
-	4376:  "bip",
-	4377:  "cp-spxsvr",
-	4378:  "cp-spxdpy",
-	4379:  "ctdb",
-	4389:  "xandros-cms",
-	4390:  "wiegand",
-	4391:  "apwi-imserver",
-	4392:  "apwi-rxserver",
-	4393:  "apwi-rxspooler",
-	4395:  "omnivisionesx",
-	4396:  "fly",
-	4400:  "ds-srv",
-	4401:  "ds-srvr",
-	4402:  "ds-clnt",
-	4403:  "ds-user",
-	4404:  "ds-admin",
-	4405:  "ds-mail",
-	4406:  "ds-slp",
-	4407:  "nacagent",
-	4408:  "slscc",
-	4409:  "netcabinet-com",
-	4410:  "itwo-server",
-	4411:  "found",
-	4413:  "avi-nms",
-	4414:  "updog",
-	4415:  "brcd-vr-req",
-	4416:  "pjj-player",
-	4417:  "workflowdir",
-	4419:  "cbp",
-	4420:  "nvm-express",
-	4421:  "scaleft",
-	4422:  "tsepisp",
-	4423:  "thingkit",
-	4425:  "netrockey6",
-	4426:  "beacon-port-2",
-	4427:  "drizzle",
-	4428:  "omviserver",
-	4429:  "omviagent",
-	4430:  "rsqlserver",
-	4431:  "wspipe",
-	4432:  "l-acoustics",
-	4433:  "vop",
-	4442:  "saris",
-	4443:  "pharos",
-	4444:  "krb524",
-	4445:  "upnotifyp",
-	4446:  "n1-fwp",
-	4447:  "n1-rmgmt",
-	4448:  "asc-slmd",
-	4449:  "privatewire",
-	4450:  "camp",
-	4451:  "ctisystemmsg",
-	4452:  "ctiprogramload",
-	4453:  "nssalertmgr",
-	4454:  "nssagentmgr",
-	4455:  "prchat-user",
-	4456:  "prchat-server",
-	4457:  "prRegister",
-	4458:  "mcp",
-	4484:  "hpssmgmt",
-	4485:  "assyst-dr",
-	4486:  "icms",
-	4487:  "prex-tcp",
-	4488:  "awacs-ice",
-	4500:  "ipsec-nat-t",
-	4535:  "ehs",
-	4536:  "ehs-ssl",
-	4537:  "wssauthsvc",
-	4538:  "swx-gate",
-	4545:  "worldscores",
-	4546:  "sf-lm",
-	4547:  "lanner-lm",
-	4548:  "synchromesh",
-	4549:  "aegate",
-	4550:  "gds-adppiw-db",
-	4551:  "ieee-mih",
-	4552:  "menandmice-mon",
-	4553:  "icshostsvc",
-	4554:  "msfrs",
-	4555:  "rsip",
-	4556:  "dtn-bundle",
-	4559:  "hylafax",
-	4563:  "amahi-anywhere",
-	4566:  "kwtc",
-	4567:  "tram",
-	4568:  "bmc-reporting",
-	4569:  "iax",
-	4570:  "deploymentmap",
-	4573:  "cardifftec-back",
-	4590:  "rid",
-	4591:  "l3t-at-an",
-	4593:  "ipt-anri-anri",
-	4594:  "ias-session",
-	4595:  "ias-paging",
-	4596:  "ias-neighbor",
-	4597:  "a21-an-1xbs",
-	4598:  "a16-an-an",
-	4599:  "a17-an-an",
-	4600:  "piranha1",
-	4601:  "piranha2",
-	4602:  "mtsserver",
-	4603:  "menandmice-upg",
-	4604:  "irp",
-	4605:  "sixchat",
-	4658:  "playsta2-app",
-	4659:  "playsta2-lob",
-	4660:  "smaclmgr",
-	4661:  "kar2ouche",
-	4662:  "oms",
-	4663:  "noteit",
-	4664:  "ems",
-	4665:  "contclientms",
-	4666:  "eportcomm",
-	4667:  "mmacomm",
-	4668:  "mmaeds",
-	4669:  "eportcommdata",
-	4670:  "light",
-	4671:  "acter",
-	4672:  "rfa",
-	4673:  "cxws",
-	4674:  "appiq-mgmt",
-	4675:  "dhct-status",
-	4676:  "dhct-alerts",
-	4677:  "bcs",
-	4678:  "traversal",
-	4679:  "mgesupervision",
-	4680:  "mgemanagement",
-	4681:  "parliant",
-	4682:  "finisar",
-	4683:  "spike",
-	4684:  "rfid-rp1",
-	4685:  "autopac",
-	4686:  "msp-os",
-	4687:  "nst",
-	4688:  "mobile-p2p",
-	4689:  "altovacentral",
-	4690:  "prelude",
-	4691:  "mtn",
-	4692:  "conspiracy",
-	4700:  "netxms-agent",
-	4701:  "netxms-mgmt",
-	4702:  "netxms-sync",
-	4703:  "npqes-test",
-	4704:  "assuria-ins",
-	4711:  "trinity-dist",
-	4725:  "truckstar",
-	4727:  "fcis",
-	4728:  "capmux",
-	4730:  "gearman",
-	4731:  "remcap",
-	4733:  "resorcs",
-	4737:  "ipdr-sp",
-	4738:  "solera-lpn",
-	4739:  "ipfix",
-	4740:  "ipfixs",
-	4741:  "lumimgrd",
-	4742:  "sicct",
-	4743:  "openhpid",
-	4744:  "ifsp",
-	4745:  "fmp",
-	4749:  "profilemac",
-	4750:  "ssad",
-	4751:  "spocp",
-	4752:  "snap",
-	4753:  "simon",
-	4756:  "RDCenter",
-	4774:  "converge",
-	4784:  "bfd-multi-ctl",
-	4786:  "smart-install",
-	4787:  "sia-ctrl-plane",
-	4788:  "xmcp",
-	4800:  "iims",
-	4801:  "iwec",
-	4802:  "ilss",
-	4803:  "notateit",
-	4827:  "htcp",
-	4837:  "varadero-0",
-	4838:  "varadero-1",
-	4839:  "varadero-2",
-	4840:  "opcua-tcp",
-	4841:  "quosa",
-	4842:  "gw-asv",
-	4843:  "opcua-tls",
-	4844:  "gw-log",
-	4845:  "wcr-remlib",
-	4846:  "contamac-icm",
-	4847:  "wfc",
-	4848:  "appserv-http",
-	4849:  "appserv-https",
-	4850:  "sun-as-nodeagt",
-	4851:  "derby-repli",
-	4867:  "unify-debug",
-	4868:  "phrelay",
-	4869:  "phrelaydbg",
-	4870:  "cc-tracking",
-	4871:  "wired",
-	4876:  "tritium-can",
-	4877:  "lmcs",
-	4879:  "wsdl-event",
-	4880:  "hislip",
-	4883:  "wmlserver",
-	4884:  "hivestor",
-	4885:  "abbs",
-	4894:  "lyskom",
-	4899:  "radmin-port",
-	4900:  "hfcs",
-	4901:  "flr-agent",
-	4902:  "magiccontrol",
-	4912:  "lutap",
-	4913:  "lutcp",
-	4914:  "bones",
-	4915:  "frcs",
-	4940:  "eq-office-4940",
-	4941:  "eq-office-4941",
-	4942:  "eq-office-4942",
-	4949:  "munin",
-	4950:  "sybasesrvmon",
-	4951:  "pwgwims",
-	4952:  "sagxtsds",
-	4953:  "dbsyncarbiter",
-	4969:  "ccss-qmm",
-	4970:  "ccss-qsm",
-	4971:  "burp",
-	4984:  "webyast",
-	4985:  "gerhcs",
-	4986:  "mrip",
-	4987:  "smar-se-port1",
-	4988:  "smar-se-port2",
-	4989:  "parallel",
-	4990:  "busycal",
-	4991:  "vrt",
-	4999:  "hfcs-manager",
-	5000:  "commplex-main",
-	5001:  "commplex-link",
-	5002:  "rfe",
-	5003:  "fmpro-internal",
-	5004:  "avt-profile-1",
-	5005:  "avt-profile-2",
-	5006:  "wsm-server",
-	5007:  "wsm-server-ssl",
-	5008:  "synapsis-edge",
-	5009:  "winfs",
-	5010:  "telelpathstart",
-	5011:  "telelpathattack",
-	5012:  "nsp",
-	5013:  "fmpro-v6",
-	5015:  "fmwp",
-	5020:  "zenginkyo-1",
-	5021:  "zenginkyo-2",
-	5022:  "mice",
-	5023:  "htuilsrv",
-	5024:  "scpi-telnet",
-	5025:  "scpi-raw",
-	5026:  "strexec-d",
-	5027:  "strexec-s",
-	5028:  "qvr",
-	5029:  "infobright",
-	5030:  "surfpass",
-	5032:  "signacert-agent",
-	5033:  "jtnetd-server",
-	5034:  "jtnetd-status",
-	5042:  "asnaacceler8db",
-	5043:  "swxadmin",
-	5044:  "lxi-evntsvc",
-	5045:  "osp",
-	5048:  "texai",
-	5049:  "ivocalize",
-	5050:  "mmcc",
-	5051:  "ita-agent",
-	5052:  "ita-manager",
-	5053:  "rlm",
-	5054:  "rlm-admin",
-	5055:  "unot",
-	5056:  "intecom-ps1",
-	5057:  "intecom-ps2",
-	5059:  "sds",
-	5060:  "sip",
-	5061:  "sips",
-	5062:  "na-localise",
-	5063:  "csrpc",
-	5064:  "ca-1",
-	5065:  "ca-2",
-	5066:  "stanag-5066",
-	5067:  "authentx",
-	5068:  "bitforestsrv",
-	5069:  "i-net-2000-npr",
-	5070:  "vtsas",
-	5071:  "powerschool",
-	5072:  "ayiya",
-	5073:  "tag-pm",
-	5074:  "alesquery",
-	5075:  "pvaccess",
-	5080:  "onscreen",
-	5081:  "sdl-ets",
-	5082:  "qcp",
-	5083:  "qfp",
-	5084:  "llrp",
-	5085:  "encrypted-llrp",
-	5086:  "aprigo-cs",
-	5087:  "biotic",
-	5093:  "sentinel-lm",
-	5094:  "hart-ip",
-	5099:  "sentlm-srv2srv",
-	5100:  "socalia",
-	5101:  "talarian-tcp",
-	5102:  "oms-nonsecure",
-	5103:  "actifio-c2c",
-	5106:  "actifioudsagent",
-	5107:  "actifioreplic",
-	5111:  "taep-as-svc",
-	5112:  "pm-cmdsvr",
-	5114:  "ev-services",
-	5115:  "autobuild",
-	5117:  "gradecam",
-	5120:  "barracuda-bbs",
-	5133:  "nbt-pc",
-	5134:  "ppactivation",
-	5135:  "erp-scale",
-	5137:  "ctsd",
-	5145:  "rmonitor-secure",
-	5146:  "social-alarm",
-	5150:  "atmp",
-	5151:  "esri-sde",
-	5152:  "sde-discovery",
-	5153:  "toruxserver",
-	5154:  "bzflag",
-	5155:  "asctrl-agent",
-	5156:  "rugameonline",
-	5157:  "mediat",
-	5161:  "snmpssh",
-	5162:  "snmpssh-trap",
-	5163:  "sbackup",
-	5164:  "vpa",
-	5165:  "ife-icorp",
-	5166:  "winpcs",
-	5167:  "scte104",
-	5168:  "scte30",
-	5172:  "pcoip-mgmt",
-	5190:  "aol",
-	5191:  "aol-1",
-	5192:  "aol-2",
-	5193:  "aol-3",
-	5194:  "cpscomm",
-	5195:  "ampl-lic",
-	5196:  "ampl-tableproxy",
-	5197:  "tunstall-lwp",
-	5200:  "targus-getdata",
-	5201:  "targus-getdata1",
-	5202:  "targus-getdata2",
-	5203:  "targus-getdata3",
-	5209:  "nomad",
-	5215:  "noteza",
-	5221:  "3exmp",
-	5222:  "xmpp-client",
-	5223:  "hpvirtgrp",
-	5224:  "hpvirtctrl",
-	5225:  "hp-server",
-	5226:  "hp-status",
-	5227:  "perfd",
-	5228:  "hpvroom",
-	5229:  "jaxflow",
-	5230:  "jaxflow-data",
-	5231:  "crusecontrol",
-	5232:  "csedaemon",
-	5233:  "enfs",
-	5234:  "eenet",
-	5235:  "galaxy-network",
-	5236:  "padl2sim",
-	5237:  "mnet-discovery",
-	5245:  "downtools",
-	5248:  "caacws",
-	5249:  "caaclang2",
-	5250:  "soagateway",
-	5251:  "caevms",
-	5252:  "movaz-ssc",
-	5253:  "kpdp",
-	5254:  "logcabin",
-	5264:  "3com-njack-1",
-	5265:  "3com-njack-2",
-	5269:  "xmpp-server",
-	5270:  "cartographerxmp",
-	5271:  "cuelink",
-	5272:  "pk",
-	5280:  "xmpp-bosh",
-	5281:  "undo-lm",
-	5282:  "transmit-port",
-	5298:  "presence",
-	5299:  "nlg-data",
-	5300:  "hacl-hb",
-	5301:  "hacl-gs",
-	5302:  "hacl-cfg",
-	5303:  "hacl-probe",
-	5304:  "hacl-local",
-	5305:  "hacl-test",
-	5306:  "sun-mc-grp",
-	5307:  "sco-aip",
-	5308:  "cfengine",
-	5309:  "jprinter",
-	5310:  "outlaws",
-	5312:  "permabit-cs",
-	5313:  "rrdp",
-	5314:  "opalis-rbt-ipc",
-	5315:  "hacl-poll",
-	5316:  "hpbladems",
-	5317:  "hpdevms",
-	5318:  "pkix-cmc",
-	5320:  "bsfserver-zn",
-	5321:  "bsfsvr-zn-ssl",
-	5343:  "kfserver",
-	5344:  "xkotodrcp",
-	5349:  "stuns",
-	5352:  "dns-llq",
-	5353:  "mdns",
-	5354:  "mdnsresponder",
-	5355:  "llmnr",
-	5356:  "ms-smlbiz",
-	5357:  "wsdapi",
-	5358:  "wsdapi-s",
-	5359:  "ms-alerter",
-	5360:  "ms-sideshow",
-	5361:  "ms-s-sideshow",
-	5362:  "serverwsd2",
-	5363:  "net-projection",
-	5397:  "stresstester",
-	5398:  "elektron-admin",
-	5399:  "securitychase",
-	5400:  "excerpt",
-	5401:  "excerpts",
-	5402:  "mftp",
-	5403:  "hpoms-ci-lstn",
-	5404:  "hpoms-dps-lstn",
-	5405:  "netsupport",
-	5406:  "systemics-sox",
-	5407:  "foresyte-clear",
-	5408:  "foresyte-sec",
-	5409:  "salient-dtasrv",
-	5410:  "salient-usrmgr",
-	5411:  "actnet",
-	5412:  "continuus",
-	5413:  "wwiotalk",
-	5414:  "statusd",
-	5415:  "ns-server",
-	5416:  "sns-gateway",
-	5417:  "sns-agent",
-	5418:  "mcntp",
-	5419:  "dj-ice",
-	5420:  "cylink-c",
-	5421:  "netsupport2",
-	5422:  "salient-mux",
-	5423:  "virtualuser",
-	5424:  "beyond-remote",
-	5425:  "br-channel",
-	5426:  "devbasic",
-	5427:  "sco-peer-tta",
-	5428:  "telaconsole",
-	5429:  "base",
-	5430:  "radec-corp",
-	5431:  "park-agent",
-	5432:  "postgresql",
-	5433:  "pyrrho",
-	5434:  "sgi-arrayd",
-	5435:  "sceanics",
-	5443:  "spss",
-	5445:  "smbdirect",
-	5450:  "tiepie",
-	5453:  "surebox",
-	5454:  "apc-5454",
-	5455:  "apc-5455",
-	5456:  "apc-5456",
-	5461:  "silkmeter",
-	5462:  "ttl-publisher",
-	5463:  "ttlpriceproxy",
-	5464:  "quailnet",
-	5465:  "netops-broker",
-	5470:  "apsolab-col",
-	5471:  "apsolab-cols",
-	5472:  "apsolab-tag",
-	5473:  "apsolab-tags",
-	5475:  "apsolab-data",
-	5500:  "fcp-addr-srvr1",
-	5501:  "fcp-addr-srvr2",
-	5502:  "fcp-srvr-inst1",
-	5503:  "fcp-srvr-inst2",
-	5504:  "fcp-cics-gw1",
-	5505:  "checkoutdb",
-	5506:  "amc",
-	5507:  "psl-management",
-	5550:  "cbus",
-	5553:  "sgi-eventmond",
-	5554:  "sgi-esphttp",
-	5555:  "personal-agent",
-	5556:  "freeciv",
-	5557:  "farenet",
-	5565:  "hpe-dp-bura",
-	5566:  "westec-connect",
-	5567:  "dof-dps-mc-sec",
-	5568:  "sdt",
-	5569:  "rdmnet-ctrl",
-	5573:  "sdmmp",
-	5574:  "lsi-bobcat",
-	5575:  "ora-oap",
-	5579:  "fdtracks",
-	5580:  "tmosms0",
-	5581:  "tmosms1",
-	5582:  "fac-restore",
-	5583:  "tmo-icon-sync",
-	5584:  "bis-web",
-	5585:  "bis-sync",
-	5586:  "att-mt-sms",
-	5597:  "ininmessaging",
-	5598:  "mctfeed",
-	5599:  "esinstall",
-	5600:  "esmmanager",
-	5601:  "esmagent",
-	5602:  "a1-msc",
-	5603:  "a1-bs",
-	5604:  "a3-sdunode",
-	5605:  "a4-sdunode",
-	5618:  "efr",
-	5627:  "ninaf",
-	5628:  "htrust",
-	5629:  "symantec-sfdb",
-	5630:  "precise-comm",
-	5631:  "pcanywheredata",
-	5632:  "pcanywherestat",
-	5633:  "beorl",
-	5634:  "xprtld",
-	5635:  "sfmsso",
-	5636:  "sfm-db-server",
-	5637:  "cssc",
-	5638:  "flcrs",
-	5639:  "ics",
-	5646:  "vfmobile",
-	5666:  "nrpe",
-	5670:  "filemq",
-	5671:  "amqps",
-	5672:  "amqp",
-	5673:  "jms",
-	5674:  "hyperscsi-port",
-	5675:  "v5ua",
-	5676:  "raadmin",
-	5677:  "questdb2-lnchr",
-	5678:  "rrac",
-	5679:  "dccm",
-	5680:  "auriga-router",
-	5681:  "ncxcp",
-	5688:  "ggz",
-	5689:  "qmvideo",
-	5693:  "rbsystem",
-	5696:  "kmip",
-	5700:  "supportassist",
-	5705:  "storageos",
-	5713:  "proshareaudio",
-	5714:  "prosharevideo",
-	5715:  "prosharedata",
-	5716:  "prosharerequest",
-	5717:  "prosharenotify",
-	5718:  "dpm",
-	5719:  "dpm-agent",
-	5720:  "ms-licensing",
-	5721:  "dtpt",
-	5722:  "msdfsr",
-	5723:  "omhs",
-	5724:  "omsdk",
-	5725:  "ms-ilm",
-	5726:  "ms-ilm-sts",
-	5727:  "asgenf",
-	5728:  "io-dist-data",
-	5729:  "openmail",
-	5730:  "unieng",
-	5741:  "ida-discover1",
-	5742:  "ida-discover2",
-	5743:  "watchdoc-pod",
-	5744:  "watchdoc",
-	5745:  "fcopy-server",
-	5746:  "fcopys-server",
-	5747:  "tunatic",
-	5748:  "tunalyzer",
-	5750:  "rscd",
-	5755:  "openmailg",
-	5757:  "x500ms",
-	5766:  "openmailns",
-	5767:  "s-openmail",
-	5768:  "openmailpxy",
-	5769:  "spramsca",
-	5770:  "spramsd",
-	5771:  "netagent",
-	5777:  "dali-port",
-	5780:  "vts-rpc",
-	5781:  "3par-evts",
-	5782:  "3par-mgmt",
-	5783:  "3par-mgmt-ssl",
-	5785:  "3par-rcopy",
-	5793:  "xtreamx",
-	5813:  "icmpd",
-	5814:  "spt-automation",
-	5841:  "shiprush-d-ch",
-	5842:  "reversion",
-	5859:  "wherehoo",
-	5863:  "ppsuitemsg",
-	5868:  "diameters",
-	5883:  "jute",
-	5900:  "rfb",
-	5910:  "cm",
-	5911:  "cpdlc",
-	5912:  "fis",
-	5913:  "ads-c",
-	5963:  "indy",
-	5968:  "mppolicy-v5",
-	5969:  "mppolicy-mgr",
-	5984:  "couchdb",
-	5985:  "wsman",
-	5986:  "wsmans",
-	5987:  "wbem-rmi",
-	5988:  "wbem-http",
-	5989:  "wbem-https",
-	5990:  "wbem-exp-https",
-	5991:  "nuxsl",
-	5992:  "consul-insight",
-	5993:  "cim-rs",
-	5999:  "cvsup",
-	6064:  "ndl-ahp-svc",
-	6065:  "winpharaoh",
-	6066:  "ewctsp",
-	6068:  "gsmp-ancp",
-	6069:  "trip",
-	6070:  "messageasap",
-	6071:  "ssdtp",
-	6072:  "diagnose-proc",
-	6073:  "directplay8",
-	6074:  "max",
-	6075:  "dpm-acm",
-	6076:  "msft-dpm-cert",
-	6077:  "iconstructsrv",
-	6084:  "reload-config",
-	6085:  "konspire2b",
-	6086:  "pdtp",
-	6087:  "ldss",
-	6088:  "doglms",
-	6099:  "raxa-mgmt",
-	6100:  "synchronet-db",
-	6101:  "synchronet-rtc",
-	6102:  "synchronet-upd",
-	6103:  "rets",
-	6104:  "dbdb",
-	6105:  "primaserver",
-	6106:  "mpsserver",
-	6107:  "etc-control",
-	6108:  "sercomm-scadmin",
-	6109:  "globecast-id",
-	6110:  "softcm",
-	6111:  "spc",
-	6112:  "dtspcd",
-	6113:  "dayliteserver",
-	6114:  "wrspice",
-	6115:  "xic",
-	6116:  "xtlserv",
-	6117:  "daylitetouch",
-	6121:  "spdy",
-	6122:  "bex-webadmin",
-	6123:  "backup-express",
-	6124:  "pnbs",
-	6130:  "damewaremobgtwy",
-	6133:  "nbt-wol",
-	6140:  "pulsonixnls",
-	6141:  "meta-corp",
-	6142:  "aspentec-lm",
-	6143:  "watershed-lm",
-	6144:  "statsci1-lm",
-	6145:  "statsci2-lm",
-	6146:  "lonewolf-lm",
-	6147:  "montage-lm",
-	6148:  "ricardo-lm",
-	6149:  "tal-pod",
-	6159:  "efb-aci",
-	6160:  "ecmp",
-	6161:  "patrol-ism",
-	6162:  "patrol-coll",
-	6163:  "pscribe",
-	6200:  "lm-x",
-	6209:  "qmtps",
-	6222:  "radmind",
-	6241:  "jeol-nsdtp-1",
-	6242:  "jeol-nsdtp-2",
-	6243:  "jeol-nsdtp-3",
-	6244:  "jeol-nsdtp-4",
-	6251:  "tl1-raw-ssl",
-	6252:  "tl1-ssh",
-	6253:  "crip",
-	6267:  "gld",
-	6268:  "grid",
-	6269:  "grid-alt",
-	6300:  "bmc-grx",
-	6301:  "bmc-ctd-ldap",
-	6306:  "ufmp",
-	6315:  "scup",
-	6316:  "abb-escp",
-	6317:  "nav-data-cmd",
-	6320:  "repsvc",
-	6321:  "emp-server1",
-	6322:  "emp-server2",
-	6324:  "hrd-ncs",
-	6325:  "dt-mgmtsvc",
-	6326:  "dt-vra",
-	6343:  "sflow",
-	6344:  "streletz",
-	6346:  "gnutella-svc",
-	6347:  "gnutella-rtr",
-	6350:  "adap",
-	6355:  "pmcs",
-	6360:  "metaedit-mu",
-	6370:  "metaedit-se",
-	6379:  "redis",
-	6382:  "metatude-mds",
-	6389:  "clariion-evr01",
-	6390:  "metaedit-ws",
-	6417:  "faxcomservice",
-	6418:  "syserverremote",
-	6419:  "svdrp",
-	6420:  "nim-vdrshell",
-	6421:  "nim-wan",
-	6432:  "pgbouncer",
-	6442:  "tarp",
-	6443:  "sun-sr-https",
-	6444:  "sge-qmaster",
-	6445:  "sge-execd",
-	6446:  "mysql-proxy",
-	6455:  "skip-cert-recv",
-	6456:  "skip-cert-send",
-	6464:  "ieee11073-20701",
-	6471:  "lvision-lm",
-	6480:  "sun-sr-http",
-	6481:  "servicetags",
-	6482:  "ldoms-mgmt",
-	6483:  "SunVTS-RMI",
-	6484:  "sun-sr-jms",
-	6485:  "sun-sr-iiop",
-	6486:  "sun-sr-iiops",
-	6487:  "sun-sr-iiop-aut",
-	6488:  "sun-sr-jmx",
-	6489:  "sun-sr-admin",
-	6500:  "boks",
-	6501:  "boks-servc",
-	6502:  "boks-servm",
-	6503:  "boks-clntd",
-	6505:  "badm-priv",
-	6506:  "badm-pub",
-	6507:  "bdir-priv",
-	6508:  "bdir-pub",
-	6509:  "mgcs-mfp-port",
-	6510:  "mcer-port",
-	6513:  "netconf-tls",
-	6514:  "syslog-tls",
-	6515:  "elipse-rec",
-	6543:  "lds-distrib",
-	6544:  "lds-dump",
-	6547:  "apc-6547",
-	6548:  "apc-6548",
-	6549:  "apc-6549",
-	6550:  "fg-sysupdate",
-	6551:  "sum",
-	6558:  "xdsxdm",
-	6566:  "sane-port",
-	6568:  "canit-store",
-	6579:  "affiliate",
-	6580:  "parsec-master",
-	6581:  "parsec-peer",
-	6582:  "parsec-game",
-	6583:  "joaJewelSuite",
-	6600:  "mshvlm",
-	6601:  "mstmg-sstp",
-	6602:  "wsscomfrmwk",
-	6619:  "odette-ftps",
-	6620:  "kftp-data",
-	6621:  "kftp",
-	6622:  "mcftp",
-	6623:  "ktelnet",
-	6624:  "datascaler-db",
-	6625:  "datascaler-ctl",
-	6626:  "wago-service",
-	6627:  "nexgen",
-	6628:  "afesc-mc",
-	6629:  "nexgen-aux",
-	6632:  "mxodbc-connect",
-	6640:  "ovsdb",
-	6653:  "openflow",
-	6655:  "pcs-sf-ui-man",
-	6656:  "emgmsg",
-	6670:  "vocaltec-gold",
-	6671:  "p4p-portal",
-	6672:  "vision-server",
-	6673:  "vision-elmd",
-	6678:  "vfbp",
-	6679:  "osaut",
-	6687:  "clever-ctrace",
-	6688:  "clever-tcpip",
-	6689:  "tsa",
-	6690:  "cleverdetect",
-	6697:  "ircs-u",
-	6701:  "kti-icad-srvr",
-	6702:  "e-design-net",
-	6703:  "e-design-web",
-	6714:  "ibprotocol",
-	6715:  "fibotrader-com",
-	6716:  "princity-agent",
-	6767:  "bmc-perf-agent",
-	6768:  "bmc-perf-mgrd",
-	6769:  "adi-gxp-srvprt",
-	6770:  "plysrv-http",
-	6771:  "plysrv-https",
-	6777:  "ntz-tracker",
-	6778:  "ntz-p2p-storage",
-	6785:  "dgpf-exchg",
-	6786:  "smc-jmx",
-	6787:  "smc-admin",
-	6788:  "smc-http",
-	6789:  "radg",
-	6790:  "hnmp",
-	6791:  "hnm",
-	6801:  "acnet",
-	6817:  "pentbox-sim",
-	6831:  "ambit-lm",
-	6841:  "netmo-default",
-	6842:  "netmo-http",
-	6850:  "iccrushmore",
-	6868:  "acctopus-cc",
-	6888:  "muse",
-	6900:  "rtimeviewer",
-	6901:  "jetstream",
-	6935:  "ethoscan",
-	6936:  "xsmsvc",
-	6946:  "bioserver",
-	6951:  "otlp",
-	6961:  "jmact3",
-	6962:  "jmevt2",
-	6963:  "swismgr1",
-	6964:  "swismgr2",
-	6965:  "swistrap",
-	6966:  "swispol",
-	6969:  "acmsoda",
-	6970:  "conductor",
-	6997:  "MobilitySrv",
-	6998:  "iatp-highpri",
-	6999:  "iatp-normalpri",
-	7000:  "afs3-fileserver",
-	7001:  "afs3-callback",
-	7002:  "afs3-prserver",
-	7003:  "afs3-vlserver",
-	7004:  "afs3-kaserver",
-	7005:  "afs3-volser",
-	7006:  "afs3-errors",
-	7007:  "afs3-bos",
-	7008:  "afs3-update",
-	7009:  "afs3-rmtsys",
-	7010:  "ups-onlinet",
-	7011:  "talon-disc",
-	7012:  "talon-engine",
-	7013:  "microtalon-dis",
-	7014:  "microtalon-com",
-	7015:  "talon-webserver",
-	7016:  "spg",
-	7017:  "grasp",
-	7018:  "fisa-svc",
-	7019:  "doceri-ctl",
-	7020:  "dpserve",
-	7021:  "dpserveadmin",
-	7022:  "ctdp",
-	7023:  "ct2nmcs",
-	7024:  "vmsvc",
-	7025:  "vmsvc-2",
-	7030:  "op-probe",
-	7031:  "iposplanet",
-	7070:  "arcp",
-	7071:  "iwg1",
-	7073:  "martalk",
-	7080:  "empowerid",
-	7099:  "lazy-ptop",
-	7100:  "font-service",
-	7101:  "elcn",
-	7117:  "rothaga",
-	7121:  "virprot-lm",
-	7128:  "scenidm",
-	7129:  "scenccs",
-	7161:  "cabsm-comm",
-	7162:  "caistoragemgr",
-	7163:  "cacsambroker",
-	7164:  "fsr",
-	7165:  "doc-server",
-	7166:  "aruba-server",
-	7167:  "casrmagent",
-	7168:  "cnckadserver",
-	7169:  "ccag-pib",
-	7170:  "nsrp",
-	7171:  "drm-production",
-	7172:  "metalbend",
-	7173:  "zsecure",
-	7174:  "clutild",
-	7200:  "fodms",
-	7201:  "dlip",
-	7202:  "pon-ictp",
-	7215:  "PS-Server",
-	7216:  "PS-Capture-Pro",
-	7227:  "ramp",
-	7228:  "citrixupp",
-	7229:  "citrixuppg",
-	7236:  "display",
-	7237:  "pads",
-	7244:  "frc-hicp",
-	7262:  "cnap",
-	7272:  "watchme-7272",
-	7273:  "oma-rlp",
-	7274:  "oma-rlp-s",
-	7275:  "oma-ulp",
-	7276:  "oma-ilp",
-	7277:  "oma-ilp-s",
-	7278:  "oma-dcdocbs",
-	7279:  "ctxlic",
-	7280:  "itactionserver1",
-	7281:  "itactionserver2",
-	7282:  "mzca-action",
-	7283:  "genstat",
-	7365:  "lcm-server",
-	7391:  "mindfilesys",
-	7392:  "mrssrendezvous",
-	7393:  "nfoldman",
-	7394:  "fse",
-	7395:  "winqedit",
-	7397:  "hexarc",
-	7400:  "rtps-discovery",
-	7401:  "rtps-dd-ut",
-	7402:  "rtps-dd-mt",
-	7410:  "ionixnetmon",
-	7411:  "daqstream",
-	7421:  "mtportmon",
-	7426:  "pmdmgr",
-	7427:  "oveadmgr",
-	7428:  "ovladmgr",
-	7429:  "opi-sock",
-	7430:  "xmpv7",
-	7431:  "pmd",
-	7437:  "faximum",
-	7443:  "oracleas-https",
-	7471:  "sttunnel",
-	7473:  "rise",
-	7474:  "neo4j",
-	7478:  "openit",
-	7491:  "telops-lmd",
-	7500:  "silhouette",
-	7501:  "ovbus",
-	7508:  "adcp",
-	7509:  "acplt",
-	7510:  "ovhpas",
-	7511:  "pafec-lm",
-	7542:  "saratoga",
-	7543:  "atul",
-	7544:  "nta-ds",
-	7545:  "nta-us",
-	7546:  "cfs",
-	7547:  "cwmp",
-	7548:  "tidp",
-	7549:  "nls-tl",
-	7551:  "controlone-con",
-	7560:  "sncp",
-	7563:  "cfw",
-	7566:  "vsi-omega",
-	7569:  "dell-eql-asm",
-	7570:  "aries-kfinder",
-	7574:  "coherence",
-	7588:  "sun-lm",
-	7606:  "mipi-debug",
-	7624:  "indi",
-	7626:  "simco",
-	7627:  "soap-http",
-	7628:  "zen-pawn",
-	7629:  "xdas",
-	7630:  "hawk",
-	7631:  "tesla-sys-msg",
-	7633:  "pmdfmgt",
-	7648:  "cuseeme",
-	7672:  "imqstomp",
-	7673:  "imqstomps",
-	7674:  "imqtunnels",
-	7675:  "imqtunnel",
-	7676:  "imqbrokerd",
-	7677:  "sun-user-https",
-	7680:  "pando-pub",
-	7683:  "dmt",
-	7687:  "bolt",
-	7689:  "collaber",
-	7697:  "klio",
-	7700:  "em7-secom",
-	7707:  "sync-em7",
-	7708:  "scinet",
-	7720:  "medimageportal",
-	7724:  "nsdeepfreezectl",
-	7725:  "nitrogen",
-	7726:  "freezexservice",
-	7727:  "trident-data",
-	7728:  "osvr",
-	7734:  "smip",
-	7738:  "aiagent",
-	7741:  "scriptview",
-	7742:  "msss",
-	7743:  "sstp-1",
-	7744:  "raqmon-pdu",
-	7747:  "prgp",
-	7775:  "inetfs",
-	7777:  "cbt",
-	7778:  "interwise",
-	7779:  "vstat",
-	7781:  "accu-lmgr",
-	7786:  "minivend",
-	7787:  "popup-reminders",
-	7789:  "office-tools",
-	7794:  "q3ade",
-	7797:  "pnet-conn",
-	7798:  "pnet-enc",
-	7799:  "altbsdp",
-	7800:  "asr",
-	7801:  "ssp-client",
-	7810:  "rbt-wanopt",
-	7845:  "apc-7845",
-	7846:  "apc-7846",
-	7847:  "csoauth",
-	7869:  "mobileanalyzer",
-	7870:  "rbt-smc",
-	7871:  "mdm",
-	7878:  "owms",
-	7880:  "pss",
-	7887:  "ubroker",
-	7900:  "mevent",
-	7901:  "tnos-sp",
-	7902:  "tnos-dp",
-	7903:  "tnos-dps",
-	7913:  "qo-secure",
-	7932:  "t2-drm",
-	7933:  "t2-brm",
-	7962:  "generalsync",
-	7967:  "supercell",
-	7979:  "micromuse-ncps",
-	7980:  "quest-vista",
-	7981:  "sossd-collect",
-	7982:  "sossd-agent",
-	7997:  "pushns",
-	7999:  "irdmi2",
-	8000:  "irdmi",
-	8001:  "vcom-tunnel",
-	8002:  "teradataordbms",
-	8003:  "mcreport",
-	8005:  "mxi",
-	8006:  "wpl-analytics",
-	8007:  "warppipe",
-	8008:  "http-alt",
-	8019:  "qbdb",
-	8020:  "intu-ec-svcdisc",
-	8021:  "intu-ec-client",
-	8022:  "oa-system",
-	8025:  "ca-audit-da",
-	8026:  "ca-audit-ds",
-	8032:  "pro-ed",
-	8033:  "mindprint",
-	8034:  "vantronix-mgmt",
-	8040:  "ampify",
-	8041:  "enguity-xccetp",
-	8042:  "fs-agent",
-	8043:  "fs-server",
-	8044:  "fs-mgmt",
-	8051:  "rocrail",
-	8052:  "senomix01",
-	8053:  "senomix02",
-	8054:  "senomix03",
-	8055:  "senomix04",
-	8056:  "senomix05",
-	8057:  "senomix06",
-	8058:  "senomix07",
-	8059:  "senomix08",
-	8066:  "toad-bi-appsrvr",
-	8067:  "infi-async",
-	8070:  "ucs-isc",
-	8074:  "gadugadu",
-	8077:  "mles",
-	8080:  "http-alt",
-	8081:  "sunproxyadmin",
-	8082:  "us-cli",
-	8083:  "us-srv",
-	8086:  "d-s-n",
-	8087:  "simplifymedia",
-	8088:  "radan-http",
-	8090:  "opsmessaging",
-	8091:  "jamlink",
-	8097:  "sac",
-	8100:  "xprint-server",
-	8101:  "ldoms-migr",
-	8102:  "kz-migr",
-	8115:  "mtl8000-matrix",
-	8116:  "cp-cluster",
-	8117:  "purityrpc",
-	8118:  "privoxy",
-	8121:  "apollo-data",
-	8122:  "apollo-admin",
-	8128:  "paycash-online",
-	8129:  "paycash-wbp",
-	8130:  "indigo-vrmi",
-	8131:  "indigo-vbcp",
-	8132:  "dbabble",
-	8140:  "puppet",
-	8148:  "isdd",
-	8153:  "quantastor",
-	8160:  "patrol",
-	8161:  "patrol-snmp",
-	8162:  "lpar2rrd",
-	8181:  "intermapper",
-	8182:  "vmware-fdm",
-	8183:  "proremote",
-	8184:  "itach",
-	8190:  "gcp-rphy",
-	8191:  "limnerpressure",
-	8192:  "spytechphone",
-	8194:  "blp1",
-	8195:  "blp2",
-	8199:  "vvr-data",
-	8200:  "trivnet1",
-	8201:  "trivnet2",
-	8204:  "lm-perfworks",
-	8205:  "lm-instmgr",
-	8206:  "lm-dta",
-	8207:  "lm-sserver",
-	8208:  "lm-webwatcher",
-	8230:  "rexecj",
-	8243:  "synapse-nhttps",
-	8270:  "robot-remote",
-	8276:  "pando-sec",
-	8280:  "synapse-nhttp",
-	8282:  "libelle",
-	8292:  "blp3",
-	8293:  "hiperscan-id",
-	8294:  "blp4",
-	8300:  "tmi",
-	8301:  "amberon",
-	8313:  "hub-open-net",
-	8320:  "tnp-discover",
-	8321:  "tnp",
-	8322:  "garmin-marine",
-	8351:  "server-find",
-	8376:  "cruise-enum",
-	8377:  "cruise-swroute",
-	8378:  "cruise-config",
-	8379:  "cruise-diags",
-	8380:  "cruise-update",
-	8383:  "m2mservices",
-	8400:  "cvd",
-	8401:  "sabarsd",
-	8402:  "abarsd",
-	8403:  "admind",
-	8404:  "svcloud",
-	8405:  "svbackup",
-	8415:  "dlpx-sp",
-	8416:  "espeech",
-	8417:  "espeech-rtp",
-	8423:  "aritts",
-	8442:  "cybro-a-bus",
-	8443:  "pcsync-https",
-	8444:  "pcsync-http",
-	8445:  "copy",
-	8450:  "npmp",
-	8457:  "nexentamv",
-	8470:  "cisco-avp",
-	8471:  "pim-port",
-	8472:  "otv",
-	8473:  "vp2p",
-	8474:  "noteshare",
-	8500:  "fmtp",
-	8501:  "cmtp-mgt",
-	8502:  "ftnmtp",
-	8554:  "rtsp-alt",
-	8555:  "d-fence",
-	8567:  "dof-tunnel",
-	8600:  "asterix",
-	8610:  "canon-mfnp",
-	8611:  "canon-bjnp1",
-	8612:  "canon-bjnp2",
-	8613:  "canon-bjnp3",
-	8614:  "canon-bjnp4",
-	8615:  "imink",
-	8665:  "monetra",
-	8666:  "monetra-admin",
-	8675:  "msi-cps-rm",
-	8686:  "sun-as-jmxrmi",
-	8688:  "openremote-ctrl",
-	8699:  "vnyx",
-	8711:  "nvc",
-	8733:  "ibus",
-	8750:  "dey-keyneg",
-	8763:  "mc-appserver",
-	8764:  "openqueue",
-	8765:  "ultraseek-http",
-	8766:  "amcs",
-	8770:  "dpap",
-	8778:  "uec",
-	8786:  "msgclnt",
-	8787:  "msgsrvr",
-	8793:  "acd-pm",
-	8800:  "sunwebadmin",
-	8804:  "truecm",
-	8873:  "dxspider",
-	8880:  "cddbp-alt",
-	8881:  "galaxy4d",
-	8883:  "secure-mqtt",
-	8888:  "ddi-tcp-1",
-	8889:  "ddi-tcp-2",
-	8890:  "ddi-tcp-3",
-	8891:  "ddi-tcp-4",
-	8892:  "ddi-tcp-5",
-	8893:  "ddi-tcp-6",
-	8894:  "ddi-tcp-7",
-	8899:  "ospf-lite",
-	8900:  "jmb-cds1",
-	8901:  "jmb-cds2",
-	8910:  "manyone-http",
-	8911:  "manyone-xml",
-	8912:  "wcbackup",
-	8913:  "dragonfly",
-	8937:  "twds",
-	8953:  "ub-dns-control",
-	8954:  "cumulus-admin",
-	8980:  "nod-provider",
-	8989:  "sunwebadmins",
-	8990:  "http-wmap",
-	8991:  "https-wmap",
-	8997:  "oracle-ms-ens",
-	8998:  "canto-roboflow",
-	8999:  "bctp",
-	9000:  "cslistener",
-	9001:  "etlservicemgr",
-	9002:  "dynamid",
-	9005:  "golem",
-	9008:  "ogs-server",
-	9009:  "pichat",
-	9010:  "sdr",
-	9020:  "tambora",
-	9021:  "panagolin-ident",
-	9022:  "paragent",
-	9023:  "swa-1",
-	9024:  "swa-2",
-	9025:  "swa-3",
-	9026:  "swa-4",
-	9050:  "versiera",
-	9051:  "fio-cmgmt",
-	9060:  "CardWeb-IO",
-	9080:  "glrpc",
-	9083:  "emc-pp-mgmtsvc",
-	9084:  "aurora",
-	9085:  "ibm-rsyscon",
-	9086:  "net2display",
-	9087:  "classic",
-	9088:  "sqlexec",
-	9089:  "sqlexec-ssl",
-	9090:  "websm",
-	9091:  "xmltec-xmlmail",
-	9092:  "XmlIpcRegSvc",
-	9093:  "copycat",
-	9100:  "hp-pdl-datastr",
-	9101:  "bacula-dir",
-	9102:  "bacula-fd",
-	9103:  "bacula-sd",
-	9104:  "peerwire",
-	9105:  "xadmin",
-	9106:  "astergate",
-	9107:  "astergatefax",
-	9119:  "mxit",
-	9122:  "grcmp",
-	9123:  "grcp",
-	9131:  "dddp",
-	9160:  "apani1",
-	9161:  "apani2",
-	9162:  "apani3",
-	9163:  "apani4",
-	9164:  "apani5",
-	9191:  "sun-as-jpda",
-	9200:  "wap-wsp",
-	9201:  "wap-wsp-wtp",
-	9202:  "wap-wsp-s",
-	9203:  "wap-wsp-wtp-s",
-	9204:  "wap-vcard",
-	9205:  "wap-vcal",
-	9206:  "wap-vcard-s",
-	9207:  "wap-vcal-s",
-	9208:  "rjcdb-vcards",
-	9209:  "almobile-system",
-	9210:  "oma-mlp",
-	9211:  "oma-mlp-s",
-	9212:  "serverviewdbms",
-	9213:  "serverstart",
-	9214:  "ipdcesgbs",
-	9215:  "insis",
-	9216:  "acme",
-	9217:  "fsc-port",
-	9222:  "teamcoherence",
-	9255:  "mon",
-	9278:  "pegasus",
-	9279:  "pegasus-ctl",
-	9280:  "pgps",
-	9281:  "swtp-port1",
-	9282:  "swtp-port2",
-	9283:  "callwaveiam",
-	9284:  "visd",
-	9285:  "n2h2server",
-	9287:  "cumulus",
-	9292:  "armtechdaemon",
-	9293:  "storview",
-	9294:  "armcenterhttp",
-	9295:  "armcenterhttps",
-	9300:  "vrace",
-	9306:  "sphinxql",
-	9312:  "sphinxapi",
-	9318:  "secure-ts",
-	9321:  "guibase",
-	9343:  "mpidcmgr",
-	9344:  "mphlpdmc",
-	9345:  "rancher",
-	9346:  "ctechlicensing",
-	9374:  "fjdmimgr",
-	9380:  "boxp",
-	9387:  "d2dconfig",
-	9388:  "d2ddatatrans",
-	9389:  "adws",
-	9390:  "otp",
-	9396:  "fjinvmgr",
-	9397:  "mpidcagt",
-	9400:  "sec-t4net-srv",
-	9401:  "sec-t4net-clt",
-	9402:  "sec-pc2fax-srv",
-	9418:  "git",
-	9443:  "tungsten-https",
-	9444:  "wso2esb-console",
-	9445:  "mindarray-ca",
-	9450:  "sntlkeyssrvr",
-	9500:  "ismserver",
-	9535:  "mngsuite",
-	9536:  "laes-bf",
-	9555:  "trispen-sra",
-	9592:  "ldgateway",
-	9593:  "cba8",
-	9594:  "msgsys",
-	9595:  "pds",
-	9596:  "mercury-disc",
-	9597:  "pd-admin",
-	9598:  "vscp",
-	9599:  "robix",
-	9600:  "micromuse-ncpw",
-	9612:  "streamcomm-ds",
-	9614:  "iadt-tls",
-	9616:  "erunbook-agent",
-	9617:  "erunbook-server",
-	9618:  "condor",
-	9628:  "odbcpathway",
-	9629:  "uniport",
-	9630:  "peoctlr",
-	9631:  "peocoll",
-	9640:  "pqsflows",
-	9666:  "zoomcp",
-	9667:  "xmms2",
-	9668:  "tec5-sdctp",
-	9694:  "client-wakeup",
-	9695:  "ccnx",
-	9700:  "board-roar",
-	9747:  "l5nas-parchan",
-	9750:  "board-voip",
-	9753:  "rasadv",
-	9762:  "tungsten-http",
-	9800:  "davsrc",
-	9801:  "sstp-2",
-	9802:  "davsrcs",
-	9875:  "sapv1",
-	9876:  "sd",
-	9888:  "cyborg-systems",
-	9889:  "gt-proxy",
-	9898:  "monkeycom",
-	9900:  "iua",
-	9909:  "domaintime",
-	9911:  "sype-transport",
-	9925:  "xybrid-cloud",
-	9950:  "apc-9950",
-	9951:  "apc-9951",
-	9952:  "apc-9952",
-	9953:  "acis",
-	9954:  "hinp",
-	9955:  "alljoyn-stm",
-	9966:  "odnsp",
-	9978:  "xybrid-rt",
-	9979:  "visweather",
-	9981:  "pumpkindb",
-	9987:  "dsm-scm-target",
-	9988:  "nsesrvr",
-	9990:  "osm-appsrvr",
-	9991:  "osm-oev",
-	9992:  "palace-1",
-	9993:  "palace-2",
-	9994:  "palace-3",
-	9995:  "palace-4",
-	9996:  "palace-5",
-	9997:  "palace-6",
-	9998:  "distinct32",
-	9999:  "distinct",
-	10000: "ndmp",
-	10001: "scp-config",
-	10002: "documentum",
-	10003: "documentum-s",
-	10004: "emcrmirccd",
-	10005: "emcrmird",
-	10006: "netapp-sync",
-	10007: "mvs-capacity",
-	10008: "octopus",
-	10009: "swdtp-sv",
-	10010: "rxapi",
-	10020: "abb-hw",
-	10050: "zabbix-agent",
-	10051: "zabbix-trapper",
-	10055: "qptlmd",
-	10080: "amanda",
-	10081: "famdc",
-	10100: "itap-ddtp",
-	10101: "ezmeeting-2",
-	10102: "ezproxy-2",
-	10103: "ezrelay",
-	10104: "swdtp",
-	10107: "bctp-server",
-	10110: "nmea-0183",
-	10113: "netiq-endpoint",
-	10114: "netiq-qcheck",
-	10115: "netiq-endpt",
-	10116: "netiq-voipa",
-	10117: "iqrm",
-	10125: "cimple",
-	10128: "bmc-perf-sd",
-	10129: "bmc-gms",
-	10160: "qb-db-server",
-	10161: "snmptls",
-	10162: "snmptls-trap",
-	10200: "trisoap",
-	10201: "rsms",
-	10252: "apollo-relay",
-	10260: "axis-wimp-port",
-	10261: "tile-ml",
-	10288: "blocks",
-	10321: "cosir",
-	10540: "MOS-lower",
-	10541: "MOS-upper",
-	10542: "MOS-aux",
-	10543: "MOS-soap",
-	10544: "MOS-soap-opt",
-	10548: "serverdocs",
-	10631: "printopia",
-	10800: "gap",
-	10805: "lpdg",
-	10809: "nbd",
-	10860: "helix",
-	10880: "bveapi",
-	10933: "octopustentacle",
-	10990: "rmiaux",
-	11000: "irisa",
-	11001: "metasys",
-	11095: "weave",
-	11103: "origo-sync",
-	11104: "netapp-icmgmt",
-	11105: "netapp-icdata",
-	11106: "sgi-lk",
-	11109: "sgi-dmfmgr",
-	11110: "sgi-soap",
-	11111: "vce",
-	11112: "dicom",
-	11161: "suncacao-snmp",
-	11162: "suncacao-jmxmp",
-	11163: "suncacao-rmi",
-	11164: "suncacao-csa",
-	11165: "suncacao-websvc",
-	11172: "oemcacao-jmxmp",
-	11173: "t5-straton",
-	11174: "oemcacao-rmi",
-	11175: "oemcacao-websvc",
-	11201: "smsqp",
-	11202: "dcsl-backup",
-	11208: "wifree",
-	11211: "memcache",
-	11319: "imip",
-	11320: "imip-channels",
-	11321: "arena-server",
-	11367: "atm-uhas",
-	11371: "hkp",
-	11489: "asgcypresstcps",
-	11600: "tempest-port",
-	11623: "emc-xsw-dconfig",
-	11720: "h323callsigalt",
-	11723: "emc-xsw-dcache",
-	11751: "intrepid-ssl",
-	11796: "lanschool",
-	11876: "xoraya",
-	11967: "sysinfo-sp",
-	12000: "entextxid",
-	12001: "entextnetwk",
-	12002: "entexthigh",
-	12003: "entextmed",
-	12004: "entextlow",
-	12005: "dbisamserver1",
-	12006: "dbisamserver2",
-	12007: "accuracer",
-	12008: "accuracer-dbms",
-	12010: "edbsrvr",
-	12012: "vipera",
-	12013: "vipera-ssl",
-	12109: "rets-ssl",
-	12121: "nupaper-ss",
-	12168: "cawas",
-	12172: "hivep",
-	12300: "linogridengine",
-	12302: "rads",
-	12321: "warehouse-sss",
-	12322: "warehouse",
-	12345: "italk",
-	12753: "tsaf",
-	12865: "netperf",
-	13160: "i-zipqd",
-	13216: "bcslogc",
-	13217: "rs-pias",
-	13218: "emc-vcas-tcp",
-	13223: "powwow-client",
-	13224: "powwow-server",
-	13400: "doip-data",
-	13720: "bprd",
-	13721: "bpdbm",
-	13722: "bpjava-msvc",
-	13724: "vnetd",
-	13782: "bpcd",
-	13783: "vopied",
-	13785: "nbdb",
-	13786: "nomdb",
-	13818: "dsmcc-config",
-	13819: "dsmcc-session",
-	13820: "dsmcc-passthru",
-	13821: "dsmcc-download",
-	13822: "dsmcc-ccp",
-	13823: "bmdss",
-	13894: "ucontrol",
-	13929: "dta-systems",
-	13930: "medevolve",
-	14000: "scotty-ft",
-	14001: "sua",
-	14033: "sage-best-com1",
-	14034: "sage-best-com2",
-	14141: "vcs-app",
-	14142: "icpp",
-	14143: "icpps",
-	14145: "gcm-app",
-	14149: "vrts-tdd",
-	14150: "vcscmd",
-	14154: "vad",
-	14250: "cps",
-	14414: "ca-web-update",
-	14500: "xpra",
-	14936: "hde-lcesrvr-1",
-	14937: "hde-lcesrvr-2",
-	15000: "hydap",
-	15002: "onep-tls",
-	15345: "xpilot",
-	15363: "3link",
-	15555: "cisco-snat",
-	15660: "bex-xr",
-	15740: "ptp",
-	15999: "programmar",
-	16000: "fmsas",
-	16001: "fmsascon",
-	16002: "gsms",
-	16020: "jwpc",
-	16021: "jwpc-bin",
-	16161: "sun-sea-port",
-	16162: "solaris-audit",
-	16309: "etb4j",
-	16310: "pduncs",
-	16311: "pdefmns",
-	16360: "netserialext1",
-	16361: "netserialext2",
-	16367: "netserialext3",
-	16368: "netserialext4",
-	16384: "connected",
-	16385: "rdgs",
-	16619: "xoms",
-	16665: "axon-tunnel",
-	16789: "cadsisvr",
-	16900: "newbay-snc-mc",
-	16950: "sgcip",
-	16991: "intel-rci-mp",
-	16992: "amt-soap-http",
-	16993: "amt-soap-https",
-	16994: "amt-redir-tcp",
-	16995: "amt-redir-tls",
-	17007: "isode-dua",
-	17184: "vestasdlp",
-	17185: "soundsvirtual",
-	17219: "chipper",
-	17220: "avtp",
-	17221: "avdecc",
-	17223: "isa100-gci",
-	17225: "trdp-md",
-	17234: "integrius-stp",
-	17235: "ssh-mgmt",
-	17500: "db-lsp",
-	17555: "ailith",
-	17729: "ea",
-	17754: "zep",
-	17755: "zigbee-ip",
-	17756: "zigbee-ips",
-	17777: "sw-orion",
-	18000: "biimenu",
-	18104: "radpdf",
-	18136: "racf",
-	18181: "opsec-cvp",
-	18182: "opsec-ufp",
-	18183: "opsec-sam",
-	18184: "opsec-lea",
-	18185: "opsec-omi",
-	18186: "ohsc",
-	18187: "opsec-ela",
-	18241: "checkpoint-rtm",
-	18242: "iclid",
-	18243: "clusterxl",
-	18262: "gv-pf",
-	18463: "ac-cluster",
-	18634: "rds-ib",
-	18635: "rds-ip",
-	18668: "vdmmesh",
-	18769: "ique",
-	18881: "infotos",
-	18888: "apc-necmp",
-	19000: "igrid",
-	19007: "scintilla",
-	19020: "j-link",
-	19191: "opsec-uaa",
-	19194: "ua-secureagent",
-	19220: "cora",
-	19283: "keysrvr",
-	19315: "keyshadow",
-	19398: "mtrgtrans",
-	19410: "hp-sco",
-	19411: "hp-sca",
-	19412: "hp-sessmon",
-	19539: "fxuptp",
-	19540: "sxuptp",
-	19541: "jcp",
-	19998: "iec-104-sec",
-	19999: "dnp-sec",
-	20000: "dnp",
-	20001: "microsan",
-	20002: "commtact-http",
-	20003: "commtact-https",
-	20005: "openwebnet",
-	20013: "ss-idi",
-	20014: "opendeploy",
-	20034: "nburn-id",
-	20046: "tmophl7mts",
-	20048: "mountd",
-	20049: "nfsrdma",
-	20057: "avesterra",
-	20167: "tolfab",
-	20202: "ipdtp-port",
-	20222: "ipulse-ics",
-	20480: "emwavemsg",
-	20670: "track",
-	20999: "athand-mmp",
-	21000: "irtrans",
-	21010: "notezilla-lan",
-	21221: "aigairserver",
-	21553: "rdm-tfs",
-	21554: "dfserver",
-	21590: "vofr-gateway",
-	21800: "tvpm",
-	21845: "webphone",
-	21846: "netspeak-is",
-	21847: "netspeak-cs",
-	21848: "netspeak-acd",
-	21849: "netspeak-cps",
-	22000: "snapenetio",
-	22001: "optocontrol",
-	22002: "optohost002",
-	22003: "optohost003",
-	22004: "optohost004",
-	22005: "optohost004",
-	22125: "dcap",
-	22128: "gsidcap",
-	22222: "easyengine",
-	22273: "wnn6",
-	22305: "cis",
-	22335: "shrewd-control",
-	22343: "cis-secure",
-	22347: "wibukey",
-	22350: "codemeter",
-	22351: "codemeter-cmwan",
-	22537: "caldsoft-backup",
-	22555: "vocaltec-wconf",
-	22763: "talikaserver",
-	22800: "aws-brf",
-	22951: "brf-gw",
-	23000: "inovaport1",
-	23001: "inovaport2",
-	23002: "inovaport3",
-	23003: "inovaport4",
-	23004: "inovaport5",
-	23005: "inovaport6",
-	23053: "gntp",
-	23294: "5afe-dir",
-	23333: "elxmgmt",
-	23400: "novar-dbase",
-	23401: "novar-alarm",
-	23402: "novar-global",
-	23456: "aequus",
-	23457: "aequus-alt",
-	23546: "areaguard-neo",
-	24000: "med-ltp",
-	24001: "med-fsp-rx",
-	24002: "med-fsp-tx",
-	24003: "med-supp",
-	24004: "med-ovw",
-	24005: "med-ci",
-	24006: "med-net-svc",
-	24242: "filesphere",
-	24249: "vista-4gl",
-	24321: "ild",
-	24386: "intel-rci",
-	24465: "tonidods",
-	24554: "binkp",
-	24577: "bilobit",
-	24666: "sdtvwcam",
-	24676: "canditv",
-	24677: "flashfiler",
-	24678: "proactivate",
-	24680: "tcc-http",
-	24754: "cslg",
-	24922: "find",
-	25000: "icl-twobase1",
-	25001: "icl-twobase2",
-	25002: "icl-twobase3",
-	25003: "icl-twobase4",
-	25004: "icl-twobase5",
-	25005: "icl-twobase6",
-	25006: "icl-twobase7",
-	25007: "icl-twobase8",
-	25008: "icl-twobase9",
-	25009: "icl-twobase10",
-	25576: "sauterdongle",
-	25604: "idtp",
-	25793: "vocaltec-hos",
-	25900: "tasp-net",
-	25901: "niobserver",
-	25902: "nilinkanalyst",
-	25903: "niprobe",
-	26000: "quake",
-	26133: "scscp",
-	26208: "wnn6-ds",
-	26257: "cockroach",
-	26260: "ezproxy",
-	26261: "ezmeeting",
-	26262: "k3software-svr",
-	26263: "k3software-cli",
-	26486: "exoline-tcp",
-	26487: "exoconfig",
-	26489: "exonet",
-	27345: "imagepump",
-	27442: "jesmsjc",
-	27504: "kopek-httphead",
-	27782: "ars-vista",
-	27876: "astrolink",
-	27999: "tw-auth-key",
-	28000: "nxlmd",
-	28001: "pqsp",
-	28200: "voxelstorm",
-	28240: "siemensgsm",
-	28589: "bosswave",
-	29167: "otmp",
-	29999: "bingbang",
-	30000: "ndmps",
-	30001: "pago-services1",
-	30002: "pago-services2",
-	30003: "amicon-fpsu-ra",
-	30100: "rwp",
-	30260: "kingdomsonline",
-	30400: "gs-realtime",
-	30999: "ovobs",
-	31016: "ka-sddp",
-	31020: "autotrac-acp",
-	31400: "pace-licensed",
-	31416: "xqosd",
-	31457: "tetrinet",
-	31620: "lm-mon",
-	31685: "dsx-monitor",
-	31765: "gamesmith-port",
-	31948: "iceedcp-tx",
-	31949: "iceedcp-rx",
-	32034: "iracinghelper",
-	32249: "t1distproc60",
-	32400: "plex",
-	32483: "apm-link",
-	32635: "sec-ntb-clnt",
-	32636: "DMExpress",
-	32767: "filenet-powsrm",
-	32768: "filenet-tms",
-	32769: "filenet-rpc",
-	32770: "filenet-nch",
-	32771: "filenet-rmi",
-	32772: "filenet-pa",
-	32773: "filenet-cm",
-	32774: "filenet-re",
-	32775: "filenet-pch",
-	32776: "filenet-peior",
-	32777: "filenet-obrok",
-	32801: "mlsn",
-	32811: "retp",
-	32896: "idmgratm",
-	33060: "mysqlx",
-	33123: "aurora-balaena",
-	33331: "diamondport",
-	33333: "dgi-serv",
-	33334: "speedtrace",
-	33434: "traceroute",
-	33656: "snip-slave",
-	34249: "turbonote-2",
-	34378: "p-net-local",
-	34379: "p-net-remote",
-	34567: "dhanalakshmi",
-	34962: "profinet-rt",
-	34963: "profinet-rtm",
-	34964: "profinet-cm",
-	34980: "ethercat",
-	35000: "heathview",
-	35001: "rt-viewer",
-	35002: "rt-sound",
-	35003: "rt-devicemapper",
-	35004: "rt-classmanager",
-	35005: "rt-labtracker",
-	35006: "rt-helper",
-	35100: "axio-disc",
-	35354: "kitim",
-	35355: "altova-lm",
-	35356: "guttersnex",
-	35357: "openstack-id",
-	36001: "allpeers",
-	36524: "febooti-aw",
-	36602: "observium-agent",
-	36700: "mapx",
-	36865: "kastenxpipe",
-	37475: "neckar",
-	37483: "gdrive-sync",
-	37601: "eftp",
-	37654: "unisys-eportal",
-	38000: "ivs-database",
-	38001: "ivs-insertion",
-	38002: "cresco-control",
-	38201: "galaxy7-data",
-	38202: "fairview",
-	38203: "agpolicy",
-	38800: "sruth",
-	38865: "secrmmsafecopya",
-	39681: "turbonote-1",
-	40000: "safetynetp",
-	40404: "sptx",
-	40841: "cscp",
-	40842: "csccredir",
-	40843: "csccfirewall",
-	41111: "fs-qos",
-	41121: "tentacle",
-	41230: "z-wave-s",
-	41794: "crestron-cip",
-	41795: "crestron-ctp",
-	41796: "crestron-cips",
-	41797: "crestron-ctps",
-	42508: "candp",
-	42509: "candrp",
-	42510: "caerpc",
-	43000: "recvr-rc",
-	43188: "reachout",
-	43189: "ndm-agent-port",
-	43190: "ip-provision",
-	43191: "noit-transport",
-	43210: "shaperai",
-	43439: "eq3-update",
-	43440: "ew-mgmt",
-	43441: "ciscocsdb",
-	44123: "z-wave-tunnel",
-	44321: "pmcd",
-	44322: "pmcdproxy",
-	44323: "pmwebapi",
-	44444: "cognex-dataman",
-	44553: "rbr-debug",
-	44818: "EtherNet-IP-2",
-	44900: "m3da",
-	45000: "asmp",
-	45001: "asmps",
-	45002: "rs-status",
-	45045: "synctest",
-	45054: "invision-ag",
-	45514: "cloudcheck",
-	45678: "eba",
-	45824: "dai-shell",
-	45825: "qdb2service",
-	45966: "ssr-servermgr",
-	46336: "inedo",
-	46998: "spremotetablet",
-	46999: "mediabox",
-	47000: "mbus",
-	47001: "winrm",
-	47557: "dbbrowse",
-	47624: "directplaysrvr",
-	47806: "ap",
-	47808: "bacnet",
-	48000: "nimcontroller",
-	48001: "nimspooler",
-	48002: "nimhub",
-	48003: "nimgtw",
-	48004: "nimbusdb",
-	48005: "nimbusdbctrl",
-	48049: "3gpp-cbsp",
-	48050: "weandsf",
-	48128: "isnetserv",
-	48129: "blp5",
-	48556: "com-bardac-dw",
-	48619: "iqobject",
-	48653: "robotraconteur",
-	49000: "matahari",
-	49001: "nusrp",
-}
-var udpPortNames = map[UDPPort]string{
-	1:     "tcpmux",
-	2:     "compressnet",
-	3:     "compressnet",
-	5:     "rje",
-	7:     "echo",
-	9:     "discard",
-	11:    "systat",
-	13:    "daytime",
-	17:    "qotd",
-	18:    "msp",
-	19:    "chargen",
-	20:    "ftp-data",
-	21:    "ftp",
-	22:    "ssh",
-	23:    "telnet",
-	25:    "smtp",
-	27:    "nsw-fe",
-	29:    "msg-icp",
-	31:    "msg-auth",
-	33:    "dsp",
-	37:    "time",
-	38:    "rap",
-	39:    "rlp",
-	41:    "graphics",
-	42:    "name",
-	43:    "nicname",
-	44:    "mpm-flags",
-	45:    "mpm",
-	46:    "mpm-snd",
-	48:    "auditd",
-	49:    "tacacs",
-	50:    "re-mail-ck",
-	52:    "xns-time",
-	53:    "domain",
-	54:    "xns-ch",
-	55:    "isi-gl",
-	56:    "xns-auth",
-	58:    "xns-mail",
-	62:    "acas",
-	63:    "whoispp",
-	64:    "covia",
-	65:    "tacacs-ds",
-	66:    "sql-net",
-	67:    "bootps",
-	68:    "bootpc",
-	69:    "tftp",
-	70:    "gopher",
-	71:    "netrjs-1",
-	72:    "netrjs-2",
-	73:    "netrjs-3",
-	74:    "netrjs-4",
-	76:    "deos",
-	78:    "vettcp",
-	79:    "finger",
-	80:    "http",
-	82:    "xfer",
-	83:    "mit-ml-dev",
-	84:    "ctf",
-	85:    "mit-ml-dev",
-	86:    "mfcobol",
-	88:    "kerberos",
-	89:    "su-mit-tg",
-	90:    "dnsix",
-	91:    "mit-dov",
-	92:    "npp",
-	93:    "dcp",
-	94:    "objcall",
-	95:    "supdup",
-	96:    "dixie",
-	97:    "swift-rvf",
-	98:    "tacnews",
-	99:    "metagram",
-	101:   "hostname",
-	102:   "iso-tsap",
-	103:   "gppitnp",
-	104:   "acr-nema",
-	105:   "cso",
-	106:   "3com-tsmux",
-	107:   "rtelnet",
-	108:   "snagas",
-	109:   "pop2",
-	110:   "pop3",
-	111:   "sunrpc",
-	112:   "mcidas",
-	113:   "auth",
-	115:   "sftp",
-	116:   "ansanotify",
-	117:   "uucp-path",
-	118:   "sqlserv",
-	119:   "nntp",
-	120:   "cfdptkt",
-	121:   "erpc",
-	122:   "smakynet",
-	123:   "ntp",
-	124:   "ansatrader",
-	125:   "locus-map",
-	126:   "nxedit",
-	127:   "locus-con",
-	128:   "gss-xlicen",
-	129:   "pwdgen",
-	130:   "cisco-fna",
-	131:   "cisco-tna",
-	132:   "cisco-sys",
-	133:   "statsrv",
-	134:   "ingres-net",
-	135:   "epmap",
-	136:   "profile",
-	137:   "netbios-ns",
-	138:   "netbios-dgm",
-	139:   "netbios-ssn",
-	140:   "emfis-data",
-	141:   "emfis-cntl",
-	142:   "bl-idm",
-	143:   "imap",
-	144:   "uma",
-	145:   "uaac",
-	146:   "iso-tp0",
-	147:   "iso-ip",
-	148:   "jargon",
-	149:   "aed-512",
-	150:   "sql-net",
-	151:   "hems",
-	152:   "bftp",
-	153:   "sgmp",
-	154:   "netsc-prod",
-	155:   "netsc-dev",
-	156:   "sqlsrv",
-	157:   "knet-cmp",
-	158:   "pcmail-srv",
-	159:   "nss-routing",
-	160:   "sgmp-traps",
-	161:   "snmp",
-	162:   "snmptrap",
-	163:   "cmip-man",
-	164:   "cmip-agent",
-	165:   "xns-courier",
-	166:   "s-net",
-	167:   "namp",
-	168:   "rsvd",
-	169:   "send",
-	170:   "print-srv",
-	171:   "multiplex",
-	172:   "cl-1",
-	173:   "xyplex-mux",
-	174:   "mailq",
-	175:   "vmnet",
-	176:   "genrad-mux",
-	177:   "xdmcp",
-	178:   "nextstep",
-	179:   "bgp",
-	180:   "ris",
-	181:   "unify",
-	182:   "audit",
-	183:   "ocbinder",
-	184:   "ocserver",
-	185:   "remote-kis",
-	186:   "kis",
-	187:   "aci",
-	188:   "mumps",
-	189:   "qft",
-	190:   "gacp",
-	191:   "prospero",
-	192:   "osu-nms",
-	193:   "srmp",
-	194:   "irc",
-	195:   "dn6-nlm-aud",
-	196:   "dn6-smm-red",
-	197:   "dls",
-	198:   "dls-mon",
-	199:   "smux",
-	200:   "src",
-	201:   "at-rtmp",
-	202:   "at-nbp",
-	203:   "at-3",
-	204:   "at-echo",
-	205:   "at-5",
-	206:   "at-zis",
-	207:   "at-7",
-	208:   "at-8",
-	209:   "qmtp",
-	210:   "z39-50",
-	211:   "914c-g",
-	212:   "anet",
-	213:   "ipx",
-	214:   "vmpwscs",
-	215:   "softpc",
-	216:   "CAIlic",
-	217:   "dbase",
-	218:   "mpp",
-	219:   "uarps",
-	220:   "imap3",
-	221:   "fln-spx",
-	222:   "rsh-spx",
-	223:   "cdc",
-	224:   "masqdialer",
-	242:   "direct",
-	243:   "sur-meas",
-	244:   "inbusiness",
-	245:   "link",
-	246:   "dsp3270",
-	247:   "subntbcst-tftp",
-	248:   "bhfhs",
-	256:   "rap",
-	257:   "set",
-	259:   "esro-gen",
-	260:   "openport",
-	261:   "nsiiops",
-	262:   "arcisdms",
-	263:   "hdap",
-	264:   "bgmp",
-	265:   "x-bone-ctl",
-	266:   "sst",
-	267:   "td-service",
-	268:   "td-replica",
-	269:   "manet",
-	270:   "gist",
-	280:   "http-mgmt",
-	281:   "personal-link",
-	282:   "cableport-ax",
-	283:   "rescap",
-	284:   "corerjd",
-	286:   "fxp",
-	287:   "k-block",
-	308:   "novastorbakcup",
-	309:   "entrusttime",
-	310:   "bhmds",
-	311:   "asip-webadmin",
-	312:   "vslmp",
-	313:   "magenta-logic",
-	314:   "opalis-robot",
-	315:   "dpsi",
-	316:   "decauth",
-	317:   "zannet",
-	318:   "pkix-timestamp",
-	319:   "ptp-event",
-	320:   "ptp-general",
-	321:   "pip",
-	322:   "rtsps",
-	333:   "texar",
-	344:   "pdap",
-	345:   "pawserv",
-	346:   "zserv",
-	347:   "fatserv",
-	348:   "csi-sgwp",
-	349:   "mftp",
-	350:   "matip-type-a",
-	351:   "matip-type-b",
-	352:   "dtag-ste-sb",
-	353:   "ndsauth",
-	354:   "bh611",
-	355:   "datex-asn",
-	356:   "cloanto-net-1",
-	357:   "bhevent",
-	358:   "shrinkwrap",
-	359:   "nsrmp",
-	360:   "scoi2odialog",
-	361:   "semantix",
-	362:   "srssend",
-	363:   "rsvp-tunnel",
-	364:   "aurora-cmgr",
-	365:   "dtk",
-	366:   "odmr",
-	367:   "mortgageware",
-	368:   "qbikgdp",
-	369:   "rpc2portmap",
-	370:   "codaauth2",
-	371:   "clearcase",
-	372:   "ulistproc",
-	373:   "legent-1",
-	374:   "legent-2",
-	375:   "hassle",
-	376:   "nip",
-	377:   "tnETOS",
-	378:   "dsETOS",
-	379:   "is99c",
-	380:   "is99s",
-	381:   "hp-collector",
-	382:   "hp-managed-node",
-	383:   "hp-alarm-mgr",
-	384:   "arns",
-	385:   "ibm-app",
-	386:   "asa",
-	387:   "aurp",
-	388:   "unidata-ldm",
-	389:   "ldap",
-	390:   "uis",
-	391:   "synotics-relay",
-	392:   "synotics-broker",
-	393:   "meta5",
-	394:   "embl-ndt",
-	395:   "netcp",
-	396:   "netware-ip",
-	397:   "mptn",
-	398:   "kryptolan",
-	399:   "iso-tsap-c2",
-	400:   "osb-sd",
-	401:   "ups",
-	402:   "genie",
-	403:   "decap",
-	404:   "nced",
-	405:   "ncld",
-	406:   "imsp",
-	407:   "timbuktu",
-	408:   "prm-sm",
-	409:   "prm-nm",
-	410:   "decladebug",
-	411:   "rmt",
-	412:   "synoptics-trap",
-	413:   "smsp",
-	414:   "infoseek",
-	415:   "bnet",
-	416:   "silverplatter",
-	417:   "onmux",
-	418:   "hyper-g",
-	419:   "ariel1",
-	420:   "smpte",
-	421:   "ariel2",
-	422:   "ariel3",
-	423:   "opc-job-start",
-	424:   "opc-job-track",
-	425:   "icad-el",
-	426:   "smartsdp",
-	427:   "svrloc",
-	428:   "ocs-cmu",
-	429:   "ocs-amu",
-	430:   "utmpsd",
-	431:   "utmpcd",
-	432:   "iasd",
-	433:   "nnsp",
-	434:   "mobileip-agent",
-	435:   "mobilip-mn",
-	436:   "dna-cml",
-	437:   "comscm",
-	438:   "dsfgw",
-	439:   "dasp",
-	440:   "sgcp",
-	441:   "decvms-sysmgt",
-	442:   "cvc-hostd",
-	443:   "https",
-	444:   "snpp",
-	445:   "microsoft-ds",
-	446:   "ddm-rdb",
-	447:   "ddm-dfm",
-	448:   "ddm-ssl",
-	449:   "as-servermap",
-	450:   "tserver",
-	451:   "sfs-smp-net",
-	452:   "sfs-config",
-	453:   "creativeserver",
-	454:   "contentserver",
-	455:   "creativepartnr",
-	456:   "macon-udp",
-	457:   "scohelp",
-	458:   "appleqtc",
-	459:   "ampr-rcmd",
-	460:   "skronk",
-	461:   "datasurfsrv",
-	462:   "datasurfsrvsec",
-	463:   "alpes",
-	464:   "kpasswd",
-	465:   "igmpv3lite",
-	466:   "digital-vrc",
-	467:   "mylex-mapd",
-	468:   "photuris",
-	469:   "rcp",
-	470:   "scx-proxy",
-	471:   "mondex",
-	472:   "ljk-login",
-	473:   "hybrid-pop",
-	474:   "tn-tl-w2",
-	475:   "tcpnethaspsrv",
-	476:   "tn-tl-fd1",
-	477:   "ss7ns",
-	478:   "spsc",
-	479:   "iafserver",
-	480:   "iafdbase",
-	481:   "ph",
-	482:   "bgs-nsi",
-	483:   "ulpnet",
-	484:   "integra-sme",
-	485:   "powerburst",
-	486:   "avian",
-	487:   "saft",
-	488:   "gss-http",
-	489:   "nest-protocol",
-	490:   "micom-pfs",
-	491:   "go-login",
-	492:   "ticf-1",
-	493:   "ticf-2",
-	494:   "pov-ray",
-	495:   "intecourier",
-	496:   "pim-rp-disc",
-	497:   "retrospect",
-	498:   "siam",
-	499:   "iso-ill",
-	500:   "isakmp",
-	501:   "stmf",
-	502:   "mbap",
-	503:   "intrinsa",
-	504:   "citadel",
-	505:   "mailbox-lm",
-	506:   "ohimsrv",
-	507:   "crs",
-	508:   "xvttp",
-	509:   "snare",
-	510:   "fcp",
-	511:   "passgo",
-	512:   "comsat",
-	513:   "who",
-	514:   "syslog",
-	515:   "printer",
-	516:   "videotex",
-	517:   "talk",
-	518:   "ntalk",
-	519:   "utime",
-	520:   "router",
-	521:   "ripng",
-	522:   "ulp",
-	523:   "ibm-db2",
-	524:   "ncp",
-	525:   "timed",
-	526:   "tempo",
-	527:   "stx",
-	528:   "custix",
-	529:   "irc-serv",
-	530:   "courier",
-	531:   "conference",
-	532:   "netnews",
-	533:   "netwall",
-	534:   "windream",
-	535:   "iiop",
-	536:   "opalis-rdv",
-	537:   "nmsp",
-	538:   "gdomap",
-	539:   "apertus-ldp",
-	540:   "uucp",
-	541:   "uucp-rlogin",
-	542:   "commerce",
-	543:   "klogin",
-	544:   "kshell",
-	545:   "appleqtcsrvr",
-	546:   "dhcpv6-client",
-	547:   "dhcpv6-server",
-	548:   "afpovertcp",
-	549:   "idfp",
-	550:   "new-rwho",
-	551:   "cybercash",
-	552:   "devshr-nts",
-	553:   "pirp",
-	554:   "rtsp",
-	555:   "dsf",
-	556:   "remotefs",
-	557:   "openvms-sysipc",
-	558:   "sdnskmp",
-	559:   "teedtap",
-	560:   "rmonitor",
-	561:   "monitor",
-	562:   "chshell",
-	563:   "nntps",
-	564:   "9pfs",
-	565:   "whoami",
-	566:   "streettalk",
-	567:   "banyan-rpc",
-	568:   "ms-shuttle",
-	569:   "ms-rome",
-	570:   "meter",
-	571:   "meter",
-	572:   "sonar",
-	573:   "banyan-vip",
-	574:   "ftp-agent",
-	575:   "vemmi",
-	576:   "ipcd",
-	577:   "vnas",
-	578:   "ipdd",
-	579:   "decbsrv",
-	580:   "sntp-heartbeat",
-	581:   "bdp",
-	582:   "scc-security",
-	583:   "philips-vc",
-	584:   "keyserver",
-	586:   "password-chg",
-	587:   "submission",
-	588:   "cal",
-	589:   "eyelink",
-	590:   "tns-cml",
-	591:   "http-alt",
-	592:   "eudora-set",
-	593:   "http-rpc-epmap",
-	594:   "tpip",
-	595:   "cab-protocol",
-	596:   "smsd",
-	597:   "ptcnameservice",
-	598:   "sco-websrvrmg3",
-	599:   "acp",
-	600:   "ipcserver",
-	601:   "syslog-conn",
-	602:   "xmlrpc-beep",
-	603:   "idxp",
-	604:   "tunnel",
-	605:   "soap-beep",
-	606:   "urm",
-	607:   "nqs",
-	608:   "sift-uft",
-	609:   "npmp-trap",
-	610:   "npmp-local",
-	611:   "npmp-gui",
-	612:   "hmmp-ind",
-	613:   "hmmp-op",
-	614:   "sshell",
-	615:   "sco-inetmgr",
-	616:   "sco-sysmgr",
-	617:   "sco-dtmgr",
-	618:   "dei-icda",
-	619:   "compaq-evm",
-	620:   "sco-websrvrmgr",
-	621:   "escp-ip",
-	622:   "collaborator",
-	623:   "asf-rmcp",
-	624:   "cryptoadmin",
-	625:   "dec-dlm",
-	626:   "asia",
-	627:   "passgo-tivoli",
-	628:   "qmqp",
-	629:   "3com-amp3",
-	630:   "rda",
-	631:   "ipp",
-	632:   "bmpp",
-	633:   "servstat",
-	634:   "ginad",
-	635:   "rlzdbase",
-	636:   "ldaps",
-	637:   "lanserver",
-	638:   "mcns-sec",
-	639:   "msdp",
-	640:   "entrust-sps",
-	641:   "repcmd",
-	642:   "esro-emsdp",
-	643:   "sanity",
-	644:   "dwr",
-	645:   "pssc",
-	646:   "ldp",
-	647:   "dhcp-failover",
-	648:   "rrp",
-	649:   "cadview-3d",
-	650:   "obex",
-	651:   "ieee-mms",
-	652:   "hello-port",
-	653:   "repscmd",
-	654:   "aodv",
-	655:   "tinc",
-	656:   "spmp",
-	657:   "rmc",
-	658:   "tenfold",
-	660:   "mac-srvr-admin",
-	661:   "hap",
-	662:   "pftp",
-	663:   "purenoise",
-	664:   "asf-secure-rmcp",
-	665:   "sun-dr",
-	666:   "mdqs",
-	667:   "disclose",
-	668:   "mecomm",
-	669:   "meregister",
-	670:   "vacdsm-sws",
-	671:   "vacdsm-app",
-	672:   "vpps-qua",
-	673:   "cimplex",
-	674:   "acap",
-	675:   "dctp",
-	676:   "vpps-via",
-	677:   "vpp",
-	678:   "ggf-ncp",
-	679:   "mrm",
-	680:   "entrust-aaas",
-	681:   "entrust-aams",
-	682:   "xfr",
-	683:   "corba-iiop",
-	684:   "corba-iiop-ssl",
-	685:   "mdc-portmapper",
-	686:   "hcp-wismar",
-	687:   "asipregistry",
-	688:   "realm-rusd",
-	689:   "nmap",
-	690:   "vatp",
-	691:   "msexch-routing",
-	692:   "hyperwave-isp",
-	693:   "connendp",
-	694:   "ha-cluster",
-	695:   "ieee-mms-ssl",
-	696:   "rushd",
-	697:   "uuidgen",
-	698:   "olsr",
-	699:   "accessnetwork",
-	700:   "epp",
-	701:   "lmp",
-	702:   "iris-beep",
-	704:   "elcsd",
-	705:   "agentx",
-	706:   "silc",
-	707:   "borland-dsj",
-	709:   "entrust-kmsh",
-	710:   "entrust-ash",
-	711:   "cisco-tdp",
-	712:   "tbrpf",
-	713:   "iris-xpc",
-	714:   "iris-xpcs",
-	715:   "iris-lwz",
-	716:   "pana",
-	729:   "netviewdm1",
-	730:   "netviewdm2",
-	731:   "netviewdm3",
-	741:   "netgw",
-	742:   "netrcs",
-	744:   "flexlm",
-	747:   "fujitsu-dev",
-	748:   "ris-cm",
-	749:   "kerberos-adm",
-	750:   "loadav",
-	751:   "pump",
-	752:   "qrh",
-	753:   "rrh",
-	754:   "tell",
-	758:   "nlogin",
-	759:   "con",
-	760:   "ns",
-	761:   "rxe",
-	762:   "quotad",
-	763:   "cycleserv",
-	764:   "omserv",
-	765:   "webster",
-	767:   "phonebook",
-	769:   "vid",
-	770:   "cadlock",
-	771:   "rtip",
-	772:   "cycleserv2",
-	773:   "notify",
-	774:   "acmaint-dbd",
-	775:   "acmaint-transd",
-	776:   "wpages",
-	777:   "multiling-http",
-	780:   "wpgs",
-	800:   "mdbs-daemon",
-	801:   "device",
-	802:   "mbap-s",
-	810:   "fcp-udp",
-	828:   "itm-mcell-s",
-	829:   "pkix-3-ca-ra",
-	830:   "netconf-ssh",
-	831:   "netconf-beep",
-	832:   "netconfsoaphttp",
-	833:   "netconfsoapbeep",
-	847:   "dhcp-failover2",
-	848:   "gdoi",
-	853:   "domain-s",
-	854:   "dlep",
-	860:   "iscsi",
-	861:   "owamp-control",
-	862:   "twamp-control",
-	873:   "rsync",
-	886:   "iclcnet-locate",
-	887:   "iclcnet-svinfo",
-	888:   "accessbuilder",
-	900:   "omginitialrefs",
-	901:   "smpnameres",
-	902:   "ideafarm-door",
-	903:   "ideafarm-panic",
-	910:   "kink",
-	911:   "xact-backup",
-	912:   "apex-mesh",
-	913:   "apex-edge",
-	989:   "ftps-data",
-	990:   "ftps",
-	991:   "nas",
-	992:   "telnets",
-	993:   "imaps",
-	995:   "pop3s",
-	996:   "vsinet",
-	997:   "maitrd",
-	998:   "puparp",
-	999:   "applix",
-	1000:  "cadlock2",
-	1010:  "surf",
-	1021:  "exp1",
-	1022:  "exp2",
-	1025:  "blackjack",
-	1026:  "cap",
-	1027:  "6a44",
-	1029:  "solid-mux",
-	1033:  "netinfo-local",
-	1034:  "activesync",
-	1035:  "mxxrlogin",
-	1036:  "nsstp",
-	1037:  "ams",
-	1038:  "mtqp",
-	1039:  "sbl",
-	1040:  "netarx",
-	1041:  "danf-ak2",
-	1042:  "afrog",
-	1043:  "boinc-client",
-	1044:  "dcutility",
-	1045:  "fpitp",
-	1046:  "wfremotertm",
-	1047:  "neod1",
-	1048:  "neod2",
-	1049:  "td-postman",
-	1050:  "cma",
-	1051:  "optima-vnet",
-	1052:  "ddt",
-	1053:  "remote-as",
-	1054:  "brvread",
-	1055:  "ansyslmd",
-	1056:  "vfo",
-	1057:  "startron",
-	1058:  "nim",
-	1059:  "nimreg",
-	1060:  "polestar",
-	1061:  "kiosk",
-	1062:  "veracity",
-	1063:  "kyoceranetdev",
-	1064:  "jstel",
-	1065:  "syscomlan",
-	1066:  "fpo-fns",
-	1067:  "instl-boots",
-	1068:  "instl-bootc",
-	1069:  "cognex-insight",
-	1070:  "gmrupdateserv",
-	1071:  "bsquare-voip",
-	1072:  "cardax",
-	1073:  "bridgecontrol",
-	1074:  "warmspotMgmt",
-	1075:  "rdrmshc",
-	1076:  "dab-sti-c",
-	1077:  "imgames",
-	1078:  "avocent-proxy",
-	1079:  "asprovatalk",
-	1080:  "socks",
-	1081:  "pvuniwien",
-	1082:  "amt-esd-prot",
-	1083:  "ansoft-lm-1",
-	1084:  "ansoft-lm-2",
-	1085:  "webobjects",
-	1086:  "cplscrambler-lg",
-	1087:  "cplscrambler-in",
-	1088:  "cplscrambler-al",
-	1089:  "ff-annunc",
-	1090:  "ff-fms",
-	1091:  "ff-sm",
-	1092:  "obrpd",
-	1093:  "proofd",
-	1094:  "rootd",
-	1095:  "nicelink",
-	1096:  "cnrprotocol",
-	1097:  "sunclustermgr",
-	1098:  "rmiactivation",
-	1099:  "rmiregistry",
-	1100:  "mctp",
-	1101:  "pt2-discover",
-	1102:  "adobeserver-1",
-	1103:  "adobeserver-2",
-	1104:  "xrl",
-	1105:  "ftranhc",
-	1106:  "isoipsigport-1",
-	1107:  "isoipsigport-2",
-	1108:  "ratio-adp",
-	1110:  "nfsd-keepalive",
-	1111:  "lmsocialserver",
-	1112:  "icp",
-	1113:  "ltp-deepspace",
-	1114:  "mini-sql",
-	1115:  "ardus-trns",
-	1116:  "ardus-cntl",
-	1117:  "ardus-mtrns",
-	1118:  "sacred",
-	1119:  "bnetgame",
-	1120:  "bnetfile",
-	1121:  "rmpp",
-	1122:  "availant-mgr",
-	1123:  "murray",
-	1124:  "hpvmmcontrol",
-	1125:  "hpvmmagent",
-	1126:  "hpvmmdata",
-	1127:  "kwdb-commn",
-	1128:  "saphostctrl",
-	1129:  "saphostctrls",
-	1130:  "casp",
-	1131:  "caspssl",
-	1132:  "kvm-via-ip",
-	1133:  "dfn",
-	1134:  "aplx",
-	1135:  "omnivision",
-	1136:  "hhb-gateway",
-	1137:  "trim",
-	1138:  "encrypted-admin",
-	1139:  "evm",
-	1140:  "autonoc",
-	1141:  "mxomss",
-	1142:  "edtools",
-	1143:  "imyx",
-	1144:  "fuscript",
-	1145:  "x9-icue",
-	1146:  "audit-transfer",
-	1147:  "capioverlan",
-	1148:  "elfiq-repl",
-	1149:  "bvtsonar",
-	1150:  "blaze",
-	1151:  "unizensus",
-	1152:  "winpoplanmess",
-	1153:  "c1222-acse",
-	1154:  "resacommunity",
-	1155:  "nfa",
-	1156:  "iascontrol-oms",
-	1157:  "iascontrol",
-	1158:  "dbcontrol-oms",
-	1159:  "oracle-oms",
-	1160:  "olsv",
-	1161:  "health-polling",
-	1162:  "health-trap",
-	1163:  "sddp",
-	1164:  "qsm-proxy",
-	1165:  "qsm-gui",
-	1166:  "qsm-remote",
-	1167:  "cisco-ipsla",
-	1168:  "vchat",
-	1169:  "tripwire",
-	1170:  "atc-lm",
-	1171:  "atc-appserver",
-	1172:  "dnap",
-	1173:  "d-cinema-rrp",
-	1174:  "fnet-remote-ui",
-	1175:  "dossier",
-	1176:  "indigo-server",
-	1177:  "dkmessenger",
-	1178:  "sgi-storman",
-	1179:  "b2n",
-	1180:  "mc-client",
-	1181:  "3comnetman",
-	1182:  "accelenet-data",
-	1183:  "llsurfup-http",
-	1184:  "llsurfup-https",
-	1185:  "catchpole",
-	1186:  "mysql-cluster",
-	1187:  "alias",
-	1188:  "hp-webadmin",
-	1189:  "unet",
-	1190:  "commlinx-avl",
-	1191:  "gpfs",
-	1192:  "caids-sensor",
-	1193:  "fiveacross",
-	1194:  "openvpn",
-	1195:  "rsf-1",
-	1196:  "netmagic",
-	1197:  "carrius-rshell",
-	1198:  "cajo-discovery",
-	1199:  "dmidi",
-	1200:  "scol",
-	1201:  "nucleus-sand",
-	1202:  "caiccipc",
-	1203:  "ssslic-mgr",
-	1204:  "ssslog-mgr",
-	1205:  "accord-mgc",
-	1206:  "anthony-data",
-	1207:  "metasage",
-	1208:  "seagull-ais",
-	1209:  "ipcd3",
-	1210:  "eoss",
-	1211:  "groove-dpp",
-	1212:  "lupa",
-	1213:  "mpc-lifenet",
-	1214:  "kazaa",
-	1215:  "scanstat-1",
-	1216:  "etebac5",
-	1217:  "hpss-ndapi",
-	1218:  "aeroflight-ads",
-	1219:  "aeroflight-ret",
-	1220:  "qt-serveradmin",
-	1221:  "sweetware-apps",
-	1222:  "nerv",
-	1223:  "tgp",
-	1224:  "vpnz",
-	1225:  "slinkysearch",
-	1226:  "stgxfws",
-	1227:  "dns2go",
-	1228:  "florence",
-	1229:  "zented",
-	1230:  "periscope",
-	1231:  "menandmice-lpm",
-	1232:  "first-defense",
-	1233:  "univ-appserver",
-	1234:  "search-agent",
-	1235:  "mosaicsyssvc1",
-	1236:  "bvcontrol",
-	1237:  "tsdos390",
-	1238:  "hacl-qs",
-	1239:  "nmsd",
-	1240:  "instantia",
-	1241:  "nessus",
-	1242:  "nmasoverip",
-	1243:  "serialgateway",
-	1244:  "isbconference1",
-	1245:  "isbconference2",
-	1246:  "payrouter",
-	1247:  "visionpyramid",
-	1248:  "hermes",
-	1249:  "mesavistaco",
-	1250:  "swldy-sias",
-	1251:  "servergraph",
-	1252:  "bspne-pcc",
-	1253:  "q55-pcc",
-	1254:  "de-noc",
-	1255:  "de-cache-query",
-	1256:  "de-server",
-	1257:  "shockwave2",
-	1258:  "opennl",
-	1259:  "opennl-voice",
-	1260:  "ibm-ssd",
-	1261:  "mpshrsv",
-	1262:  "qnts-orb",
-	1263:  "dka",
-	1264:  "prat",
-	1265:  "dssiapi",
-	1266:  "dellpwrappks",
-	1267:  "epc",
-	1268:  "propel-msgsys",
-	1269:  "watilapp",
-	1270:  "opsmgr",
-	1271:  "excw",
-	1272:  "cspmlockmgr",
-	1273:  "emc-gateway",
-	1274:  "t1distproc",
-	1275:  "ivcollector",
-	1277:  "miva-mqs",
-	1278:  "dellwebadmin-1",
-	1279:  "dellwebadmin-2",
-	1280:  "pictrography",
-	1281:  "healthd",
-	1282:  "emperion",
-	1283:  "productinfo",
-	1284:  "iee-qfx",
-	1285:  "neoiface",
-	1286:  "netuitive",
-	1287:  "routematch",
-	1288:  "navbuddy",
-	1289:  "jwalkserver",
-	1290:  "winjaserver",
-	1291:  "seagulllms",
-	1292:  "dsdn",
-	1293:  "pkt-krb-ipsec",
-	1294:  "cmmdriver",
-	1295:  "ehtp",
-	1296:  "dproxy",
-	1297:  "sdproxy",
-	1298:  "lpcp",
-	1299:  "hp-sci",
-	1300:  "h323hostcallsc",
-	1301:  "ci3-software-1",
-	1302:  "ci3-software-2",
-	1303:  "sftsrv",
-	1304:  "boomerang",
-	1305:  "pe-mike",
-	1306:  "re-conn-proto",
-	1307:  "pacmand",
-	1308:  "odsi",
-	1309:  "jtag-server",
-	1310:  "husky",
-	1311:  "rxmon",
-	1312:  "sti-envision",
-	1313:  "bmc-patroldb",
-	1314:  "pdps",
-	1315:  "els",
-	1316:  "exbit-escp",
-	1317:  "vrts-ipcserver",
-	1318:  "krb5gatekeeper",
-	1319:  "amx-icsp",
-	1320:  "amx-axbnet",
-	1321:  "pip",
-	1322:  "novation",
-	1323:  "brcd",
-	1324:  "delta-mcp",
-	1325:  "dx-instrument",
-	1326:  "wimsic",
-	1327:  "ultrex",
-	1328:  "ewall",
-	1329:  "netdb-export",
-	1330:  "streetperfect",
-	1331:  "intersan",
-	1332:  "pcia-rxp-b",
-	1333:  "passwrd-policy",
-	1334:  "writesrv",
-	1335:  "digital-notary",
-	1336:  "ischat",
-	1337:  "menandmice-dns",
-	1338:  "wmc-log-svc",
-	1339:  "kjtsiteserver",
-	1340:  "naap",
-	1341:  "qubes",
-	1342:  "esbroker",
-	1343:  "re101",
-	1344:  "icap",
-	1345:  "vpjp",
-	1346:  "alta-ana-lm",
-	1347:  "bbn-mmc",
-	1348:  "bbn-mmx",
-	1349:  "sbook",
-	1350:  "editbench",
-	1351:  "equationbuilder",
-	1352:  "lotusnote",
-	1353:  "relief",
-	1354:  "XSIP-network",
-	1355:  "intuitive-edge",
-	1356:  "cuillamartin",
-	1357:  "pegboard",
-	1358:  "connlcli",
-	1359:  "ftsrv",
-	1360:  "mimer",
-	1361:  "linx",
-	1362:  "timeflies",
-	1363:  "ndm-requester",
-	1364:  "ndm-server",
-	1365:  "adapt-sna",
-	1366:  "netware-csp",
-	1367:  "dcs",
-	1368:  "screencast",
-	1369:  "gv-us",
-	1370:  "us-gv",
-	1371:  "fc-cli",
-	1372:  "fc-ser",
-	1373:  "chromagrafx",
-	1374:  "molly",
-	1375:  "bytex",
-	1376:  "ibm-pps",
-	1377:  "cichlid",
-	1378:  "elan",
-	1379:  "dbreporter",
-	1380:  "telesis-licman",
-	1381:  "apple-licman",
-	1382:  "udt-os",
-	1383:  "gwha",
-	1384:  "os-licman",
-	1385:  "atex-elmd",
-	1386:  "checksum",
-	1387:  "cadsi-lm",
-	1388:  "objective-dbc",
-	1389:  "iclpv-dm",
-	1390:  "iclpv-sc",
-	1391:  "iclpv-sas",
-	1392:  "iclpv-pm",
-	1393:  "iclpv-nls",
-	1394:  "iclpv-nlc",
-	1395:  "iclpv-wsm",
-	1396:  "dvl-activemail",
-	1397:  "audio-activmail",
-	1398:  "video-activmail",
-	1399:  "cadkey-licman",
-	1400:  "cadkey-tablet",
-	1401:  "goldleaf-licman",
-	1402:  "prm-sm-np",
-	1403:  "prm-nm-np",
-	1404:  "igi-lm",
-	1405:  "ibm-res",
-	1406:  "netlabs-lm",
-	1408:  "sophia-lm",
-	1409:  "here-lm",
-	1410:  "hiq",
-	1411:  "af",
-	1412:  "innosys",
-	1413:  "innosys-acl",
-	1414:  "ibm-mqseries",
-	1415:  "dbstar",
-	1416:  "novell-lu6-2",
-	1417:  "timbuktu-srv1",
-	1418:  "timbuktu-srv2",
-	1419:  "timbuktu-srv3",
-	1420:  "timbuktu-srv4",
-	1421:  "gandalf-lm",
-	1422:  "autodesk-lm",
-	1423:  "essbase",
-	1424:  "hybrid",
-	1425:  "zion-lm",
-	1426:  "sais",
-	1427:  "mloadd",
-	1428:  "informatik-lm",
-	1429:  "nms",
-	1430:  "tpdu",
-	1431:  "rgtp",
-	1432:  "blueberry-lm",
-	1433:  "ms-sql-s",
-	1434:  "ms-sql-m",
-	1435:  "ibm-cics",
-	1436:  "saism",
-	1437:  "tabula",
-	1438:  "eicon-server",
-	1439:  "eicon-x25",
-	1440:  "eicon-slp",
-	1441:  "cadis-1",
-	1442:  "cadis-2",
-	1443:  "ies-lm",
-	1444:  "marcam-lm",
-	1445:  "proxima-lm",
-	1446:  "ora-lm",
-	1447:  "apri-lm",
-	1448:  "oc-lm",
-	1449:  "peport",
-	1450:  "dwf",
-	1451:  "infoman",
-	1452:  "gtegsc-lm",
-	1453:  "genie-lm",
-	1454:  "interhdl-elmd",
-	1455:  "esl-lm",
-	1456:  "dca",
-	1457:  "valisys-lm",
-	1458:  "nrcabq-lm",
-	1459:  "proshare1",
-	1460:  "proshare2",
-	1461:  "ibm-wrless-lan",
-	1462:  "world-lm",
-	1463:  "nucleus",
-	1464:  "msl-lmd",
-	1465:  "pipes",
-	1466:  "oceansoft-lm",
-	1467:  "csdmbase",
-	1468:  "csdm",
-	1469:  "aal-lm",
-	1470:  "uaiact",
-	1471:  "csdmbase",
-	1472:  "csdm",
-	1473:  "openmath",
-	1474:  "telefinder",
-	1475:  "taligent-lm",
-	1476:  "clvm-cfg",
-	1477:  "ms-sna-server",
-	1478:  "ms-sna-base",
-	1479:  "dberegister",
-	1480:  "pacerforum",
-	1481:  "airs",
-	1482:  "miteksys-lm",
-	1483:  "afs",
-	1484:  "confluent",
-	1485:  "lansource",
-	1486:  "nms-topo-serv",
-	1487:  "localinfosrvr",
-	1488:  "docstor",
-	1489:  "dmdocbroker",
-	1490:  "insitu-conf",
-	1492:  "stone-design-1",
-	1493:  "netmap-lm",
-	1494:  "ica",
-	1495:  "cvc",
-	1496:  "liberty-lm",
-	1497:  "rfx-lm",
-	1498:  "sybase-sqlany",
-	1499:  "fhc",
-	1500:  "vlsi-lm",
-	1501:  "saiscm",
-	1502:  "shivadiscovery",
-	1503:  "imtc-mcs",
-	1504:  "evb-elm",
-	1505:  "funkproxy",
-	1506:  "utcd",
-	1507:  "symplex",
-	1508:  "diagmond",
-	1509:  "robcad-lm",
-	1510:  "mvx-lm",
-	1511:  "3l-l1",
-	1512:  "wins",
-	1513:  "fujitsu-dtc",
-	1514:  "fujitsu-dtcns",
-	1515:  "ifor-protocol",
-	1516:  "vpad",
-	1517:  "vpac",
-	1518:  "vpvd",
-	1519:  "vpvc",
-	1520:  "atm-zip-office",
-	1521:  "ncube-lm",
-	1522:  "ricardo-lm",
-	1523:  "cichild-lm",
-	1524:  "ingreslock",
-	1525:  "orasrv",
-	1526:  "pdap-np",
-	1527:  "tlisrv",
-	1528:  "ngr-t",
-	1529:  "coauthor",
-	1530:  "rap-service",
-	1531:  "rap-listen",
-	1532:  "miroconnect",
-	1533:  "virtual-places",
-	1534:  "micromuse-lm",
-	1535:  "ampr-info",
-	1536:  "ampr-inter",
-	1537:  "sdsc-lm",
-	1538:  "3ds-lm",
-	1539:  "intellistor-lm",
-	1540:  "rds",
-	1541:  "rds2",
-	1542:  "gridgen-elmd",
-	1543:  "simba-cs",
-	1544:  "aspeclmd",
-	1545:  "vistium-share",
-	1546:  "abbaccuray",
-	1547:  "laplink",
-	1548:  "axon-lm",
-	1549:  "shivasound",
-	1550:  "3m-image-lm",
-	1551:  "hecmtl-db",
-	1552:  "pciarray",
-	1553:  "sna-cs",
-	1554:  "caci-lm",
-	1555:  "livelan",
-	1556:  "veritas-pbx",
-	1557:  "arbortext-lm",
-	1558:  "xingmpeg",
-	1559:  "web2host",
-	1560:  "asci-val",
-	1561:  "facilityview",
-	1562:  "pconnectmgr",
-	1563:  "cadabra-lm",
-	1564:  "pay-per-view",
-	1565:  "winddlb",
-	1566:  "corelvideo",
-	1567:  "jlicelmd",
-	1568:  "tsspmap",
-	1569:  "ets",
-	1570:  "orbixd",
-	1571:  "rdb-dbs-disp",
-	1572:  "chip-lm",
-	1573:  "itscomm-ns",
-	1574:  "mvel-lm",
-	1575:  "oraclenames",
-	1576:  "moldflow-lm",
-	1577:  "hypercube-lm",
-	1578:  "jacobus-lm",
-	1579:  "ioc-sea-lm",
-	1580:  "tn-tl-r2",
-	1581:  "mil-2045-47001",
-	1582:  "msims",
-	1583:  "simbaexpress",
-	1584:  "tn-tl-fd2",
-	1585:  "intv",
-	1586:  "ibm-abtact",
-	1587:  "pra-elmd",
-	1588:  "triquest-lm",
-	1589:  "vqp",
-	1590:  "gemini-lm",
-	1591:  "ncpm-pm",
-	1592:  "commonspace",
-	1593:  "mainsoft-lm",
-	1594:  "sixtrak",
-	1595:  "radio",
-	1596:  "radio-bc",
-	1597:  "orbplus-iiop",
-	1598:  "picknfs",
-	1599:  "simbaservices",
-	1600:  "issd",
-	1601:  "aas",
-	1602:  "inspect",
-	1603:  "picodbc",
-	1604:  "icabrowser",
-	1605:  "slp",
-	1606:  "slm-api",
-	1607:  "stt",
-	1608:  "smart-lm",
-	1609:  "isysg-lm",
-	1610:  "taurus-wh",
-	1611:  "ill",
-	1612:  "netbill-trans",
-	1613:  "netbill-keyrep",
-	1614:  "netbill-cred",
-	1615:  "netbill-auth",
-	1616:  "netbill-prod",
-	1617:  "nimrod-agent",
-	1618:  "skytelnet",
-	1619:  "xs-openstorage",
-	1620:  "faxportwinport",
-	1621:  "softdataphone",
-	1622:  "ontime",
-	1623:  "jaleosnd",
-	1624:  "udp-sr-port",
-	1625:  "svs-omagent",
-	1626:  "shockwave",
-	1627:  "t128-gateway",
-	1628:  "lontalk-norm",
-	1629:  "lontalk-urgnt",
-	1630:  "oraclenet8cman",
-	1631:  "visitview",
-	1632:  "pammratc",
-	1633:  "pammrpc",
-	1634:  "loaprobe",
-	1635:  "edb-server1",
-	1636:  "isdc",
-	1637:  "islc",
-	1638:  "ismc",
-	1639:  "cert-initiator",
-	1640:  "cert-responder",
-	1641:  "invision",
-	1642:  "isis-am",
-	1643:  "isis-ambc",
-	1644:  "saiseh",
-	1645:  "sightline",
-	1646:  "sa-msg-port",
-	1647:  "rsap",
-	1648:  "concurrent-lm",
-	1649:  "kermit",
-	1650:  "nkd",
-	1651:  "shiva-confsrvr",
-	1652:  "xnmp",
-	1653:  "alphatech-lm",
-	1654:  "stargatealerts",
-	1655:  "dec-mbadmin",
-	1656:  "dec-mbadmin-h",
-	1657:  "fujitsu-mmpdc",
-	1658:  "sixnetudr",
-	1659:  "sg-lm",
-	1660:  "skip-mc-gikreq",
-	1661:  "netview-aix-1",
-	1662:  "netview-aix-2",
-	1663:  "netview-aix-3",
-	1664:  "netview-aix-4",
-	1665:  "netview-aix-5",
-	1666:  "netview-aix-6",
-	1667:  "netview-aix-7",
-	1668:  "netview-aix-8",
-	1669:  "netview-aix-9",
-	1670:  "netview-aix-10",
-	1671:  "netview-aix-11",
-	1672:  "netview-aix-12",
-	1673:  "proshare-mc-1",
-	1674:  "proshare-mc-2",
-	1675:  "pdp",
-	1676:  "netcomm2",
-	1677:  "groupwise",
-	1678:  "prolink",
-	1679:  "darcorp-lm",
-	1680:  "microcom-sbp",
-	1681:  "sd-elmd",
-	1682:  "lanyon-lantern",
-	1683:  "ncpm-hip",
-	1684:  "snaresecure",
-	1685:  "n2nremote",
-	1686:  "cvmon",
-	1687:  "nsjtp-ctrl",
-	1688:  "nsjtp-data",
-	1689:  "firefox",
-	1690:  "ng-umds",
-	1691:  "empire-empuma",
-	1692:  "sstsys-lm",
-	1693:  "rrirtr",
-	1694:  "rrimwm",
-	1695:  "rrilwm",
-	1696:  "rrifmm",
-	1697:  "rrisat",
-	1698:  "rsvp-encap-1",
-	1699:  "rsvp-encap-2",
-	1700:  "mps-raft",
-	1701:  "l2f",
-	1702:  "deskshare",
-	1703:  "hb-engine",
-	1704:  "bcs-broker",
-	1705:  "slingshot",
-	1706:  "jetform",
-	1707:  "vdmplay",
-	1708:  "gat-lmd",
-	1709:  "centra",
-	1710:  "impera",
-	1711:  "pptconference",
-	1712:  "registrar",
-	1713:  "conferencetalk",
-	1714:  "sesi-lm",
-	1715:  "houdini-lm",
-	1716:  "xmsg",
-	1717:  "fj-hdnet",
-	1718:  "h323gatedisc",
-	1719:  "h323gatestat",
-	1720:  "h323hostcall",
-	1721:  "caicci",
-	1722:  "hks-lm",
-	1723:  "pptp",
-	1724:  "csbphonemaster",
-	1725:  "iden-ralp",
-	1726:  "iberiagames",
-	1727:  "winddx",
-	1728:  "telindus",
-	1729:  "citynl",
-	1730:  "roketz",
-	1731:  "msiccp",
-	1732:  "proxim",
-	1733:  "siipat",
-	1734:  "cambertx-lm",
-	1735:  "privatechat",
-	1736:  "street-stream",
-	1737:  "ultimad",
-	1738:  "gamegen1",
-	1739:  "webaccess",
-	1740:  "encore",
-	1741:  "cisco-net-mgmt",
-	1742:  "3Com-nsd",
-	1743:  "cinegrfx-lm",
-	1744:  "ncpm-ft",
-	1745:  "remote-winsock",
-	1746:  "ftrapid-1",
-	1747:  "ftrapid-2",
-	1748:  "oracle-em1",
-	1749:  "aspen-services",
-	1750:  "sslp",
-	1751:  "swiftnet",
-	1752:  "lofr-lm",
-	1754:  "oracle-em2",
-	1755:  "ms-streaming",
-	1756:  "capfast-lmd",
-	1757:  "cnhrp",
-	1758:  "tftp-mcast",
-	1759:  "spss-lm",
-	1760:  "www-ldap-gw",
-	1761:  "cft-0",
-	1762:  "cft-1",
-	1763:  "cft-2",
-	1764:  "cft-3",
-	1765:  "cft-4",
-	1766:  "cft-5",
-	1767:  "cft-6",
-	1768:  "cft-7",
-	1769:  "bmc-net-adm",
-	1770:  "bmc-net-svc",
-	1771:  "vaultbase",
-	1772:  "essweb-gw",
-	1773:  "kmscontrol",
-	1774:  "global-dtserv",
-	1776:  "femis",
-	1777:  "powerguardian",
-	1778:  "prodigy-intrnet",
-	1779:  "pharmasoft",
-	1780:  "dpkeyserv",
-	1781:  "answersoft-lm",
-	1782:  "hp-hcip",
-	1784:  "finle-lm",
-	1785:  "windlm",
-	1786:  "funk-logger",
-	1787:  "funk-license",
-	1788:  "psmond",
-	1789:  "hello",
-	1790:  "nmsp",
-	1791:  "ea1",
-	1792:  "ibm-dt-2",
-	1793:  "rsc-robot",
-	1794:  "cera-bcm",
-	1795:  "dpi-proxy",
-	1796:  "vocaltec-admin",
-	1797:  "uma",
-	1798:  "etp",
-	1799:  "netrisk",
-	1800:  "ansys-lm",
-	1801:  "msmq",
-	1802:  "concomp1",
-	1803:  "hp-hcip-gwy",
-	1804:  "enl",
-	1805:  "enl-name",
-	1806:  "musiconline",
-	1807:  "fhsp",
-	1808:  "oracle-vp2",
-	1809:  "oracle-vp1",
-	1810:  "jerand-lm",
-	1811:  "scientia-sdb",
-	1812:  "radius",
-	1813:  "radius-acct",
-	1814:  "tdp-suite",
-	1815:  "mmpft",
-	1816:  "harp",
-	1817:  "rkb-oscs",
-	1818:  "etftp",
-	1819:  "plato-lm",
-	1820:  "mcagent",
-	1821:  "donnyworld",
-	1822:  "es-elmd",
-	1823:  "unisys-lm",
-	1824:  "metrics-pas",
-	1825:  "direcpc-video",
-	1826:  "ardt",
-	1827:  "asi",
-	1828:  "itm-mcell-u",
-	1829:  "optika-emedia",
-	1830:  "net8-cman",
-	1831:  "myrtle",
-	1832:  "tht-treasure",
-	1833:  "udpradio",
-	1834:  "ardusuni",
-	1835:  "ardusmul",
-	1836:  "ste-smsc",
-	1837:  "csoft1",
-	1838:  "talnet",
-	1839:  "netopia-vo1",
-	1840:  "netopia-vo2",
-	1841:  "netopia-vo3",
-	1842:  "netopia-vo4",
-	1843:  "netopia-vo5",
-	1844:  "direcpc-dll",
-	1845:  "altalink",
-	1846:  "tunstall-pnc",
-	1847:  "slp-notify",
-	1848:  "fjdocdist",
-	1849:  "alpha-sms",
-	1850:  "gsi",
-	1851:  "ctcd",
-	1852:  "virtual-time",
-	1853:  "vids-avtp",
-	1854:  "buddy-draw",
-	1855:  "fiorano-rtrsvc",
-	1856:  "fiorano-msgsvc",
-	1857:  "datacaptor",
-	1858:  "privateark",
-	1859:  "gammafetchsvr",
-	1860:  "sunscalar-svc",
-	1861:  "lecroy-vicp",
-	1862:  "mysql-cm-agent",
-	1863:  "msnp",
-	1864:  "paradym-31port",
-	1865:  "entp",
-	1866:  "swrmi",
-	1867:  "udrive",
-	1868:  "viziblebrowser",
-	1869:  "transact",
-	1870:  "sunscalar-dns",
-	1871:  "canocentral0",
-	1872:  "canocentral1",
-	1873:  "fjmpjps",
-	1874:  "fjswapsnp",
-	1875:  "westell-stats",
-	1876:  "ewcappsrv",
-	1877:  "hp-webqosdb",
-	1878:  "drmsmc",
-	1879:  "nettgain-nms",
-	1880:  "vsat-control",
-	1881:  "ibm-mqseries2",
-	1882:  "ecsqdmn",
-	1883:  "mqtt",
-	1884:  "idmaps",
-	1885:  "vrtstrapserver",
-	1886:  "leoip",
-	1887:  "filex-lport",
-	1888:  "ncconfig",
-	1889:  "unify-adapter",
-	1890:  "wilkenlistener",
-	1891:  "childkey-notif",
-	1892:  "childkey-ctrl",
-	1893:  "elad",
-	1894:  "o2server-port",
-	1896:  "b-novative-ls",
-	1897:  "metaagent",
-	1898:  "cymtec-port",
-	1899:  "mc2studios",
-	1900:  "ssdp",
-	1901:  "fjicl-tep-a",
-	1902:  "fjicl-tep-b",
-	1903:  "linkname",
-	1904:  "fjicl-tep-c",
-	1905:  "sugp",
-	1906:  "tpmd",
-	1907:  "intrastar",
-	1908:  "dawn",
-	1909:  "global-wlink",
-	1910:  "ultrabac",
-	1911:  "mtp",
-	1912:  "rhp-iibp",
-	1913:  "armadp",
-	1914:  "elm-momentum",
-	1915:  "facelink",
-	1916:  "persona",
-	1917:  "noagent",
-	1918:  "can-nds",
-	1919:  "can-dch",
-	1920:  "can-ferret",
-	1921:  "noadmin",
-	1922:  "tapestry",
-	1923:  "spice",
-	1924:  "xiip",
-	1925:  "discovery-port",
-	1926:  "egs",
-	1927:  "videte-cipc",
-	1928:  "emsd-port",
-	1929:  "bandwiz-system",
-	1930:  "driveappserver",
-	1931:  "amdsched",
-	1932:  "ctt-broker",
-	1933:  "xmapi",
-	1934:  "xaapi",
-	1935:  "macromedia-fcs",
-	1936:  "jetcmeserver",
-	1937:  "jwserver",
-	1938:  "jwclient",
-	1939:  "jvserver",
-	1940:  "jvclient",
-	1941:  "dic-aida",
-	1942:  "res",
-	1943:  "beeyond-media",
-	1944:  "close-combat",
-	1945:  "dialogic-elmd",
-	1946:  "tekpls",
-	1947:  "sentinelsrm",
-	1948:  "eye2eye",
-	1949:  "ismaeasdaqlive",
-	1950:  "ismaeasdaqtest",
-	1951:  "bcs-lmserver",
-	1952:  "mpnjsc",
-	1953:  "rapidbase",
-	1954:  "abr-api",
-	1955:  "abr-secure",
-	1956:  "vrtl-vmf-ds",
-	1957:  "unix-status",
-	1958:  "dxadmind",
-	1959:  "simp-all",
-	1960:  "nasmanager",
-	1961:  "bts-appserver",
-	1962:  "biap-mp",
-	1963:  "webmachine",
-	1964:  "solid-e-engine",
-	1965:  "tivoli-npm",
-	1966:  "slush",
-	1967:  "sns-quote",
-	1968:  "lipsinc",
-	1969:  "lipsinc1",
-	1970:  "netop-rc",
-	1971:  "netop-school",
-	1972:  "intersys-cache",
-	1973:  "dlsrap",
-	1974:  "drp",
-	1975:  "tcoflashagent",
-	1976:  "tcoregagent",
-	1977:  "tcoaddressbook",
-	1978:  "unisql",
-	1979:  "unisql-java",
-	1980:  "pearldoc-xact",
-	1981:  "p2pq",
-	1982:  "estamp",
-	1983:  "lhtp",
-	1984:  "bb",
-	1985:  "hsrp",
-	1986:  "licensedaemon",
-	1987:  "tr-rsrb-p1",
-	1988:  "tr-rsrb-p2",
-	1989:  "tr-rsrb-p3",
-	1990:  "stun-p1",
-	1991:  "stun-p2",
-	1992:  "stun-p3",
-	1993:  "snmp-tcp-port",
-	1994:  "stun-port",
-	1995:  "perf-port",
-	1996:  "tr-rsrb-port",
-	1997:  "gdp-port",
-	1998:  "x25-svc-port",
-	1999:  "tcp-id-port",
-	2000:  "cisco-sccp",
-	2001:  "wizard",
-	2002:  "globe",
-	2003:  "brutus",
-	2004:  "emce",
-	2005:  "oracle",
-	2006:  "raid-cd",
-	2007:  "raid-am",
-	2008:  "terminaldb",
-	2009:  "whosockami",
-	2010:  "pipe-server",
-	2011:  "servserv",
-	2012:  "raid-ac",
-	2013:  "raid-cd",
-	2014:  "raid-sf",
-	2015:  "raid-cs",
-	2016:  "bootserver",
-	2017:  "bootclient",
-	2018:  "rellpack",
-	2019:  "about",
-	2020:  "xinupageserver",
-	2021:  "xinuexpansion1",
-	2022:  "xinuexpansion2",
-	2023:  "xinuexpansion3",
-	2024:  "xinuexpansion4",
-	2025:  "xribs",
-	2026:  "scrabble",
-	2027:  "shadowserver",
-	2028:  "submitserver",
-	2029:  "hsrpv6",
-	2030:  "device2",
-	2031:  "mobrien-chat",
-	2032:  "blackboard",
-	2033:  "glogger",
-	2034:  "scoremgr",
-	2035:  "imsldoc",
-	2036:  "e-dpnet",
-	2037:  "applus",
-	2038:  "objectmanager",
-	2039:  "prizma",
-	2040:  "lam",
-	2041:  "interbase",
-	2042:  "isis",
-	2043:  "isis-bcast",
-	2044:  "rimsl",
-	2045:  "cdfunc",
-	2046:  "sdfunc",
-	2047:  "dls",
-	2048:  "dls-monitor",
-	2049:  "shilp",
-	2050:  "av-emb-config",
-	2051:  "epnsdp",
-	2052:  "clearvisn",
-	2053:  "lot105-ds-upd",
-	2054:  "weblogin",
-	2055:  "iop",
-	2056:  "omnisky",
-	2057:  "rich-cp",
-	2058:  "newwavesearch",
-	2059:  "bmc-messaging",
-	2060:  "teleniumdaemon",
-	2061:  "netmount",
-	2062:  "icg-swp",
-	2063:  "icg-bridge",
-	2064:  "icg-iprelay",
-	2065:  "dlsrpn",
-	2066:  "aura",
-	2067:  "dlswpn",
-	2068:  "avauthsrvprtcl",
-	2069:  "event-port",
-	2070:  "ah-esp-encap",
-	2071:  "acp-port",
-	2072:  "msync",
-	2073:  "gxs-data-port",
-	2074:  "vrtl-vmf-sa",
-	2075:  "newlixengine",
-	2076:  "newlixconfig",
-	2077:  "tsrmagt",
-	2078:  "tpcsrvr",
-	2079:  "idware-router",
-	2080:  "autodesk-nlm",
-	2081:  "kme-trap-port",
-	2082:  "infowave",
-	2083:  "radsec",
-	2084:  "sunclustergeo",
-	2085:  "ada-cip",
-	2086:  "gnunet",
-	2087:  "eli",
-	2088:  "ip-blf",
-	2089:  "sep",
-	2090:  "lrp",
-	2091:  "prp",
-	2092:  "descent3",
-	2093:  "nbx-cc",
-	2094:  "nbx-au",
-	2095:  "nbx-ser",
-	2096:  "nbx-dir",
-	2097:  "jetformpreview",
-	2098:  "dialog-port",
-	2099:  "h2250-annex-g",
-	2100:  "amiganetfs",
-	2101:  "rtcm-sc104",
-	2102:  "zephyr-srv",
-	2103:  "zephyr-clt",
-	2104:  "zephyr-hm",
-	2105:  "minipay",
-	2106:  "mzap",
-	2107:  "bintec-admin",
-	2108:  "comcam",
-	2109:  "ergolight",
-	2110:  "umsp",
-	2111:  "dsatp",
-	2112:  "idonix-metanet",
-	2113:  "hsl-storm",
-	2114:  "newheights",
-	2115:  "kdm",
-	2116:  "ccowcmr",
-	2117:  "mentaclient",
-	2118:  "mentaserver",
-	2119:  "gsigatekeeper",
-	2120:  "qencp",
-	2121:  "scientia-ssdb",
-	2122:  "caupc-remote",
-	2123:  "gtp-control",
-	2124:  "elatelink",
-	2125:  "lockstep",
-	2126:  "pktcable-cops",
-	2127:  "index-pc-wb",
-	2128:  "net-steward",
-	2129:  "cs-live",
-	2130:  "xds",
-	2131:  "avantageb2b",
-	2132:  "solera-epmap",
-	2133:  "zymed-zpp",
-	2134:  "avenue",
-	2135:  "gris",
-	2136:  "appworxsrv",
-	2137:  "connect",
-	2138:  "unbind-cluster",
-	2139:  "ias-auth",
-	2140:  "ias-reg",
-	2141:  "ias-admind",
-	2142:  "tdmoip",
-	2143:  "lv-jc",
-	2144:  "lv-ffx",
-	2145:  "lv-pici",
-	2146:  "lv-not",
-	2147:  "lv-auth",
-	2148:  "veritas-ucl",
-	2149:  "acptsys",
-	2150:  "dynamic3d",
-	2151:  "docent",
-	2152:  "gtp-user",
-	2153:  "ctlptc",
-	2154:  "stdptc",
-	2155:  "brdptc",
-	2156:  "trp",
-	2157:  "xnds",
-	2158:  "touchnetplus",
-	2159:  "gdbremote",
-	2160:  "apc-2160",
-	2161:  "apc-2161",
-	2162:  "navisphere",
-	2163:  "navisphere-sec",
-	2164:  "ddns-v3",
-	2165:  "x-bone-api",
-	2166:  "iwserver",
-	2167:  "raw-serial",
-	2168:  "easy-soft-mux",
-	2169:  "brain",
-	2170:  "eyetv",
-	2171:  "msfw-storage",
-	2172:  "msfw-s-storage",
-	2173:  "msfw-replica",
-	2174:  "msfw-array",
-	2175:  "airsync",
-	2176:  "rapi",
-	2177:  "qwave",
-	2178:  "bitspeer",
-	2179:  "vmrdp",
-	2180:  "mc-gt-srv",
-	2181:  "eforward",
-	2182:  "cgn-stat",
-	2183:  "cgn-config",
-	2184:  "nvd",
-	2185:  "onbase-dds",
-	2186:  "gtaua",
-	2187:  "ssmd",
-	2190:  "tivoconnect",
-	2191:  "tvbus",
-	2192:  "asdis",
-	2193:  "drwcs",
-	2197:  "mnp-exchange",
-	2198:  "onehome-remote",
-	2199:  "onehome-help",
-	2200:  "ici",
-	2201:  "ats",
-	2202:  "imtc-map",
-	2203:  "b2-runtime",
-	2204:  "b2-license",
-	2205:  "jps",
-	2206:  "hpocbus",
-	2207:  "hpssd",
-	2208:  "hpiod",
-	2209:  "rimf-ps",
-	2210:  "noaaport",
-	2211:  "emwin",
-	2212:  "leecoposserver",
-	2213:  "kali",
-	2214:  "rpi",
-	2215:  "ipcore",
-	2216:  "vtu-comms",
-	2217:  "gotodevice",
-	2218:  "bounzza",
-	2219:  "netiq-ncap",
-	2220:  "netiq",
-	2221:  "ethernet-ip-s",
-	2222:  "EtherNet-IP-1",
-	2223:  "rockwell-csp2",
-	2224:  "efi-mg",
-	2226:  "di-drm",
-	2227:  "di-msg",
-	2228:  "ehome-ms",
-	2229:  "datalens",
-	2230:  "queueadm",
-	2231:  "wimaxasncp",
-	2232:  "ivs-video",
-	2233:  "infocrypt",
-	2234:  "directplay",
-	2235:  "sercomm-wlink",
-	2236:  "nani",
-	2237:  "optech-port1-lm",
-	2238:  "aviva-sna",
-	2239:  "imagequery",
-	2240:  "recipe",
-	2241:  "ivsd",
-	2242:  "foliocorp",
-	2243:  "magicom",
-	2244:  "nmsserver",
-	2245:  "hao",
-	2246:  "pc-mta-addrmap",
-	2247:  "antidotemgrsvr",
-	2248:  "ums",
-	2249:  "rfmp",
-	2250:  "remote-collab",
-	2251:  "dif-port",
-	2252:  "njenet-ssl",
-	2253:  "dtv-chan-req",
-	2254:  "seispoc",
-	2255:  "vrtp",
-	2256:  "pcc-mfp",
-	2257:  "simple-tx-rx",
-	2258:  "rcts",
-	2260:  "apc-2260",
-	2261:  "comotionmaster",
-	2262:  "comotionback",
-	2263:  "ecwcfg",
-	2264:  "apx500api-1",
-	2265:  "apx500api-2",
-	2266:  "mfserver",
-	2267:  "ontobroker",
-	2268:  "amt",
-	2269:  "mikey",
-	2270:  "starschool",
-	2271:  "mmcals",
-	2272:  "mmcal",
-	2273:  "mysql-im",
-	2274:  "pcttunnell",
-	2275:  "ibridge-data",
-	2276:  "ibridge-mgmt",
-	2277:  "bluectrlproxy",
-	2278:  "s3db",
-	2279:  "xmquery",
-	2280:  "lnvpoller",
-	2281:  "lnvconsole",
-	2282:  "lnvalarm",
-	2283:  "lnvstatus",
-	2284:  "lnvmaps",
-	2285:  "lnvmailmon",
-	2286:  "nas-metering",
-	2287:  "dna",
-	2288:  "netml",
-	2289:  "dict-lookup",
-	2290:  "sonus-logging",
-	2291:  "eapsp",
-	2292:  "mib-streaming",
-	2293:  "npdbgmngr",
-	2294:  "konshus-lm",
-	2295:  "advant-lm",
-	2296:  "theta-lm",
-	2297:  "d2k-datamover1",
-	2298:  "d2k-datamover2",
-	2299:  "pc-telecommute",
-	2300:  "cvmmon",
-	2301:  "cpq-wbem",
-	2302:  "binderysupport",
-	2303:  "proxy-gateway",
-	2304:  "attachmate-uts",
-	2305:  "mt-scaleserver",
-	2306:  "tappi-boxnet",
-	2307:  "pehelp",
-	2308:  "sdhelp",
-	2309:  "sdserver",
-	2310:  "sdclient",
-	2311:  "messageservice",
-	2312:  "wanscaler",
-	2313:  "iapp",
-	2314:  "cr-websystems",
-	2315:  "precise-sft",
-	2316:  "sent-lm",
-	2317:  "attachmate-g32",
-	2318:  "cadencecontrol",
-	2319:  "infolibria",
-	2320:  "siebel-ns",
-	2321:  "rdlap",
-	2322:  "ofsd",
-	2323:  "3d-nfsd",
-	2324:  "cosmocall",
-	2325:  "ansysli",
-	2326:  "idcp",
-	2327:  "xingcsm",
-	2328:  "netrix-sftm",
-	2329:  "nvd",
-	2330:  "tscchat",
-	2331:  "agentview",
-	2332:  "rcc-host",
-	2333:  "snapp",
-	2334:  "ace-client",
-	2335:  "ace-proxy",
-	2336:  "appleugcontrol",
-	2337:  "ideesrv",
-	2338:  "norton-lambert",
-	2339:  "3com-webview",
-	2340:  "wrs-registry",
-	2341:  "xiostatus",
-	2342:  "manage-exec",
-	2343:  "nati-logos",
-	2344:  "fcmsys",
-	2345:  "dbm",
-	2346:  "redstorm-join",
-	2347:  "redstorm-find",
-	2348:  "redstorm-info",
-	2349:  "redstorm-diag",
-	2350:  "psbserver",
-	2351:  "psrserver",
-	2352:  "pslserver",
-	2353:  "pspserver",
-	2354:  "psprserver",
-	2355:  "psdbserver",
-	2356:  "gxtelmd",
-	2357:  "unihub-server",
-	2358:  "futrix",
-	2359:  "flukeserver",
-	2360:  "nexstorindltd",
-	2361:  "tl1",
-	2362:  "digiman",
-	2363:  "mediacntrlnfsd",
-	2364:  "oi-2000",
-	2365:  "dbref",
-	2366:  "qip-login",
-	2367:  "service-ctrl",
-	2368:  "opentable",
-	2370:  "l3-hbmon",
-	2372:  "lanmessenger",
-	2381:  "compaq-https",
-	2382:  "ms-olap3",
-	2383:  "ms-olap4",
-	2384:  "sd-capacity",
-	2385:  "sd-data",
-	2386:  "virtualtape",
-	2387:  "vsamredirector",
-	2388:  "mynahautostart",
-	2389:  "ovsessionmgr",
-	2390:  "rsmtp",
-	2391:  "3com-net-mgmt",
-	2392:  "tacticalauth",
-	2393:  "ms-olap1",
-	2394:  "ms-olap2",
-	2395:  "lan900-remote",
-	2396:  "wusage",
-	2397:  "ncl",
-	2398:  "orbiter",
-	2399:  "fmpro-fdal",
-	2400:  "opequus-server",
-	2401:  "cvspserver",
-	2402:  "taskmaster2000",
-	2403:  "taskmaster2000",
-	2404:  "iec-104",
-	2405:  "trc-netpoll",
-	2406:  "jediserver",
-	2407:  "orion",
-	2409:  "sns-protocol",
-	2410:  "vrts-registry",
-	2411:  "netwave-ap-mgmt",
-	2412:  "cdn",
-	2413:  "orion-rmi-reg",
-	2414:  "beeyond",
-	2415:  "codima-rtp",
-	2416:  "rmtserver",
-	2417:  "composit-server",
-	2418:  "cas",
-	2419:  "attachmate-s2s",
-	2420:  "dslremote-mgmt",
-	2421:  "g-talk",
-	2422:  "crmsbits",
-	2423:  "rnrp",
-	2424:  "kofax-svr",
-	2425:  "fjitsuappmgr",
-	2426:  "vcmp",
-	2427:  "mgcp-gateway",
-	2428:  "ott",
-	2429:  "ft-role",
-	2430:  "venus",
-	2431:  "venus-se",
-	2432:  "codasrv",
-	2433:  "codasrv-se",
-	2434:  "pxc-epmap",
-	2435:  "optilogic",
-	2436:  "topx",
-	2437:  "unicontrol",
-	2438:  "msp",
-	2439:  "sybasedbsynch",
-	2440:  "spearway",
-	2441:  "pvsw-inet",
-	2442:  "netangel",
-	2443:  "powerclientcsf",
-	2444:  "btpp2sectrans",
-	2445:  "dtn1",
-	2446:  "bues-service",
-	2447:  "ovwdb",
-	2448:  "hpppssvr",
-	2449:  "ratl",
-	2450:  "netadmin",
-	2451:  "netchat",
-	2452:  "snifferclient",
-	2453:  "madge-ltd",
-	2454:  "indx-dds",
-	2455:  "wago-io-system",
-	2456:  "altav-remmgt",
-	2457:  "rapido-ip",
-	2458:  "griffin",
-	2459:  "community",
-	2460:  "ms-theater",
-	2461:  "qadmifoper",
-	2462:  "qadmifevent",
-	2463:  "lsi-raid-mgmt",
-	2464:  "direcpc-si",
-	2465:  "lbm",
-	2466:  "lbf",
-	2467:  "high-criteria",
-	2468:  "qip-msgd",
-	2469:  "mti-tcs-comm",
-	2470:  "taskman-port",
-	2471:  "seaodbc",
-	2472:  "c3",
-	2473:  "aker-cdp",
-	2474:  "vitalanalysis",
-	2475:  "ace-server",
-	2476:  "ace-svr-prop",
-	2477:  "ssm-cvs",
-	2478:  "ssm-cssps",
-	2479:  "ssm-els",
-	2480:  "powerexchange",
-	2481:  "giop",
-	2482:  "giop-ssl",
-	2483:  "ttc",
-	2484:  "ttc-ssl",
-	2485:  "netobjects1",
-	2486:  "netobjects2",
-	2487:  "pns",
-	2488:  "moy-corp",
-	2489:  "tsilb",
-	2490:  "qip-qdhcp",
-	2491:  "conclave-cpp",
-	2492:  "groove",
-	2493:  "talarian-mqs",
-	2494:  "bmc-ar",
-	2495:  "fast-rem-serv",
-	2496:  "dirgis",
-	2497:  "quaddb",
-	2498:  "odn-castraq",
-	2499:  "unicontrol",
-	2500:  "rtsserv",
-	2501:  "rtsclient",
-	2502:  "kentrox-prot",
-	2503:  "nms-dpnss",
-	2504:  "wlbs",
-	2505:  "ppcontrol",
-	2506:  "jbroker",
-	2507:  "spock",
-	2508:  "jdatastore",
-	2509:  "fjmpss",
-	2510:  "fjappmgrbulk",
-	2511:  "metastorm",
-	2512:  "citrixima",
-	2513:  "citrixadmin",
-	2514:  "facsys-ntp",
-	2515:  "facsys-router",
-	2516:  "maincontrol",
-	2517:  "call-sig-trans",
-	2518:  "willy",
-	2519:  "globmsgsvc",
-	2520:  "pvsw",
-	2521:  "adaptecmgr",
-	2522:  "windb",
-	2523:  "qke-llc-v3",
-	2524:  "optiwave-lm",
-	2525:  "ms-v-worlds",
-	2526:  "ema-sent-lm",
-	2527:  "iqserver",
-	2528:  "ncr-ccl",
-	2529:  "utsftp",
-	2530:  "vrcommerce",
-	2531:  "ito-e-gui",
-	2532:  "ovtopmd",
-	2533:  "snifferserver",
-	2534:  "combox-web-acc",
-	2535:  "madcap",
-	2536:  "btpp2audctr1",
-	2537:  "upgrade",
-	2538:  "vnwk-prapi",
-	2539:  "vsiadmin",
-	2540:  "lonworks",
-	2541:  "lonworks2",
-	2542:  "udrawgraph",
-	2543:  "reftek",
-	2544:  "novell-zen",
-	2545:  "sis-emt",
-	2546:  "vytalvaultbrtp",
-	2547:  "vytalvaultvsmp",
-	2548:  "vytalvaultpipe",
-	2549:  "ipass",
-	2550:  "ads",
-	2551:  "isg-uda-server",
-	2552:  "call-logging",
-	2553:  "efidiningport",
-	2554:  "vcnet-link-v10",
-	2555:  "compaq-wcp",
-	2556:  "nicetec-nmsvc",
-	2557:  "nicetec-mgmt",
-	2558:  "pclemultimedia",
-	2559:  "lstp",
-	2560:  "labrat",
-	2561:  "mosaixcc",
-	2562:  "delibo",
-	2563:  "cti-redwood",
-	2564:  "hp-3000-telnet",
-	2565:  "coord-svr",
-	2566:  "pcs-pcw",
-	2567:  "clp",
-	2568:  "spamtrap",
-	2569:  "sonuscallsig",
-	2570:  "hs-port",
-	2571:  "cecsvc",
-	2572:  "ibp",
-	2573:  "trustestablish",
-	2574:  "blockade-bpsp",
-	2575:  "hl7",
-	2576:  "tclprodebugger",
-	2577:  "scipticslsrvr",
-	2578:  "rvs-isdn-dcp",
-	2579:  "mpfoncl",
-	2580:  "tributary",
-	2581:  "argis-te",
-	2582:  "argis-ds",
-	2583:  "mon",
-	2584:  "cyaserv",
-	2585:  "netx-server",
-	2586:  "netx-agent",
-	2587:  "masc",
-	2588:  "privilege",
-	2589:  "quartus-tcl",
-	2590:  "idotdist",
-	2591:  "maytagshuffle",
-	2592:  "netrek",
-	2593:  "mns-mail",
-	2594:  "dts",
-	2595:  "worldfusion1",
-	2596:  "worldfusion2",
-	2597:  "homesteadglory",
-	2598:  "citriximaclient",
-	2599:  "snapd",
-	2600:  "hpstgmgr",
-	2601:  "discp-client",
-	2602:  "discp-server",
-	2603:  "servicemeter",
-	2604:  "nsc-ccs",
-	2605:  "nsc-posa",
-	2606:  "netmon",
-	2607:  "connection",
-	2608:  "wag-service",
-	2609:  "system-monitor",
-	2610:  "versa-tek",
-	2611:  "lionhead",
-	2612:  "qpasa-agent",
-	2613:  "smntubootstrap",
-	2614:  "neveroffline",
-	2615:  "firepower",
-	2616:  "appswitch-emp",
-	2617:  "cmadmin",
-	2618:  "priority-e-com",
-	2619:  "bruce",
-	2620:  "lpsrecommender",
-	2621:  "miles-apart",
-	2622:  "metricadbc",
-	2623:  "lmdp",
-	2624:  "aria",
-	2625:  "blwnkl-port",
-	2626:  "gbjd816",
-	2627:  "moshebeeri",
-	2628:  "dict",
-	2629:  "sitaraserver",
-	2630:  "sitaramgmt",
-	2631:  "sitaradir",
-	2632:  "irdg-post",
-	2633:  "interintelli",
-	2634:  "pk-electronics",
-	2635:  "backburner",
-	2636:  "solve",
-	2637:  "imdocsvc",
-	2638:  "sybaseanywhere",
-	2639:  "aminet",
-	2640:  "ami-control",
-	2641:  "hdl-srv",
-	2642:  "tragic",
-	2643:  "gte-samp",
-	2644:  "travsoft-ipx-t",
-	2645:  "novell-ipx-cmd",
-	2646:  "and-lm",
-	2647:  "syncserver",
-	2648:  "upsnotifyprot",
-	2649:  "vpsipport",
-	2650:  "eristwoguns",
-	2651:  "ebinsite",
-	2652:  "interpathpanel",
-	2653:  "sonus",
-	2654:  "corel-vncadmin",
-	2655:  "unglue",
-	2656:  "kana",
-	2657:  "sns-dispatcher",
-	2658:  "sns-admin",
-	2659:  "sns-query",
-	2660:  "gcmonitor",
-	2661:  "olhost",
-	2662:  "bintec-capi",
-	2663:  "bintec-tapi",
-	2664:  "patrol-mq-gm",
-	2665:  "patrol-mq-nm",
-	2666:  "extensis",
-	2667:  "alarm-clock-s",
-	2668:  "alarm-clock-c",
-	2669:  "toad",
-	2670:  "tve-announce",
-	2671:  "newlixreg",
-	2672:  "nhserver",
-	2673:  "firstcall42",
-	2674:  "ewnn",
-	2675:  "ttc-etap",
-	2676:  "simslink",
-	2677:  "gadgetgate1way",
-	2678:  "gadgetgate2way",
-	2679:  "syncserverssl",
-	2680:  "pxc-sapxom",
-	2681:  "mpnjsomb",
-	2683:  "ncdloadbalance",
-	2684:  "mpnjsosv",
-	2685:  "mpnjsocl",
-	2686:  "mpnjsomg",
-	2687:  "pq-lic-mgmt",
-	2688:  "md-cg-http",
-	2689:  "fastlynx",
-	2690:  "hp-nnm-data",
-	2691:  "itinternet",
-	2692:  "admins-lms",
-	2694:  "pwrsevent",
-	2695:  "vspread",
-	2696:  "unifyadmin",
-	2697:  "oce-snmp-trap",
-	2698:  "mck-ivpip",
-	2699:  "csoft-plusclnt",
-	2700:  "tqdata",
-	2701:  "sms-rcinfo",
-	2702:  "sms-xfer",
-	2703:  "sms-chat",
-	2704:  "sms-remctrl",
-	2705:  "sds-admin",
-	2706:  "ncdmirroring",
-	2707:  "emcsymapiport",
-	2708:  "banyan-net",
-	2709:  "supermon",
-	2710:  "sso-service",
-	2711:  "sso-control",
-	2712:  "aocp",
-	2713:  "raventbs",
-	2714:  "raventdm",
-	2715:  "hpstgmgr2",
-	2716:  "inova-ip-disco",
-	2717:  "pn-requester",
-	2718:  "pn-requester2",
-	2719:  "scan-change",
-	2720:  "wkars",
-	2721:  "smart-diagnose",
-	2722:  "proactivesrvr",
-	2723:  "watchdog-nt",
-	2724:  "qotps",
-	2725:  "msolap-ptp2",
-	2726:  "tams",
-	2727:  "mgcp-callagent",
-	2728:  "sqdr",
-	2729:  "tcim-control",
-	2730:  "nec-raidplus",
-	2731:  "fyre-messanger",
-	2732:  "g5m",
-	2733:  "signet-ctf",
-	2734:  "ccs-software",
-	2735:  "netiq-mc",
-	2736:  "radwiz-nms-srv",
-	2737:  "srp-feedback",
-	2738:  "ndl-tcp-ois-gw",
-	2739:  "tn-timing",
-	2740:  "alarm",
-	2741:  "tsb",
-	2742:  "tsb2",
-	2743:  "murx",
-	2744:  "honyaku",
-	2745:  "urbisnet",
-	2746:  "cpudpencap",
-	2747:  "fjippol-swrly",
-	2748:  "fjippol-polsvr",
-	2749:  "fjippol-cnsl",
-	2750:  "fjippol-port1",
-	2751:  "fjippol-port2",
-	2752:  "rsisysaccess",
-	2753:  "de-spot",
-	2754:  "apollo-cc",
-	2755:  "expresspay",
-	2756:  "simplement-tie",
-	2757:  "cnrp",
-	2758:  "apollo-status",
-	2759:  "apollo-gms",
-	2760:  "sabams",
-	2761:  "dicom-iscl",
-	2762:  "dicom-tls",
-	2763:  "desktop-dna",
-	2764:  "data-insurance",
-	2765:  "qip-audup",
-	2766:  "compaq-scp",
-	2767:  "uadtc",
-	2768:  "uacs",
-	2769:  "exce",
-	2770:  "veronica",
-	2771:  "vergencecm",
-	2772:  "auris",
-	2773:  "rbakcup1",
-	2774:  "rbakcup2",
-	2775:  "smpp",
-	2776:  "ridgeway1",
-	2777:  "ridgeway2",
-	2778:  "gwen-sonya",
-	2779:  "lbc-sync",
-	2780:  "lbc-control",
-	2781:  "whosells",
-	2782:  "everydayrc",
-	2783:  "aises",
-	2784:  "www-dev",
-	2785:  "aic-np",
-	2786:  "aic-oncrpc",
-	2787:  "piccolo",
-	2788:  "fryeserv",
-	2789:  "media-agent",
-	2790:  "plgproxy",
-	2791:  "mtport-regist",
-	2792:  "f5-globalsite",
-	2793:  "initlsmsad",
-	2795:  "livestats",
-	2796:  "ac-tech",
-	2797:  "esp-encap",
-	2798:  "tmesis-upshot",
-	2799:  "icon-discover",
-	2800:  "acc-raid",
-	2801:  "igcp",
-	2802:  "veritas-udp1",
-	2803:  "btprjctrl",
-	2804:  "dvr-esm",
-	2805:  "wta-wsp-s",
-	2806:  "cspuni",
-	2807:  "cspmulti",
-	2808:  "j-lan-p",
-	2809:  "corbaloc",
-	2810:  "netsteward",
-	2811:  "gsiftp",
-	2812:  "atmtcp",
-	2813:  "llm-pass",
-	2814:  "llm-csv",
-	2815:  "lbc-measure",
-	2816:  "lbc-watchdog",
-	2817:  "nmsigport",
-	2818:  "rmlnk",
-	2819:  "fc-faultnotify",
-	2820:  "univision",
-	2821:  "vrts-at-port",
-	2822:  "ka0wuc",
-	2823:  "cqg-netlan",
-	2824:  "cqg-netlan-1",
-	2826:  "slc-systemlog",
-	2827:  "slc-ctrlrloops",
-	2828:  "itm-lm",
-	2829:  "silkp1",
-	2830:  "silkp2",
-	2831:  "silkp3",
-	2832:  "silkp4",
-	2833:  "glishd",
-	2834:  "evtp",
-	2835:  "evtp-data",
-	2836:  "catalyst",
-	2837:  "repliweb",
-	2838:  "starbot",
-	2839:  "nmsigport",
-	2840:  "l3-exprt",
-	2841:  "l3-ranger",
-	2842:  "l3-hawk",
-	2843:  "pdnet",
-	2844:  "bpcp-poll",
-	2845:  "bpcp-trap",
-	2846:  "aimpp-hello",
-	2847:  "aimpp-port-req",
-	2848:  "amt-blc-port",
-	2849:  "fxp",
-	2850:  "metaconsole",
-	2851:  "webemshttp",
-	2852:  "bears-01",
-	2853:  "ispipes",
-	2854:  "infomover",
-	2856:  "cesdinv",
-	2857:  "simctlp",
-	2858:  "ecnp",
-	2859:  "activememory",
-	2860:  "dialpad-voice1",
-	2861:  "dialpad-voice2",
-	2862:  "ttg-protocol",
-	2863:  "sonardata",
-	2864:  "astromed-main",
-	2865:  "pit-vpn",
-	2866:  "iwlistener",
-	2867:  "esps-portal",
-	2868:  "npep-messaging",
-	2869:  "icslap",
-	2870:  "daishi",
-	2871:  "msi-selectplay",
-	2872:  "radix",
-	2874:  "dxmessagebase1",
-	2875:  "dxmessagebase2",
-	2876:  "sps-tunnel",
-	2877:  "bluelance",
-	2878:  "aap",
-	2879:  "ucentric-ds",
-	2880:  "synapse",
-	2881:  "ndsp",
-	2882:  "ndtp",
-	2883:  "ndnp",
-	2884:  "flashmsg",
-	2885:  "topflow",
-	2886:  "responselogic",
-	2887:  "aironetddp",
-	2888:  "spcsdlobby",
-	2889:  "rsom",
-	2890:  "cspclmulti",
-	2891:  "cinegrfx-elmd",
-	2892:  "snifferdata",
-	2893:  "vseconnector",
-	2894:  "abacus-remote",
-	2895:  "natuslink",
-	2896:  "ecovisiong6-1",
-	2897:  "citrix-rtmp",
-	2898:  "appliance-cfg",
-	2899:  "powergemplus",
-	2900:  "quicksuite",
-	2901:  "allstorcns",
-	2902:  "netaspi",
-	2903:  "suitcase",
-	2904:  "m2ua",
-	2906:  "caller9",
-	2907:  "webmethods-b2b",
-	2908:  "mao",
-	2909:  "funk-dialout",
-	2910:  "tdaccess",
-	2911:  "blockade",
-	2912:  "epicon",
-	2913:  "boosterware",
-	2914:  "gamelobby",
-	2915:  "tksocket",
-	2916:  "elvin-server",
-	2917:  "elvin-client",
-	2918:  "kastenchasepad",
-	2919:  "roboer",
-	2920:  "roboeda",
-	2921:  "cesdcdman",
-	2922:  "cesdcdtrn",
-	2923:  "wta-wsp-wtp-s",
-	2924:  "precise-vip",
-	2926:  "mobile-file-dl",
-	2927:  "unimobilectrl",
-	2928:  "redstone-cpss",
-	2929:  "amx-webadmin",
-	2930:  "amx-weblinx",
-	2931:  "circle-x",
-	2932:  "incp",
-	2933:  "4-tieropmgw",
-	2934:  "4-tieropmcli",
-	2935:  "qtp",
-	2936:  "otpatch",
-	2937:  "pnaconsult-lm",
-	2938:  "sm-pas-1",
-	2939:  "sm-pas-2",
-	2940:  "sm-pas-3",
-	2941:  "sm-pas-4",
-	2942:  "sm-pas-5",
-	2943:  "ttnrepository",
-	2944:  "megaco-h248",
-	2945:  "h248-binary",
-	2946:  "fjsvmpor",
-	2947:  "gpsd",
-	2948:  "wap-push",
-	2949:  "wap-pushsecure",
-	2950:  "esip",
-	2951:  "ottp",
-	2952:  "mpfwsas",
-	2953:  "ovalarmsrv",
-	2954:  "ovalarmsrv-cmd",
-	2955:  "csnotify",
-	2956:  "ovrimosdbman",
-	2957:  "jmact5",
-	2958:  "jmact6",
-	2959:  "rmopagt",
-	2960:  "dfoxserver",
-	2961:  "boldsoft-lm",
-	2962:  "iph-policy-cli",
-	2963:  "iph-policy-adm",
-	2964:  "bullant-srap",
-	2965:  "bullant-rap",
-	2966:  "idp-infotrieve",
-	2967:  "ssc-agent",
-	2968:  "enpp",
-	2969:  "essp",
-	2970:  "index-net",
-	2971:  "netclip",
-	2972:  "pmsm-webrctl",
-	2973:  "svnetworks",
-	2974:  "signal",
-	2975:  "fjmpcm",
-	2976:  "cns-srv-port",
-	2977:  "ttc-etap-ns",
-	2978:  "ttc-etap-ds",
-	2979:  "h263-video",
-	2980:  "wimd",
-	2981:  "mylxamport",
-	2982:  "iwb-whiteboard",
-	2983:  "netplan",
-	2984:  "hpidsadmin",
-	2985:  "hpidsagent",
-	2986:  "stonefalls",
-	2987:  "identify",
-	2988:  "hippad",
-	2989:  "zarkov",
-	2990:  "boscap",
-	2991:  "wkstn-mon",
-	2992:  "avenyo",
-	2993:  "veritas-vis1",
-	2994:  "veritas-vis2",
-	2995:  "idrs",
-	2996:  "vsixml",
-	2997:  "rebol",
-	2998:  "realsecure",
-	2999:  "remoteware-un",
-	3000:  "hbci",
-	3002:  "exlm-agent",
-	3003:  "cgms",
-	3004:  "csoftragent",
-	3005:  "geniuslm",
-	3006:  "ii-admin",
-	3007:  "lotusmtap",
-	3008:  "midnight-tech",
-	3009:  "pxc-ntfy",
-	3010:  "ping-pong",
-	3011:  "trusted-web",
-	3012:  "twsdss",
-	3013:  "gilatskysurfer",
-	3014:  "broker-service",
-	3015:  "nati-dstp",
-	3016:  "notify-srvr",
-	3017:  "event-listener",
-	3018:  "srvc-registry",
-	3019:  "resource-mgr",
-	3020:  "cifs",
-	3021:  "agriserver",
-	3022:  "csregagent",
-	3023:  "magicnotes",
-	3024:  "nds-sso",
-	3025:  "arepa-raft",
-	3026:  "agri-gateway",
-	3027:  "LiebDevMgmt-C",
-	3028:  "LiebDevMgmt-DM",
-	3029:  "LiebDevMgmt-A",
-	3030:  "arepa-cas",
-	3031:  "eppc",
-	3032:  "redwood-chat",
-	3033:  "pdb",
-	3034:  "osmosis-aeea",
-	3035:  "fjsv-gssagt",
-	3036:  "hagel-dump",
-	3037:  "hp-san-mgmt",
-	3038:  "santak-ups",
-	3039:  "cogitate",
-	3040:  "tomato-springs",
-	3041:  "di-traceware",
-	3042:  "journee",
-	3043:  "brp",
-	3044:  "epp",
-	3045:  "responsenet",
-	3046:  "di-ase",
-	3047:  "hlserver",
-	3048:  "pctrader",
-	3049:  "nsws",
-	3050:  "gds-db",
-	3051:  "galaxy-server",
-	3052:  "apc-3052",
-	3053:  "dsom-server",
-	3054:  "amt-cnf-prot",
-	3055:  "policyserver",
-	3056:  "cdl-server",
-	3057:  "goahead-fldup",
-	3058:  "videobeans",
-	3059:  "qsoft",
-	3060:  "interserver",
-	3061:  "cautcpd",
-	3062:  "ncacn-ip-tcp",
-	3063:  "ncadg-ip-udp",
-	3064:  "rprt",
-	3065:  "slinterbase",
-	3066:  "netattachsdmp",
-	3067:  "fjhpjp",
-	3068:  "ls3bcast",
-	3069:  "ls3",
-	3070:  "mgxswitch",
-	3072:  "csd-monitor",
-	3073:  "vcrp",
-	3074:  "xbox",
-	3075:  "orbix-locator",
-	3076:  "orbix-config",
-	3077:  "orbix-loc-ssl",
-	3078:  "orbix-cfg-ssl",
-	3079:  "lv-frontpanel",
-	3080:  "stm-pproc",
-	3081:  "tl1-lv",
-	3082:  "tl1-raw",
-	3083:  "tl1-telnet",
-	3084:  "itm-mccs",
-	3085:  "pcihreq",
-	3086:  "jdl-dbkitchen",
-	3087:  "asoki-sma",
-	3088:  "xdtp",
-	3089:  "ptk-alink",
-	3090:  "stss",
-	3091:  "1ci-smcs",
-	3093:  "rapidmq-center",
-	3094:  "rapidmq-reg",
-	3095:  "panasas",
-	3096:  "ndl-aps",
-	3098:  "umm-port",
-	3099:  "chmd",
-	3100:  "opcon-xps",
-	3101:  "hp-pxpib",
-	3102:  "slslavemon",
-	3103:  "autocuesmi",
-	3104:  "autocuetime",
-	3105:  "cardbox",
-	3106:  "cardbox-http",
-	3107:  "business",
-	3108:  "geolocate",
-	3109:  "personnel",
-	3110:  "sim-control",
-	3111:  "wsynch",
-	3112:  "ksysguard",
-	3113:  "cs-auth-svr",
-	3114:  "ccmad",
-	3115:  "mctet-master",
-	3116:  "mctet-gateway",
-	3117:  "mctet-jserv",
-	3118:  "pkagent",
-	3119:  "d2000kernel",
-	3120:  "d2000webserver",
-	3122:  "vtr-emulator",
-	3123:  "edix",
-	3124:  "beacon-port",
-	3125:  "a13-an",
-	3127:  "ctx-bridge",
-	3128:  "ndl-aas",
-	3129:  "netport-id",
-	3130:  "icpv2",
-	3131:  "netbookmark",
-	3132:  "ms-rule-engine",
-	3133:  "prism-deploy",
-	3134:  "ecp",
-	3135:  "peerbook-port",
-	3136:  "grubd",
-	3137:  "rtnt-1",
-	3138:  "rtnt-2",
-	3139:  "incognitorv",
-	3140:  "ariliamulti",
-	3141:  "vmodem",
-	3142:  "rdc-wh-eos",
-	3143:  "seaview",
-	3144:  "tarantella",
-	3145:  "csi-lfap",
-	3146:  "bears-02",
-	3147:  "rfio",
-	3148:  "nm-game-admin",
-	3149:  "nm-game-server",
-	3150:  "nm-asses-admin",
-	3151:  "nm-assessor",
-	3152:  "feitianrockey",
-	3153:  "s8-client-port",
-	3154:  "ccmrmi",
-	3155:  "jpegmpeg",
-	3156:  "indura",
-	3157:  "e3consultants",
-	3158:  "stvp",
-	3159:  "navegaweb-port",
-	3160:  "tip-app-server",
-	3161:  "doc1lm",
-	3162:  "sflm",
-	3163:  "res-sap",
-	3164:  "imprs",
-	3165:  "newgenpay",
-	3166:  "sossecollector",
-	3167:  "nowcontact",
-	3168:  "poweronnud",
-	3169:  "serverview-as",
-	3170:  "serverview-asn",
-	3171:  "serverview-gf",
-	3172:  "serverview-rm",
-	3173:  "serverview-icc",
-	3174:  "armi-server",
-	3175:  "t1-e1-over-ip",
-	3176:  "ars-master",
-	3177:  "phonex-port",
-	3178:  "radclientport",
-	3179:  "h2gf-w-2m",
-	3180:  "mc-brk-srv",
-	3181:  "bmcpatrolagent",
-	3182:  "bmcpatrolrnvu",
-	3183:  "cops-tls",
-	3184:  "apogeex-port",
-	3185:  "smpppd",
-	3186:  "iiw-port",
-	3187:  "odi-port",
-	3188:  "brcm-comm-port",
-	3189:  "pcle-infex",
-	3190:  "csvr-proxy",
-	3191:  "csvr-sslproxy",
-	3192:  "firemonrcc",
-	3193:  "spandataport",
-	3194:  "magbind",
-	3195:  "ncu-1",
-	3196:  "ncu-2",
-	3197:  "embrace-dp-s",
-	3198:  "embrace-dp-c",
-	3199:  "dmod-workspace",
-	3200:  "tick-port",
-	3201:  "cpq-tasksmart",
-	3202:  "intraintra",
-	3203:  "netwatcher-mon",
-	3204:  "netwatcher-db",
-	3205:  "isns",
-	3206:  "ironmail",
-	3207:  "vx-auth-port",
-	3208:  "pfu-prcallback",
-	3209:  "netwkpathengine",
-	3210:  "flamenco-proxy",
-	3211:  "avsecuremgmt",
-	3212:  "surveyinst",
-	3213:  "neon24x7",
-	3214:  "jmq-daemon-1",
-	3215:  "jmq-daemon-2",
-	3216:  "ferrari-foam",
-	3217:  "unite",
-	3218:  "smartpackets",
-	3219:  "wms-messenger",
-	3220:  "xnm-ssl",
-	3221:  "xnm-clear-text",
-	3222:  "glbp",
-	3223:  "digivote",
-	3224:  "aes-discovery",
-	3225:  "fcip-port",
-	3226:  "isi-irp",
-	3227:  "dwnmshttp",
-	3228:  "dwmsgserver",
-	3229:  "global-cd-port",
-	3230:  "sftdst-port",
-	3231:  "vidigo",
-	3232:  "mdtp",
-	3233:  "whisker",
-	3234:  "alchemy",
-	3235:  "mdap-port",
-	3236:  "apparenet-ts",
-	3237:  "apparenet-tps",
-	3238:  "apparenet-as",
-	3239:  "apparenet-ui",
-	3240:  "triomotion",
-	3241:  "sysorb",
-	3242:  "sdp-id-port",
-	3243:  "timelot",
-	3244:  "onesaf",
-	3245:  "vieo-fe",
-	3246:  "dvt-system",
-	3247:  "dvt-data",
-	3248:  "procos-lm",
-	3249:  "ssp",
-	3250:  "hicp",
-	3251:  "sysscanner",
-	3252:  "dhe",
-	3253:  "pda-data",
-	3254:  "pda-sys",
-	3255:  "semaphore",
-	3256:  "cpqrpm-agent",
-	3257:  "cpqrpm-server",
-	3258:  "ivecon-port",
-	3259:  "epncdp2",
-	3260:  "iscsi-target",
-	3261:  "winshadow",
-	3262:  "necp",
-	3263:  "ecolor-imager",
-	3264:  "ccmail",
-	3265:  "altav-tunnel",
-	3266:  "ns-cfg-server",
-	3267:  "ibm-dial-out",
-	3268:  "msft-gc",
-	3269:  "msft-gc-ssl",
-	3270:  "verismart",
-	3271:  "csoft-prev",
-	3272:  "user-manager",
-	3273:  "sxmp",
-	3274:  "ordinox-server",
-	3275:  "samd",
-	3276:  "maxim-asics",
-	3277:  "awg-proxy",
-	3278:  "lkcmserver",
-	3279:  "admind",
-	3280:  "vs-server",
-	3281:  "sysopt",
-	3282:  "datusorb",
-	3283:  "Apple Remote Desktop (Net Assistant)",
-	3284:  "4talk",
-	3285:  "plato",
-	3286:  "e-net",
-	3287:  "directvdata",
-	3288:  "cops",
-	3289:  "enpc",
-	3290:  "caps-lm",
-	3291:  "sah-lm",
-	3292:  "cart-o-rama",
-	3293:  "fg-fps",
-	3294:  "fg-gip",
-	3295:  "dyniplookup",
-	3296:  "rib-slm",
-	3297:  "cytel-lm",
-	3298:  "deskview",
-	3299:  "pdrncs",
-	3302:  "mcs-fastmail",
-	3303:  "opsession-clnt",
-	3304:  "opsession-srvr",
-	3305:  "odette-ftp",
-	3306:  "mysql",
-	3307:  "opsession-prxy",
-	3308:  "tns-server",
-	3309:  "tns-adv",
-	3310:  "dyna-access",
-	3311:  "mcns-tel-ret",
-	3312:  "appman-server",
-	3313:  "uorb",
-	3314:  "uohost",
-	3315:  "cdid",
-	3316:  "aicc-cmi",
-	3317:  "vsaiport",
-	3318:  "ssrip",
-	3319:  "sdt-lmd",
-	3320:  "officelink2000",
-	3321:  "vnsstr",
-	3326:  "sftu",
-	3327:  "bbars",
-	3328:  "egptlm",
-	3329:  "hp-device-disc",
-	3330:  "mcs-calypsoicf",
-	3331:  "mcs-messaging",
-	3332:  "mcs-mailsvr",
-	3333:  "dec-notes",
-	3334:  "directv-web",
-	3335:  "directv-soft",
-	3336:  "directv-tick",
-	3337:  "directv-catlg",
-	3338:  "anet-b",
-	3339:  "anet-l",
-	3340:  "anet-m",
-	3341:  "anet-h",
-	3342:  "webtie",
-	3343:  "ms-cluster-net",
-	3344:  "bnt-manager",
-	3345:  "influence",
-	3346:  "trnsprntproxy",
-	3347:  "phoenix-rpc",
-	3348:  "pangolin-laser",
-	3349:  "chevinservices",
-	3350:  "findviatv",
-	3351:  "btrieve",
-	3352:  "ssql",
-	3353:  "fatpipe",
-	3354:  "suitjd",
-	3355:  "ordinox-dbase",
-	3356:  "upnotifyps",
-	3357:  "adtech-test",
-	3358:  "mpsysrmsvr",
-	3359:  "wg-netforce",
-	3360:  "kv-server",
-	3361:  "kv-agent",
-	3362:  "dj-ilm",
-	3363:  "nati-vi-server",
-	3364:  "creativeserver",
-	3365:  "contentserver",
-	3366:  "creativepartnr",
-	3372:  "tip2",
-	3373:  "lavenir-lm",
-	3374:  "cluster-disc",
-	3375:  "vsnm-agent",
-	3376:  "cdbroker",
-	3377:  "cogsys-lm",
-	3378:  "wsicopy",
-	3379:  "socorfs",
-	3380:  "sns-channels",
-	3381:  "geneous",
-	3382:  "fujitsu-neat",
-	3383:  "esp-lm",
-	3384:  "hp-clic",
-	3385:  "qnxnetman",
-	3386:  "gprs-sig",
-	3387:  "backroomnet",
-	3388:  "cbserver",
-	3389:  "ms-wbt-server",
-	3390:  "dsc",
-	3391:  "savant",
-	3392:  "efi-lm",
-	3393:  "d2k-tapestry1",
-	3394:  "d2k-tapestry2",
-	3395:  "dyna-lm",
-	3396:  "printer-agent",
-	3397:  "cloanto-lm",
-	3398:  "mercantile",
-	3399:  "csms",
-	3400:  "csms2",
-	3401:  "filecast",
-	3402:  "fxaengine-net",
-	3405:  "nokia-ann-ch1",
-	3406:  "nokia-ann-ch2",
-	3407:  "ldap-admin",
-	3408:  "BESApi",
-	3409:  "networklens",
-	3410:  "networklenss",
-	3411:  "biolink-auth",
-	3412:  "xmlblaster",
-	3413:  "svnet",
-	3414:  "wip-port",
-	3415:  "bcinameservice",
-	3416:  "commandport",
-	3417:  "csvr",
-	3418:  "rnmap",
-	3419:  "softaudit",
-	3420:  "ifcp-port",
-	3421:  "bmap",
-	3422:  "rusb-sys-port",
-	3423:  "xtrm",
-	3424:  "xtrms",
-	3425:  "agps-port",
-	3426:  "arkivio",
-	3427:  "websphere-snmp",
-	3428:  "twcss",
-	3429:  "gcsp",
-	3430:  "ssdispatch",
-	3431:  "ndl-als",
-	3432:  "osdcp",
-	3433:  "opnet-smp",
-	3434:  "opencm",
-	3435:  "pacom",
-	3436:  "gc-config",
-	3437:  "autocueds",
-	3438:  "spiral-admin",
-	3439:  "hri-port",
-	3440:  "ans-console",
-	3441:  "connect-client",
-	3442:  "connect-server",
-	3443:  "ov-nnm-websrv",
-	3444:  "denali-server",
-	3445:  "monp",
-	3446:  "3comfaxrpc",
-	3447:  "directnet",
-	3448:  "dnc-port",
-	3449:  "hotu-chat",
-	3450:  "castorproxy",
-	3451:  "asam",
-	3452:  "sabp-signal",
-	3453:  "pscupd",
-	3454:  "mira",
-	3455:  "prsvp",
-	3456:  "vat",
-	3457:  "vat-control",
-	3458:  "d3winosfi",
-	3459:  "integral",
-	3460:  "edm-manager",
-	3461:  "edm-stager",
-	3462:  "edm-std-notify",
-	3463:  "edm-adm-notify",
-	3464:  "edm-mgr-sync",
-	3465:  "edm-mgr-cntrl",
-	3466:  "workflow",
-	3467:  "rcst",
-	3468:  "ttcmremotectrl",
-	3469:  "pluribus",
-	3470:  "jt400",
-	3471:  "jt400-ssl",
-	3472:  "jaugsremotec-1",
-	3473:  "jaugsremotec-2",
-	3474:  "ttntspauto",
-	3475:  "genisar-port",
-	3476:  "nppmp",
-	3477:  "ecomm",
-	3478:  "stun",
-	3479:  "twrpc",
-	3480:  "plethora",
-	3481:  "cleanerliverc",
-	3482:  "vulture",
-	3483:  "slim-devices",
-	3484:  "gbs-stp",
-	3485:  "celatalk",
-	3486:  "ifsf-hb-port",
-	3487:  "ltcudp",
-	3488:  "fs-rh-srv",
-	3489:  "dtp-dia",
-	3490:  "colubris",
-	3491:  "swr-port",
-	3492:  "tvdumtray-port",
-	3493:  "nut",
-	3494:  "ibm3494",
-	3495:  "seclayer-tcp",
-	3496:  "seclayer-tls",
-	3497:  "ipether232port",
-	3498:  "dashpas-port",
-	3499:  "sccip-media",
-	3500:  "rtmp-port",
-	3501:  "isoft-p2p",
-	3502:  "avinstalldisc",
-	3503:  "lsp-ping",
-	3504:  "ironstorm",
-	3505:  "ccmcomm",
-	3506:  "apc-3506",
-	3507:  "nesh-broker",
-	3508:  "interactionweb",
-	3509:  "vt-ssl",
-	3510:  "xss-port",
-	3511:  "webmail-2",
-	3512:  "aztec",
-	3513:  "arcpd",
-	3514:  "must-p2p",
-	3515:  "must-backplane",
-	3516:  "smartcard-port",
-	3517:  "802-11-iapp",
-	3518:  "artifact-msg",
-	3519:  "galileo",
-	3520:  "galileolog",
-	3521:  "mc3ss",
-	3522:  "nssocketport",
-	3523:  "odeumservlink",
-	3524:  "ecmport",
-	3525:  "eisport",
-	3526:  "starquiz-port",
-	3527:  "beserver-msg-q",
-	3528:  "jboss-iiop",
-	3529:  "jboss-iiop-ssl",
-	3530:  "gf",
-	3531:  "joltid",
-	3532:  "raven-rmp",
-	3533:  "raven-rdp",
-	3534:  "urld-port",
-	3535:  "ms-la",
-	3536:  "snac",
-	3537:  "ni-visa-remote",
-	3538:  "ibm-diradm",
-	3539:  "ibm-diradm-ssl",
-	3540:  "pnrp-port",
-	3541:  "voispeed-port",
-	3542:  "hacl-monitor",
-	3543:  "qftest-lookup",
-	3544:  "teredo",
-	3545:  "camac",
-	3547:  "symantec-sim",
-	3548:  "interworld",
-	3549:  "tellumat-nms",
-	3550:  "ssmpp",
-	3551:  "apcupsd",
-	3552:  "taserver",
-	3553:  "rbr-discovery",
-	3554:  "questnotify",
-	3555:  "razor",
-	3556:  "sky-transport",
-	3557:  "personalos-001",
-	3558:  "mcp-port",
-	3559:  "cctv-port",
-	3560:  "iniserve-port",
-	3561:  "bmc-onekey",
-	3562:  "sdbproxy",
-	3563:  "watcomdebug",
-	3564:  "esimport",
-	3567:  "dof-eps",
-	3568:  "dof-tunnel-sec",
-	3569:  "mbg-ctrl",
-	3570:  "mccwebsvr-port",
-	3571:  "megardsvr-port",
-	3572:  "megaregsvrport",
-	3573:  "tag-ups-1",
-	3574:  "dmaf-caster",
-	3575:  "ccm-port",
-	3576:  "cmc-port",
-	3577:  "config-port",
-	3578:  "data-port",
-	3579:  "ttat3lb",
-	3580:  "nati-svrloc",
-	3581:  "kfxaclicensing",
-	3582:  "press",
-	3583:  "canex-watch",
-	3584:  "u-dbap",
-	3585:  "emprise-lls",
-	3586:  "emprise-lsc",
-	3587:  "p2pgroup",
-	3588:  "sentinel",
-	3589:  "isomair",
-	3590:  "wv-csp-sms",
-	3591:  "gtrack-server",
-	3592:  "gtrack-ne",
-	3593:  "bpmd",
-	3594:  "mediaspace",
-	3595:  "shareapp",
-	3596:  "iw-mmogame",
-	3597:  "a14",
-	3598:  "a15",
-	3599:  "quasar-server",
-	3600:  "trap-daemon",
-	3601:  "visinet-gui",
-	3602:  "infiniswitchcl",
-	3603:  "int-rcv-cntrl",
-	3604:  "bmc-jmx-port",
-	3605:  "comcam-io",
-	3606:  "splitlock",
-	3607:  "precise-i3",
-	3608:  "trendchip-dcp",
-	3609:  "cpdi-pidas-cm",
-	3610:  "echonet",
-	3611:  "six-degrees",
-	3612:  "hp-dataprotect",
-	3613:  "alaris-disc",
-	3614:  "sigma-port",
-	3615:  "start-network",
-	3616:  "cd3o-protocol",
-	3617:  "sharp-server",
-	3618:  "aairnet-1",
-	3619:  "aairnet-2",
-	3620:  "ep-pcp",
-	3621:  "ep-nsp",
-	3622:  "ff-lr-port",
-	3623:  "haipe-discover",
-	3624:  "dist-upgrade",
-	3625:  "volley",
-	3626:  "bvcdaemon-port",
-	3627:  "jamserverport",
-	3628:  "ept-machine",
-	3629:  "escvpnet",
-	3630:  "cs-remote-db",
-	3631:  "cs-services",
-	3632:  "distcc",
-	3633:  "wacp",
-	3634:  "hlibmgr",
-	3635:  "sdo",
-	3636:  "servistaitsm",
-	3637:  "scservp",
-	3638:  "ehp-backup",
-	3639:  "xap-ha",
-	3640:  "netplay-port1",
-	3641:  "netplay-port2",
-	3642:  "juxml-port",
-	3643:  "audiojuggler",
-	3644:  "ssowatch",
-	3645:  "cyc",
-	3646:  "xss-srv-port",
-	3647:  "splitlock-gw",
-	3648:  "fjcp",
-	3649:  "nmmp",
-	3650:  "prismiq-plugin",
-	3651:  "xrpc-registry",
-	3652:  "vxcrnbuport",
-	3653:  "tsp",
-	3654:  "vaprtm",
-	3655:  "abatemgr",
-	3656:  "abatjss",
-	3657:  "immedianet-bcn",
-	3658:  "ps-ams",
-	3659:  "apple-sasl",
-	3660:  "can-nds-ssl",
-	3661:  "can-ferret-ssl",
-	3662:  "pserver",
-	3663:  "dtp",
-	3664:  "ups-engine",
-	3665:  "ent-engine",
-	3666:  "eserver-pap",
-	3667:  "infoexch",
-	3668:  "dell-rm-port",
-	3669:  "casanswmgmt",
-	3670:  "smile",
-	3671:  "efcp",
-	3672:  "lispworks-orb",
-	3673:  "mediavault-gui",
-	3674:  "wininstall-ipc",
-	3675:  "calltrax",
-	3676:  "va-pacbase",
-	3677:  "roverlog",
-	3678:  "ipr-dglt",
-	3679:  "Escale (Newton Dock)",
-	3680:  "npds-tracker",
-	3681:  "bts-x73",
-	3682:  "cas-mapi",
-	3683:  "bmc-ea",
-	3684:  "faxstfx-port",
-	3685:  "dsx-agent",
-	3686:  "tnmpv2",
-	3687:  "simple-push",
-	3688:  "simple-push-s",
-	3689:  "daap",
-	3690:  "svn",
-	3691:  "magaya-network",
-	3692:  "intelsync",
-	3695:  "bmc-data-coll",
-	3696:  "telnetcpcd",
-	3697:  "nw-license",
-	3698:  "sagectlpanel",
-	3699:  "kpn-icw",
-	3700:  "lrs-paging",
-	3701:  "netcelera",
-	3702:  "ws-discovery",
-	3703:  "adobeserver-3",
-	3704:  "adobeserver-4",
-	3705:  "adobeserver-5",
-	3706:  "rt-event",
-	3707:  "rt-event-s",
-	3708:  "sun-as-iiops",
-	3709:  "ca-idms",
-	3710:  "portgate-auth",
-	3711:  "edb-server2",
-	3712:  "sentinel-ent",
-	3713:  "tftps",
-	3714:  "delos-dms",
-	3715:  "anoto-rendezv",
-	3716:  "wv-csp-sms-cir",
-	3717:  "wv-csp-udp-cir",
-	3718:  "opus-services",
-	3719:  "itelserverport",
-	3720:  "ufastro-instr",
-	3721:  "xsync",
-	3722:  "xserveraid",
-	3723:  "sychrond",
-	3724:  "blizwow",
-	3725:  "na-er-tip",
-	3726:  "array-manager",
-	3727:  "e-mdu",
-	3728:  "e-woa",
-	3729:  "fksp-audit",
-	3730:  "client-ctrl",
-	3731:  "smap",
-	3732:  "m-wnn",
-	3733:  "multip-msg",
-	3734:  "synel-data",
-	3735:  "pwdis",
-	3736:  "rs-rmi",
-	3738:  "versatalk",
-	3739:  "launchbird-lm",
-	3740:  "heartbeat",
-	3741:  "wysdma",
-	3742:  "cst-port",
-	3743:  "ipcs-command",
-	3744:  "sasg",
-	3745:  "gw-call-port",
-	3746:  "linktest",
-	3747:  "linktest-s",
-	3748:  "webdata",
-	3749:  "cimtrak",
-	3750:  "cbos-ip-port",
-	3751:  "gprs-cube",
-	3752:  "vipremoteagent",
-	3753:  "nattyserver",
-	3754:  "timestenbroker",
-	3755:  "sas-remote-hlp",
-	3756:  "canon-capt",
-	3757:  "grf-port",
-	3758:  "apw-registry",
-	3759:  "exapt-lmgr",
-	3760:  "adtempusclient",
-	3761:  "gsakmp",
-	3762:  "gbs-smp",
-	3763:  "xo-wave",
-	3764:  "mni-prot-rout",
-	3765:  "rtraceroute",
-	3767:  "listmgr-port",
-	3768:  "rblcheckd",
-	3769:  "haipe-otnk",
-	3770:  "cindycollab",
-	3771:  "paging-port",
-	3772:  "ctp",
-	3773:  "ctdhercules",
-	3774:  "zicom",
-	3775:  "ispmmgr",
-	3776:  "dvcprov-port",
-	3777:  "jibe-eb",
-	3778:  "c-h-it-port",
-	3779:  "cognima",
-	3780:  "nnp",
-	3781:  "abcvoice-port",
-	3782:  "iso-tp0s",
-	3783:  "bim-pem",
-	3784:  "bfd-control",
-	3785:  "bfd-echo",
-	3786:  "upstriggervsw",
-	3787:  "fintrx",
-	3788:  "isrp-port",
-	3789:  "remotedeploy",
-	3790:  "quickbooksrds",
-	3791:  "tvnetworkvideo",
-	3792:  "sitewatch",
-	3793:  "dcsoftware",
-	3794:  "jaus",
-	3795:  "myblast",
-	3796:  "spw-dialer",
-	3797:  "idps",
-	3798:  "minilock",
-	3799:  "radius-dynauth",
-	3800:  "pwgpsi",
-	3801:  "ibm-mgr",
-	3802:  "vhd",
-	3803:  "soniqsync",
-	3804:  "iqnet-port",
-	3805:  "tcpdataserver",
-	3806:  "wsmlb",
-	3807:  "spugna",
-	3808:  "sun-as-iiops-ca",
-	3809:  "apocd",
-	3810:  "wlanauth",
-	3811:  "amp",
-	3812:  "neto-wol-server",
-	3813:  "rap-ip",
-	3814:  "neto-dcs",
-	3815:  "lansurveyorxml",
-	3816:  "sunlps-http",
-	3817:  "tapeware",
-	3818:  "crinis-hb",
-	3819:  "epl-slp",
-	3820:  "scp",
-	3821:  "pmcp",
-	3822:  "acp-discovery",
-	3823:  "acp-conduit",
-	3824:  "acp-policy",
-	3825:  "ffserver",
-	3826:  "warmux",
-	3827:  "netmpi",
-	3828:  "neteh",
-	3829:  "neteh-ext",
-	3830:  "cernsysmgmtagt",
-	3831:  "dvapps",
-	3832:  "xxnetserver",
-	3833:  "aipn-auth",
-	3834:  "spectardata",
-	3835:  "spectardb",
-	3836:  "markem-dcp",
-	3837:  "mkm-discovery",
-	3838:  "sos",
-	3839:  "amx-rms",
-	3840:  "flirtmitmir",
-	3842:  "nhci",
-	3843:  "quest-agent",
-	3844:  "rnm",
-	3845:  "v-one-spp",
-	3846:  "an-pcp",
-	3847:  "msfw-control",
-	3848:  "item",
-	3849:  "spw-dnspreload",
-	3850:  "qtms-bootstrap",
-	3851:  "spectraport",
-	3852:  "sse-app-config",
-	3853:  "sscan",
-	3854:  "stryker-com",
-	3855:  "opentrac",
-	3856:  "informer",
-	3857:  "trap-port",
-	3858:  "trap-port-mom",
-	3859:  "nav-port",
-	3860:  "sasp",
-	3861:  "winshadow-hd",
-	3862:  "giga-pocket",
-	3863:  "asap-udp",
-	3865:  "xpl",
-	3866:  "dzdaemon",
-	3867:  "dzoglserver",
-	3869:  "ovsam-mgmt",
-	3870:  "ovsam-d-agent",
-	3871:  "avocent-adsap",
-	3872:  "oem-agent",
-	3873:  "fagordnc",
-	3874:  "sixxsconfig",
-	3875:  "pnbscada",
-	3876:  "dl-agent",
-	3877:  "xmpcr-interface",
-	3878:  "fotogcad",
-	3879:  "appss-lm",
-	3880:  "igrs",
-	3881:  "idac",
-	3882:  "msdts1",
-	3883:  "vrpn",
-	3884:  "softrack-meter",
-	3885:  "topflow-ssl",
-	3886:  "nei-management",
-	3887:  "ciphire-data",
-	3888:  "ciphire-serv",
-	3889:  "dandv-tester",
-	3890:  "ndsconnect",
-	3891:  "rtc-pm-port",
-	3892:  "pcc-image-port",
-	3893:  "cgi-starapi",
-	3894:  "syam-agent",
-	3895:  "syam-smc",
-	3896:  "sdo-tls",
-	3897:  "sdo-ssh",
-	3898:  "senip",
-	3899:  "itv-control",
-	3900:  "udt-os",
-	3901:  "nimsh",
-	3902:  "nimaux",
-	3903:  "charsetmgr",
-	3904:  "omnilink-port",
-	3905:  "mupdate",
-	3906:  "topovista-data",
-	3907:  "imoguia-port",
-	3908:  "hppronetman",
-	3909:  "surfcontrolcpa",
-	3910:  "prnrequest",
-	3911:  "prnstatus",
-	3912:  "gbmt-stars",
-	3913:  "listcrt-port",
-	3914:  "listcrt-port-2",
-	3915:  "agcat",
-	3916:  "wysdmc",
-	3917:  "aftmux",
-	3918:  "pktcablemmcops",
-	3919:  "hyperip",
-	3920:  "exasoftport1",
-	3921:  "herodotus-net",
-	3922:  "sor-update",
-	3923:  "symb-sb-port",
-	3924:  "mpl-gprs-port",
-	3925:  "zmp",
-	3926:  "winport",
-	3927:  "natdataservice",
-	3928:  "netboot-pxe",
-	3929:  "smauth-port",
-	3930:  "syam-webserver",
-	3931:  "msr-plugin-port",
-	3932:  "dyn-site",
-	3933:  "plbserve-port",
-	3934:  "sunfm-port",
-	3935:  "sdp-portmapper",
-	3936:  "mailprox",
-	3937:  "dvbservdsc",
-	3938:  "dbcontrol-agent",
-	3939:  "aamp",
-	3940:  "xecp-node",
-	3941:  "homeportal-web",
-	3942:  "srdp",
-	3943:  "tig",
-	3944:  "sops",
-	3945:  "emcads",
-	3946:  "backupedge",
-	3947:  "ccp",
-	3948:  "apdap",
-	3949:  "drip",
-	3950:  "namemunge",
-	3951:  "pwgippfax",
-	3952:  "i3-sessionmgr",
-	3953:  "xmlink-connect",
-	3954:  "adrep",
-	3955:  "p2pcommunity",
-	3956:  "gvcp",
-	3957:  "mqe-broker",
-	3958:  "mqe-agent",
-	3959:  "treehopper",
-	3960:  "bess",
-	3961:  "proaxess",
-	3962:  "sbi-agent",
-	3963:  "thrp",
-	3964:  "sasggprs",
-	3965:  "ati-ip-to-ncpe",
-	3966:  "bflckmgr",
-	3967:  "ppsms",
-	3968:  "ianywhere-dbns",
-	3969:  "landmarks",
-	3970:  "lanrevagent",
-	3971:  "lanrevserver",
-	3972:  "iconp",
-	3973:  "progistics",
-	3974:  "citysearch",
-	3975:  "airshot",
-	3976:  "opswagent",
-	3977:  "opswmanager",
-	3978:  "secure-cfg-svr",
-	3979:  "smwan",
-	3980:  "acms",
-	3981:  "starfish",
-	3982:  "eis",
-	3983:  "eisp",
-	3984:  "mapper-nodemgr",
-	3985:  "mapper-mapethd",
-	3986:  "mapper-ws-ethd",
-	3987:  "centerline",
-	3988:  "dcs-config",
-	3989:  "bv-queryengine",
-	3990:  "bv-is",
-	3991:  "bv-smcsrv",
-	3992:  "bv-ds",
-	3993:  "bv-agent",
-	3995:  "iss-mgmt-ssl",
-	3996:  "abcsoftware",
-	3997:  "agentsease-db",
-	3998:  "dnx",
-	3999:  "nvcnet",
-	4000:  "terabase",
-	4001:  "newoak",
-	4002:  "pxc-spvr-ft",
-	4003:  "pxc-splr-ft",
-	4004:  "pxc-roid",
-	4005:  "pxc-pin",
-	4006:  "pxc-spvr",
-	4007:  "pxc-splr",
-	4008:  "netcheque",
-	4009:  "chimera-hwm",
-	4010:  "samsung-unidex",
-	4011:  "altserviceboot",
-	4012:  "pda-gate",
-	4013:  "acl-manager",
-	4014:  "taiclock",
-	4015:  "talarian-mcast1",
-	4016:  "talarian-mcast2",
-	4017:  "talarian-mcast3",
-	4018:  "talarian-mcast4",
-	4019:  "talarian-mcast5",
-	4020:  "trap",
-	4021:  "nexus-portal",
-	4022:  "dnox",
-	4023:  "esnm-zoning",
-	4024:  "tnp1-port",
-	4025:  "partimage",
-	4026:  "as-debug",
-	4027:  "bxp",
-	4028:  "dtserver-port",
-	4029:  "ip-qsig",
-	4030:  "jdmn-port",
-	4031:  "suucp",
-	4032:  "vrts-auth-port",
-	4033:  "sanavigator",
-	4034:  "ubxd",
-	4035:  "wap-push-http",
-	4036:  "wap-push-https",
-	4037:  "ravehd",
-	4038:  "fazzt-ptp",
-	4039:  "fazzt-admin",
-	4040:  "yo-main",
-	4041:  "houston",
-	4042:  "ldxp",
-	4043:  "nirp",
-	4044:  "ltp",
-	4045:  "npp",
-	4046:  "acp-proto",
-	4047:  "ctp-state",
-	4049:  "wafs",
-	4050:  "cisco-wafs",
-	4051:  "cppdp",
-	4052:  "interact",
-	4053:  "ccu-comm-1",
-	4054:  "ccu-comm-2",
-	4055:  "ccu-comm-3",
-	4056:  "lms",
-	4057:  "wfm",
-	4058:  "kingfisher",
-	4059:  "dlms-cosem",
-	4060:  "dsmeter-iatc",
-	4061:  "ice-location",
-	4062:  "ice-slocation",
-	4063:  "ice-router",
-	4064:  "ice-srouter",
-	4065:  "avanti-cdp",
-	4066:  "pmas",
-	4067:  "idp",
-	4068:  "ipfltbcst",
-	4069:  "minger",
-	4070:  "tripe",
-	4071:  "aibkup",
-	4072:  "zieto-sock",
-	4073:  "iRAPP",
-	4074:  "cequint-cityid",
-	4075:  "perimlan",
-	4076:  "seraph",
-	4077:  "ascomalarm",
-	4079:  "santools",
-	4080:  "lorica-in",
-	4081:  "lorica-in-sec",
-	4082:  "lorica-out",
-	4083:  "lorica-out-sec",
-	4084:  "fortisphere-vm",
-	4086:  "ftsync",
-	4089:  "opencore",
-	4090:  "omasgport",
-	4091:  "ewinstaller",
-	4092:  "ewdgs",
-	4093:  "pvxpluscs",
-	4094:  "sysrqd",
-	4095:  "xtgui",
-	4096:  "bre",
-	4097:  "patrolview",
-	4098:  "drmsfsd",
-	4099:  "dpcp",
-	4100:  "igo-incognito",
-	4101:  "brlp-0",
-	4102:  "brlp-1",
-	4103:  "brlp-2",
-	4104:  "brlp-3",
-	4105:  "shofar",
-	4106:  "synchronite",
-	4107:  "j-ac",
-	4108:  "accel",
-	4109:  "izm",
-	4110:  "g2tag",
-	4111:  "xgrid",
-	4112:  "apple-vpns-rp",
-	4113:  "aipn-reg",
-	4114:  "jomamqmonitor",
-	4115:  "cds",
-	4116:  "smartcard-tls",
-	4117:  "hillrserv",
-	4118:  "netscript",
-	4119:  "assuria-slm",
-	4121:  "e-builder",
-	4122:  "fprams",
-	4123:  "z-wave",
-	4124:  "tigv2",
-	4125:  "opsview-envoy",
-	4126:  "ddrepl",
-	4127:  "unikeypro",
-	4128:  "nufw",
-	4129:  "nuauth",
-	4130:  "fronet",
-	4131:  "stars",
-	4132:  "nuts-dem",
-	4133:  "nuts-bootp",
-	4134:  "nifty-hmi",
-	4135:  "cl-db-attach",
-	4136:  "cl-db-request",
-	4137:  "cl-db-remote",
-	4138:  "nettest",
-	4139:  "thrtx",
-	4140:  "cedros-fds",
-	4141:  "oirtgsvc",
-	4142:  "oidocsvc",
-	4143:  "oidsr",
-	4145:  "vvr-control",
-	4146:  "tgcconnect",
-	4147:  "vrxpservman",
-	4148:  "hhb-handheld",
-	4149:  "agslb",
-	4150:  "PowerAlert-nsa",
-	4151:  "menandmice-noh",
-	4152:  "idig-mux",
-	4153:  "mbl-battd",
-	4154:  "atlinks",
-	4155:  "bzr",
-	4156:  "stat-results",
-	4157:  "stat-scanner",
-	4158:  "stat-cc",
-	4159:  "nss",
-	4160:  "jini-discovery",
-	4161:  "omscontact",
-	4162:  "omstopology",
-	4163:  "silverpeakpeer",
-	4164:  "silverpeakcomm",
-	4165:  "altcp",
-	4166:  "joost",
-	4167:  "ddgn",
-	4168:  "pslicser",
-	4169:  "iadt-disc",
-	4172:  "pcoip",
-	4173:  "mma-discovery",
-	4174:  "sm-disc",
-	4177:  "wello",
-	4178:  "storman",
-	4179:  "MaxumSP",
-	4180:  "httpx",
-	4181:  "macbak",
-	4182:  "pcptcpservice",
-	4183:  "cyborgnet",
-	4184:  "universe-suite",
-	4185:  "wcpp",
-	4188:  "vatata",
-	4191:  "dsmipv6",
-	4192:  "azeti-bd",
-	4197:  "hctl",
-	4199:  "eims-admin",
-	4300:  "corelccam",
-	4301:  "d-data",
-	4302:  "d-data-control",
-	4303:  "srcp",
-	4304:  "owserver",
-	4305:  "batman",
-	4306:  "pinghgl",
-	4307:  "trueconf",
-	4308:  "compx-lockview",
-	4309:  "dserver",
-	4310:  "mirrtex",
-	4320:  "fdt-rcatp",
-	4321:  "rwhois",
-	4322:  "trim-event",
-	4323:  "trim-ice",
-	4325:  "geognosisman",
-	4326:  "geognosis",
-	4327:  "jaxer-web",
-	4328:  "jaxer-manager",
-	4333:  "ahsp",
-	4340:  "gaia",
-	4341:  "lisp-data",
-	4342:  "lisp-control",
-	4343:  "unicall",
-	4344:  "vinainstall",
-	4345:  "m4-network-as",
-	4346:  "elanlm",
-	4347:  "lansurveyor",
-	4348:  "itose",
-	4349:  "fsportmap",
-	4350:  "net-device",
-	4351:  "plcy-net-svcs",
-	4352:  "pjlink",
-	4353:  "f5-iquery",
-	4354:  "qsnet-trans",
-	4355:  "qsnet-workst",
-	4356:  "qsnet-assist",
-	4357:  "qsnet-cond",
-	4358:  "qsnet-nucl",
-	4359:  "omabcastltkm",
-	4361:  "nacnl",
-	4362:  "afore-vdp-disc",
-	4366:  "shadowstream",
-	4368:  "wxbrief",
-	4369:  "epmd",
-	4370:  "elpro-tunnel",
-	4371:  "l2c-disc",
-	4372:  "l2c-data",
-	4373:  "remctl",
-	4375:  "tolteces",
-	4376:  "bip",
-	4377:  "cp-spxsvr",
-	4378:  "cp-spxdpy",
-	4379:  "ctdb",
-	4389:  "xandros-cms",
-	4390:  "wiegand",
-	4394:  "apwi-disc",
-	4395:  "omnivisionesx",
-	4400:  "ds-srv",
-	4401:  "ds-srvr",
-	4402:  "ds-clnt",
-	4403:  "ds-user",
-	4404:  "ds-admin",
-	4405:  "ds-mail",
-	4406:  "ds-slp",
-	4412:  "smallchat",
-	4413:  "avi-nms-disc",
-	4416:  "pjj-player-disc",
-	4418:  "axysbridge",
-	4420:  "nvm-express",
-	4425:  "netrockey6",
-	4426:  "beacon-port-2",
-	4430:  "rsqlserver",
-	4432:  "l-acoustics",
-	4441:  "netblox",
-	4442:  "saris",
-	4443:  "pharos",
-	4444:  "krb524",
-	4445:  "upnotifyp",
-	4446:  "n1-fwp",
-	4447:  "n1-rmgmt",
-	4448:  "asc-slmd",
-	4449:  "privatewire",
-	4450:  "camp",
-	4451:  "ctisystemmsg",
-	4452:  "ctiprogramload",
-	4453:  "nssalertmgr",
-	4454:  "nssagentmgr",
-	4455:  "prchat-user",
-	4456:  "prchat-server",
-	4457:  "prRegister",
-	4458:  "mcp",
-	4484:  "hpssmgmt",
-	4486:  "icms",
-	4488:  "awacs-ice",
-	4500:  "ipsec-nat-t",
-	4534:  "armagetronad",
-	4535:  "ehs",
-	4536:  "ehs-ssl",
-	4537:  "wssauthsvc",
-	4538:  "swx-gate",
-	4545:  "worldscores",
-	4546:  "sf-lm",
-	4547:  "lanner-lm",
-	4548:  "synchromesh",
-	4549:  "aegate",
-	4550:  "gds-adppiw-db",
-	4551:  "ieee-mih",
-	4552:  "menandmice-mon",
-	4554:  "msfrs",
-	4555:  "rsip",
-	4556:  "dtn-bundle",
-	4557:  "mtcevrunqss",
-	4558:  "mtcevrunqman",
-	4559:  "hylafax",
-	4566:  "kwtc",
-	4567:  "tram",
-	4568:  "bmc-reporting",
-	4569:  "iax",
-	4591:  "l3t-at-an",
-	4592:  "hrpd-ith-at-an",
-	4593:  "ipt-anri-anri",
-	4594:  "ias-session",
-	4595:  "ias-paging",
-	4596:  "ias-neighbor",
-	4597:  "a21-an-1xbs",
-	4598:  "a16-an-an",
-	4599:  "a17-an-an",
-	4600:  "piranha1",
-	4601:  "piranha2",
-	4621:  "ventoso",
-	4658:  "playsta2-app",
-	4659:  "playsta2-lob",
-	4660:  "smaclmgr",
-	4661:  "kar2ouche",
-	4662:  "oms",
-	4663:  "noteit",
-	4664:  "ems",
-	4665:  "contclientms",
-	4666:  "eportcomm",
-	4667:  "mmacomm",
-	4668:  "mmaeds",
-	4669:  "eportcommdata",
-	4670:  "light",
-	4671:  "acter",
-	4672:  "rfa",
-	4673:  "cxws",
-	4674:  "appiq-mgmt",
-	4675:  "dhct-status",
-	4676:  "dhct-alerts",
-	4677:  "bcs",
-	4678:  "traversal",
-	4679:  "mgesupervision",
-	4680:  "mgemanagement",
-	4681:  "parliant",
-	4682:  "finisar",
-	4683:  "spike",
-	4684:  "rfid-rp1",
-	4685:  "autopac",
-	4686:  "msp-os",
-	4687:  "nst",
-	4688:  "mobile-p2p",
-	4689:  "altovacentral",
-	4690:  "prelude",
-	4691:  "mtn",
-	4692:  "conspiracy",
-	4700:  "netxms-agent",
-	4701:  "netxms-mgmt",
-	4702:  "netxms-sync",
-	4711:  "trinity-dist",
-	4725:  "truckstar",
-	4726:  "a26-fap-fgw",
-	4727:  "fcis-disc",
-	4728:  "capmux",
-	4729:  "gsmtap",
-	4730:  "gearman",
-	4732:  "ohmtrigger",
-	4737:  "ipdr-sp",
-	4738:  "solera-lpn",
-	4739:  "ipfix",
-	4740:  "ipfixs",
-	4741:  "lumimgrd",
-	4742:  "sicct-sdp",
-	4743:  "openhpid",
-	4744:  "ifsp",
-	4745:  "fmp",
-	4746:  "intelliadm-disc",
-	4747:  "buschtrommel",
-	4749:  "profilemac",
-	4750:  "ssad",
-	4751:  "spocp",
-	4752:  "snap",
-	4753:  "simon-disc",
-	4754:  "gre-in-udp",
-	4755:  "gre-udp-dtls",
-	4784:  "bfd-multi-ctl",
-	4785:  "cncp",
-	4789:  "vxlan",
-	4790:  "vxlan-gpe",
-	4791:  "roce",
-	4800:  "iims",
-	4801:  "iwec",
-	4802:  "ilss",
-	4803:  "notateit-disc",
-	4804:  "aja-ntv4-disc",
-	4827:  "htcp",
-	4837:  "varadero-0",
-	4838:  "varadero-1",
-	4839:  "varadero-2",
-	4840:  "opcua-udp",
-	4841:  "quosa",
-	4842:  "gw-asv",
-	4843:  "opcua-tls",
-	4844:  "gw-log",
-	4845:  "wcr-remlib",
-	4846:  "contamac-icm",
-	4847:  "wfc",
-	4848:  "appserv-http",
-	4849:  "appserv-https",
-	4850:  "sun-as-nodeagt",
-	4851:  "derby-repli",
-	4867:  "unify-debug",
-	4868:  "phrelay",
-	4869:  "phrelaydbg",
-	4870:  "cc-tracking",
-	4871:  "wired",
-	4876:  "tritium-can",
-	4877:  "lmcs",
-	4878:  "inst-discovery",
-	4881:  "socp-t",
-	4882:  "socp-c",
-	4884:  "hivestor",
-	4885:  "abbs",
-	4894:  "lyskom",
-	4899:  "radmin-port",
-	4900:  "hfcs",
-	4914:  "bones",
-	4936:  "an-signaling",
-	4937:  "atsc-mh-ssc",
-	4940:  "eq-office-4940",
-	4941:  "eq-office-4941",
-	4942:  "eq-office-4942",
-	4949:  "munin",
-	4950:  "sybasesrvmon",
-	4951:  "pwgwims",
-	4952:  "sagxtsds",
-	4969:  "ccss-qmm",
-	4970:  "ccss-qsm",
-	4980:  "ctxs-vpp",
-	4986:  "mrip",
-	4987:  "smar-se-port1",
-	4988:  "smar-se-port2",
-	4989:  "parallel",
-	4990:  "busycal",
-	4991:  "vrt",
-	4999:  "hfcs-manager",
-	5000:  "commplex-main",
-	5001:  "commplex-link",
-	5002:  "rfe",
-	5003:  "fmpro-internal",
-	5004:  "avt-profile-1",
-	5005:  "avt-profile-2",
-	5006:  "wsm-server",
-	5007:  "wsm-server-ssl",
-	5008:  "synapsis-edge",
-	5009:  "winfs",
-	5010:  "telelpathstart",
-	5011:  "telelpathattack",
-	5012:  "nsp",
-	5013:  "fmpro-v6",
-	5014:  "onpsocket",
-	5020:  "zenginkyo-1",
-	5021:  "zenginkyo-2",
-	5022:  "mice",
-	5023:  "htuilsrv",
-	5024:  "scpi-telnet",
-	5025:  "scpi-raw",
-	5026:  "strexec-d",
-	5027:  "strexec-s",
-	5029:  "infobright",
-	5030:  "surfpass",
-	5031:  "dmp",
-	5042:  "asnaacceler8db",
-	5043:  "swxadmin",
-	5044:  "lxi-evntsvc",
-	5046:  "vpm-udp",
-	5047:  "iscape",
-	5049:  "ivocalize",
-	5050:  "mmcc",
-	5051:  "ita-agent",
-	5052:  "ita-manager",
-	5053:  "rlm-disc",
-	5055:  "unot",
-	5056:  "intecom-ps1",
-	5057:  "intecom-ps2",
-	5058:  "locus-disc",
-	5059:  "sds",
-	5060:  "sip",
-	5061:  "sips",
-	5062:  "na-localise",
-	5064:  "ca-1",
-	5065:  "ca-2",
-	5066:  "stanag-5066",
-	5067:  "authentx",
-	5069:  "i-net-2000-npr",
-	5070:  "vtsas",
-	5071:  "powerschool",
-	5072:  "ayiya",
-	5073:  "tag-pm",
-	5074:  "alesquery",
-	5078:  "pixelpusher",
-	5079:  "cp-spxrpts",
-	5080:  "onscreen",
-	5081:  "sdl-ets",
-	5082:  "qcp",
-	5083:  "qfp",
-	5084:  "llrp",
-	5085:  "encrypted-llrp",
-	5092:  "magpie",
-	5093:  "sentinel-lm",
-	5094:  "hart-ip",
-	5099:  "sentlm-srv2srv",
-	5100:  "socalia",
-	5101:  "talarian-udp",
-	5102:  "oms-nonsecure",
-	5104:  "tinymessage",
-	5105:  "hughes-ap",
-	5111:  "taep-as-svc",
-	5112:  "pm-cmdsvr",
-	5116:  "emb-proj-cmd",
-	5120:  "barracuda-bbs",
-	5133:  "nbt-pc",
-	5136:  "minotaur-sa",
-	5137:  "ctsd",
-	5145:  "rmonitor-secure",
-	5150:  "atmp",
-	5151:  "esri-sde",
-	5152:  "sde-discovery",
-	5154:  "bzflag",
-	5155:  "asctrl-agent",
-	5164:  "vpa-disc",
-	5165:  "ife-icorp",
-	5166:  "winpcs",
-	5167:  "scte104",
-	5168:  "scte30",
-	5190:  "aol",
-	5191:  "aol-1",
-	5192:  "aol-2",
-	5193:  "aol-3",
-	5200:  "targus-getdata",
-	5201:  "targus-getdata1",
-	5202:  "targus-getdata2",
-	5203:  "targus-getdata3",
-	5223:  "hpvirtgrp",
-	5224:  "hpvirtctrl",
-	5225:  "hp-server",
-	5226:  "hp-status",
-	5227:  "perfd",
-	5234:  "eenet",
-	5235:  "galaxy-network",
-	5236:  "padl2sim",
-	5237:  "mnet-discovery",
-	5245:  "downtools-disc",
-	5246:  "capwap-control",
-	5247:  "capwap-data",
-	5248:  "caacws",
-	5249:  "caaclang2",
-	5250:  "soagateway",
-	5251:  "caevms",
-	5252:  "movaz-ssc",
-	5264:  "3com-njack-1",
-	5265:  "3com-njack-2",
-	5270:  "cartographerxmp",
-	5271:  "cuelink-disc",
-	5272:  "pk",
-	5282:  "transmit-port",
-	5298:  "presence",
-	5299:  "nlg-data",
-	5300:  "hacl-hb",
-	5301:  "hacl-gs",
-	5302:  "hacl-cfg",
-	5303:  "hacl-probe",
-	5304:  "hacl-local",
-	5305:  "hacl-test",
-	5306:  "sun-mc-grp",
-	5307:  "sco-aip",
-	5308:  "cfengine",
-	5309:  "jprinter",
-	5310:  "outlaws",
-	5312:  "permabit-cs",
-	5313:  "rrdp",
-	5314:  "opalis-rbt-ipc",
-	5315:  "hacl-poll",
-	5343:  "kfserver",
-	5344:  "xkotodrcp",
-	5349:  "stuns",
-	5350:  "pcp-multicast",
-	5351:  "pcp",
-	5352:  "dns-llq",
-	5353:  "mdns",
-	5354:  "mdnsresponder",
-	5355:  "llmnr",
-	5356:  "ms-smlbiz",
-	5357:  "wsdapi",
-	5358:  "wsdapi-s",
-	5359:  "ms-alerter",
-	5360:  "ms-sideshow",
-	5361:  "ms-s-sideshow",
-	5362:  "serverwsd2",
-	5363:  "net-projection",
-	5364:  "kdnet",
-	5397:  "stresstester",
-	5398:  "elektron-admin",
-	5399:  "securitychase",
-	5400:  "excerpt",
-	5401:  "excerpts",
-	5402:  "mftp",
-	5403:  "hpoms-ci-lstn",
-	5404:  "hpoms-dps-lstn",
-	5405:  "netsupport",
-	5406:  "systemics-sox",
-	5407:  "foresyte-clear",
-	5408:  "foresyte-sec",
-	5409:  "salient-dtasrv",
-	5410:  "salient-usrmgr",
-	5411:  "actnet",
-	5412:  "continuus",
-	5413:  "wwiotalk",
-	5414:  "statusd",
-	5415:  "ns-server",
-	5416:  "sns-gateway",
-	5417:  "sns-agent",
-	5418:  "mcntp",
-	5419:  "dj-ice",
-	5420:  "cylink-c",
-	5421:  "netsupport2",
-	5422:  "salient-mux",
-	5423:  "virtualuser",
-	5424:  "beyond-remote",
-	5425:  "br-channel",
-	5426:  "devbasic",
-	5427:  "sco-peer-tta",
-	5428:  "telaconsole",
-	5429:  "base",
-	5430:  "radec-corp",
-	5431:  "park-agent",
-	5432:  "postgresql",
-	5433:  "pyrrho",
-	5434:  "sgi-arrayd",
-	5435:  "sceanics",
-	5436:  "pmip6-cntl",
-	5437:  "pmip6-data",
-	5443:  "spss",
-	5450:  "tiepie-disc",
-	5453:  "surebox",
-	5454:  "apc-5454",
-	5455:  "apc-5455",
-	5456:  "apc-5456",
-	5461:  "silkmeter",
-	5462:  "ttl-publisher",
-	5463:  "ttlpriceproxy",
-	5464:  "quailnet",
-	5465:  "netops-broker",
-	5474:  "apsolab-rpc",
-	5500:  "fcp-addr-srvr1",
-	5501:  "fcp-addr-srvr2",
-	5502:  "fcp-srvr-inst1",
-	5503:  "fcp-srvr-inst2",
-	5504:  "fcp-cics-gw1",
-	5505:  "checkoutdb",
-	5506:  "amc",
-	5553:  "sgi-eventmond",
-	5554:  "sgi-esphttp",
-	5555:  "personal-agent",
-	5556:  "freeciv",
-	5567:  "dof-dps-mc-sec",
-	5568:  "sdt",
-	5569:  "rdmnet-device",
-	5573:  "sdmmp",
-	5580:  "tmosms0",
-	5581:  "tmosms1",
-	5582:  "fac-restore",
-	5583:  "tmo-icon-sync",
-	5584:  "bis-web",
-	5585:  "bis-sync",
-	5597:  "ininmessaging",
-	5598:  "mctfeed",
-	5599:  "esinstall",
-	5600:  "esmmanager",
-	5601:  "esmagent",
-	5602:  "a1-msc",
-	5603:  "a1-bs",
-	5604:  "a3-sdunode",
-	5605:  "a4-sdunode",
-	5627:  "ninaf",
-	5628:  "htrust",
-	5629:  "symantec-sfdb",
-	5630:  "precise-comm",
-	5631:  "pcanywheredata",
-	5632:  "pcanywherestat",
-	5633:  "beorl",
-	5634:  "xprtld",
-	5670:  "zre-disc",
-	5671:  "amqps",
-	5672:  "amqp",
-	5673:  "jms",
-	5674:  "hyperscsi-port",
-	5675:  "v5ua",
-	5676:  "raadmin",
-	5677:  "questdb2-lnchr",
-	5678:  "rrac",
-	5679:  "dccm",
-	5680:  "auriga-router",
-	5681:  "ncxcp",
-	5682:  "brightcore",
-	5683:  "coap",
-	5684:  "coaps",
-	5687:  "gog-multiplayer",
-	5688:  "ggz",
-	5689:  "qmvideo",
-	5713:  "proshareaudio",
-	5714:  "prosharevideo",
-	5715:  "prosharedata",
-	5716:  "prosharerequest",
-	5717:  "prosharenotify",
-	5718:  "dpm",
-	5719:  "dpm-agent",
-	5720:  "ms-licensing",
-	5721:  "dtpt",
-	5722:  "msdfsr",
-	5723:  "omhs",
-	5724:  "omsdk",
-	5728:  "io-dist-group",
-	5729:  "openmail",
-	5730:  "unieng",
-	5741:  "ida-discover1",
-	5742:  "ida-discover2",
-	5743:  "watchdoc-pod",
-	5744:  "watchdoc",
-	5745:  "fcopy-server",
-	5746:  "fcopys-server",
-	5747:  "tunatic",
-	5748:  "tunalyzer",
-	5750:  "rscd",
-	5755:  "openmailg",
-	5757:  "x500ms",
-	5766:  "openmailns",
-	5767:  "s-openmail",
-	5768:  "openmailpxy",
-	5769:  "spramsca",
-	5770:  "spramsd",
-	5771:  "netagent",
-	5777:  "dali-port",
-	5781:  "3par-evts",
-	5782:  "3par-mgmt",
-	5783:  "3par-mgmt-ssl",
-	5784:  "ibar",
-	5785:  "3par-rcopy",
-	5786:  "cisco-redu",
-	5787:  "waascluster",
-	5793:  "xtreamx",
-	5794:  "spdp",
-	5813:  "icmpd",
-	5814:  "spt-automation",
-	5859:  "wherehoo",
-	5863:  "ppsuitemsg",
-	5900:  "rfb",
-	5910:  "cm",
-	5911:  "cpdlc",
-	5912:  "fis",
-	5913:  "ads-c",
-	5963:  "indy",
-	5968:  "mppolicy-v5",
-	5969:  "mppolicy-mgr",
-	5984:  "couchdb",
-	5985:  "wsman",
-	5986:  "wsmans",
-	5987:  "wbem-rmi",
-	5988:  "wbem-http",
-	5989:  "wbem-https",
-	5990:  "wbem-exp-https",
-	5991:  "nuxsl",
-	5992:  "consul-insight",
-	5999:  "cvsup",
-	6064:  "ndl-ahp-svc",
-	6065:  "winpharaoh",
-	6066:  "ewctsp",
-	6069:  "trip",
-	6070:  "messageasap",
-	6071:  "ssdtp",
-	6072:  "diagnose-proc",
-	6073:  "directplay8",
-	6074:  "max",
-	6080:  "gue",
-	6081:  "geneve",
-	6082:  "p25cai",
-	6083:  "miami-bcast",
-	6085:  "konspire2b",
-	6086:  "pdtp",
-	6087:  "ldss",
-	6088:  "doglms-notify",
-	6100:  "synchronet-db",
-	6101:  "synchronet-rtc",
-	6102:  "synchronet-upd",
-	6103:  "rets",
-	6104:  "dbdb",
-	6105:  "primaserver",
-	6106:  "mpsserver",
-	6107:  "etc-control",
-	6108:  "sercomm-scadmin",
-	6109:  "globecast-id",
-	6110:  "softcm",
-	6111:  "spc",
-	6112:  "dtspcd",
-	6118:  "tipc",
-	6122:  "bex-webadmin",
-	6123:  "backup-express",
-	6124:  "pnbs",
-	6133:  "nbt-wol",
-	6140:  "pulsonixnls",
-	6141:  "meta-corp",
-	6142:  "aspentec-lm",
-	6143:  "watershed-lm",
-	6144:  "statsci1-lm",
-	6145:  "statsci2-lm",
-	6146:  "lonewolf-lm",
-	6147:  "montage-lm",
-	6148:  "ricardo-lm",
-	6149:  "tal-pod",
-	6160:  "ecmp-data",
-	6161:  "patrol-ism",
-	6162:  "patrol-coll",
-	6163:  "pscribe",
-	6200:  "lm-x",
-	6201:  "thermo-calc",
-	6209:  "qmtps",
-	6222:  "radmind",
-	6241:  "jeol-nsddp-1",
-	6242:  "jeol-nsddp-2",
-	6243:  "jeol-nsddp-3",
-	6244:  "jeol-nsddp-4",
-	6251:  "tl1-raw-ssl",
-	6252:  "tl1-ssh",
-	6253:  "crip",
-	6268:  "grid",
-	6269:  "grid-alt",
-	6300:  "bmc-grx",
-	6301:  "bmc-ctd-ldap",
-	6306:  "ufmp",
-	6315:  "scup-disc",
-	6316:  "abb-escp",
-	6317:  "nav-data",
-	6320:  "repsvc",
-	6321:  "emp-server1",
-	6322:  "emp-server2",
-	6324:  "hrd-ns-disc",
-	6343:  "sflow",
-	6346:  "gnutella-svc",
-	6347:  "gnutella-rtr",
-	6350:  "adap",
-	6355:  "pmcs",
-	6360:  "metaedit-mu",
-	6363:  "ndn",
-	6370:  "metaedit-se",
-	6382:  "metatude-mds",
-	6389:  "clariion-evr01",
-	6390:  "metaedit-ws",
-	6417:  "faxcomservice",
-	6419:  "svdrp-disc",
-	6420:  "nim-vdrshell",
-	6421:  "nim-wan",
-	6443:  "sun-sr-https",
-	6444:  "sge-qmaster",
-	6445:  "sge-execd",
-	6446:  "mysql-proxy",
-	6455:  "skip-cert-recv",
-	6456:  "skip-cert-send",
-	6464:  "ieee11073-20701",
-	6471:  "lvision-lm",
-	6480:  "sun-sr-http",
-	6481:  "servicetags",
-	6482:  "ldoms-mgmt",
-	6483:  "SunVTS-RMI",
-	6484:  "sun-sr-jms",
-	6485:  "sun-sr-iiop",
-	6486:  "sun-sr-iiops",
-	6487:  "sun-sr-iiop-aut",
-	6488:  "sun-sr-jmx",
-	6489:  "sun-sr-admin",
-	6500:  "boks",
-	6501:  "boks-servc",
-	6502:  "boks-servm",
-	6503:  "boks-clntd",
-	6505:  "badm-priv",
-	6506:  "badm-pub",
-	6507:  "bdir-priv",
-	6508:  "bdir-pub",
-	6509:  "mgcs-mfp-port",
-	6510:  "mcer-port",
-	6511:  "dccp-udp",
-	6514:  "syslog-tls",
-	6515:  "elipse-rec",
-	6543:  "lds-distrib",
-	6544:  "lds-dump",
-	6547:  "apc-6547",
-	6548:  "apc-6548",
-	6549:  "apc-6549",
-	6550:  "fg-sysupdate",
-	6551:  "sum",
-	6558:  "xdsxdm",
-	6566:  "sane-port",
-	6568:  "rp-reputation",
-	6579:  "affiliate",
-	6580:  "parsec-master",
-	6581:  "parsec-peer",
-	6582:  "parsec-game",
-	6583:  "joaJewelSuite",
-	6619:  "odette-ftps",
-	6620:  "kftp-data",
-	6621:  "kftp",
-	6622:  "mcftp",
-	6623:  "ktelnet",
-	6626:  "wago-service",
-	6627:  "nexgen",
-	6628:  "afesc-mc",
-	6629:  "nexgen-aux",
-	6633:  "cisco-vpath-tun",
-	6634:  "mpls-pm",
-	6635:  "mpls-udp",
-	6636:  "mpls-udp-dtls",
-	6653:  "openflow",
-	6657:  "palcom-disc",
-	6670:  "vocaltec-gold",
-	6671:  "p4p-portal",
-	6672:  "vision-server",
-	6673:  "vision-elmd",
-	6678:  "vfbp-disc",
-	6679:  "osaut",
-	6689:  "tsa",
-	6696:  "babel",
-	6701:  "kti-icad-srvr",
-	6702:  "e-design-net",
-	6703:  "e-design-web",
-	6714:  "ibprotocol",
-	6715:  "fibotrader-com",
-	6767:  "bmc-perf-agent",
-	6768:  "bmc-perf-mgrd",
-	6769:  "adi-gxp-srvprt",
-	6770:  "plysrv-http",
-	6771:  "plysrv-https",
-	6784:  "bfd-lag",
-	6785:  "dgpf-exchg",
-	6786:  "smc-jmx",
-	6787:  "smc-admin",
-	6788:  "smc-http",
-	6790:  "hnmp",
-	6791:  "hnm",
-	6801:  "acnet",
-	6831:  "ambit-lm",
-	6841:  "netmo-default",
-	6842:  "netmo-http",
-	6850:  "iccrushmore",
-	6868:  "acctopus-st",
-	6888:  "muse",
-	6935:  "ethoscan",
-	6936:  "xsmsvc",
-	6946:  "bioserver",
-	6951:  "otlp",
-	6961:  "jmact3",
-	6962:  "jmevt2",
-	6963:  "swismgr1",
-	6964:  "swismgr2",
-	6965:  "swistrap",
-	6966:  "swispol",
-	6969:  "acmsoda",
-	6997:  "MobilitySrv",
-	6998:  "iatp-highpri",
-	6999:  "iatp-normalpri",
-	7000:  "afs3-fileserver",
-	7001:  "afs3-callback",
-	7002:  "afs3-prserver",
-	7003:  "afs3-vlserver",
-	7004:  "afs3-kaserver",
-	7005:  "afs3-volser",
-	7006:  "afs3-errors",
-	7007:  "afs3-bos",
-	7008:  "afs3-update",
-	7009:  "afs3-rmtsys",
-	7010:  "ups-onlinet",
-	7011:  "talon-disc",
-	7012:  "talon-engine",
-	7013:  "microtalon-dis",
-	7014:  "microtalon-com",
-	7015:  "talon-webserver",
-	7016:  "spg",
-	7017:  "grasp",
-	7019:  "doceri-view",
-	7020:  "dpserve",
-	7021:  "dpserveadmin",
-	7022:  "ctdp",
-	7023:  "ct2nmcs",
-	7024:  "vmsvc",
-	7025:  "vmsvc-2",
-	7030:  "op-probe",
-	7040:  "quest-disc",
-	7070:  "arcp",
-	7071:  "iwg1",
-	7080:  "empowerid",
-	7088:  "zixi-transport",
-	7095:  "jdp-disc",
-	7099:  "lazy-ptop",
-	7100:  "font-service",
-	7101:  "elcn",
-	7107:  "aes-x170",
-	7121:  "virprot-lm",
-	7128:  "scenidm",
-	7129:  "scenccs",
-	7161:  "cabsm-comm",
-	7162:  "caistoragemgr",
-	7163:  "cacsambroker",
-	7164:  "fsr",
-	7165:  "doc-server",
-	7166:  "aruba-server",
-	7169:  "ccag-pib",
-	7170:  "nsrp",
-	7171:  "drm-production",
-	7174:  "clutild",
-	7181:  "janus-disc",
-	7200:  "fodms",
-	7201:  "dlip",
-	7227:  "ramp",
-	7235:  "aspcoordination",
-	7244:  "frc-hicp-disc",
-	7262:  "cnap",
-	7272:  "watchme-7272",
-	7273:  "oma-rlp",
-	7274:  "oma-rlp-s",
-	7275:  "oma-ulp",
-	7276:  "oma-ilp",
-	7277:  "oma-ilp-s",
-	7278:  "oma-dcdocbs",
-	7279:  "ctxlic",
-	7280:  "itactionserver1",
-	7281:  "itactionserver2",
-	7282:  "mzca-alert",
-	7365:  "lcm-server",
-	7391:  "mindfilesys",
-	7392:  "mrssrendezvous",
-	7393:  "nfoldman",
-	7394:  "fse",
-	7395:  "winqedit",
-	7397:  "hexarc",
-	7400:  "rtps-discovery",
-	7401:  "rtps-dd-ut",
-	7402:  "rtps-dd-mt",
-	7410:  "ionixnetmon",
-	7411:  "daqstream",
-	7421:  "mtportmon",
-	7426:  "pmdmgr",
-	7427:  "oveadmgr",
-	7428:  "ovladmgr",
-	7429:  "opi-sock",
-	7430:  "xmpv7",
-	7431:  "pmd",
-	7437:  "faximum",
-	7443:  "oracleas-https",
-	7473:  "rise",
-	7491:  "telops-lmd",
-	7500:  "silhouette",
-	7501:  "ovbus",
-	7510:  "ovhpas",
-	7511:  "pafec-lm",
-	7542:  "saratoga",
-	7543:  "atul",
-	7544:  "nta-ds",
-	7545:  "nta-us",
-	7546:  "cfs",
-	7547:  "cwmp",
-	7548:  "tidp",
-	7549:  "nls-tl",
-	7550:  "cloudsignaling",
-	7560:  "sncp",
-	7566:  "vsi-omega",
-	7570:  "aries-kfinder",
-	7574:  "coherence-disc",
-	7588:  "sun-lm",
-	7606:  "mipi-debug",
-	7624:  "indi",
-	7627:  "soap-http",
-	7628:  "zen-pawn",
-	7629:  "xdas",
-	7633:  "pmdfmgt",
-	7648:  "cuseeme",
-	7674:  "imqtunnels",
-	7675:  "imqtunnel",
-	7676:  "imqbrokerd",
-	7677:  "sun-user-https",
-	7680:  "pando-pub",
-	7689:  "collaber",
-	7697:  "klio",
-	7707:  "sync-em7",
-	7708:  "scinet",
-	7720:  "medimageportal",
-	7724:  "nsdeepfreezectl",
-	7725:  "nitrogen",
-	7726:  "freezexservice",
-	7727:  "trident-data",
-	7728:  "osvr",
-	7734:  "smip",
-	7738:  "aiagent",
-	7741:  "scriptview",
-	7743:  "sstp-1",
-	7744:  "raqmon-pdu",
-	7747:  "prgp",
-	7777:  "cbt",
-	7778:  "interwise",
-	7779:  "vstat",
-	7781:  "accu-lmgr",
-	7784:  "s-bfd",
-	7786:  "minivend",
-	7787:  "popup-reminders",
-	7789:  "office-tools",
-	7794:  "q3ade",
-	7797:  "pnet-conn",
-	7798:  "pnet-enc",
-	7799:  "altbsdp",
-	7800:  "asr",
-	7801:  "ssp-client",
-	7802:  "vns-tp",
-	7810:  "rbt-wanopt",
-	7845:  "apc-7845",
-	7846:  "apc-7846",
-	7872:  "mipv6tls",
-	7880:  "pss",
-	7887:  "ubroker",
-	7900:  "mevent",
-	7901:  "tnos-sp",
-	7902:  "tnos-dp",
-	7903:  "tnos-dps",
-	7913:  "qo-secure",
-	7932:  "t2-drm",
-	7933:  "t2-brm",
-	7962:  "generalsync",
-	7967:  "supercell",
-	7979:  "micromuse-ncps",
-	7980:  "quest-vista",
-	7982:  "sossd-disc",
-	7998:  "usicontentpush",
-	7999:  "irdmi2",
-	8000:  "irdmi",
-	8001:  "vcom-tunnel",
-	8002:  "teradataordbms",
-	8003:  "mcreport",
-	8005:  "mxi",
-	8006:  "wpl-disc",
-	8007:  "warppipe",
-	8008:  "http-alt",
-	8019:  "qbdb",
-	8020:  "intu-ec-svcdisc",
-	8021:  "intu-ec-client",
-	8022:  "oa-system",
-	8025:  "ca-audit-da",
-	8026:  "ca-audit-ds",
-	8032:  "pro-ed",
-	8033:  "mindprint",
-	8034:  "vantronix-mgmt",
-	8040:  "ampify",
-	8041:  "enguity-xccetp",
-	8052:  "senomix01",
-	8053:  "senomix02",
-	8054:  "senomix03",
-	8055:  "senomix04",
-	8056:  "senomix05",
-	8057:  "senomix06",
-	8058:  "senomix07",
-	8059:  "senomix08",
-	8060:  "aero",
-	8074:  "gadugadu",
-	8080:  "http-alt",
-	8081:  "sunproxyadmin",
-	8082:  "us-cli",
-	8083:  "us-srv",
-	8086:  "d-s-n",
-	8087:  "simplifymedia",
-	8088:  "radan-http",
-	8097:  "sac",
-	8100:  "xprint-server",
-	8115:  "mtl8000-matrix",
-	8116:  "cp-cluster",
-	8118:  "privoxy",
-	8121:  "apollo-data",
-	8122:  "apollo-admin",
-	8128:  "paycash-online",
-	8129:  "paycash-wbp",
-	8130:  "indigo-vrmi",
-	8131:  "indigo-vbcp",
-	8132:  "dbabble",
-	8148:  "isdd",
-	8149:  "eor-game",
-	8160:  "patrol",
-	8161:  "patrol-snmp",
-	8182:  "vmware-fdm",
-	8184:  "itach",
-	8192:  "spytechphone",
-	8194:  "blp1",
-	8195:  "blp2",
-	8199:  "vvr-data",
-	8200:  "trivnet1",
-	8201:  "trivnet2",
-	8202:  "aesop",
-	8204:  "lm-perfworks",
-	8205:  "lm-instmgr",
-	8206:  "lm-dta",
-	8207:  "lm-sserver",
-	8208:  "lm-webwatcher",
-	8230:  "rexecj",
-	8231:  "hncp-udp-port",
-	8232:  "hncp-dtls-port",
-	8243:  "synapse-nhttps",
-	8276:  "pando-sec",
-	8280:  "synapse-nhttp",
-	8282:  "libelle-disc",
-	8292:  "blp3",
-	8294:  "blp4",
-	8300:  "tmi",
-	8301:  "amberon",
-	8320:  "tnp-discover",
-	8321:  "tnp",
-	8322:  "garmin-marine",
-	8351:  "server-find",
-	8376:  "cruise-enum",
-	8377:  "cruise-swroute",
-	8378:  "cruise-config",
-	8379:  "cruise-diags",
-	8380:  "cruise-update",
-	8383:  "m2mservices",
-	8384:  "marathontp",
-	8400:  "cvd",
-	8401:  "sabarsd",
-	8402:  "abarsd",
-	8403:  "admind",
-	8416:  "espeech",
-	8417:  "espeech-rtp",
-	8442:  "cybro-a-bus",
-	8443:  "pcsync-https",
-	8444:  "pcsync-http",
-	8445:  "copy-disc",
-	8450:  "npmp",
-	8472:  "otv",
-	8473:  "vp2p",
-	8474:  "noteshare",
-	8500:  "fmtp",
-	8501:  "cmtp-av",
-	8503:  "lsp-self-ping",
-	8554:  "rtsp-alt",
-	8555:  "d-fence",
-	8567:  "dof-tunnel",
-	8600:  "asterix",
-	8609:  "canon-cpp-disc",
-	8610:  "canon-mfnp",
-	8611:  "canon-bjnp1",
-	8612:  "canon-bjnp2",
-	8613:  "canon-bjnp3",
-	8614:  "canon-bjnp4",
-	8675:  "msi-cps-rm-disc",
-	8686:  "sun-as-jmxrmi",
-	8732:  "dtp-net",
-	8733:  "ibus",
-	8763:  "mc-appserver",
-	8764:  "openqueue",
-	8765:  "ultraseek-http",
-	8766:  "amcs",
-	8770:  "dpap",
-	8786:  "msgclnt",
-	8787:  "msgsrvr",
-	8793:  "acd-pm",
-	8800:  "sunwebadmin",
-	8804:  "truecm",
-	8805:  "pfcp",
-	8808:  "ssports-bcast",
-	8873:  "dxspider",
-	8880:  "cddbp-alt",
-	8883:  "secure-mqtt",
-	8888:  "ddi-udp-1",
-	8889:  "ddi-udp-2",
-	8890:  "ddi-udp-3",
-	8891:  "ddi-udp-4",
-	8892:  "ddi-udp-5",
-	8893:  "ddi-udp-6",
-	8894:  "ddi-udp-7",
-	8899:  "ospf-lite",
-	8900:  "jmb-cds1",
-	8901:  "jmb-cds2",
-	8910:  "manyone-http",
-	8911:  "manyone-xml",
-	8912:  "wcbackup",
-	8913:  "dragonfly",
-	8954:  "cumulus-admin",
-	8980:  "nod-provider",
-	8981:  "nod-client",
-	8989:  "sunwebadmins",
-	8990:  "http-wmap",
-	8991:  "https-wmap",
-	8999:  "bctp",
-	9000:  "cslistener",
-	9001:  "etlservicemgr",
-	9002:  "dynamid",
-	9007:  "ogs-client",
-	9009:  "pichat",
-	9020:  "tambora",
-	9021:  "panagolin-ident",
-	9022:  "paragent",
-	9023:  "swa-1",
-	9024:  "swa-2",
-	9025:  "swa-3",
-	9026:  "swa-4",
-	9060:  "CardWeb-RT",
-	9080:  "glrpc",
-	9084:  "aurora",
-	9085:  "ibm-rsyscon",
-	9086:  "net2display",
-	9087:  "classic",
-	9088:  "sqlexec",
-	9089:  "sqlexec-ssl",
-	9090:  "websm",
-	9091:  "xmltec-xmlmail",
-	9092:  "XmlIpcRegSvc",
-	9100:  "hp-pdl-datastr",
-	9101:  "bacula-dir",
-	9102:  "bacula-fd",
-	9103:  "bacula-sd",
-	9104:  "peerwire",
-	9105:  "xadmin",
-	9106:  "astergate-disc",
-	9119:  "mxit",
-	9131:  "dddp",
-	9160:  "apani1",
-	9161:  "apani2",
-	9162:  "apani3",
-	9163:  "apani4",
-	9164:  "apani5",
-	9191:  "sun-as-jpda",
-	9200:  "wap-wsp",
-	9201:  "wap-wsp-wtp",
-	9202:  "wap-wsp-s",
-	9203:  "wap-wsp-wtp-s",
-	9204:  "wap-vcard",
-	9205:  "wap-vcal",
-	9206:  "wap-vcard-s",
-	9207:  "wap-vcal-s",
-	9208:  "rjcdb-vcards",
-	9209:  "almobile-system",
-	9210:  "oma-mlp",
-	9211:  "oma-mlp-s",
-	9212:  "serverviewdbms",
-	9213:  "serverstart",
-	9214:  "ipdcesgbs",
-	9215:  "insis",
-	9216:  "acme",
-	9217:  "fsc-port",
-	9222:  "teamcoherence",
-	9255:  "mon",
-	9277:  "traingpsdata",
-	9278:  "pegasus",
-	9279:  "pegasus-ctl",
-	9280:  "pgps",
-	9281:  "swtp-port1",
-	9282:  "swtp-port2",
-	9283:  "callwaveiam",
-	9284:  "visd",
-	9285:  "n2h2server",
-	9286:  "n2receive",
-	9287:  "cumulus",
-	9292:  "armtechdaemon",
-	9293:  "storview",
-	9294:  "armcenterhttp",
-	9295:  "armcenterhttps",
-	9300:  "vrace",
-	9318:  "secure-ts",
-	9321:  "guibase",
-	9343:  "mpidcmgr",
-	9344:  "mphlpdmc",
-	9346:  "ctechlicensing",
-	9374:  "fjdmimgr",
-	9380:  "boxp",
-	9396:  "fjinvmgr",
-	9397:  "mpidcagt",
-	9400:  "sec-t4net-srv",
-	9401:  "sec-t4net-clt",
-	9402:  "sec-pc2fax-srv",
-	9418:  "git",
-	9443:  "tungsten-https",
-	9444:  "wso2esb-console",
-	9450:  "sntlkeyssrvr",
-	9500:  "ismserver",
-	9522:  "sma-spw",
-	9535:  "mngsuite",
-	9536:  "laes-bf",
-	9555:  "trispen-sra",
-	9592:  "ldgateway",
-	9593:  "cba8",
-	9594:  "msgsys",
-	9595:  "pds",
-	9596:  "mercury-disc",
-	9597:  "pd-admin",
-	9598:  "vscp",
-	9599:  "robix",
-	9600:  "micromuse-ncpw",
-	9612:  "streamcomm-ds",
-	9618:  "condor",
-	9628:  "odbcpathway",
-	9629:  "uniport",
-	9632:  "mc-comm",
-	9667:  "xmms2",
-	9668:  "tec5-sdctp",
-	9694:  "client-wakeup",
-	9695:  "ccnx",
-	9700:  "board-roar",
-	9747:  "l5nas-parchan",
-	9750:  "board-voip",
-	9753:  "rasadv",
-	9762:  "tungsten-http",
-	9800:  "davsrc",
-	9801:  "sstp-2",
-	9802:  "davsrcs",
-	9875:  "sapv1",
-	9878:  "kca-service",
-	9888:  "cyborg-systems",
-	9889:  "gt-proxy",
-	9898:  "monkeycom",
-	9899:  "sctp-tunneling",
-	9900:  "iua",
-	9901:  "enrp",
-	9903:  "multicast-ping",
-	9909:  "domaintime",
-	9911:  "sype-transport",
-	9950:  "apc-9950",
-	9951:  "apc-9951",
-	9952:  "apc-9952",
-	9953:  "acis",
-	9955:  "alljoyn-mcm",
-	9956:  "alljoyn",
-	9966:  "odnsp",
-	9987:  "dsm-scm-target",
-	9990:  "osm-appsrvr",
-	9991:  "osm-oev",
-	9992:  "palace-1",
-	9993:  "palace-2",
-	9994:  "palace-3",
-	9995:  "palace-4",
-	9996:  "palace-5",
-	9997:  "palace-6",
-	9998:  "distinct32",
-	9999:  "distinct",
-	10000: "ndmp",
-	10001: "scp-config",
-	10002: "documentum",
-	10003: "documentum-s",
-	10007: "mvs-capacity",
-	10008: "octopus",
-	10009: "swdtp-sv",
-	10050: "zabbix-agent",
-	10051: "zabbix-trapper",
-	10080: "amanda",
-	10081: "famdc",
-	10100: "itap-ddtp",
-	10101: "ezmeeting-2",
-	10102: "ezproxy-2",
-	10103: "ezrelay",
-	10104: "swdtp",
-	10107: "bctp-server",
-	10110: "nmea-0183",
-	10111: "nmea-onenet",
-	10113: "netiq-endpoint",
-	10114: "netiq-qcheck",
-	10115: "netiq-endpt",
-	10116: "netiq-voipa",
-	10117: "iqrm",
-	10128: "bmc-perf-sd",
-	10160: "qb-db-server",
-	10161: "snmpdtls",
-	10162: "snmpdtls-trap",
-	10200: "trisoap",
-	10201: "rscs",
-	10252: "apollo-relay",
-	10253: "eapol-relay",
-	10260: "axis-wimp-port",
-	10288: "blocks",
-	10439: "bngsync",
-	10500: "hip-nat-t",
-	10540: "MOS-lower",
-	10541: "MOS-upper",
-	10542: "MOS-aux",
-	10543: "MOS-soap",
-	10544: "MOS-soap-opt",
-	10800: "gap",
-	10805: "lpdg",
-	10810: "nmc-disc",
-	10860: "helix",
-	10880: "bveapi",
-	10990: "rmiaux",
-	11000: "irisa",
-	11001: "metasys",
-	10023: "cefd-vmp",
-	11095: "weave",
-	11106: "sgi-lk",
-	11108: "myq-termlink",
-	11111: "vce",
-	11112: "dicom",
-	11161: "suncacao-snmp",
-	11162: "suncacao-jmxmp",
-	11163: "suncacao-rmi",
-	11164: "suncacao-csa",
-	11165: "suncacao-websvc",
-	11171: "snss",
-	11201: "smsqp",
-	11208: "wifree",
-	11211: "memcache",
-	11319: "imip",
-	11320: "imip-channels",
-	11321: "arena-server",
-	11367: "atm-uhas",
-	11371: "hkp",
-	11430: "lsdp",
-	11600: "tempest-port",
-	11720: "h323callsigalt",
-	11723: "emc-xsw-dcache",
-	11751: "intrepid-ssl",
-	11796: "lanschool-mpt",
-	11876: "xoraya",
-	11877: "x2e-disc",
-	11967: "sysinfo-sp",
-	12000: "entextxid",
-	12001: "entextnetwk",
-	12002: "entexthigh",
-	12003: "entextmed",
-	12004: "entextlow",
-	12005: "dbisamserver1",
-	12006: "dbisamserver2",
-	12007: "accuracer",
-	12008: "accuracer-dbms",
-	12009: "ghvpn",
-	12012: "vipera",
-	12013: "vipera-ssl",
-	12109: "rets-ssl",
-	12121: "nupaper-ss",
-	12168: "cawas",
-	12172: "hivep",
-	12300: "linogridengine",
-	12321: "warehouse-sss",
-	12322: "warehouse",
-	12345: "italk",
-	12753: "tsaf",
-	13160: "i-zipqd",
-	13216: "bcslogc",
-	13217: "rs-pias",
-	13218: "emc-vcas-udp",
-	13223: "powwow-client",
-	13224: "powwow-server",
-	13400: "doip-disc",
-	13720: "bprd",
-	13721: "bpdbm",
-	13722: "bpjava-msvc",
-	13724: "vnetd",
-	13782: "bpcd",
-	13783: "vopied",
-	13785: "nbdb",
-	13786: "nomdb",
-	13818: "dsmcc-config",
-	13819: "dsmcc-session",
-	13820: "dsmcc-passthru",
-	13821: "dsmcc-download",
-	13822: "dsmcc-ccp",
-	13894: "ucontrol",
-	13929: "dta-systems",
-	14000: "scotty-ft",
-	14001: "sua",
-	14002: "scotty-disc",
-	14033: "sage-best-com1",
-	14034: "sage-best-com2",
-	14141: "vcs-app",
-	14142: "icpp",
-	14145: "gcm-app",
-	14149: "vrts-tdd",
-	14154: "vad",
-	14250: "cps",
-	14414: "ca-web-update",
-	14936: "hde-lcesrvr-1",
-	14937: "hde-lcesrvr-2",
-	15000: "hydap",
-	15118: "v2g-secc",
-	15345: "xpilot",
-	15363: "3link",
-	15555: "cisco-snat",
-	15660: "bex-xr",
-	15740: "ptp",
-	15998: "2ping",
-	16003: "alfin",
-	16161: "sun-sea-port",
-	16309: "etb4j",
-	16310: "pduncs",
-	16311: "pdefmns",
-	16360: "netserialext1",
-	16361: "netserialext2",
-	16367: "netserialext3",
-	16368: "netserialext4",
-	16384: "connected",
-	16666: "vtp",
-	16900: "newbay-snc-mc",
-	16950: "sgcip",
-	16991: "intel-rci-mp",
-	16992: "amt-soap-http",
-	16993: "amt-soap-https",
-	16994: "amt-redir-tcp",
-	16995: "amt-redir-tls",
-	17007: "isode-dua",
-	17185: "soundsvirtual",
-	17219: "chipper",
-	17220: "avtp",
-	17221: "avdecc",
-	17222: "cpsp",
-	17224: "trdp-pd",
-	17225: "trdp-md",
-	17234: "integrius-stp",
-	17235: "ssh-mgmt",
-	17500: "db-lsp-disc",
-	17729: "ea",
-	17754: "zep",
-	17755: "zigbee-ip",
-	17756: "zigbee-ips",
-	18000: "biimenu",
-	18181: "opsec-cvp",
-	18182: "opsec-ufp",
-	18183: "opsec-sam",
-	18184: "opsec-lea",
-	18185: "opsec-omi",
-	18186: "ohsc",
-	18187: "opsec-ela",
-	18241: "checkpoint-rtm",
-	18262: "gv-pf",
-	18463: "ac-cluster",
-	18634: "rds-ib",
-	18635: "rds-ip",
-	18668: "vdmmesh-disc",
-	18769: "ique",
-	18881: "infotos",
-	18888: "apc-necmp",
-	19000: "igrid",
-	19007: "scintilla",
-	19191: "opsec-uaa",
-	19194: "ua-secureagent",
-	19220: "cora-disc",
-	19283: "keysrvr",
-	19315: "keyshadow",
-	19398: "mtrgtrans",
-	19410: "hp-sco",
-	19411: "hp-sca",
-	19412: "hp-sessmon",
-	19539: "fxuptp",
-	19540: "sxuptp",
-	19541: "jcp",
-	19788: "mle",
-	19999: "dnp-sec",
-	20000: "dnp",
-	20001: "microsan",
-	20002: "commtact-http",
-	20003: "commtact-https",
-	20005: "openwebnet",
-	20012: "ss-idi-disc",
-	20014: "opendeploy",
-	20034: "nburn-id",
-	20046: "tmophl7mts",
-	20048: "mountd",
-	20049: "nfsrdma",
-	20167: "tolfab",
-	20202: "ipdtp-port",
-	20222: "ipulse-ics",
-	20480: "emwavemsg",
-	20670: "track",
-	20999: "athand-mmp",
-	21000: "irtrans",
-	21554: "dfserver",
-	21590: "vofr-gateway",
-	21800: "tvpm",
-	21845: "webphone",
-	21846: "netspeak-is",
-	21847: "netspeak-cs",
-	21848: "netspeak-acd",
-	21849: "netspeak-cps",
-	22000: "snapenetio",
-	22001: "optocontrol",
-	22002: "optohost002",
-	22003: "optohost003",
-	22004: "optohost004",
-	22005: "optohost004",
-	22273: "wnn6",
-	22305: "cis",
-	22335: "shrewd-stream",
-	22343: "cis-secure",
-	22347: "wibukey",
-	22350: "codemeter",
-	22555: "vocaltec-phone",
-	22763: "talikaserver",
-	22800: "aws-brf",
-	22951: "brf-gw",
-	23000: "inovaport1",
-	23001: "inovaport2",
-	23002: "inovaport3",
-	23003: "inovaport4",
-	23004: "inovaport5",
-	23005: "inovaport6",
-	23272: "s102",
-	23294: "5afe-disc",
-	23333: "elxmgmt",
-	23400: "novar-dbase",
-	23401: "novar-alarm",
-	23402: "novar-global",
-	24000: "med-ltp",
-	24001: "med-fsp-rx",
-	24002: "med-fsp-tx",
-	24003: "med-supp",
-	24004: "med-ovw",
-	24005: "med-ci",
-	24006: "med-net-svc",
-	24242: "filesphere",
-	24249: "vista-4gl",
-	24321: "ild",
-	24322: "hid",
-	24386: "intel-rci",
-	24465: "tonidods",
-	24554: "binkp",
-	24577: "bilobit-update",
-	24676: "canditv",
-	24677: "flashfiler",
-	24678: "proactivate",
-	24680: "tcc-http",
-	24850: "assoc-disc",
-	24922: "find",
-	25000: "icl-twobase1",
-	25001: "icl-twobase2",
-	25002: "icl-twobase3",
-	25003: "icl-twobase4",
-	25004: "icl-twobase5",
-	25005: "icl-twobase6",
-	25006: "icl-twobase7",
-	25007: "icl-twobase8",
-	25008: "icl-twobase9",
-	25009: "icl-twobase10",
-	25793: "vocaltec-hos",
-	25900: "tasp-net",
-	25901: "niobserver",
-	25902: "nilinkanalyst",
-	25903: "niprobe",
-	25954: "bf-game",
-	25955: "bf-master",
-	26000: "quake",
-	26133: "scscp",
-	26208: "wnn6-ds",
-	26260: "ezproxy",
-	26261: "ezmeeting",
-	26262: "k3software-svr",
-	26263: "k3software-cli",
-	26486: "exoline-udp",
-	26487: "exoconfig",
-	26489: "exonet",
-	27345: "imagepump",
-	27442: "jesmsjc",
-	27504: "kopek-httphead",
-	27782: "ars-vista",
-	27999: "tw-auth-key",
-	28000: "nxlmd",
-	28119: "a27-ran-ran",
-	28200: "voxelstorm",
-	28240: "siemensgsm",
-	29167: "otmp",
-	30001: "pago-services1",
-	30002: "pago-services2",
-	30003: "amicon-fpsu-ra",
-	30004: "amicon-fpsu-s",
-	30260: "kingdomsonline",
-	30832: "samsung-disc",
-	30999: "ovobs",
-	31016: "ka-kdp",
-	31029: "yawn",
-	31416: "xqosd",
-	31457: "tetrinet",
-	31620: "lm-mon",
-	31765: "gamesmith-port",
-	31948: "iceedcp-tx",
-	31949: "iceedcp-rx",
-	32034: "iracinghelper",
-	32249: "t1distproc60",
-	32483: "apm-link",
-	32635: "sec-ntb-clnt",
-	32636: "DMExpress",
-	32767: "filenet-powsrm",
-	32768: "filenet-tms",
-	32769: "filenet-rpc",
-	32770: "filenet-nch",
-	32771: "filenet-rmi",
-	32772: "filenet-pa",
-	32773: "filenet-cm",
-	32774: "filenet-re",
-	32775: "filenet-pch",
-	32776: "filenet-peior",
-	32777: "filenet-obrok",
-	32801: "mlsn",
-	32896: "idmgratm",
-	33123: "aurora-balaena",
-	33331: "diamondport",
-	33334: "speedtrace-disc",
-	33434: "traceroute",
-	33656: "snip-slave",
-	34249: "turbonote-2",
-	34378: "p-net-local",
-	34379: "p-net-remote",
-	34567: "edi_service",
-	34962: "profinet-rt",
-	34963: "profinet-rtm",
-	34964: "profinet-cm",
-	34980: "ethercat",
-	35001: "rt-viewer",
-	35004: "rt-classmanager",
-	35100: "axio-disc",
-	35355: "altova-lm-disc",
-	36001: "allpeers",
-	36411: "wlcp",
-	36865: "kastenxpipe",
-	37475: "neckar",
-	37654: "unisys-eportal",
-	38002: "crescoctrl-disc",
-	38201: "galaxy7-data",
-	38202: "fairview",
-	38203: "agpolicy",
-	39681: "turbonote-1",
-	40000: "safetynetp",
-	40023: "k-patentssensor",
-	40841: "cscp",
-	40842: "csccredir",
-	40843: "csccfirewall",
-	40853: "ortec-disc",
-	41111: "fs-qos",
-	41230: "z-wave-s",
-	41794: "crestron-cip",
-	41795: "crestron-ctp",
-	42508: "candp",
-	42509: "candrp",
-	42510: "caerpc",
-	43000: "recvr-rc-disc",
-	43188: "reachout",
-	43189: "ndm-agent-port",
-	43190: "ip-provision",
-	43210: "shaperai-disc",
-	43439: "eq3-config",
-	43440: "ew-disc-cmd",
-	43441: "ciscocsdb",
-	44321: "pmcd",
-	44322: "pmcdproxy",
-	44544: "domiq",
-	44553: "rbr-debug",
-	44600: "asihpi",
-	44818: "EtherNet-IP-2",
-	44900: "m3da-disc",
-	45000: "asmp-mon",
-	45054: "invision-ag",
-	45514: "cloudcheck-ping",
-	45678: "eba",
-	45825: "qdb2service",
-	45966: "ssr-servermgr",
-	46999: "mediabox",
-	47000: "mbus",
-	47100: "jvl-mactalk",
-	47557: "dbbrowse",
-	47624: "directplaysrvr",
-	47806: "ap",
-	47808: "bacnet",
-	47809: "presonus-ucnet",
-	48000: "nimcontroller",
-	48001: "nimspooler",
-	48002: "nimhub",
-	48003: "nimgtw",
-	48128: "isnetserv",
-	48129: "blp5",
-	48556: "com-bardac-dw",
-	48619: "iqobject",
-	48653: "robotraconteur",
-	49001: "nusdp-disc",
-}
-var sctpPortNames = map[SCTPPort]string{
-	9:     "discard",
-	20:    "ftp-data",
-	21:    "ftp",
-	22:    "ssh",
-	80:    "http",
-	179:   "bgp",
-	443:   "https",
-	1021:  "exp1",
-	1022:  "exp2",
-	1167:  "cisco-ipsla",
-	1720:  "h323hostcall",
-	2049:  "nfs",
-	2225:  "rcip-itu",
-	2904:  "m2ua",
-	2905:  "m3ua",
-	2944:  "megaco-h248",
-	2945:  "h248-binary",
-	3097:  "itu-bicc-stc",
-	3565:  "m2pa",
-	3863:  "asap-sctp",
-	3864:  "asap-sctp-tls",
-	3868:  "diameter",
-	4333:  "ahsp",
-	4502:  "a25-fap-fgw",
-	4711:  "trinity-dist",
-	4739:  "ipfix",
-	4740:  "ipfixs",
-	5060:  "sip",
-	5061:  "sips",
-	5090:  "car",
-	5091:  "cxtp",
-	5215:  "noteza",
-	5445:  "smbdirect",
-	5672:  "amqp",
-	5675:  "v5ua",
-	5868:  "diameters",
-	5910:  "cm",
-	5911:  "cpdlc",
-	5912:  "fis",
-	5913:  "ads-c",
-	6704:  "frc-hp",
-	6705:  "frc-mp",
-	6706:  "frc-lp",
-	6970:  "conductor-mpx",
-	7626:  "simco",
-	7701:  "nfapi",
-	7728:  "osvr",
-	8471:  "pim-port",
-	9082:  "lcs-ap",
-	9084:  "aurora",
-	9900:  "iua",
-	9901:  "enrp-sctp",
-	9902:  "enrp-sctp-tls",
-	11997: "wmereceiving",
-	11998: "wmedistribution",
-	11999: "wmereporting",
-	14001: "sua",
-	20049: "nfsrdma",
-	25471: "rna",
-	29118: "sgsap",
-	29168: "sbcap",
-	29169: "iuhsctpassoc",
-	30100: "rwp",
-	36412: "s1-control",
-	36422: "x2-control",
-	36423: "slmap",
-	36424: "nq-ap",
-	36443: "m2ap",
-	36444: "m3ap",
-	36462: "xw-control",
-	38412: "ng-control",
-	38422: "xn-control",
-	38472: "f1-control",
+	}
+
+	return "", false
 }
