@@ -539,7 +539,7 @@ func decodeAddresses(v []byte) (addresses []net.IP, err error) {
 		protocol := CDPAddressType(binary.BigEndian.Uint64(plen))
 		v = v[2+protlen:]
 		addrlen := binary.BigEndian.Uint16(v[0:2])
-		if len(v) < int(2+addrlen) {
+		if int(2+addrlen) < 2 || len(v) < int(2+addrlen) {
 			return nil, fmt.Errorf("Invalid Address length %d", addrlen)
 		}
 		ab := v[2 : 2+addrlen]
