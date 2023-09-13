@@ -219,6 +219,9 @@ func (c *CiscoDiscovery) LayerType() gopacket.LayerType {
 }
 
 func decodeCiscoDiscovery(data []byte, p gopacket.PacketBuilder) error {
+	if len(data) < 4 {
+		return fmt.Errorf("Invalid CiscoDiscovery data length %d", len(data))
+	}
 	c := &CiscoDiscovery{
 		Version:  data[0],
 		TTL:      data[1],
@@ -408,6 +411,9 @@ func decodeCiscoDiscoveryInfo(data []byte, p gopacket.PacketBuilder) error {
 			info.PowerRequest.ID = binary.BigEndian.Uint16(val.Value[0:2])
 			info.PowerRequest.MgmtID = binary.BigEndian.Uint16(val.Value[2:4])
 			for n := 4; n < len(val.Value); n += 4 {
+				if len(val.Value) > n+4 {
+					return fmt.Errorf("Invalid PowerRequest TLV value length %d", len(val.Value))
+				}
 				info.PowerRequest.Values = append(info.PowerRequest.Values, binary.BigEndian.Uint32(val.Value[n:n+4]))
 			}
 		case CDPTLVPowerAvailable:
@@ -496,9 +502,11 @@ type CDPAddressType uint64
 
 // CDP Address types.
 const (
-	CDPAddressTypeCLNP      CDPAddressType = 0x81
-	CDPAddressTypeIPV4      CDPAddressType = 0xcc
-	CDPAddressTypeIPV6      CDPAddressType = 0xaaaa030000000800
+	CDPAddressTypeCLNP CDPAddressType = 0x81
+	CDPAddressTypeIPV4 CDPAddressType = 0xcc
+	// EtherType is the last two bytes of the following values.
+	// Reference: https://en.wikipedia.org/wiki/EtherType
+	CDPAddressTypeIPV6      CDPAddressType = 0xaaaa0300000086dd
 	CDPAddressTypeDECNET    CDPAddressType = 0xaaaa030000006003
 	CDPAddressTypeAPPLETALK CDPAddressType = 0xaaaa03000000809b
 	CDPAddressTypeIPX       CDPAddressType = 0xaaaa030000008137
@@ -531,6 +539,9 @@ func decodeAddresses(v []byte) (addresses []net.IP, err error) {
 		protocol := CDPAddressType(binary.BigEndian.Uint64(plen))
 		v = v[2+protlen:]
 		addrlen := binary.BigEndian.Uint16(v[0:2])
+		if len(v) < int(2+addrlen) {
+			return nil, fmt.Errorf("Invalid Address length %d", addrlen)
+		}
 		ab := v[2 : 2+addrlen]
 		if protocol == CDPAddressTypeIPV4 && addrlen == 4 {
 			addresses = append(addresses, net.IPv4(ab[0], ab[1], ab[2], ab[3]))
