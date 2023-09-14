@@ -411,7 +411,7 @@ func decodeCiscoDiscoveryInfo(data []byte, p gopacket.PacketBuilder) error {
 			info.PowerRequest.ID = binary.BigEndian.Uint16(val.Value[0:2])
 			info.PowerRequest.MgmtID = binary.BigEndian.Uint16(val.Value[2:4])
 			for n := 4; n < len(val.Value); n += 4 {
-				if len(val.Value) > n+4 {
+				if len(val.Value) < n+4 {
 					return fmt.Errorf("Invalid PowerRequest TLV value length %d", len(val.Value))
 				}
 				info.PowerRequest.Values = append(info.PowerRequest.Values, binary.BigEndian.Uint32(val.Value[n:n+4]))
@@ -423,6 +423,9 @@ func decodeCiscoDiscoveryInfo(data []byte, p gopacket.PacketBuilder) error {
 			info.PowerAvailable.ID = binary.BigEndian.Uint16(val.Value[0:2])
 			info.PowerAvailable.MgmtID = binary.BigEndian.Uint16(val.Value[2:4])
 			for n := 4; n < len(val.Value); n += 4 {
+				if len(val.Value) < n+4 {
+					return fmt.Errorf("Invalid PowerAvailable TLV value length %d", len(val.Value))
+				}
 				info.PowerAvailable.Values = append(info.PowerAvailable.Values, binary.BigEndian.Uint32(val.Value[n:n+4]))
 			}
 			//		case CDPTLVPortUnidirectional
