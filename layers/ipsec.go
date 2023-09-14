@@ -67,6 +67,10 @@ type IPSecESP struct {
 func (i *IPSecESP) LayerType() gopacket.LayerType { return LayerTypeIPSecESP }
 
 func decodeIPSecESP(data []byte, p gopacket.PacketBuilder) error {
+	if len(data) < 8 {
+		p.SetTruncated()
+		return errors.New("IPSec ESP packet less than 8 bytes")
+	}
 	i := &IPSecESP{
 		BaseLayer: BaseLayer{data, nil},
 		SPI:       binary.BigEndian.Uint32(data[:4]),

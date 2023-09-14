@@ -8,6 +8,7 @@ package layers
 
 import (
 	"encoding/binary"
+	"errors"
 
 	"github.com/gopacket/gopacket"
 )
@@ -24,6 +25,9 @@ func (e *EtherIP) LayerType() gopacket.LayerType { return LayerTypeEtherIP }
 
 // DecodeFromBytes decodes the given bytes into this layer.
 func (e *EtherIP) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+	if len(data) < 4 {
+		return errors.New("EthernetIP packet too small")
+	}
 	e.Version = data[0] >> 4
 	e.Reserved = binary.BigEndian.Uint16(data[:2]) & 0x0fff
 	e.BaseLayer = BaseLayer{data[:2], data[2:]}

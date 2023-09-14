@@ -8,6 +8,7 @@ package layers
 
 import (
 	"encoding/binary"
+	"errors"
 
 	"github.com/gopacket/gopacket"
 )
@@ -37,6 +38,10 @@ func (g *GRE) LayerType() gopacket.LayerType { return LayerTypeGRE }
 
 // DecodeFromBytes decodes the given bytes into this layer.
 func (g *GRE) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+	if len(data) < 8 {
+		return errors.New("GRE packet less than 8 bytes")
+	}
+
 	g.ChecksumPresent = data[0]&0x80 != 0
 	g.RoutingPresent = data[0]&0x40 != 0
 	g.KeyPresent = data[0]&0x20 != 0
@@ -54,20 +59,32 @@ func (g *GRE) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 		offset += 4
 	}
 	if g.KeyPresent {
+		if len(data) < offset+4 {
+			return errors.New("GRE packet contains truncated key")
+		}
 		g.Key = binary.BigEndian.Uint32(data[offset : offset+4])
 		offset += 4
 	}
 	if g.SeqPresent {
+		if len(data) < offset+4 {
+			return errors.New("GRE packet contains truncated sequence value")
+		}
 		g.Seq = binary.BigEndian.Uint32(data[offset : offset+4])
 		offset += 4
 	}
 	if g.RoutingPresent {
 		tail := &g.GRERouting
 		for {
+			if len(data) <= offset+3 {
+				return errors.New("GRE packet contains truncated routing entry")
+			}
 			sre := &GRERouting{
 				AddressFamily: binary.BigEndian.Uint16(data[offset : offset+2]),
 				SREOffset:     data[offset+2],
 				SRELength:     data[offset+3],
+			}
+			if len(data) < offset+4+int(sre.SRELength) {
+				return errors.New("GRE packet contains truncated routing information")
 			}
 			sre.RoutingInformation = data[offset+4 : offset+4+int(sre.SRELength)]
 			offset += 4 + int(sre.SRELength)
@@ -79,6 +96,9 @@ func (g *GRE) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 		}
 	}
 	if g.AckPresent {
+		if len(data) < offset+4 {
+			return errors.New("GRE packet contains truncated acknowledgement value")
+		}
 		g.Ack = binary.BigEndian.Uint32(data[offset : offset+4])
 		offset += 4
 	}

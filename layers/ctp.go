@@ -71,6 +71,9 @@ func (c *EthernetCTPReply) LayerType() gopacket.LayerType {
 func (c *EthernetCTPReply) Payload() []byte { return c.Data }
 
 func decodeEthernetCTP(data []byte, p gopacket.PacketBuilder) error {
+	if len(data) < 2 {
+		return fmt.Errorf("EthernetCTP data type too short: %d", len(data))
+	}
 	c := &EthernetCTP{
 		SkipCount: binary.LittleEndian.Uint16(data[:2]),
 		BaseLayer: BaseLayer{data[:2], data[2:]},
@@ -85,6 +88,9 @@ func decodeEthernetCTP(data []byte, p gopacket.PacketBuilder) error {
 // decodeEthernetCTPFromFunctionType reads in the first 2 bytes to determine the EthernetCTP
 // layer type to decode next, then decodes based on that.
 func decodeEthernetCTPFromFunctionType(data []byte, p gopacket.PacketBuilder) error {
+	if len(data) < 4 {
+		return fmt.Errorf("EthernetCTP function type too short: %d", len(data))
+	}
 	function := EthernetCTPFunction(binary.LittleEndian.Uint16(data[:2]))
 	switch function {
 	case EthernetCTPFunctionReply:
@@ -98,6 +104,9 @@ func decodeEthernetCTPFromFunctionType(data []byte, p gopacket.PacketBuilder) er
 		p.SetApplicationLayer(reply)
 		return nil
 	case EthernetCTPFunctionForwardData:
+		if len(data) < 8 {
+			return fmt.Errorf("EthernetCTP ForwardData too short: %d", len(data))
+		}
 		forward := &EthernetCTPForwardData{
 			Function:       function,
 			ForwardAddress: data[2:8],

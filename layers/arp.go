@@ -47,17 +47,32 @@ func (arp *ARP) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	arp.AddrType = LinkType(binary.BigEndian.Uint16(data[0:2]))
 	arp.Protocol = EthernetType(binary.BigEndian.Uint16(data[2:4]))
 	arp.HwAddressSize = data[4]
+	if arp.HwAddressSize == 0 {
+		df.SetTruncated()
+		return fmt.Errorf("invalid ARP hardware address size: 0")
+	}
 	arp.ProtAddressSize = data[5]
+	if arp.ProtAddressSize == 0 {
+		df.SetTruncated()
+		return fmt.Errorf("invalid ARP protocol address size: 0")
+	}
 	arp.Operation = binary.BigEndian.Uint16(data[6:8])
-	arpLength := 8 + 2*arp.HwAddressSize + 2*arp.ProtAddressSize
-	if len(data) < int(arpLength) {
+	// Perform type conversion to int. Otherwise arpLength will be an uint8 and
+	// certain values of HwAddressSize and ProtAddressSize, that when combined,
+	// can cause an overflow which results in a value that passes the len(data)
+	// check but are invalid when slicing into the data later. This is a risk
+	// for any later operations that multiply these values together.
+	hwAddressSize := int(arp.HwAddressSize)
+	protAddressSize := int(arp.ProtAddressSize)
+	arpLength := 8 + 2*hwAddressSize + 2*protAddressSize
+	if len(data) < arpLength {
 		df.SetTruncated()
 		return fmt.Errorf("ARP length %d too short, %d expected", len(data), arpLength)
 	}
-	arp.SourceHwAddress = data[8 : 8+arp.HwAddressSize]
-	arp.SourceProtAddress = data[8+arp.HwAddressSize : 8+arp.HwAddressSize+arp.ProtAddressSize]
-	arp.DstHwAddress = data[8+arp.HwAddressSize+arp.ProtAddressSize : 8+2*arp.HwAddressSize+arp.ProtAddressSize]
-	arp.DstProtAddress = data[8+2*arp.HwAddressSize+arp.ProtAddressSize : 8+2*arp.HwAddressSize+2*arp.ProtAddressSize]
+	arp.SourceHwAddress = data[8 : 8+hwAddressSize]
+	arp.SourceProtAddress = data[8+hwAddressSize : 8+hwAddressSize+protAddressSize]
+	arp.DstHwAddress = data[8+hwAddressSize+protAddressSize : 8+2*hwAddressSize+protAddressSize]
+	arp.DstProtAddress = data[8+2*hwAddressSize+protAddressSize : 8+2*hwAddressSize+2*protAddressSize]
 
 	arp.Contents = data[:arpLength]
 	arp.Payload = data[arpLength:]

@@ -56,6 +56,9 @@ func (ProtocolGuessingDecoder) Decode(data []byte, p gopacket.PacketBuilder) err
 var MPLSPayloadDecoder gopacket.Decoder = ProtocolGuessingDecoder{}
 
 func decodeMPLS(data []byte, p gopacket.PacketBuilder) error {
+	if len(data) < 4 {
+		return errors.New("MPLS packet too small")
+	}
 	decoded := binary.BigEndian.Uint32(data[:4])
 	mpls := &MPLS{
 		Label:        decoded >> 12,
