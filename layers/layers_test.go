@@ -25,7 +25,7 @@ func FuzzNewPacket(f *testing.F) {
 		_ = gopacket.NewPacket(data, LinkTypeEthernet, testDecodeOptions)
 
 		if e := time.Since(stime); e > (time.Second * 1) {
-			t.Errorf("MySQLX Decode() took too long: %s", e)
+			t.Errorf("corpus entry took too long: %s", e)
 		}
 	})
 }
