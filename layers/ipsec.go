@@ -46,6 +46,9 @@ func decodeIPSecAH(data []byte, p gopacket.PacketBuilder) error {
 	if len(data) < i.ActualLength {
 		p.SetTruncated()
 		return errors.New("Truncated AH packet < ActualLength")
+	} else if i.ActualLength <= 12 {
+		p.SetTruncated()
+		return errors.New("IPSec AH packet with invalid value for ActualLength")
 	}
 	i.AuthenticationData = data[12:i.ActualLength]
 	i.Contents = data[:i.ActualLength]

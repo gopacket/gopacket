@@ -46,7 +46,7 @@ func decodePPP(data []byte, p gopacket.PacketBuilder) error {
 		offset = 2
 		ppp.HasPPTPHeader = true
 	}
-	if len(data) < offset+1 {
+	if len(data) < offset+2 {
 		return errors.New("PPP packet too small")
 	}
 	if data[offset]&0x1 == 0 {
