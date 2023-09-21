@@ -315,7 +315,10 @@ func decodeCiscoDiscoveryInfo(data []byte, p gopacket.PacketBuilder) error {
 			l := len(v)
 			if l%5 == 0 && l >= 5 {
 				for len(v) > 0 {
-					_, ipnet, _ := net.ParseCIDR(fmt.Sprintf("%d.%d.%d.%d/%d", v[0], v[1], v[2], v[3], v[4]))
+					_, ipnet, err := net.ParseCIDR(fmt.Sprintf("%d.%d.%d.%d/%d", v[0], v[1], v[2], v[3], v[4]))
+					if err != nil {
+						return fmt.Errorf("Invalid CDP IP Prefix due to err: %s", err)
+					}
 					info.IPPrefixes = append(info.IPPrefixes, *ipnet)
 					v = v[5:]
 				}
@@ -538,9 +541,15 @@ func decodeAddresses(v []byte) (addresses []net.IP, err error) {
 			return nil, fmt.Errorf("Invalid Address Protocol length %d", protlen)
 		}
 		plen := make([]byte, 8)
+		if len(v) < 2+protlen {
+			return nil, fmt.Errorf("Invalid Address TLV protocol length")
+		}
 		copy(plen[8-protlen:], v[2:2+protlen])
 		protocol := CDPAddressType(binary.BigEndian.Uint64(plen))
 		v = v[2+protlen:]
+		if len(v) < 2 {
+			return nil, fmt.Errorf("Invalid Address TLV address length")
+		}
 		addrlen := binary.BigEndian.Uint16(v[0:2])
 		if int(2+addrlen) < 2 || len(v) < int(2+addrlen) {
 			return nil, fmt.Errorf("Invalid Address length %d", addrlen)
