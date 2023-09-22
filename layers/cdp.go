@@ -458,8 +458,8 @@ func decodeCiscoDiscoveryInfo(data []byte, p gopacket.PacketBuilder) error {
 					return fmt.Errorf("Too many TLV's - wanted %d, saw %d", tlvNum, numSeen)
 				}
 				tType := CDPEnergyWiseSubtype(binary.BigEndian.Uint32(data[0:4]))
-				tLen := int(binary.BigEndian.Uint32(data[4:8]))
-				if tLen > len(data)-8 {
+				tLen := binary.BigEndian.Uint32(data[4:8])
+				if tLen > uint32(len(data))-8 {
 					return fmt.Errorf("Invalid TLV length %d vs %d", tLen, len(data)-8)
 				}
 				data = data[8:]
@@ -522,12 +522,16 @@ const (
 )
 
 func decodeAddresses(v []byte) (addresses []net.IP, err error) {
+	if len(v) < 4 {
+		return nil, fmt.Errorf("Truncated Address TLV data")
+	}
 	numaddr := int(binary.BigEndian.Uint32(v[0:4]))
 	if numaddr < 1 {
 		return nil, fmt.Errorf("Invalid Address TLV number %d", numaddr)
 	}
 	v = v[4:]
-	if len(v) < numaddr*8 {
+	// Check for invalid numadrr or integer overflow when converting types
+	if len(v) < numaddr*8 || numaddr*8 <= 0 {
 		return nil, fmt.Errorf("Invalid Address TLV length %d", len(v))
 	}
 	for i := 0; i < numaddr; i++ {
