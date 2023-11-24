@@ -9,6 +9,7 @@ package pcapgo
 import (
 	"errors"
 	"math"
+	"net"
 	"time"
 
 	"github.com/gopacket/gopacket"
@@ -35,6 +36,7 @@ const (
 	ngBlockTypeInterfaceDescriptor ngBlockType = 1          // Interface description block
 	ngBlockTypePacket              ngBlockType = 2          // Packet block (deprecated)
 	ngBlockTypeSimplePacket        ngBlockType = 3          // Simple packet block
+	ngBlockTypeNameResolution      ngBlockType = 4          // Name resolution block
 	ngBlockTypeInterfaceStatistics ngBlockType = 5          // Interface statistics block
 	ngBlockTypeEnhancedPacket      ngBlockType = 6          // Enhanced packet block
 	ngBlockTypeDecryptionSecrets   ngBlockType = 0x0000000A // Decryption secrets block
@@ -91,6 +93,13 @@ const (
 	ngOptionCodeInterfaceStatisticsFilterAccept                              // Packets accepted by filter
 	ngOptionCodeInterfaceStatisticsOSDrop                                    // Packets dropped by operating system
 	ngOptionCodeInterfaceStatisticsDelivered                                 // Packets delivered to user
+)
+
+const (
+	// Name Resolution Block: record types
+	ngNameRecordEnd  uint16 = iota // End of name resolution records
+	ngNameRecordIPv4               // IPv4 record
+	ngNameRecordIPv6               // IPv6 record
 )
 
 // ngOption is a pcapng option
@@ -201,4 +210,9 @@ type NgSectionInfo struct {
 	Application string
 	// Comment can be an arbitrary comment. This value might be empty if this option is missing.
 	Comment string
+}
+
+type NgNameRecord struct {
+	Addr  net.IP
+	Names []string
 }
