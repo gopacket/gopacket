@@ -9,7 +9,7 @@
 
 // This binary handles creating string constants and function templates for enums.
 //
-//	go run gen.go | gofmt > enums_generated.go
+//	go run gen2.go | gofmt > enums_generated.go
 package main
 
 import (
@@ -38,50 +38,37 @@ import (
 var funcsTmpl = template.Must(template.New("foo").Parse(`
 // Decoder calls {{.Name}}Metadata.DecodeWith's decoder.
 func (a {{.Name}}) Decode(data []byte, p gopacket.PacketBuilder) error {
-	if int(a) >= {{.Num}} {
-		errDecoder := errorDecoderFor{{.Name}}(a)
-		return &errDecoder
+	if int(a) < {{.Num}} {
+		if metadata := {{.Name}}Metadata[a]; metadata.DecodeWith != nil {
+			return metadata.DecodeWith.Decode(data, p)
+		}
 	}
 
-	return {{.Name}}Metadata[a].DecodeWith.Decode(data, p)
+	return fmt.Errorf("Unable to decode {{.Name}} %d", a)
 }
+
 // String returns {{.Name}}Metadata.Name.
 func (a {{.Name}}) String() string {
-	if int(a) >= {{.Num}} {
-		return "Unknown{{.Name}}"
+	if int(a) < {{.Num}} {
+		if metadata := {{.Name}}Metadata[a]; metadata.DecodeWith != nil {
+			return metadata.Name
+		}
 	}
 
-	return {{.Name}}Metadata[a].Name
+	return "Unknown{{.Name}}"
 }
 // LayerType returns {{.Name}}Metadata.LayerType.
 func (a {{.Name}}) LayerType() gopacket.LayerType {
-	if int(a) >= {{.Num}} {
-		return 0
+	if int(a) < {{.Num}} {
+		if metadata := {{.Name}}Metadata[a]; metadata.DecodeWith != nil {
+			return metadata.LayerType
+		}
 	}
 
-	return {{.Name}}Metadata[a].LayerType
+	return 0
 }
 
-type errorDecoderFor{{.Name}} int
-func (a *errorDecoderFor{{.Name}}) Decode(data []byte, p gopacket.PacketBuilder) error {
-  return a
-}
-func (a *errorDecoderFor{{.Name}}) Error() string {
-  return fmt.Sprintf("Unable to decode {{.Name}} %d", int(*a))
-}
-
-var errorDecodersFor{{.Name}} [{{.Num}}]errorDecoderFor{{.Name}}
 var {{.Name}}Metadata [{{.Num}}]EnumMetadata
-
-func initUnknownTypesFor{{.Name}}() {
-  for i := 0; i < {{.Num}}; i++ {
-    errorDecodersFor{{.Name}}[i] = errorDecoderFor{{.Name}}(i)
-    {{.Name}}Metadata[i] = EnumMetadata{
-      DecodeWith: &errorDecodersFor{{.Name}}[i],
-      Name: "Unknown{{.Name}}",
-    }
-  }
-}
 `))
 
 func main() {
@@ -105,9 +92,6 @@ func main() {
 	}
 
 	fmt.Println("func init() {")
-	for _, t := range types {
-		fmt.Printf("initUnknownTypesFor%s()\n", t.Name)
-	}
 	fmt.Println("initActualTypeData()")
 	fmt.Println("}")
 	for _, t := range types {
