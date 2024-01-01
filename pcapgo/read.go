@@ -45,9 +45,10 @@ type Reader struct {
 	packetBuf []byte
 }
 
-const magicNanoseconds = 0xA1B23C4D
-const magicMicrosecondsBigendian = 0xD4C3B2A1
-const magicNanosecondsBigendian = 0x4D3CB2A1
+const magicNanosecondsLittleEndian = 0xA1B23C4D
+const magicMicrosecondsLittleEndian = 0xA1B2C3D4
+const magicMicrosecondsBigEndian = 0xD4C3B2A1
+const magicNanosecondsBigEndian = 0x4D3CB2A1
 
 const magicGzip1 = 0x1f
 const magicGzip2 = 0x8b
@@ -91,16 +92,16 @@ func (r *Reader) readHeader() error {
 	} else if n < 24 {
 		return errors.New("Not enough data for read")
 	}
-	if magic := binary.LittleEndian.Uint32(buf[0:4]); magic == magicNanoseconds {
+	if magic := binary.LittleEndian.Uint32(buf[0:4]); magic == magicNanosecondsLittleEndian {
 		r.byteOrder = binary.LittleEndian
 		r.nanoSecsFactor = 1
-	} else if magic == magicNanosecondsBigendian {
+	} else if magic == magicNanosecondsBigEndian {
 		r.byteOrder = binary.BigEndian
 		r.nanoSecsFactor = 1
-	} else if magic == magicMicroseconds {
+	} else if magic == magicMicrosecondsLittleEndian {
 		r.byteOrder = binary.LittleEndian
 		r.nanoSecsFactor = 1000
-	} else if magic == magicMicrosecondsBigendian {
+	} else if magic == magicMicrosecondsBigEndian {
 		r.byteOrder = binary.BigEndian
 		r.nanoSecsFactor = 1000
 	} else {

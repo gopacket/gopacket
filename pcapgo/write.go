@@ -21,15 +21,16 @@ import (
 // for information on the file format.
 //
 // For those that care, we currently write v2.4 files with nanosecond
-// or microsecond timestamp resolution and little-endian encoding.
+// or microsecond timestamp resolution and both little-endian and big-endian encoding.
 type Writer struct {
 	w        io.Writer
 	tsScaler int
+	// byteOrder
+	order binary.ByteOrder
 	// Moving this into the struct seems to save an allocation for each call to writePacketHeader
 	buf [16]byte
 }
 
-const magicMicroseconds = 0xA1B2C3D4
 const versionMajor = 2
 const versionMinor = 4
 
@@ -51,7 +52,12 @@ const versionMinor = 4
 //	w2.WritePacket(gopacket.CaptureInfo{...}, data2)
 //	f2.Close()
 func NewWriterNanos(w io.Writer) *Writer {
-	return &Writer{w: w, tsScaler: nanosPerNano}
+	return &Writer{w: w, tsScaler: nanosPerNano, order: binary.LittleEndian}
+}
+
+// NewWriterNanosBigEndian acts exactly like NewWriterNanos, but in big-endian byte order.
+func NewWriterNanosBigEndian(w io.Writer) *Writer {
+	return &Writer{w: w, tsScaler: nanosPerNano, order: binary.BigEndian}
 }
 
 // NewWriter returns a new writer object, for writing packet data out
@@ -72,25 +78,38 @@ func NewWriterNanos(w io.Writer) *Writer {
 //	w2.WritePacket(gopacket.CaptureInfo{...}, data2)
 //	f2.Close()
 func NewWriter(w io.Writer) *Writer {
-	return &Writer{w: w, tsScaler: nanosPerMicro}
+	return &Writer{w: w, tsScaler: nanosPerMicro, order: binary.LittleEndian}
+}
+
+// NewWriterBigEndian acts exactly like NewWriter, but in big-endian byte order.
+func NewWriterBigEndian(w io.Writer) *Writer {
+	return &Writer{w: w, tsScaler: nanosPerMicro, order: binary.BigEndian}
 }
 
 // WriteFileHeader writes a file header out to the writer.
 // This must be called exactly once per output.
 func (w *Writer) WriteFileHeader(snaplen uint32, linktype layers.LinkType) error {
 	var buf [24]byte
-	if w.tsScaler == nanosPerMicro {
-		binary.LittleEndian.PutUint32(buf[0:4], magicMicroseconds)
+	if w.order == binary.BigEndian {
+		if w.tsScaler == nanosPerMicro {
+			w.order.PutUint32(buf[0:4], magicMicrosecondsLittleEndian)
+		} else {
+			w.order.PutUint32(buf[0:4], magicNanosecondsLittleEndian)
+		}
 	} else {
-		binary.LittleEndian.PutUint32(buf[0:4], magicNanoseconds)
+		if w.tsScaler == nanosPerMicro {
+			w.order.PutUint32(buf[0:4], magicMicrosecondsBigEndian)
+		} else {
+			w.order.PutUint32(buf[0:4], magicNanosecondsBigEndian)
+		}
 	}
-	binary.LittleEndian.PutUint16(buf[4:6], versionMajor)
-	binary.LittleEndian.PutUint16(buf[6:8], versionMinor)
+	w.order.PutUint16(buf[4:6], versionMajor)
+	w.order.PutUint16(buf[6:8], versionMinor)
 	// bytes 8:12 stay 0 (timezone = UTC)
 	// bytes 12:16 stay 0 (sigfigs is always set to zero, according to
 	//   http://wiki.wireshark.org/Development/LibpcapFileFormat
-	binary.LittleEndian.PutUint32(buf[16:20], snaplen)
-	binary.LittleEndian.PutUint32(buf[20:24], uint32(linktype))
+	w.order.PutUint32(buf[16:20], snaplen)
+	w.order.PutUint32(buf[20:24], uint32(linktype))
 	_, err := w.w.Write(buf[:])
 	return err
 }
@@ -105,10 +124,10 @@ func (w *Writer) writePacketHeader(ci gopacket.CaptureInfo) error {
 	}
 	secs := t.Unix()
 	usecs := t.Nanosecond() / w.tsScaler
-	binary.LittleEndian.PutUint32(w.buf[0:4], uint32(secs))
-	binary.LittleEndian.PutUint32(w.buf[4:8], uint32(usecs))
-	binary.LittleEndian.PutUint32(w.buf[8:12], uint32(ci.CaptureLength))
-	binary.LittleEndian.PutUint32(w.buf[12:16], uint32(ci.Length))
+	w.order.PutUint32(w.buf[0:4], uint32(secs))
+	w.order.PutUint32(w.buf[4:8], uint32(usecs))
+	w.order.PutUint32(w.buf[8:12], uint32(ci.CaptureLength))
+	w.order.PutUint32(w.buf[12:16], uint32(ci.Length))
 	_, err := w.w.Write(w.buf[:])
 	return err
 }
