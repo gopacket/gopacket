@@ -730,13 +730,19 @@ type RadioTap struct {
 func (m *RadioTap) LayerType() gopacket.LayerType { return LayerTypeRadioTap }
 
 func (m *RadioTap) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
-	if len(data) < 8 {
+	dataLen := uint16(len(data))
+	if dataLen < 8 {
 		df.SetTruncated()
 		return errors.New("RadioTap too small")
 	}
 	m.Version = uint8(data[0])
 	m.Length = binary.LittleEndian.Uint16(data[2:4])
 	m.Present = RadioTapPresent(binary.LittleEndian.Uint32(data[4:8]))
+
+	// Truncate the length to avoid panics, might be smaller due to corruption or loss
+	if m.Length > dataLen {
+		m.Length = dataLen
+	}
 
 	offset := uint16(4)
 
