@@ -7,6 +7,7 @@
 package routing
 
 import (
+	"fmt"
 	"net"
 )
 
@@ -14,6 +15,8 @@ import (
 // table.  This routing library has very few features and may actually route
 // incorrectly in some cases, but it should work the majority of the time.
 type Router interface {
+	fmt.Stringer
+
 	// Route returns where to route a packet based on the packet's source
 	// and destination IP address.
 	//
