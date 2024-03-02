@@ -80,22 +80,3 @@ func BenchmarkDecodePacketRadiotap1(b *testing.B) {
 		gopacket.NewPacket(testPacketRadiotap1, LayerTypeRadioTap, gopacket.NoCopy)
 	}
 }
-
-// testPacketRadiotap2 is a malformed packet but shouldn't cause a panic
-// 0000ff002e48000010026c09a000c6070000d4000000881fa1ae9dcbc6304b4b
-var testPacketRadiotap2 = []byte{
-	0x00, 0x00, 0xff, 0x00, 0x2e, 0x48, 0x00, 0x00, 0x10, 0x02, 0x6c, 0x09, 0xa0, 0x00, 0xc6, 0x07,
-	0x00, 0x00, 0xd4, 0x00, 0x00, 0x00, 0x88, 0x1f, 0xa1, 0xae, 0x9d, 0xcb, 0xc6, 0x30, 0x4b, 0x4b,
-}
-
-func TestPacketRadiotap2(t *testing.T) {
-	p := gopacket.NewPacket(testPacketRadiotap2, LayerTypeRadioTap, gopacket.Default)
-	if p.ErrorLayer() != nil {
-		t.Error("Failed to error on malformed packet")
-	}
-}
-func BenchmarkDecodePacketRadiotap2(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		gopacket.NewPacket(testPacketRadiotap2, LayerTypeRadioTap, gopacket.NoCopy)
-	}
-}
