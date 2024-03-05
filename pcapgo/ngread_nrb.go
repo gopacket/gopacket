@@ -32,12 +32,31 @@ func paddingBytes32b(length int) int {
 	return padding
 }
 
-func (r *NgReader) readAddr(nr *NgNameRecord, length int) error {
+func newIPAddress(data []byte) *NgIPAddress {
+	addr := &NgIPAddress{}
+	addr.Addr = bytes.Clone(data)
+	return addr
+}
+
+func newHWAddress(data []byte) *NgEUIAddress {
+	addr := &NgEUIAddress{}
+	addr.Addr = bytes.Clone(data)
+	return addr
+}
+
+func (r *NgReader) readIPAddr(nr *NgNameRecord, length int) error {
 	if err := r.readBytes(r.buf[:length]); err != nil {
-		return fmt.Errorf("could not read IPv4 address: %v", err)
+		return fmt.Errorf("could not read IP address: %v", err)
 	}
-	nr.Addr = make([]byte, length)
-	copy(nr.Addr, r.buf[:])
+	nr.Addr = newIPAddress(r.buf[:length])
+	return nil
+}
+
+func (r *NgReader) readHWAddr(nr *NgNameRecord, length int) error {
+	if err := r.readBytes(r.buf[:length]); err != nil {
+		return fmt.Errorf("could not read EUI address: %v", err)
+	}
+	nr.Addr = newHWAddress(r.buf[:])
 	return nil
 }
 
@@ -68,12 +87,20 @@ func (r *NgReader) readNameResolutionBlock() error {
 
 		switch nrh.recordType {
 		case ngNameRecordIPv4:
-			if err := r.readAddr(&nameRecord, 4); err != nil {
+			if err := r.readIPAddr(&nameRecord, 4); err != nil {
 				return fmt.Errorf("could not read IPv4 address: %v", err)
 			}
 		case ngNameRecordIPv6:
-			if err := r.readAddr(&nameRecord, 16); err != nil {
+			if err := r.readIPAddr(&nameRecord, 16); err != nil {
 				return fmt.Errorf("could not read IPv6 address: %v", err)
+			}
+		case ngNameRecordEUI48:
+			if err := r.readHWAddr(&nameRecord, 6); err != nil {
+				return fmt.Errorf("could not read EUI-48 address: %v", err)
+			}
+		case ngNameRecordEUI64:
+			if err := r.readHWAddr(&nameRecord, 8); err != nil {
+				return fmt.Errorf("could not read EUI-64 address: %v", err)
 			}
 		case ngNameRecordEnd:
 			goto DONE
@@ -85,7 +112,7 @@ func (r *NgReader) readNameResolutionBlock() error {
 			continue
 		}
 		r.currentBlock.length -= uint32(length)
-		length -= len(nameRecord.Addr)
+		length -= nameRecord.Addr.Len()
 
 		for length > 0 {
 			bstr, err := r.r.ReadBytes(0)

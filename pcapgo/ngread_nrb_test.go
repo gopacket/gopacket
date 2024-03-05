@@ -59,14 +59,18 @@ func TestNgReaderNRB(t *testing.T) {
 	t.Log("nameRecords:", len(r.nameRecords))
 	i := 0
 	for _, record := range r.nameRecords {
-		t.Log(fmt.Sprintf("Addr:%s, Names:%v", record.Addr, record.Names))
+		t.Log(fmt.Sprintf("Addr:%v, Names:%v", record.Addr, record.Names))
 		i++
 	}
 	if i != 10 {
 		t.Fatalf("Expected %d name record(s) but found %d", 10, i)
 	}
-	if !r.nameRecords[2].Addr.Equal(net.ParseIP("10.1.2.3")) {
-		t.Fatalf("Expected '10.1.2.3' but found '%s'", r.nameRecords[2].Addr)
+	if nr, ok := r.nameRecords[2].Addr.(*NgIPAddress); !ok {
+		t.Fatalf("Expected an IP address")
+	} else {
+		if !nr.Addr.Equal(net.ParseIP("10.1.2.3")) {
+			t.Fatalf("Expected '10.1.2.3' but found '%s'", r.nameRecords[2].Addr)
+		}
 	}
 	if r.nameRecords[6].Names[0] != "qux.example.com" {
 		t.Fatalf("Expected 'qux.example.com' but found '%s'", r.nameRecords[6].Names[0])
@@ -88,8 +92,12 @@ func TestNgReaderNRB(t *testing.T) {
 	if i != 11 {
 		t.Fatalf("Expected %d name record(s) but found %d", 11, i)
 	}
-	if !r.nameRecords[3].Addr.Equal(net.ParseIP("fc01:dead::beef")) {
-		t.Fatalf("Expected 'fc01:dead::beef' but found '%s'", r.nameRecords[3].Addr)
+	if nr, ok := r.nameRecords[3].Addr.(*NgIPAddress); !ok {
+		t.Fatalf("Expected an IP address")
+	} else {
+		if !nr.Addr.Equal(net.ParseIP("fc01:dead::beef")) {
+			t.Fatalf("Expected 'fc01:dead::beef' but found '%s'", nr.Addr)
+		}
 	}
 	if r.nameRecords[8].Names[0] != "bar.example.net" {
 		t.Fatalf("Expected 'bar.example.net' but found '%s'", r.nameRecords[8].Names[0])

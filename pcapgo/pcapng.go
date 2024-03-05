@@ -97,9 +97,11 @@ const (
 
 const (
 	// Name Resolution Block: record types
-	ngNameRecordEnd  uint16 = iota // End of name resolution records
-	ngNameRecordIPv4               // IPv4 record
-	ngNameRecordIPv6               // IPv6 record
+	ngNameRecordEnd   uint16 = iota // End of name resolution records
+	ngNameRecordIPv4                // IPv4 record
+	ngNameRecordIPv6                // IPv6 record
+	ngNameRecordEUI48               // EUI-48 record
+	ngNameRecordEUI64               // EUI-64 record
 )
 
 // ngOption is a pcapng option
@@ -212,7 +214,36 @@ type NgSectionInfo struct {
 	Comment string
 }
 
+type ngAddressType uint16
+
+const (
+	ngAddressIPv4 uint16 = iota
+	ngAddressIPv6
+	ngAddressEUI48
+	ngAddressEUI64
+)
+
+type NgAddress interface {
+	Len() int
+}
+
+type NgIPAddress struct {
+	Addr net.IP
+}
+
+func (addr *NgIPAddress) Len() int {
+	return len(addr.Addr)
+}
+
+type NgEUIAddress struct {
+	Addr net.HardwareAddr
+}
+
+func (addr *NgEUIAddress) Len() int {
+	return len(addr.Addr)
+}
+
 type NgNameRecord struct {
-	Addr  net.IP
+	Addr  NgAddress
 	Names []string
 }
