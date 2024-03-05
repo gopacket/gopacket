@@ -10,6 +10,7 @@ package pcapgo
 import (
 	"bytes"
 	"fmt"
+	"net/netip"
 )
 
 type nameRecordHeader struct {
@@ -34,7 +35,7 @@ func paddingBytes32b(length int) int {
 
 func newIPAddress(data []byte) *NgIPAddress {
 	addr := &NgIPAddress{}
-	addr.Addr = bytes.Clone(data)
+	addr.Addr, _ = netip.AddrFromSlice(data)
 	return addr
 }
 

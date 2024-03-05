@@ -3,7 +3,7 @@ package pcapgo
 import (
 	"fmt"
 	"io"
-	"net"
+	"net/netip"
 	"os"
 	"testing"
 )
@@ -68,7 +68,8 @@ func TestNgReaderNRB(t *testing.T) {
 	if nr, ok := r.nameRecords[2].Addr.(*NgIPAddress); !ok {
 		t.Fatalf("Expected an IP address")
 	} else {
-		if !nr.Addr.Equal(net.ParseIP("10.1.2.3")) {
+		addr, _ := netip.ParseAddr("10.1.2.3")
+		if nr.Addr != addr {
 			t.Fatalf("Expected '10.1.2.3' but found '%s'", r.nameRecords[2].Addr)
 		}
 	}
@@ -95,7 +96,8 @@ func TestNgReaderNRB(t *testing.T) {
 	if nr, ok := r.nameRecords[3].Addr.(*NgIPAddress); !ok {
 		t.Fatalf("Expected an IP address")
 	} else {
-		if !nr.Addr.Equal(net.ParseIP("fc01:dead::beef")) {
+		addr, _ := netip.ParseAddr("fc01:dead::beef")
+		if nr.Addr != addr {
 			t.Fatalf("Expected 'fc01:dead::beef' but found '%s'", nr.Addr)
 		}
 	}

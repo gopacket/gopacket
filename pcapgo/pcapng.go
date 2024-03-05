@@ -10,6 +10,7 @@ import (
 	"errors"
 	"math"
 	"net"
+	"net/netip"
 	"time"
 
 	"github.com/gopacket/gopacket"
@@ -228,11 +229,11 @@ type NgAddress interface {
 }
 
 type NgIPAddress struct {
-	Addr net.IP
+	Addr netip.Addr
 }
 
 func (addr *NgIPAddress) Len() int {
-	return len(addr.Addr)
+	return addr.Addr.BitLen() / 8
 }
 
 type NgEUIAddress struct {
