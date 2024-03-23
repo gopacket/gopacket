@@ -935,7 +935,7 @@ func (m *Dot11) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	switch mainType {
 	case Dot11TypeCtrl:
 		switch m.Type {
-		case Dot11TypeCtrlRTS, Dot11TypeCtrlPowersavePoll, Dot11TypeCtrlCFEnd, Dot11TypeCtrlCFEndAck:
+		case Dot11TypeCtrlRTS, Dot11TypeCtrlPowersavePoll, Dot11TypeCtrlCFEnd, Dot11TypeCtrlCFEndAck, Dot11TypeCtrlBlockAck, Dot11TypeCtrlBlockAckReq:
 			if len(data) < offset+6 {
 				df.SetTruncated()
 				return fmt.Errorf("Dot11 length %v too short, %v required", len(data), offset+6)
