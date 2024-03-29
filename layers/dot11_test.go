@@ -659,3 +659,107 @@ func TestInformationElement(t *testing.T) {
 		t.Error("build failed")
 	}
 }
+
+// testPacketDot11BlockAck is the packet:
+//
+// 20:54:56.097758 12.0 Mb/s 2462 MHz 11g -50dBm signal -50dBm signal antenna 0 -61dBm signal antenna 1 BA RA:11:22:33:44:55:66 (oui Unknown)
+//
+// 0x0000:  0000 1e00 2e40 00a0 2008 00a0 2008 0000  .....@..........
+// 0x0010:  0018 9e09 c000 ce00 0000 ce00 c301 9400  ................
+// 0x0020:  1800 1122 3344 5566 7788 99aa bbcc       ..."3DUfw.....
+
+var testPacketDot11BlockAck = []byte{
+	0x00, 0x00, 0x1e, 0x00, 0x2e, 0x40, 0x00, 0xa0, 0x20, 0x08, 0x00, 0xa0, 0x20, 0x08, 0x00, 0x00,
+	0x00, 0x18, 0x9e, 0x09, 0xc0, 0x00, 0xce, 0x00, 0x00, 0x00, 0xce, 0x00, 0xc3, 0x01, 0x94, 0x00,
+	0x18, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc,
+}
+
+func TestPacketDot11BlockAck(t *testing.T) {
+	p := gopacket.NewPacket(testPacketDot11BlockAck, LinkTypeIEEE80211Radio, gopacket.Default)
+	if p.ErrorLayer() != nil {
+		t.Error("Failed to decode packet:", p.ErrorLayer().Error())
+	}
+	checkLayers(p, []gopacket.LayerType{LayerTypeRadioTap, LayerTypeDot11}, t)
+
+	if got, ok := p.Layer(LayerTypeDot11).(*Dot11); ok {
+		if !got.ChecksumValid() {
+			t.Errorf("Dot11 packet processing failed:\nchecksum failed. got  :\n%#v\n\n", got)
+		}
+	}
+
+	if got, ok := p.Layer(LayerTypeDot11).(*Dot11); ok {
+		if !got.ChecksumValid() {
+			t.Errorf("Dot11 packet processing failed:\nchecksum failed. got  :\n%#v\n\n", got)
+		}
+		want := &Dot11{
+			BaseLayer: BaseLayer{
+				Contents: []uint8{0x94, 0x0, 0x18, 0x0, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc},
+				Payload:  []uint8{},
+			},
+			Type:       Dot11TypeCtrlBlockAck,
+			Proto:      0x0,
+			Flags:      0x0,
+			DurationID: 0x18,
+			Address1:   net.HardwareAddr{0x11, 0x22, 0x33, 0x44, 0x55, 0x66},
+			Address2:   net.HardwareAddr{0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc},
+			Address3:   net.HardwareAddr(nil),
+			Address4:   net.HardwareAddr(nil),
+			Checksum:   0x7d19c770,
+		}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("Dot11 packet processing failed:\ngot  :\n%#v\n\nwant :\n%#v\n\n", got, want)
+		}
+	}
+}
+
+// testPacketDot11BlockAckReq is the packet:
+//
+// 20:54:56.097758 12.0 Mb/s 2462 MHz 11g -50dBm signal -50dBm signal antenna 0 -61dBm signal antenna 1 BA RA:11:22:33:44:55:66 (oui Unknown)
+//
+// 0x0000:  0000 1e00 2e40 00a0 2008 00a0 2008 0000  .....@..........
+// 0x0010:  0018 9e09 c000 ce00 0000 ce00 c301 8400  ................
+// 0x0020:  0000 0011 2233 4455 0011 2233 4455       ...."3DU.."3DU
+
+var testPacketDot11BlockAckReq = []byte{
+	0x00, 0x00, 0x1E, 0x00, 0x2E, 0x40, 0x00, 0xA0, 0x20, 0x08, 0x00, 0xA0, 0x20, 0x08, 0x00, 0x00,
+	0x00, 0x18, 0x9E, 0x09, 0xC0, 0x00, 0xCE, 0x00, 0x00, 0x00, 0xCE, 0x00, 0xC3, 0x01, 0x84, 0x00,
+	0x00, 0x00, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55,
+}
+
+func TestPacketDot11BlockAckReq(t *testing.T) {
+	p := gopacket.NewPacket(testPacketDot11BlockAckReq, LinkTypeIEEE80211Radio, gopacket.Default)
+	if p.ErrorLayer() != nil {
+		t.Error("Failed to decode packet:", p.ErrorLayer().Error())
+	}
+	checkLayers(p, []gopacket.LayerType{LayerTypeRadioTap, LayerTypeDot11}, t)
+
+	if got, ok := p.Layer(LayerTypeDot11).(*Dot11); ok {
+		if !got.ChecksumValid() {
+			t.Errorf("Dot11 packet processing failed:\nchecksum failed. got  :\n%#v\n\n", got)
+		}
+	}
+
+	if got, ok := p.Layer(LayerTypeDot11).(*Dot11); ok {
+		if !got.ChecksumValid() {
+			t.Errorf("Dot11 packet processing failed:\nchecksum failed. got  :\n%#v\n\n", got)
+		}
+		want := &Dot11{
+			BaseLayer: BaseLayer{
+				Contents: []uint8{0x84, 0x00, 0x00, 0x00, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55},
+				Payload:  []uint8{},
+			},
+			Type:       Dot11TypeCtrlBlockAckReq,
+			Proto:      0x0,
+			Flags:      0x0,
+			DurationID: 0x0,
+			Address1:   net.HardwareAddr{0x00, 0x11, 0x22, 0x33, 0x44, 0x55},
+			Address2:   net.HardwareAddr{0x00, 0x11, 0x22, 0x33, 0x44, 0x55},
+			Address3:   net.HardwareAddr(nil),
+			Address4:   net.HardwareAddr(nil),
+			Checksum:   0x75a379e4,
+		}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("Dot11 packet processing failed:\ngot  :\n%#v\n\nwant :\n%#v\n\n", got, want)
+		}
+	}
+}
