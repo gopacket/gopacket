@@ -134,6 +134,7 @@ func TestGzipPacket(t *testing.T) {
 		0x0e, 0x20, 0x66, 0x64, 0x62, 0x66, 0x01, 0x00,
 		0xe4, 0x76, 0x9b, 0x75, 0x2c, 0x00, 0x00, 0x00,
 	}
+
 	buf := bytes.NewBuffer(test)
 	r, err := NewReader(buf)
 	if err != nil {
@@ -163,9 +164,10 @@ func TestTruncatedGzipPacket(t *testing.T) {
 	test := []byte{
 		0x1f, 0x8b, 0x08,
 	}
+
 	buf := bytes.NewBuffer(test)
-	_, err := NewReader(buf)
-	if err == nil {
+
+	if _, err := NewReader(buf); err == nil {
 		t.Error("Should fail but did not")
 		t.FailNow()
 	}
