@@ -113,8 +113,13 @@ int pcap_tstamp_type_name_to_val(const char* t) {
 #define gopacket_time_secs_t __kernel_time_t
 #define gopacket_time_usecs_t __kernel_suseconds_t
 #elif __GLIBC__
+#ifndef __USE_TIME_BITS64
 #define gopacket_time_secs_t __time_t
 #define gopacket_time_usecs_t __suseconds_t
+#else
+#define gopacket_time_secs_t __time64_t
+#define gopacket_time_usecs_t __suseconds64_t
+#endif
 #else  // Some form of linux/bsd/etc...
 #include <sys/param.h>
 #ifdef __OpenBSD__
