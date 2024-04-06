@@ -310,12 +310,11 @@ func (s *SIP) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 //
 // So by using the Content-Length header, if present we can mark the packet as truncated if we do not
 // have enough data. We are also able to limit the payload to the number bytes actually specified.
-// If the header is not present, we can assume that the packet is transported over UDP we can then
-// use the length of the UDP datagram as payload length (in this context this is the length of data).
+// If the header is not present, we can assume that the data was transported over UDP we can then
+// use the length of the data as payload length.
 func (s *SIP) setBaseLayer(data []byte, offset int, df gopacket.DecodeFeedback) {
 	// The content-length header was not present in the packet, we use the rest of the packet as payload
 	if s.contentLength == -1 {
-		s.contentLength = int64(len(data) - offset) // we should be able to trust contentLength even if not set
 		s.BaseLayer = BaseLayer{Contents: data[:offset], Payload: data[offset:]}
 	} else if s.contentLength == 0 {
 		// We have a zero Content-Length, no payload
@@ -558,9 +557,13 @@ func (s *SIP) GetUserAgent() string {
 	return s.GetFirstHeader("User-Agent")
 }
 
-// GetContentLength will return the parsed integer, or the actual payload size if the Content-Length header is missing
+// GetContentLength will return the parsed integer
 // Content-Length header of the current SIP packet
 func (s *SIP) GetContentLength() int64 {
+	// to keep compatibility with previous versions, we return 0 if contentLength is not set by header
+	if s.contentLength == -1 {
+		return 0
+	}
 	return s.contentLength
 }
 
