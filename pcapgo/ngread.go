@@ -8,6 +8,7 @@ package pcapgo
 
 import (
 	"bufio"
+	"compress/gzip"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -60,28 +61,43 @@ type NgReader struct {
 
 // NewNgReader initializes a new writer, reads the first section header, and if necessary according to the options the first interface.
 func NewNgReader(r io.Reader, options NgReaderOptions) (*NgReader, error) {
-	ret := &NgReader{
-		r: bufio.NewReader(r),
+	reader := &NgReader{
 		currentOption: ngOption{
 			value: make([]byte, 1024),
 		},
 		decryptionSecrets: make([]decryptionSecret, 0),
 		options:           options,
+		r:                 bufio.NewReader(r),
 	}
 
-	//pcapng _must_ start with a section header
-	if err := ret.readBlock(); err != nil {
-		return nil, err
-	}
-	if ret.currentBlock.typ != ngBlockTypeSectionHeader {
-		return nil, fmt.Errorf("Unknown magic %x", ret.currentBlock.typ)
-	}
-
-	if err := ret.readSectionHeader(); err != nil {
+	gzipMagic, err := reader.r.Peek(2)
+	if err != nil {
 		return nil, err
 	}
 
-	return ret, nil
+	if gzipMagic[0] == magicGzip1 && gzipMagic[1] == magicGzip2 {
+		gzipReader, err := gzip.NewReader(reader.r)
+		if err != nil {
+			return nil, err
+		}
+
+		reader.r = bufio.NewReader(gzipReader)
+	}
+
+	// pcapng _must_ start with a section header
+	if err = reader.readBlock(); err != nil {
+		return nil, err
+	}
+
+	if reader.currentBlock.typ != ngBlockTypeSectionHeader {
+		return nil, fmt.Errorf("Unknown magic %x", reader.currentBlock.typ)
+	}
+
+	if err = reader.readSectionHeader(); err != nil {
+		return nil, err
+	}
+
+	return reader, nil
 }
 
 // First a couple of helper functions to speed things up

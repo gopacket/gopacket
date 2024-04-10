@@ -1842,6 +1842,57 @@ func TestNgFileReadLEZero(t *testing.T) {
 	}
 }
 
+func TestNgFileReadGzipPacket(t *testing.T) {
+	test := []byte{
+		0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x13, 0xe3, 0xe2, 0xe5, 0xe5, 0x92, 0x61,
+		0x60, 0x60, 0xf0, 0xb5, 0xd1, 0x96, 0x62, 0x04,
+		0xd2, 0xff, 0xa1, 0x00, 0x24, 0x06, 0xe2, 0x8b,
+		0x40, 0xe9, 0xff, 0xff, 0x21, 0x6c, 0x36, 0x20,
+		0x56, 0x61, 0x80, 0x80, 0x50, 0x66, 0x56, 0x86,
+		0x46, 0xaf, 0x15, 0x2f, 0x58, 0x80, 0x6c, 0x0e,
+		0x90, 0x3a, 0x26, 0x66, 0x16, 0x90, 0x1c, 0x00,
+		0xf5, 0xb2, 0x32, 0x08, 0x54, 0x00, 0x00, 0x00,
+	}
+
+	buf := bytes.NewBuffer(test)
+	r, err := NewNgReader(buf, DefaultNgReaderOptions)
+	if err != nil {
+		t.Error("Unexpected error returned:", err)
+		t.FailNow()
+	}
+
+	data, ci, err := r.ReadPacketData()
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+	if !ci.Timestamp.Equal(time.Date(2014, 9, 18, 12, 13, 14, 1000, time.UTC)) {
+		t.Error("Invalid time read")
+		t.FailNow()
+	}
+	if ci.CaptureLength != 4 || ci.Length != 8 {
+		t.Error("Invalid CapLen or Len")
+	}
+	want := []byte{1, 2, 3, 4}
+	if !bytes.Equal(data, want) {
+		t.Errorf("buf mismatch:\nwant: %+v\ngot:  %+v", want, data)
+	}
+}
+
+func TestNgFileReadTruncatedGzipPacket(t *testing.T) {
+	test := []byte{
+		0x1f, 0x8b, 0x08,
+	}
+
+	buf := bytes.NewBuffer(test)
+
+	if _, err := NewNgReader(buf, DefaultNgReaderOptions); err == nil {
+		t.Error("Should fail but did not")
+		t.FailNow()
+	}
+}
+
 type endlessNgPacketReader struct {
 	packet []byte
 }
