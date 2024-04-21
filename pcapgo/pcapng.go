@@ -9,6 +9,8 @@ package pcapgo
 import (
 	"errors"
 	"math"
+	"net"
+	"net/netip"
 	"time"
 
 	"github.com/gopacket/gopacket"
@@ -35,6 +37,7 @@ const (
 	ngBlockTypeInterfaceDescriptor ngBlockType = 1          // Interface description block
 	ngBlockTypePacket              ngBlockType = 2          // Packet block (deprecated)
 	ngBlockTypeSimplePacket        ngBlockType = 3          // Simple packet block
+	ngBlockTypeNameResolution      ngBlockType = 4          // Name resolution block
 	ngBlockTypeInterfaceStatistics ngBlockType = 5          // Interface statistics block
 	ngBlockTypeEnhancedPacket      ngBlockType = 6          // Enhanced packet block
 	ngBlockTypeDecryptionSecrets   ngBlockType = 0x0000000A // Decryption secrets block
@@ -91,6 +94,15 @@ const (
 	ngOptionCodeInterfaceStatisticsFilterAccept                              // Packets accepted by filter
 	ngOptionCodeInterfaceStatisticsOSDrop                                    // Packets dropped by operating system
 	ngOptionCodeInterfaceStatisticsDelivered                                 // Packets delivered to user
+)
+
+const (
+	// Name Resolution Block: record types
+	ngNameRecordEnd   uint16 = iota // End of name resolution records
+	ngNameRecordIPv4                // IPv4 record
+	ngNameRecordIPv6                // IPv6 record
+	ngNameRecordEUI48               // EUI-48 record
+	ngNameRecordEUI64               // EUI-64 record
 )
 
 // ngOption is a pcapng option
@@ -201,4 +213,38 @@ type NgSectionInfo struct {
 	Application string
 	// Comment can be an arbitrary comment. This value might be empty if this option is missing.
 	Comment string
+}
+
+type ngAddressType uint16
+
+const (
+	ngAddressIPv4 uint16 = iota
+	ngAddressIPv6
+	ngAddressEUI48
+	ngAddressEUI64
+)
+
+type NgAddress interface {
+	Len() int
+}
+
+type NgIPAddress struct {
+	Addr netip.Addr
+}
+
+func (addr *NgIPAddress) Len() int {
+	return addr.Addr.BitLen() / 8
+}
+
+type NgEUIAddress struct {
+	Addr net.HardwareAddr
+}
+
+func (addr *NgEUIAddress) Len() int {
+	return len(addr.Addr)
+}
+
+type NgNameRecord struct {
+	Addr  NgAddress
+	Names []string
 }
