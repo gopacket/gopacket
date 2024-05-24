@@ -15,15 +15,15 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v5
       with:
-        go-version: ^1.18.5
+        go-version: ^1.22
 
     - name: Check out code into the Go module directory
       uses: actions/checkout@v4
 
     - name: Get dependencies
       run: |
-        sudo apt install -y libpcap-dev  
-        go get -v 
+        sudo apt install -y libpcap-dev
+        go get -v
 
     - name: check code formatting
       run: |
