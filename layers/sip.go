@@ -219,6 +219,7 @@ func decodeSIP(data []byte, p gopacket.PacketBuilder) error {
 func NewSIP() *SIP {
 	s := new(SIP)
 	s.Headers = make(map[string][]string)
+	s.contentLength = -1
 	return s
 }
 
@@ -296,9 +297,39 @@ func (s *SIP) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 
 		countLines++
 	}
-	s.BaseLayer = BaseLayer{Contents: data[:offset], Payload: data[offset:]}
+	s.setBaseLayer(data, offset, df)
 
 	return nil
+}
+
+// setBaseLayer is used to set the base layer of the SIP packet.
+//
+// According to "RFC3261 - 20.14 - Content-Length" the Content-Length header is mandatory
+// for SIP packages transported over TCP. When transporting over UDP, the message
+// body length CAN be determined by the length of the UDP datagram.
+//
+// So by using the Content-Length header, if present we can mark the packet as truncated if we do not
+// have enough data. We are also able to limit the payload to the number bytes actually specified.
+// If the header is not present, we can assume that the data was transported over UDP we can then
+// use the length of the data as payload length.
+func (s *SIP) setBaseLayer(data []byte, offset int, df gopacket.DecodeFeedback) {
+	// The content-length header was not present in the packet, we use the rest of the packet as payload
+	if s.contentLength == -1 {
+		s.BaseLayer = BaseLayer{Contents: data[:offset], Payload: data[offset:]}
+	} else if s.contentLength == 0 {
+		// We have a zero Content-Length, no payload
+		s.BaseLayer = BaseLayer{Contents: data[:offset], Payload: []byte{}} // no payload
+	} else if len(data) < offset+int(s.contentLength) {
+		// Not enough data to fulfill the Content-Length. We set the packet as truncated
+		// and return what we have. The receiver of the packet will be able to determine this
+		// by comparing the SIP.ContentLength with the length of the SIP.Payload.
+		df.SetTruncated()
+		s.BaseLayer = BaseLayer{Contents: data[:offset], Payload: data[offset:]}
+	} else {
+		// we have at least enough data, to fulfill the Content-Length. But we only add the number
+		// of bytes specified in the Content-Length header to the payload.
+		s.BaseLayer = BaseLayer{Contents: data[:offset], Payload: data[offset : offset+int(s.contentLength)]}
+	}
 }
 
 // ParseFirstLine will compute the first line of a SIP packet.
@@ -529,6 +560,10 @@ func (s *SIP) GetUserAgent() string {
 // GetContentLength will return the parsed integer
 // Content-Length header of the current SIP packet
 func (s *SIP) GetContentLength() int64 {
+	// to keep compatibility with previous versions, we return 0 if contentLength is not set by header
+	if s.contentLength == -1 {
+		return 0
+	}
 	return s.contentLength
 }
 
