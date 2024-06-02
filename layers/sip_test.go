@@ -473,12 +473,112 @@ func multiMapOf[K comparable, V any](key K, value V) map[K][]V {
 	return map[K][]V{key: {value}}
 }
 
+// containsElement try loop over the list check if the list includes the element.
+// return (false, false) if impossible.
+// return (true, false) if element was not found.
+// return (true, true) if element was found.
+func containsElement(list interface{}, element interface{}) (ok, found bool) {
+
+	listValue := reflect.ValueOf(list)
+	listType := reflect.TypeOf(list)
+	if listType == nil {
+		return false, false
+	}
+	listKind := listType.Kind()
+	defer func() {
+		if e := recover(); e != nil {
+			ok = false
+			found = false
+		}
+	}()
+
+	if listKind == reflect.String {
+		elementValue := reflect.ValueOf(element)
+		return true, strings.Contains(listValue.String(), elementValue.String())
+	}
+
+	if listKind == reflect.Map {
+		mapKeys := listValue.MapKeys()
+		for i := 0; i < len(mapKeys); i++ {
+			if reflect.DeepEqual(mapKeys[i].Interface(), element) {
+				return true, true
+			}
+		}
+		return true, false
+	}
+
+	for i := 0; i < listValue.Len(); i++ {
+		if reflect.DeepEqual(listValue.Index(i).Interface(), element) {
+			return true, true
+		}
+	}
+	return true, false
+
+}
+
+// Subset asserts that the specified list(array, slice...) or map contains all
+// elements given in the specified subset list(array, slice...) or map.
+//
+//	assert.Subset(t, [1, 2, 3], [1, 2])
+//	assert.Subset(t, {"x": 1, "y": 2}, {"x": 1})
+func Subset(t *testing.T, list, subset interface{}, msgAndArgs ...interface{}) (ok bool) {
+	if subset == nil {
+		return true // we consider nil to be equal to the nil set
+	}
+
+	listKind := reflect.TypeOf(list).Kind()
+	if listKind != reflect.Array && listKind != reflect.Slice && listKind != reflect.Map {
+		// return Fail(t, fmt.Sprintf("%q has an unsupported type %s", list, listKind), msgAndArgs...)
+		return false
+	}
+
+	subsetKind := reflect.TypeOf(subset).Kind()
+	if subsetKind != reflect.Array && subsetKind != reflect.Slice && listKind != reflect.Map {
+		// return Fail(t, fmt.Sprintf("%q has an unsupported type %s", subset, subsetKind), msgAndArgs...)
+		return false
+	}
+
+	if subsetKind == reflect.Map && listKind == reflect.Map {
+		subsetMap := reflect.ValueOf(subset)
+		actualMap := reflect.ValueOf(list)
+
+		for _, k := range subsetMap.MapKeys() {
+			ev := subsetMap.MapIndex(k)
+			av := actualMap.MapIndex(k)
+
+			if !av.IsValid() {
+				// return Fail(t, fmt.Sprintf("%#v does not contain %#v", list, subset), msgAndArgs...)
+				return false
+			}
+			if !reflect.DeepEqual(ev.Interface(), av.Interface()) {
+				// return Fail(t, fmt.Sprintf("%#v does not contain %#v", list, subset), msgAndArgs...)
+				return false
+			}
+		}
+
+		return true
+	}
+
+	subsetList := reflect.ValueOf(subset)
+	for i := 0; i < subsetList.Len(); i++ {
+		element := subsetList.Index(i).Interface()
+		ok, found := containsElement(list, element)
+		if !ok {
+			// return Fail(t, fmt.Sprintf("%#v could not be applied builtin len()", list), msgAndArgs...)
+			return false
+		}
+		if !found {
+			// return Fail(t, fmt.Sprintf("%#v does not contain %#v", list, element), msgAndArgs...)
+			return false
+		}
+	}
+
+	return true
+}
+
 // assertMultiMapContains helper function to ease the matching header values.
 func assertMultiMapContains(t *testing.T, expected map[string][]string, actual map[string][]string) {
 	for k := range expected {
-		// assert.Subset(t, actual[k], expected[k], "header %s does not match got: %v", k, actual)
-		if reflect.DeepEqual(actual[k], expected[k]) {
-			t.Errorf("header %s does not match got: %v", k, actual)
-		}
+		Subset(t, actual[k], expected[k], "header %s does not match got: %v", k, actual)
 	}
 }
