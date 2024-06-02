@@ -8,10 +8,11 @@ package layers
 
 import (
 	"bytes"
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/gopacket/gopacket"
-	"github.com/stretchr/testify/assert"
 )
 
 // First packet is a REGISTER Request
@@ -385,22 +386,53 @@ func TestSIPDecode(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := gopacket.NewPacket(tt.args.packetData, tt.args.firstLayerDecoder, gopacket.Default)
 			if p.ErrorLayer() != nil {
-				assert.NotEmpty(t, tt.wantError, "error not expected, got: %v", p.ErrorLayer().Error())
-				assert.ErrorContains(t, p.ErrorLayer().Error(), tt.wantError)
+				// assert.NotEmpty(t, tt.wantError, "error not expected, got: %v", p.ErrorLayer().Error())
+				if tt.wantError == "" {
+					t.Errorf("error not expected, got: %v", p.ErrorLayer().Error())
+				}
+				// assert.ErrorContains(t, p.ErrorLayer().Error(), tt.wantError)
+				if !strings.Contains(p.ErrorLayer().Error().Error(), tt.wantError) {
+					t.Errorf("error not expected, got: %v", p.ErrorLayer().Error())
+				}
 			} else {
-				assert.Empty(t, tt.wantError, "no error expected")
+				// assert.Empty(t, tt.wantError, "no error expected")
+				if tt.wantError != "" {
+					t.Errorf("no error expected")
+				}
 
 				got, ok := p.Layer(LayerTypeSIP).(*SIP)
-				assert.True(t, ok, "SIP layer not present")
+				// assert.True(t, ok, "SIP layer not present")
+				if !ok {
+					t.Errorf("SIP layer not present")
+				}
 
-				assert.Equal(t, tt.wantIsResponse, got.IsResponse, "Response")
-				assert.Equal(t, tt.wantMethod, got.Method, "METHOD")
-				assert.Equal(t, tt.wantCseq, got.GetCSeq(), "CSEQ")
-				assert.Equal(t, tt.wantContentLength, got.GetContentLength(), "Content-Length")
+				// assert.Equal(t, tt.wantIsResponse, got.IsResponse, "Response")
+				if tt.wantIsResponse != got.IsResponse {
+					t.Errorf("Response")
+				}
+				// assert.Equal(t, tt.wantMethod, got.Method, "METHOD")
+				if tt.wantMethod != got.Method {
+					t.Errorf("METHOD")
+				}
+				// assert.Equal(t, tt.wantCseq, got.GetCSeq(), "CSEQ")
+				if tt.wantCseq != got.GetCSeq() {
+					t.Errorf("CSEQ")
+				}
+				// assert.Equal(t, tt.wantContentLength, got.GetContentLength(), "Content-Length")
+				if tt.wantContentLength != got.GetContentLength() {
+					t.Errorf("Content-Length")
+				}
 
 				assertMultiMapContains(t, tt.wantHeaders, got.Headers)
-				assert.Equal(t, tt.wantRequestURI, got.RequestURI, "URI")
-				assert.Equal(t, tt.wantPayload, got.Payload(), "Payload")
+				// assert.Equal(t, tt.wantRequestURI, got.RequestURI, "URI")
+				if tt.wantRequestURI != got.RequestURI {
+					t.Errorf("URI")
+				}
+
+				// assert.Equal(t, tt.wantPayload, got.Payload(), "Payload")
+				if !reflect.DeepEqual(tt.wantPayload, got.Payload()) {
+					t.Errorf("Payload")
+				}
 			}
 		})
 	}
@@ -428,7 +460,10 @@ func TestSIPGetFirstHeader(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &SIP{Headers: tt.args.headers}
 			got := p.GetFirstHeader(tt.wantedHeader)
-			assert.Equal(t, tt.wantedValue, got)
+			// assert.Equal(t, tt.wantedValue, got)
+			if tt.wantedValue != got {
+				t.Errorf("GetFirstHeader() = %v, want %v", got, tt.wantedValue)
+			}
 		})
 	}
 }
@@ -441,6 +476,9 @@ func multiMapOf[K comparable, V any](key K, value V) map[K][]V {
 // assertMultiMapContains helper function to ease the matching header values.
 func assertMultiMapContains(t *testing.T, expected map[string][]string, actual map[string][]string) {
 	for k := range expected {
-		assert.Subset(t, actual[k], expected[k], "header %s does not match got: %v", k, actual)
+		// assert.Subset(t, actual[k], expected[k], "header %s does not match got: %v", k, actual)
+		if reflect.DeepEqual(actual[k], expected[k]) {
+			t.Errorf("header %s does not match got: %v", k, actual)
+		}
 	}
 }
