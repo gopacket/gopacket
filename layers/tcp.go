@@ -54,6 +54,7 @@ const (
 	TCPOptionKindCCEcho                          = 13 // obsolete
 	TCPOptionKindAltChecksum                     = 14 // len = 3, obsolete
 	TCPOptionKindAltChecksumData                 = 15 // len = n, obsolete
+	TCPOptionKindMPTCP                           = 30 // len = n
 )
 
 func (k TCPOptionKind) String() string {
@@ -90,6 +91,8 @@ func (k TCPOptionKind) String() string {
 		return "AltChecksum"
 	case TCPOptionKindAltChecksumData:
 		return "AltChecksumData"
+	case TCPOptionKindMPTCP:
+		return "MPTCP"
 	default:
 		return fmt.Sprintf("Unknown(%d)", k)
 	}
