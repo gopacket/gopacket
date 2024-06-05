@@ -8,6 +8,7 @@ package layers
 
 import (
 	"bytes"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -386,53 +387,23 @@ func TestSIPDecode(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := gopacket.NewPacket(tt.args.packetData, tt.args.firstLayerDecoder, gopacket.Default)
 			if p.ErrorLayer() != nil {
-				// assert.NotEmpty(t, tt.wantError, "error not expected, got: %v", p.ErrorLayer().Error())
-				if tt.wantError == "" {
-					t.Errorf("error not expected, got: %v", p.ErrorLayer().Error())
-				}
-				// assert.ErrorContains(t, p.ErrorLayer().Error(), tt.wantError)
-				if !strings.Contains(p.ErrorLayer().Error().Error(), tt.wantError) {
-					t.Errorf("error not expected, got: %v", p.ErrorLayer().Error())
-				}
+				assertNotEmpty(t, tt.wantError, "error not expected, actual: %v", p.ErrorLayer().Error())
+				assertErrorContains(t, p.ErrorLayer().Error(), tt.wantError)
 			} else {
-				// assert.Empty(t, tt.wantError, "no error expected")
-				if tt.wantError != "" {
-					t.Errorf("no error expected")
-				}
+				assertEmpty(t, tt.wantError, "no error expected")
 
 				got, ok := p.Layer(LayerTypeSIP).(*SIP)
-				// assert.True(t, ok, "SIP layer not present")
-				if !ok {
-					t.Errorf("SIP layer not present")
-				}
+				assertTrue(t, ok, "SIP layer not present")
 
-				// assert.Equal(t, tt.wantIsResponse, got.IsResponse, "Response")
-				if tt.wantIsResponse != got.IsResponse {
-					t.Errorf("Response")
-				}
-				// assert.Equal(t, tt.wantMethod, got.Method, "METHOD")
-				if tt.wantMethod != got.Method {
-					t.Errorf("METHOD")
-				}
-				// assert.Equal(t, tt.wantCseq, got.GetCSeq(), "CSEQ")
-				if tt.wantCseq != got.GetCSeq() {
-					t.Errorf("CSEQ")
-				}
-				// assert.Equal(t, tt.wantContentLength, got.GetContentLength(), "Content-Length")
-				if tt.wantContentLength != got.GetContentLength() {
-					t.Errorf("Content-Length")
-				}
+				assertEqual(t, tt.wantIsResponse, got.IsResponse, "Response")
+				assertEqual(t, tt.wantMethod, got.Method, "METHOD")
+				assertEqual(t, tt.wantCseq, got.GetCSeq(), "CSEQ")
+				assertEqual(t, tt.wantContentLength, got.GetContentLength(), "Content-Length")
 
 				assertMultiMapContains(t, tt.wantHeaders, got.Headers)
-				// assert.Equal(t, tt.wantRequestURI, got.RequestURI, "URI")
-				if tt.wantRequestURI != got.RequestURI {
-					t.Errorf("URI")
-				}
+				assertEqual(t, tt.wantRequestURI, got.RequestURI, "URI")
 
-				// assert.Equal(t, tt.wantPayload, got.Payload(), "Payload")
-				if !reflect.DeepEqual(tt.wantPayload, got.Payload()) {
-					t.Errorf("Payload")
-				}
+				assertEqual(t, tt.wantPayload, got.Payload(), "Payload")
 			}
 		})
 	}
@@ -460,11 +431,50 @@ func TestSIPGetFirstHeader(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &SIP{Headers: tt.args.headers}
 			got := p.GetFirstHeader(tt.wantedHeader)
-			// assert.Equal(t, tt.wantedValue, got)
-			if tt.wantedValue != got {
-				t.Errorf("GetFirstHeader() = %v, want %v", got, tt.wantedValue)
-			}
+			assertEqual(t, tt.wantedValue, got)
 		})
+	}
+}
+
+// assertMultiMapContains asserts one multimap is contained within another or fails test.
+func assertMultiMapContains(t *testing.T, expected map[string][]string, actual map[string][]string) {
+	for k := range expected {
+		subset(t, actual[k], expected[k], "header %s does not match, actual: %v", k, actual)
+	}
+}
+
+// assertEqual asserts equality or fails test
+func assertEqual(t *testing.T, expected, actual any, msgAndArgs ...any) {
+	if !reflect.DeepEqual(expected, actual) {
+		fail(t, fmt.Sprintf("expected: '%v', actual: '%v'", expected, actual), msgAndArgs...)
+	}
+}
+
+// assertTrue asserts true bool value or fails test
+func assertTrue(t *testing.T, b bool, msgAndArgs ...any) {
+	if !b {
+		fail(t, fmt.Sprintf("expected: 'true', actual: '%v'", b), msgAndArgs...)
+	}
+}
+
+// assertEmpty asserts empty string or fails test
+func assertEmpty(t *testing.T, s string, msgAndArgs ...any) {
+	if s != "" {
+		fail(t, fmt.Sprintf("expected: <empty>, actual: '%v'", s), msgAndArgs...)
+	}
+}
+
+// assertNotEmpty asserts Nonempty string or fails test
+func assertNotEmpty(t *testing.T, s string, msgAndArgs ...any) {
+	if s == "" {
+		fail(t, fmt.Sprintf("expected: <NOT-empty>, actual: '%v'", s), msgAndArgs...)
+	}
+}
+
+// assertErrorContains asserts error containing substring or fails test
+func assertErrorContains(t *testing.T, e error, s string, msgAndArgs ...any) {
+	if !strings.Contains(e.Error(), s) {
+		fail(t, fmt.Sprintf("expected: error containing '%v', actual: '%v'", s, e.Error()), msgAndArgs...)
 	}
 }
 
@@ -516,26 +526,26 @@ func containsElement(list interface{}, element interface{}) (ok, found bool) {
 
 }
 
-// Subset asserts that the specified list(array, slice...) or map contains all
+// subset asserts that the specified list(array, slice...) or map contains all
 // elements given in the specified subset list(array, slice...) or map.
 //
-//	assert.Subset(t, [1, 2, 3], [1, 2])
-//	assert.Subset(t, {"x": 1, "y": 2}, {"x": 1})
-func Subset(t *testing.T, list, subset interface{}, msgAndArgs ...interface{}) (ok bool) {
+//	subset(t, [1, 2, 3], [1, 2])
+//	subset(t, {"x": 1, "y": 2}, {"x": 1})
+func subset(t *testing.T, list, subset interface{}, msgAndArgs ...interface{}) (ok bool) {
 	if subset == nil {
 		return true // we consider nil to be equal to the nil set
 	}
 
 	listKind := reflect.TypeOf(list).Kind()
 	if listKind != reflect.Array && listKind != reflect.Slice && listKind != reflect.Map {
-		// return Fail(t, fmt.Sprintf("%q has an unsupported type %s", list, listKind), msgAndArgs...)
-		return false
+		return fail(t, fmt.Sprintf("%q has an unsupported type %s", list, listKind), msgAndArgs...)
+		//return false
 	}
 
 	subsetKind := reflect.TypeOf(subset).Kind()
 	if subsetKind != reflect.Array && subsetKind != reflect.Slice && listKind != reflect.Map {
-		// return Fail(t, fmt.Sprintf("%q has an unsupported type %s", subset, subsetKind), msgAndArgs...)
-		return false
+		return fail(t, fmt.Sprintf("%q has an unsupported type %s", subset, subsetKind), msgAndArgs...)
+		//return false
 	}
 
 	if subsetKind == reflect.Map && listKind == reflect.Map {
@@ -547,12 +557,12 @@ func Subset(t *testing.T, list, subset interface{}, msgAndArgs ...interface{}) (
 			av := actualMap.MapIndex(k)
 
 			if !av.IsValid() {
-				// return Fail(t, fmt.Sprintf("%#v does not contain %#v", list, subset), msgAndArgs...)
-				return false
+				return fail(t, fmt.Sprintf("%#v does not contain %#v", list, subset), msgAndArgs...)
+				//return false
 			}
 			if !reflect.DeepEqual(ev.Interface(), av.Interface()) {
-				// return Fail(t, fmt.Sprintf("%#v does not contain %#v", list, subset), msgAndArgs...)
-				return false
+				return fail(t, fmt.Sprintf("%#v does not contain %#v", list, subset), msgAndArgs...)
+				//return false
 			}
 		}
 
@@ -564,21 +574,30 @@ func Subset(t *testing.T, list, subset interface{}, msgAndArgs ...interface{}) (
 		element := subsetList.Index(i).Interface()
 		ok, found := containsElement(list, element)
 		if !ok {
-			// return Fail(t, fmt.Sprintf("%#v could not be applied builtin len()", list), msgAndArgs...)
-			return false
+			return fail(t, fmt.Sprintf("%#v could not be applied builtin len()", list), msgAndArgs...)
+			//return false
 		}
 		if !found {
-			// return Fail(t, fmt.Sprintf("%#v does not contain %#v", list, element), msgAndArgs...)
-			return false
+			return fail(t, fmt.Sprintf("%#v does not contain %#v", list, element), msgAndArgs...)
+			//return false
 		}
 	}
 
 	return true
 }
 
-// assertMultiMapContains helper function to ease the matching header values.
-func assertMultiMapContains(t *testing.T, expected map[string][]string, actual map[string][]string) {
-	for k := range expected {
-		Subset(t, actual[k], expected[k], "header %s does not match got: %v", k, actual)
+// fail generates textual messages and reports error on test
+func fail(t *testing.T, failureMessage string, msgAndArgs ...interface{}) bool {
+	msg := ""
+	if len(msgAndArgs) == 1 {
+		if str, ok := msgAndArgs[0].(string); ok {
+			msg = str
+		} else {
+			msg = fmt.Sprintf("%+v", msgAndArgs[0])
+		}
+	} else if len(msgAndArgs) > 1 {
+		msg = fmt.Sprintf(msgAndArgs[0].(string), msgAndArgs[1:]...)
 	}
+	t.Errorf("%s %s", failureMessage, msg)
+	return false
 }
