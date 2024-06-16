@@ -8,6 +8,7 @@ package layers
 
 import (
 	"bytes"
+	"errors"
 	"net"
 	"reflect"
 	"testing"
@@ -665,5 +666,87 @@ func TestPacketDot11BlockAckReq(t *testing.T) {
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("Dot11 packet processing failed:\ngot  :\n%#v\n\nwant :\n%#v\n\n", got, want)
 		}
+	}
+}
+
+func TestDot11InformationElement(t *testing.T) {
+	cases := []struct {
+		Name   string
+		Data   []byte
+		Expect Dot11InformationElement
+		Err    error
+	}{
+		{
+			"Power constraint",
+			[]byte{0x20, 0x01, 0x00},
+			Dot11InformationElement{
+				ID:     0x20,
+				Length: 0x1,
+				Info:   []byte{0x0},
+			},
+			nil,
+		},
+		{
+			"ERP Information",
+			[]byte{0x21, 0x01, 0x00},
+			Dot11InformationElement{
+				ID:     0x21,
+				Length: 0x1,
+				Info:   []byte{0x0},
+			},
+			nil,
+		},
+		{
+			"Broadcom vendor",
+			[]byte{0xdd, 0x09, 0x00, 0x10, 0x18, 0x02, 0x01, 0x00, 0x0c, 0x00, 0x00},
+			Dot11InformationElement{
+				ID:     221,
+				Length: 9,
+				Info:   []byte{0x01, 0x00, 0x0c, 0x00, 0x00},
+			},
+			nil,
+		},
+		{
+			"Small vendor",
+			[]byte{0xdd, 0x02, 0x00, 0x01},
+			Dot11InformationElement{
+				ID:     221,
+				Length: 2,
+				Info:   []byte{},
+			},
+			errors.New("vendor extension size < 4"),
+		},
+	}
+
+	for _, test := range cases {
+		t.Run(test.Name, func(t *testing.T) {
+			dot11InfoElement := Dot11InformationElement{}
+
+			err := dot11InfoElement.DecodeFromBytes(test.Data, gopacket.NilDecodeFeedback)
+
+			if test.Err == nil && err != nil {
+				t.Errorf("Dot11InformationElement: %s unexpected err %v", test.Name, err)
+			}
+
+			if test.Err != nil {
+				if err == nil {
+					t.Errorf("Dot11InformationElement: %s expected an err got nil", test.Name)
+				} else if test.Err.Error() != err.Error() {
+					t.Errorf("Dot11InformationElement: %s expected %v got %v", test.Name, test.Err, err)
+				}
+			}
+
+			if test.Expect.ID != dot11InfoElement.ID {
+				t.Errorf("Dot11InformationElement: %s unmatched ID expected %v got %v", test.Name, test.Expect.ID, dot11InfoElement.ID)
+			}
+
+			if test.Expect.Length != dot11InfoElement.Length {
+				t.Errorf("Dot11InformationElement: %s unmatched Length expected %v got %v", test.Name, test.Expect.Length, dot11InfoElement.Length)
+			}
+
+			if !bytes.Equal(test.Expect.Info, dot11InfoElement.Info) {
+				t.Errorf("Dot11InformationElement: %s unmatched Info expected %v got %v", test.Name, test.Expect.Info, dot11InfoElement.Info)
+			}
+		})
 	}
 }
