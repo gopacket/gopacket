@@ -8,6 +8,9 @@ package layers
 
 import (
 	"bytes"
+	"fmt"
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/gopacket/gopacket"
@@ -211,83 +214,390 @@ var testPacketSIPOnlyInviteNoContentLength = []byte(
 		"\r\n",
 )
 
-func TestSIPMain(t *testing.T) {
-	expectedHeaders := map[string]string{"Call-ID": "306366781@172_16_254_66", "Contact": "<sip:bob@172.16.254.66:5060>"}
-	_TestPacketSIP(t, LinkTypeEthernet, testPacketSIPRequest, SIPMethodRegister, false, 3, 0, expectedHeaders, "sip:sip.provider.com", []byte{})
+// TestPacket that contains and abnormally large CSEQ value
+// !This will trigger a parse-error
+var testPacketInvalidCSEQMaxedout = []byte(
+	"INVITE sip:sip.provider.com SIP/2.0\r\n" +
+		"From: \"Bob\" <sip:bob@sip.provider.com>\r\n" +
+		"To: \"Alice\" <sip:alice@sip.provider.com>\r\n" +
+		"Call-Id: 306366781@172_16_254_66\r\n" +
+		"CSeq: 4294967296 INVITE\r\n" +
+		"\r\n",
+)
 
-	expectedHeaders = map[string]string{"Call-ID": "306366781@172_16_254_66", "Contact": "<sip:bob@172.16.254.66:5060>;expires=1800"}
-	_TestPacketSIP(t, LinkTypeEthernet, testPacketSIPResponse, SIPMethodRegister, true, 3, 0, expectedHeaders, "", []byte{})
+// TestPacket that contains and negative CSEQ value
+// !This will trigger a parse-error
+var testPacketInvalidCSEQSubZero = []byte(
+	"INVITE sip:sip.provider.com SIP/2.0\r\n" +
+		"From: \"Bob\" <sip:bob@sip.provider.com>\r\n" +
+		"To: \"Alice\" <sip:alice@sip.provider.com>\r\n" +
+		"Call-Id: 306366781@172_16_254_66\r\n" +
+		"CSeq: -1 INVITE\r\n" +
+		"\r\n",
+)
 
-	expectedHeaders = map[string]string{"Call-ID": "306366781@172_16_254_66", "Contact": "<sip:bob@172.16.254.66:5060>", "f": "\"Bob\" <sip:bob@sip.provider.com>"}
-	_TestPacketSIP(t, LinkTypeEthernet, testPacketSIPCompactInvite, SIPMethodInvite, false, 1, 0, expectedHeaders, "sip:sip.provider.com", []byte{})
+// TestPacket that contains and negative Content-Length value
+// !This will trigger a parse-error
+var testPacketInvalidContentLengthSubZero = []byte(
+	"INVITE sip:sip.provider.com SIP/2.0\r\n" +
+		"From: \"Bob\" <sip:bob@sip.provider.com>\r\n" +
+		"To: \"Alice\" <sip:alice@sip.provider.com>\r\n" +
+		"Call-Id: 306366781@172_16_254_66\r\n" +
+		"CSeq: 101 INVITE\r\n" +
+		"Content-Length: -129\r\n" +
+		"\r\n",
+)
 
-	expectedHeaders = map[string]string{"Call-ID": "306366781@172_16_254_66", "Contact": "<sip:bob@172.16.254.66:5060>", "From": "\"Bob\" <sip:bob@sip.provider.com>", "Content-Type": "application/sdp", "Content-Length": "100"}
-	expectedPayload := []byte("v=0\r\no=bob 4096 1976 IN IP4 172.16.254.66\r\ns=Talk\r\nc=IN 172.16.254.66\r\nt=0 0\r\nm=audio 6000 RTP/AVP 0")
-	_TestPacketSIP(t, LayerTypeSIP, testPacketSIPOnlyInviteWithPayload, SIPMethodInvite, false, 1, 100, expectedHeaders, "sip:sip.provider.com", expectedPayload)
+// TestPacket that contains and abnormally large Content-Length value
+// !This will trigger a parse-error
+var testPacketInvalidContentLengthMaxedout = []byte(
+	"INVITE sip:sip.provider.com SIP/2.0\r\n" +
+		"From: \"Bob\" <sip:bob@sip.provider.com>\r\n" +
+		"To: \"Alice\" <sip:alice@sip.provider.com>\r\n" +
+		"Call-Id: 306366781@172_16_254_66\r\n" +
+		"CSeq: 101 INVITE\r\n" +
+		"Content-Length: 94294967296\r\n" +
+		"\r\n",
+)
 
-	expectedHeaders = map[string]string{"Call-ID": "306366781@172_16_254_66", "Contact": "<sip:bob@172.16.254.66:5060>", "From": "\"Bob\" <sip:bob@sip.provider.com>", "Content-Type": "application/sdp", "Content-Length": "100"}
-	expectedPayload = []byte("v=0\r\no=bob 4096 1976 IN IP4 172.16.254.66\r\ns=Talk\r\nc=IN 172.16.254.66\r\nt=0 0\r\nm=audio 6000 RTP/AVP 0")
-	_TestPacketSIP(t, LayerTypeSIP, testOverSizedPacketSIPOnlyInviteWithPayload, SIPMethodInvite, false, 1, 100, expectedHeaders, "sip:sip.provider.com", expectedPayload)
+func TestSIPDecode(t *testing.T) {
+	type args struct {
+		firstLayerDecoder gopacket.Decoder
+		packetData        []byte
+	}
+	tests := []struct {
+		name              string
+		args              args
+		wantError         string
+		wantIsResponse    bool
+		wantMethod        SIPMethod
+		wantCseq          int64
+		wantContentLength int64
+		wantHeaders       map[string][]string
+		wantRequestURI    string
+		wantPayload       []byte
+	}{
+		{"invalid CSEQ sub-zero", args{LayerTypeSIP, testPacketInvalidCSEQSubZero},
+			`invalid CSEQ value: strconv.ParseUint: parsing "-1": invalid syntax`,
+			false, SIPMethodInfo, 1, 0, map[string][]string{}, "", []byte{},
+		},
+		{"invalid CSEQ", args{LayerTypeSIP, testPacketInvalidCSEQMaxedout},
+			`invalid CSEQ value: strconv.ParseUint: parsing "4294967296": value out of range`,
+			false, SIPMethodInfo, 1, 0, map[string][]string{}, "", []byte{},
+		},
+		{"invalid Content-Length sub-zero", args{LayerTypeSIP, testPacketInvalidContentLengthSubZero},
+			"invalid Content-Length: -129 out of range",
+			false, SIPMethodInfo, 1, 0, map[string][]string{}, "", []byte{},
+		},
+		{"invalid Content-Length maxedout", args{LayerTypeSIP, testPacketInvalidContentLengthMaxedout},
+			`invalid Content-Length: strconv.ParseInt: parsing "94294967296": value out of range`,
+			false, SIPMethodInfo, 1, 0, map[string][]string{}, "", []byte{},
+		},
+		{"inviteNoContentLength", args{LayerTypeSIP, testPacketSIPOnlyInviteNoContentLength},
+			"", false, SIPMethodInvite, 1, 0,
+			map[string][]string{
+				"call-id":      {`306366781@172_16_254_66`},
+				"contact":      {`<sip:bob@172.16.254.66:5060>`},
+				"from":         {`"Bob" <sip:bob@sip.provider.com>`},
+				"to":           {`"Alice" <sip:alice@sip.provider.com>`},
+				"content-type": {`application/sdp`},
+			}, "sip:sip.provider.com", []byte{},
+		},
+		{"inviteWithPayloadNoContentLength", args{LayerTypeSIP, testPacketSIPOnlyInviteWithPayloadNoContentLength},
+			"", false, SIPMethodInvite, 1, 0,
+			map[string][]string{
+				"call-id":      {`306366781@172_16_254_66`},
+				"contact":      {`<sip:bob@172.16.254.66:5060>`},
+				"from":         {`"Bob" <sip:bob@sip.provider.com>`},
+				"to":           {`"Alice" <sip:alice@sip.provider.com>`},
+				"content-type": {`application/sdp`},
+			},
+			"sip:sip.provider.com",
+			[]byte("v=0\r\no=bob 4096 1976 IN IP4 172.16.254.66\r\ns=Talk\r\nc=IN 172.16.254.66\r\nt=0 0\r\nm=audio 6000 RTP/AVP 0"),
+		},
+		{"overSizedInviteWithPayloadNoLength", args{LayerTypeSIP, testOverSizedPacketSIPOnlyInviteWithPayloadNoLength},
+			"", false, SIPMethodInvite, 1, 0,
+			map[string][]string{
+				"call-id":      {`306366781@172_16_254_66`},
+				"contact":      {`<sip:bob@172.16.254.66:5060>`},
+				"from":         {`"Bob" <sip:bob@sip.provider.com>`},
+				"to":           {`"Alice" <sip:alice@sip.provider.com>`},
+				"content-type": {`application/sdp`},
+			},
+			"sip:sip.provider.com",
+			[]byte("v=0\r\no=bob 4096 1976 IN IP4 172.16.254.66\r\ns=Talk\r\nc=IN 172.16.254.66\r\nt=0 0\r\nm=audio 6000 RTP/AVP 0\r\na=This_is_beyond_the_content_length"),
+		},
+		{"overSizedInviteWithPayload", args{LayerTypeSIP, testOverSizedPacketSIPOnlyInviteWithPayload},
+			"", false, SIPMethodInvite, 1, 100,
+			map[string][]string{
+				"call-id":        {`306366781@172_16_254_66`},
+				"contact":        {`<sip:bob@172.16.254.66:5060>`},
+				"from":           {`"Bob" <sip:bob@sip.provider.com>`},
+				"to":             {`"Alice" <sip:alice@sip.provider.com>`},
+				"content-type":   {`application/sdp`},
+				"content-length": {`100`},
+			},
+			"sip:sip.provider.com",
+			[]byte("v=0\r\no=bob 4096 1976 IN IP4 172.16.254.66\r\ns=Talk\r\nc=IN 172.16.254.66\r\nt=0 0\r\nm=audio 6000 RTP/AVP 0"),
+		},
+		{"inviteWithPayload", args{LayerTypeSIP, testPacketSIPOnlyInviteWithPayload},
+			"", false, SIPMethodInvite, 1, 100,
+			map[string][]string{
+				"call-id":        {`306366781@172_16_254_66`},
+				"contact":        {`<sip:bob@172.16.254.66:5060>`},
+				"from":           {`"Bob" <sip:bob@sip.provider.com>`},
+				"to":             {`"Alice" <sip:alice@sip.provider.com>`},
+				"content-type":   {`application/sdp`},
+				"content-length": {`100`},
+			},
+			"sip:sip.provider.com",
+			[]byte("v=0\r\no=bob 4096 1976 IN IP4 172.16.254.66\r\ns=Talk\r\nc=IN 172.16.254.66\r\nt=0 0\r\nm=audio 6000 RTP/AVP 0"),
+		},
+		{"sipRequest", args{LinkTypeEthernet, testPacketSIPRequest},
+			"", false, SIPMethodRegister, 3, 0,
+			map[string][]string{
+				"call-id": {`306366781@172_16_254_66`},
+				"contact": {`<sip:bob@172.16.254.66:5060>`},
+			},
+			"sip:sip.provider.com",
+			[]byte{},
+		},
+		{"sipResponse", args{LinkTypeEthernet, testPacketSIPResponse},
+			"", true, SIPMethodRegister, 3, 0,
+			map[string][]string{
+				"call-id": {`306366781@172_16_254_66`},
+				"contact": {`<sip:bob@172.16.254.66:5060>;expires=1800`},
+			},
+			"",
+			[]byte{},
+		},
+		{"compactInvite", args{LinkTypeEthernet, testPacketSIPCompactInvite},
+			"", false, SIPMethodInvite, 1, 0,
+			map[string][]string{
+				"i": {`306366781@172_16_254_66`},
+				"m": {`<sip:bob@172.16.254.66:5060>`},
+				"f": {`"Bob" <sip:bob@sip.provider.com>`},
+			},
+			"sip:sip.provider.com",
+			[]byte{},
+		},
+	}
 
-	expectedHeaders = map[string]string{"Call-ID": "306366781@172_16_254_66", "Contact": "<sip:bob@172.16.254.66:5060>", "From": "\"Bob\" <sip:bob@sip.provider.com>", "Content-Type": "application/sdp"}
-	expectedPayload = []byte("v=0\r\no=bob 4096 1976 IN IP4 172.16.254.66\r\ns=Talk\r\nc=IN 172.16.254.66\r\nt=0 0\r\nm=audio 6000 RTP/AVP 0\r\na=This_is_beyond_the_content_length")
-	_TestPacketSIP(t, LayerTypeSIP, testOverSizedPacketSIPOnlyInviteWithPayloadNoLength, SIPMethodInvite, false, 1, 0, expectedHeaders, "sip:sip.provider.com", expectedPayload)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := gopacket.NewPacket(tt.args.packetData, tt.args.firstLayerDecoder, gopacket.Default)
+			if p.ErrorLayer() != nil {
+				assertNotEmpty(t, tt.wantError, "error not expected, actual: %v", p.ErrorLayer().Error())
+				assertErrorContains(t, p.ErrorLayer().Error(), tt.wantError)
+			} else {
+				assertEmpty(t, tt.wantError, "no error expected")
 
-	expectedHeaders = map[string]string{"Call-ID": "306366781@172_16_254_66", "Contact": "<sip:bob@172.16.254.66:5060>", "From": "\"Bob\" <sip:bob@sip.provider.com>", "Content-Type": "application/sdp"}
-	expectedPayload = []byte("v=0\r\no=bob 4096 1976 IN IP4 172.16.254.66\r\ns=Talk\r\nc=IN 172.16.254.66\r\nt=0 0\r\nm=audio 6000 RTP/AVP 0")
-	_TestPacketSIP(t, LayerTypeSIP, testPacketSIPOnlyInviteWithPayloadNoContentLength, SIPMethodInvite, false, 1, 0, expectedHeaders, "sip:sip.provider.com", expectedPayload)
+				got, ok := p.Layer(LayerTypeSIP).(*SIP)
+				assertTrue(t, ok, "SIP layer not present")
 
-	expectedHeaders = map[string]string{"Call-ID": "306366781@172_16_254_66", "Contact": "<sip:bob@172.16.254.66:5060>", "From": "\"Bob\" <sip:bob@sip.provider.com>", "Content-Type": "application/sdp"}
-	expectedPayload = []byte("")
-	_TestPacketSIP(t, LayerTypeSIP, testPacketSIPOnlyInviteNoContentLength, SIPMethodInvite, false, 1, 0, expectedHeaders, "sip:sip.provider.com", expectedPayload)
+				assertEqual(t, tt.wantIsResponse, got.IsResponse, "Response")
+				assertEqual(t, tt.wantMethod, got.Method, "METHOD")
+				assertEqual(t, tt.wantCseq, got.GetCSeq(), "CSEQ")
+				assertEqual(t, tt.wantContentLength, got.GetContentLength(), "Content-Length")
+
+				assertMultiMapContains(t, tt.wantHeaders, got.Headers)
+				assertEqual(t, tt.wantRequestURI, got.RequestURI, "URI")
+
+				assertEqual(t, tt.wantPayload, got.Payload(), "Payload")
+			}
+		})
+	}
+
 }
 
-func _TestPacketSIP(t *testing.T, firstLayerDecoder gopacket.Decoder, packetData []byte, methodWanted SIPMethod, isResponse bool, wantedCseq int64, contentLength int64, expectedHeaders map[string]string, expectedRequestURI string, expectedPayload []byte) {
+func TestSIPGetFirstHeader(t *testing.T) {
+	type args struct {
+		headers map[string][]string
+	}
+	tests := []struct {
+		name         string
+		args         args
+		wantedHeader string
+		wantedValue  string
+	}{
+		{"from", args{multiMapOf("from", "alice")}, "From", "alice"},
+		{"from compact", args{multiMapOf("f", "jane")}, "From", "jane"},
+		{"contact", args{multiMapOf("contact", "joe")}, "Contact", "joe"},
+		{"contact compact", args{multiMapOf("m", "frank")}, "Contact", "frank"},
+		{"call-id", args{multiMapOf("call-id", "123")}, "Call-ID", "123"},
+		{"call-id compact", args{multiMapOf("i", "345")}, "Call-ID", "345"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &SIP{Headers: tt.args.headers}
+			got := p.GetFirstHeader(tt.wantedHeader)
+			assertEqual(t, tt.wantedValue, got)
+		})
+	}
+}
 
-	p := gopacket.NewPacket(packetData, firstLayerDecoder, gopacket.Default)
-	if p.ErrorLayer() != nil {
-		t.Error("Failed to decode packet:", p.ErrorLayer().Error())
+// assertMultiMapContains asserts one multimap is contained within another or fails test.
+func assertMultiMapContains(t *testing.T, expected map[string][]string, actual map[string][]string) {
+	for k := range expected {
+		subset(t, actual[k], expected[k], "header %s does not match, actual: %v", k, actual)
+	}
+}
+
+// assertEqual asserts equality or fails test
+func assertEqual(t *testing.T, expected, actual any, msgAndArgs ...any) {
+	if !reflect.DeepEqual(expected, actual) {
+		fail(t, fmt.Sprintf("expected: '%v', actual: '%v'", expected, actual), msgAndArgs...)
+	}
+}
+
+// assertTrue asserts true bool value or fails test
+func assertTrue(t *testing.T, b bool, msgAndArgs ...any) {
+	if !b {
+		fail(t, fmt.Sprintf("expected: 'true', actual: '%v'", b), msgAndArgs...)
+	}
+}
+
+// assertEmpty asserts empty string or fails test
+func assertEmpty(t *testing.T, s string, msgAndArgs ...any) {
+	if s != "" {
+		fail(t, fmt.Sprintf("expected: <empty>, actual: '%v'", s), msgAndArgs...)
+	}
+}
+
+// assertNotEmpty asserts Nonempty string or fails test
+func assertNotEmpty(t *testing.T, s string, msgAndArgs ...any) {
+	if s == "" {
+		fail(t, fmt.Sprintf("expected: <NOT-empty>, actual: '%v'", s), msgAndArgs...)
+	}
+}
+
+// assertErrorContains asserts error containing substring or fails test
+func assertErrorContains(t *testing.T, e error, s string, msgAndArgs ...any) {
+	if !strings.Contains(e.Error(), s) {
+		fail(t, fmt.Sprintf("expected: error containing '%v', actual: '%v'", s, e.Error()), msgAndArgs...)
+	}
+}
+
+// multiMapOf helper function that creates single value map[][] from the values passed
+func multiMapOf[K comparable, V any](key K, value V) map[K][]V {
+	return map[K][]V{key: {value}}
+}
+
+// containsElement try loop over the list check if the list includes the element.
+// return (false, false) if impossible.
+// return (true, false) if element was not found.
+// return (true, true) if element was found.
+func containsElement(list interface{}, element interface{}) (ok, found bool) {
+
+	listValue := reflect.ValueOf(list)
+	listType := reflect.TypeOf(list)
+	if listType == nil {
+		return false, false
+	}
+	listKind := listType.Kind()
+	defer func() {
+		if e := recover(); e != nil {
+			ok = false
+			found = false
+		}
+	}()
+
+	if listKind == reflect.String {
+		elementValue := reflect.ValueOf(element)
+		return true, strings.Contains(listValue.String(), elementValue.String())
 	}
 
-	if got, ok := p.Layer(LayerTypeSIP).(*SIP); ok {
-
-		// Check method
-		if got.Method != methodWanted {
-			t.Errorf("SIP Packet should be a %s method, got : %s", methodWanted, got.Method)
+	if listKind == reflect.Map {
+		mapKeys := listValue.MapKeys()
+		for i := 0; i < len(mapKeys); i++ {
+			if reflect.DeepEqual(mapKeys[i].Interface(), element) {
+				return true, true
+			}
 		}
+		return true, false
+	}
 
-		// Check if it's right packet type
-		if got.IsResponse != isResponse {
-			t.Errorf("SIP packet type is not the same as expected")
+	for i := 0; i < listValue.Len(); i++ {
+		if reflect.DeepEqual(listValue.Index(i).Interface(), element) {
+			return true, true
 		}
+	}
+	return true, false
 
-		// Check the RequestURI if it's a request
-		if !isResponse {
-			if got.RequestURI != expectedRequestURI {
-				t.Errorf("SIP packet type is not the same as expected")
+}
+
+// subset asserts that the specified list(array, slice...) or map contains all
+// elements given in the specified subset list(array, slice...) or map.
+//
+//	subset(t, [1, 2, 3], [1, 2])
+//	subset(t, {"x": 1, "y": 2}, {"x": 1})
+func subset(t *testing.T, list, subset interface{}, msgAndArgs ...interface{}) (ok bool) {
+	if subset == nil {
+		return true // we consider nil to be equal to the nil set
+	}
+
+	listKind := reflect.TypeOf(list).Kind()
+	if listKind != reflect.Array && listKind != reflect.Slice && listKind != reflect.Map {
+		return fail(t, fmt.Sprintf("%q has an unsupported type %s", list, listKind), msgAndArgs...)
+		//return false
+	}
+
+	subsetKind := reflect.TypeOf(subset).Kind()
+	if subsetKind != reflect.Array && subsetKind != reflect.Slice && listKind != reflect.Map {
+		return fail(t, fmt.Sprintf("%q has an unsupported type %s", subset, subsetKind), msgAndArgs...)
+		//return false
+	}
+
+	if subsetKind == reflect.Map && listKind == reflect.Map {
+		subsetMap := reflect.ValueOf(subset)
+		actualMap := reflect.ValueOf(list)
+
+		for _, k := range subsetMap.MapKeys() {
+			ev := subsetMap.MapIndex(k)
+			av := actualMap.MapIndex(k)
+
+			if !av.IsValid() {
+				return fail(t, fmt.Sprintf("%#v does not contain %#v", list, subset), msgAndArgs...)
+				//return false
+			}
+			if !reflect.DeepEqual(ev.Interface(), av.Interface()) {
+				return fail(t, fmt.Sprintf("%#v does not contain %#v", list, subset), msgAndArgs...)
+				//return false
 			}
 		}
 
-		// Check headers
-		for headerName, headerValue := range expectedHeaders {
-			if got.GetFirstHeader(headerName) != headerValue {
-				t.Errorf("Header %s shoud be %s, got : %s", headerName, headerValue, got.GetFirstHeader(headerName))
-			}
-		}
+		return true
+	}
 
-		// Check CSeq
-		if got.GetCSeq() != wantedCseq {
-			t.Errorf("SIP Packet should be %d. Got : %d", wantedCseq, got.GetCSeq())
+	subsetList := reflect.ValueOf(subset)
+	for i := 0; i < subsetList.Len(); i++ {
+		element := subsetList.Index(i).Interface()
+		ok, found := containsElement(list, element)
+		if !ok {
+			return fail(t, fmt.Sprintf("%#v could not be applied builtin len()", list), msgAndArgs...)
+			//return false
 		}
-
-		// Check content length
-		if got.GetContentLength() != contentLength {
-			t.Errorf("SIP Payload length should be %d. Got : %d", contentLength, got.GetContentLength())
-		}
-
-		// Check payload
-		if bytes.Compare(got.Payload(), expectedPayload) != 0 {
-			t.Errorf("SIP Payload should be:\n\t%v\nGot:\n\t%v", expectedPayload, got.Payload())
+		if !found {
+			return fail(t, fmt.Sprintf("%#v does not contain %#v", list, element), msgAndArgs...)
+			//return false
 		}
 	}
+
+	return true
+}
+
+// fail generates textual messages and reports error on test
+func fail(t *testing.T, failureMessage string, msgAndArgs ...interface{}) bool {
+	msg := ""
+	if len(msgAndArgs) == 1 {
+		if str, ok := msgAndArgs[0].(string); ok {
+			msg = str
+		} else {
+			msg = fmt.Sprintf("%+v", msgAndArgs[0])
+		}
+	} else if len(msgAndArgs) > 1 {
+		msg = fmt.Sprintf(msgAndArgs[0].(string), msgAndArgs[1:]...)
+	}
+	t.Errorf("%s %s", failureMessage, msg)
+	return false
 }
