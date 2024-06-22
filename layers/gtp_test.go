@@ -71,14 +71,20 @@ func TestGTPPacket(t *testing.T) {
 			t.Errorf("GTP packet mismatch:\ngot  :\n%#v\n\nwant :\n%#v\n\n", got, want)
 
 		}
+
 		buf := gopacket.NewSerializeBuffer()
-		opts := gopacket.SerializeOptions{}
-		err := got.SerializeTo(buf, opts)
-		if err != nil {
+		if err := gopacket.SerializePacket(buf, gopacket.SerializeOptions{}, p); err != nil {
 			t.Error(err)
+		} else if !reflect.DeepEqual(testGTPPacket, buf.Bytes()) {
+			t.Errorf("GTP packet serialization failed:\nwire :\n%#v\n\nbuf :\n%#v\n\n", testGTPPacket, buf.Bytes())
 		}
-		if !reflect.DeepEqual(got.Contents, buf.Bytes()) {
-			t.Errorf("GTP packet serialization failed:\ngot  :\n%#v\n\nwant :\n%#v\n\n", buf.Bytes(), got.Contents)
+
+		buf.Clear()
+		got.MessageLength = 0
+		if err := gopacket.SerializePacket(buf, gopacket.SerializeOptions{FixLengths: true}, p); err != nil {
+			t.Error(err)
+		} else if !reflect.DeepEqual(testGTPPacket, buf.Bytes()) {
+			t.Errorf("GTP packet serialization failed:\nwire :\n%#v\n\nbuf :\n%#v\n\n", testGTPPacket, buf.Bytes())
 		}
 	} else {
 		t.Error("Incorrect gtp packet")
@@ -88,7 +94,7 @@ func TestGTPPacket(t *testing.T) {
 // testGTPPacketWithEH is the packet
 //000000 00 0c 29 e3 c6 4d 00 0c 29 da d1 de 08 00 45 00 ..)..M..).....E.
 //000010 00 80 00 00 40 00 40 11 67 bb c0 a8 28 b2 c0 a8 ....@.@.g...(...
-//000020 28 b3 08 68 08 68 00 6c c1 95 36 ff 00 58 00 10 (..h.h.l..6..X..
+//000020 28 b3 08 68 08 68 00 6c c1 95 36 ff 00 5C 00 10 (..h.h.l..6..\..
 //000030 06 57 00 05 00 c0 01 09 04 00 45 00 00 54 06 a5 .W........E..T..
 //000040 00 00 40 01 98 00 c0 a8 28 b2 ca 0b 28 9e 00 00 ..@.....(...(...
 //000050 e3 b6 00 00 28 ac 35 11 20 4b a6 3d 0d 00 08 09 ....(.5. K.=....
@@ -102,7 +108,7 @@ var testGTPPacketWithEH = []byte{
 	0x00, 0x80, 0x00, 0x00, 0x40, 0x00, 0x40, 0x11,
 	0x67, 0xbb, 0xc0, 0xa8, 0x28, 0xb2, 0xc0, 0xa8,
 	0x28, 0xb3, 0x08, 0x68, 0x08, 0x68, 0x00, 0x6c,
-	0xc1, 0x95, 0x36, 0xff, 0x00, 0x58, 0x00, 0x10,
+	0xc1, 0x95, 0x36, 0xff, 0x00, 0x5C, 0x00, 0x10,
 	0x06, 0x57, 0x00, 0x05, 0x00, 0xc0, 0x01, 0x09,
 	0x04, 0x00, 0x45, 0x00, 0x00, 0x54, 0x06, 0xa5,
 	0x00, 0x00, 0x40, 0x01, 0x98, 0x00, 0xc0, 0xa8,
@@ -133,24 +139,30 @@ func TestGTPPacketWithEH(t *testing.T) {
 			SequenceNumberFlag:  true,
 			NPDUFlag:            false,
 			MessageType:         255,
-			MessageLength:       88,
+			MessageLength:       92,
 			TEID:                1050199,
 			SequenceNumber:      5,
-			GTPExtensionHeaders: []GTPExtensionHeader{GTPExtensionHeader{Type: uint8(192), Content: []byte{0x9, 0x4}}},
+			GTPExtensionHeaders: []GTPExtensionHeader{{Type: uint8(192), Content: []byte{0x9, 0x4}}},
 		}
 		want.BaseLayer = BaseLayer{testGTPPacketWithEH[42:58], testGTPPacketWithEH[58:]}
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("GTP packet mismatch:\ngot  :\n%#v\n\nwant :\n%#v\n\n", got, want)
 
 		}
+
 		buf := gopacket.NewSerializeBuffer()
-		opts := gopacket.SerializeOptions{}
-		err := got.SerializeTo(buf, opts)
-		if err != nil {
+		if err := gopacket.SerializePacket(buf, gopacket.SerializeOptions{}, p); err != nil {
 			t.Error(err)
+		} else if !reflect.DeepEqual(testGTPPacketWithEH, buf.Bytes()) {
+			t.Errorf("GTP packet serialization failed:\nwire :\n%#v\n\nbuf :\n%#v\n\n", testGTPPacketWithEH, buf.Bytes())
 		}
-		if !reflect.DeepEqual(got.Contents, buf.Bytes()) {
-			t.Errorf("GTP packet serialization failed:\ngot  :\n%#v\n\nbuf :\n%#v\n\n", got.Contents, buf.Bytes())
+
+		buf.Clear()
+		got.MessageLength = 0
+		if err := gopacket.SerializePacket(buf, gopacket.SerializeOptions{FixLengths: true}, p); err != nil {
+			t.Error(err)
+		} else if !reflect.DeepEqual(testGTPPacketWithEH, buf.Bytes()) {
+			t.Errorf("GTP packet serialization failed:\nwire :\n%#v\n\nbuf :\n%#v\n\n", testGTPPacketWithEH, buf.Bytes())
 		}
 	} else {
 		t.Errorf("Invalid GTP packet")
