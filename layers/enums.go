@@ -144,6 +144,22 @@ const (
 	PPPoECodeSession PPPoECode = 0x00
 )
 
+// PPPoETagType represents a TAG_TYPE value, taken from http://tools.ietf.org/html/rfc2516
+type PPPoETagType uint16
+
+const (
+	PPPoETagEOL              PPPoETagType = 0x0000
+	PPPoETagServiceName      PPPoETagType = 0x0101
+	PPPoETagACName           PPPoETagType = 0x0102
+	PPPoETagHostUniq         PPPoETagType = 0x0103
+	PPPoETagACCookie         PPPoETagType = 0x0104
+	PPPoETagVendorSpecific   PPPoETagType = 0x0105
+	PPPoETagRelaySessionID   PPPoETagType = 0x0110
+	PPPoETagServiceNameError PPPoETagType = 0x0201
+	PPPoETagACSystemError    PPPoETagType = 0x0202
+	PPPoETagGenericError     PPPoETagType = 0x0203
+)
+
 // PPPType is an enumeration of PPP type values, and acts as a decoder for any
 // type it supports.
 type PPPType uint16
