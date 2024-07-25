@@ -257,12 +257,11 @@ func (w *v3wrapper) next() bool {
 		return false
 	}
 
-	next := uintptr(unsafe.Pointer(w.packet))
 	if w.packet.tp_next_offset != 0 {
-		next += uintptr(w.packet.tp_next_offset)
+		w.packet = (*tpacket3_hdr)(unsafe.Pointer((uintptr(unsafe.Pointer(w.packet)) + uintptr(w.packet.tp_next_offset))))
 	} else {
-		next += uintptr(tpAlign(int(w.packet.tp_snaplen) + int(w.packet.tp_mac)))
+		align := uintptr(tpAlign(int(w.packet.tp_snaplen) + int(w.packet.tp_mac)))
+		w.packet = (*tpacket3_hdr)(unsafe.Pointer(uintptr(unsafe.Pointer(w.packet)) + align))
 	}
-	w.packet = (*tpacket3_hdr)(unsafe.Pointer(next))
 	return true
 }

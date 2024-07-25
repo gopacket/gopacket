@@ -451,21 +451,18 @@ func (h *TPacket) getTPacketHeader() header {
 		if h.offset >= h.opts.framesPerBlock*h.opts.numBlocks {
 			h.offset = 0
 		}
-		position := uintptr(h.rawring) + uintptr(h.opts.frameSize*h.offset)
-		return (*v1header)(unsafe.Pointer(position))
+		return (*v1header)(unsafe.Pointer(uintptr(h.rawring) + uintptr(h.opts.frameSize*h.offset)))
 	case TPacketVersion2:
 		if h.offset >= h.opts.framesPerBlock*h.opts.numBlocks {
 			h.offset = 0
 		}
-		position := uintptr(h.rawring) + uintptr(h.opts.frameSize*h.offset)
-		return (*v2header)(unsafe.Pointer(position))
+		return (*v2header)(unsafe.Pointer(uintptr(h.rawring) + uintptr(h.opts.frameSize*h.offset)))
 	case TPacketVersion3:
 		// TPacket3 uses each block to return values, instead of each frame.  Hence we need to rotate when we hit #blocks, not #frames.
 		if h.offset >= h.opts.numBlocks {
 			h.offset = 0
 		}
-		position := uintptr(h.rawring) + uintptr(h.opts.frameSize*h.offset*h.opts.framesPerBlock)
-		h.v3 = initV3Wrapper(unsafe.Pointer(position))
+		h.v3 = initV3Wrapper(unsafe.Pointer(uintptr(h.rawring) + uintptr(h.opts.frameSize*h.offset*h.opts.framesPerBlock)))
 		return &h.v3
 	}
 	panic("handle tpacket version is invalid")
