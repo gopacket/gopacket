@@ -50,10 +50,3 @@ func getsockopt(fd, level, name int, val unsafe.Pointer, vallen uintptr) error {
 
 	return nil
 }
-
-// htons converts a short (uint16) from host-to-network byte order.
-// Thanks to mikioh for this neat trick:
-// https://github.com/mikioh/-stdyng/blob/master/afpacket.go
-func htons(i uint16) uint16 {
-	return (i<<8)&0xff00 | i>>8
-}
