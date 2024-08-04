@@ -7,6 +7,8 @@
 package layers
 
 import (
+	"encoding/binary"
+	"net"
 	"reflect"
 	"testing"
 
@@ -185,6 +187,72 @@ func TestPacketOSPF2DBDesc(t *testing.T) {
 		t.Error("No OSPF layer type found in packet")
 	}
 }
+
+// 192.168.87.1 > 192.168.87.9: OSPFv2, Database Description, length 52
+//
+//	Router-ID 192.168.87.1, Backbone Area, Authentication Type: none (0)
+//	Options [External, Opaque], DD Flags [none], MTU: 1500, Sequence: 0x00006904
+//	  Advertising Router 192.168.87.1, seq 0x8000029d, age 1456s, length 16
+//	    Router LSA (1), LSA-ID: 192.168.87.1
+//	    Options: [External]
+//	0x0000:  000c 29f1 e465 2ec8 1b56 b71d 0800 45c0  ..)..e...V....E.
+//	0x0010:  0048 55f8 0000 0159 334a c0a8 5701 c0a8  .HU....Y3J..W...
+//	0x0020:  5709 0202 0034 c0a8 5701 0000 0000 90fc  W....4..W.......
+//	0x0030:  0000 0000 0000 0000 0000 05dc 4200 0000  ............B...
+//	0x0040:  6904 05b0 0201 c0a8 5701 c0a8 5701 8000  i.......W...W...
+//	0x0050:  029d ea7b 0024	                          ...{.$
+var testPacketOSPF2DBDescWithLSAheader = []byte{
+	0x00, 0x0c, 0x29, 0xf1, 0xe4, 0x65, 0x2e, 0xc8, 0x1b, 0x56, 0xb7, 0x1d, 0x08, 0x00, 0x45, 0xc0,
+	0x00, 0x48, 0x55, 0xf8, 0x00, 0x00, 0x01, 0x59, 0x33, 0x4a, 0xc0, 0xa8, 0x57, 0x01, 0xc0, 0xa8,
+	0x57, 0x09, 0x02, 0x02, 0x00, 0x34, 0xc0, 0xa8, 0x57, 0x01, 0x00, 0x00, 0x00, 0x00, 0x90, 0xfc,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, 0xdc, 0x42, 0x00, 0x00, 0x00,
+	0x69, 0x04, 0x05, 0xb0, 0x02, 0x01, 0xc0, 0xa8, 0x57, 0x01, 0xc0, 0xa8, 0x57, 0x01, 0x80, 0x00,
+	0x02, 0x9d, 0xea, 0x7b, 0x00, 0x24,
+}
+
+func TestPacketOSPF2DBDescWithLSAheader(t *testing.T) {
+	p := gopacket.NewPacket(testPacketOSPF2DBDescWithLSAheader, LinkTypeEthernet, gopacket.Default)
+	if p.ErrorLayer() != nil {
+		t.Error("Failed to decode packet:", p.ErrorLayer().Error())
+	}
+	checkLayers(p, []gopacket.LayerType{LayerTypeEthernet, LayerTypeIPv4, LayerTypeOSPF}, t)
+	if got, ok := p.Layer(LayerTypeOSPF).(*OSPFv2); ok {
+		want := &OSPFv2{
+			OSPF: OSPF{
+				Version:      2,
+				Type:         OSPFDatabaseDescription,
+				PacketLength: 52,
+				RouterID:     binary.BigEndian.Uint32(net.ParseIP("192.168.87.1").To4()),
+				AreaID:       0,
+				Checksum:     0x90fc,
+				Content: DbDescPkg{
+					Options:      0x42,
+					InterfaceMTU: 1500,
+					Flags:        0x0,
+					DDSeqNumber:  26884,
+					LSAinfo: []LSAheader{
+						{
+							LSAge:       1456,
+							LSType:      1,
+							LinkStateID: 3232257793,
+							AdvRouter:   3232257793,
+							LSSeqNumber: 0x8000029d,
+							LSChecksum:  60027,
+							Length:      36,
+							LSOptions:   0x2,
+						},
+					},
+				},
+			},
+		}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("OSPF packet processing failed:\ngot  :\n%#v\n\nwant :\n%#v\n\n", got, want)
+		}
+	} else {
+		t.Error("No OSPF layer type found in packet")
+	}
+}
+
 func BenchmarkDecodePacketPacket6(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		gopacket.NewPacket(testPacketOSPF2DBDesc, LinkTypeEthernet, gopacket.NoCopy)
