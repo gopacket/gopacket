@@ -60,7 +60,7 @@ type NgReader struct {
 	nameRecords       []NgNameRecord
 }
 
-// NewNgReader initializes a new writer, reads the first section header, and if necessary according to the options the first interface.
+// NewNgReader initializes a new reader, reads the first section header, and if necessary according to the options the first interface.
 func NewNgReader(r io.Reader, options NgReaderOptions) (*NgReader, error) {
 	reader := &NgReader{
 		currentOption: ngOption{
