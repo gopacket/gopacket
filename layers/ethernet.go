@@ -11,6 +11,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 
 	"github.com/gopacket/gopacket"
@@ -30,6 +31,17 @@ type Ethernet struct {
 	// former is the case, we set EthernetType and Length stays 0.  In the latter
 	// case, we set Length and EthernetType = EthernetTypeLLC.
 	Length uint16
+}
+
+func (e *Ethernet) LogValue() slog.Value {
+	attrs := []slog.Attr{
+		slog.String("srcMac", e.SrcMAC.String()),
+		slog.String("dstMac", e.DstMAC.String()),
+		slog.String("type", e.EthernetType.String())}
+	if e.Length != 0 {
+		attrs = append(attrs, slog.Int("length", int(e.Length)))
+	}
+	return slog.GroupValue(attrs...)
 }
 
 // LayerType returns LayerTypeEthernet
