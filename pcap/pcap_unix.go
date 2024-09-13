@@ -131,13 +131,13 @@ int pcap_tstamp_type_name_to_val(const char* t) {
 		#define gopacket_time_secs_t u_int32_t
 		#define gopacket_time_usecs_t u_int32_t
 	#else
-    #ifdef __time64_t
-		  #define gopacket_time_secs_t __time64_t
-		  #define gopacket_time_usecs_t __suseconds64_t
-    #else
-		  #define gopacket_time_secs_t time_t
-		  #define gopacket_time_usecs_t suseconds_t
-    #endif
+		#ifdef __time64_t
+			#define gopacket_time_secs_t __time64_t
+			#define gopacket_time_usecs_t __suseconds64_t
+		#else
+			#define gopacket_time_secs_t time_t
+			#define gopacket_time_usecs_t suseconds_t
+		#endif
 	#endif
 #endif
 
