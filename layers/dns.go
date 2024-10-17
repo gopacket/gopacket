@@ -1202,8 +1202,9 @@ func (param DNSSvcParam) String() string {
 
 // DNSRRSIG is a DNS RRSIG record, see RFC 4034, section 3.1
 type DNSRRSIG struct {
-	TypeCovered                        uint16
-	Algorithm, Labels                  uint8
+	TypeCovered                        DNSType
+	Algorithm                          DNSSECAlgorithm
+	Labels                             uint8
 	OriginalTTL, Expiration, Inception uint32
 	KeyTag                             uint16
 	SignerName, Signature              []byte
@@ -1220,8 +1221,8 @@ func (rrsig DNSRRSIG) String() string {
 }
 
 func (rrsig DNSRRSIG) encode(data []byte, offset int) {
-	binary.BigEndian.PutUint16(data[offset:], rrsig.TypeCovered)
-	data[offset+2] = rrsig.Algorithm
+	binary.BigEndian.PutUint16(data[offset:], uint16(rrsig.TypeCovered))
+	data[offset+2] = uint8(rrsig.Algorithm)
 	data[offset+3] = rrsig.Labels
 	binary.BigEndian.PutUint32(data[offset+4:], rrsig.OriginalTTL)
 	binary.BigEndian.PutUint32(data[offset+8:], rrsig.Expiration)
@@ -1232,10 +1233,33 @@ func (rrsig DNSRRSIG) encode(data []byte, offset int) {
 	copy(data[offset:], rrsig.Signature)
 }
 
+// DNSSECAlgorithm common values
+const (
+	DNSSECAlgorithmRSAMD5          DNSSECAlgorithm = 1
+	DNSSECAlgorithmDH              DNSSECAlgorithm = 3
+	DNSSECAlgorithmDSASHA1         DNSSECAlgorithm = 3
+	DNSSECAlgorithmECC             DNSSECAlgorithm = 4
+	DNSSECAlgorithmRSASHA1         DNSSECAlgorithm = 5
+	DNSSECAlgorithmDSASHA1NSEC3    DNSSECAlgorithm = 6
+	DNSSECAlgorithmRSASHA1NSEC3    DNSSECAlgorithm = 7
+	DNSSECAlgorithmRSASHA256       DNSSECAlgorithm = 8
+	DNSSECAlgorithmRSASHA512       DNSSECAlgorithm = 10
+	DNSSECAlgorithmECCGOST         DNSSECAlgorithm = 12
+	DNSSECAlgorithmECDSAP256SHA256 DNSSECAlgorithm = 13
+	DNSSECAlgorithmECDSAP384SHA384 DNSSECAlgorithm = 14
+	DNSSECAlgorithmED25519         DNSSECAlgorithm = 15
+	DNSSECAlgorithmED448           DNSSECAlgorithm = 16
+)
+
+// DNSSECAlgorithm represents the algorithm used in a DNSSEC record, see RFC 4034, section 5.1
+type DNSSECAlgorithm uint8
+
+// DNSKEY is a DNSKEY record, see RFC 4034, section 2.1
 type DNSKEY struct {
-	Flags               uint16
-	Protocol, Algorithm uint8
-	PublicKey           []byte
+	Flags     DNSKEYFlag
+	Protocol  DNSKEYProtocol
+	Algorithm DNSSECAlgorithm
+	PublicKey []byte
 }
 
 func (dnskey DNSKEY) size() int {
@@ -1248,12 +1272,30 @@ func (dnskey DNSKEY) String() string {
 }
 
 func (dnskey DNSKEY) encode(data []byte, offset int) {
-	binary.BigEndian.PutUint16(data[offset:], dnskey.Flags)
-	data[offset+2] = dnskey.Protocol
-	data[offset+3] = dnskey.Algorithm
+	binary.BigEndian.PutUint16(data[offset:], uint16(dnskey.Flags))
+	data[offset+2] = uint8(dnskey.Protocol)
+	data[offset+3] = uint8(dnskey.Algorithm)
 	offset += 4
 	copy(data[offset:], dnskey.PublicKey)
 }
+
+// DNSKEYFlag common values
+const (
+	DNSKEYFlagOtherKey         DNSKEYFlag = 0
+	DNSKEYFlagZoneKey          DNSKEYFlag = 256
+	DNSKEYFlagSecureEntryPoint DNSKEYFlag = 257
+)
+
+// DNSKEYFlag represents the key type of a DNSKEY record, see RFC 4034, section 2.1.1
+type DNSKEYFlag uint16
+
+// DNSKEYProtocol common values, see RFC 4034, section 2.1.2
+const (
+	DNSKEYProtocolReserved DNSKEYProtocol = 0
+	DNSKEYProtocolValue    DNSKEYProtocol = 3
+)
+
+type DNSKEYProtocol uint8
 
 // DNSURI is a URI record, defining a target (URI) of a server/service
 type DNSURI struct {
