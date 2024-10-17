@@ -84,28 +84,28 @@ func OverrideLayerType(num int, meta LayerTypeMetadata) LayerType {
 
 // Decode decodes the given data using the decoder registered with the layer
 // type.
-func (t LayerType) Decode(data []byte, c PacketBuilder) error {
+func (l LayerType) Decode(data []byte, c PacketBuilder) error {
 	var d Decoder
-	if 0 <= int(t) && int(t) < maxLayerType {
-		d = ltMeta[int(t)].Decoder
+	if 0 <= int(l) && int(l) < maxLayerType {
+		d = ltMeta[int(l)].Decoder
 	} else {
-		d = ltMetaMap[t].Decoder
+		d = ltMetaMap[l].Decoder
 	}
 	if d != nil {
 		return d.Decode(data, c)
 	}
-	return fmt.Errorf("Layer type %v has no associated decoder", t)
+	return fmt.Errorf("Layer type %v has no associated decoder", l)
 }
 
 // String returns the string associated with this layer type.
-func (t LayerType) String() (s string) {
-	if 0 <= int(t) && int(t) < maxLayerType {
-		s = ltMeta[int(t)].Name
+func (l LayerType) String() (s string) {
+	if 0 <= int(l) && int(l) < maxLayerType {
+		s = ltMeta[int(l)].Name
 	} else {
-		s = ltMetaMap[t].Name
+		s = ltMetaMap[l].Name
 	}
 	if s == "" {
-		s = strconv.Itoa(int(t))
+		s = strconv.Itoa(int(l))
 	}
 	return
 }

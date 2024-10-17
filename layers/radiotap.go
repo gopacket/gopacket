@@ -21,7 +21,7 @@ import (
 // on the offset, returning the number of bytes we need to skip to
 // align to the offset (width).
 func align(offset uint16, width uint16) uint16 {
-	return ((((offset) + ((width) - 1)) & (^((width) - 1))) - offset)
+	return (((offset) + ((width) - 1)) & (^((width) - 1))) - offset
 }
 
 type RadioTapPresent uint32
@@ -250,27 +250,27 @@ func (r RadioTapFlags) ShortGI() bool {
 // String provides a human readable string for RadioTapFlags.
 // This string is possibly subject to change over time; if you're storing this
 // persistently, you should probably store the RadioTapFlags value, not its string.
-func (a RadioTapFlags) String() string {
+func (r RadioTapFlags) String() string {
 	var out bytes.Buffer
-	if a.CFP() {
+	if r.CFP() {
 		out.WriteString("CFP,")
 	}
-	if a.ShortPreamble() {
+	if r.ShortPreamble() {
 		out.WriteString("SHORT-PREAMBLE,")
 	}
-	if a.WEP() {
+	if r.WEP() {
 		out.WriteString("WEP,")
 	}
-	if a.Frag() {
+	if r.Frag() {
 		out.WriteString("FRAG,")
 	}
-	if a.FCS() {
+	if r.FCS() {
 		out.WriteString("FCS,")
 	}
-	if a.Datapad() {
+	if r.Datapad() {
 		out.WriteString("DATAPAD,")
 	}
-	if a.ShortGI() {
+	if r.ShortGI() {
 		out.WriteString("SHORT-GI,")
 	}
 
@@ -318,23 +318,23 @@ const (
 	RadioTapTxFlagsNoACK
 )
 
-func (self RadioTapTxFlags) Fail() bool  { return self&RadioTapTxFlagsFail != 0 }
-func (self RadioTapTxFlags) CTS() bool   { return self&RadioTapTxFlagsCTS != 0 }
-func (self RadioTapTxFlags) RTS() bool   { return self&RadioTapTxFlagsRTS != 0 }
-func (self RadioTapTxFlags) NoACK() bool { return self&RadioTapTxFlagsNoACK != 0 }
+func (r RadioTapTxFlags) Fail() bool  { return r&RadioTapTxFlagsFail != 0 }
+func (r RadioTapTxFlags) CTS() bool   { return r&RadioTapTxFlagsCTS != 0 }
+func (r RadioTapTxFlags) RTS() bool   { return r&RadioTapTxFlagsRTS != 0 }
+func (r RadioTapTxFlags) NoACK() bool { return r&RadioTapTxFlagsNoACK != 0 }
 
-func (self RadioTapTxFlags) String() string {
+func (r RadioTapTxFlags) String() string {
 	var tokens []string
-	if self.Fail() {
+	if r.Fail() {
 		tokens = append(tokens, "Fail")
 	}
-	if self.CTS() {
+	if r.CTS() {
 		tokens = append(tokens, "CTS")
 	}
-	if self.RTS() {
+	if r.RTS() {
 		tokens = append(tokens, "RTS")
 	}
-	if self.NoACK() {
+	if r.NoACK() {
 		tokens = append(tokens, "NoACK")
 	}
 	return strings.Join(tokens, ",")
@@ -415,14 +415,14 @@ const (
 	RadioTapMCSKnownNESS1
 )
 
-func (self RadioTapMCSKnown) Bandwidth() bool     { return self&RadioTapMCSKnownBandwidth != 0 }
-func (self RadioTapMCSKnown) MCSIndex() bool      { return self&RadioTapMCSKnownMCSIndex != 0 }
-func (self RadioTapMCSKnown) GuardInterval() bool { return self&RadioTapMCSKnownGuardInterval != 0 }
-func (self RadioTapMCSKnown) HTFormat() bool      { return self&RadioTapMCSKnownHTFormat != 0 }
-func (self RadioTapMCSKnown) FECType() bool       { return self&RadioTapMCSKnownFECType != 0 }
-func (self RadioTapMCSKnown) STBC() bool          { return self&RadioTapMCSKnownSTBC != 0 }
-func (self RadioTapMCSKnown) NESS() bool          { return self&RadioTapMCSKnownNESS != 0 }
-func (self RadioTapMCSKnown) NESS1() bool         { return self&RadioTapMCSKnownNESS1 != 0 }
+func (r RadioTapMCSKnown) Bandwidth() bool     { return r&RadioTapMCSKnownBandwidth != 0 }
+func (r RadioTapMCSKnown) MCSIndex() bool      { return r&RadioTapMCSKnownMCSIndex != 0 }
+func (r RadioTapMCSKnown) GuardInterval() bool { return r&RadioTapMCSKnownGuardInterval != 0 }
+func (r RadioTapMCSKnown) HTFormat() bool      { return r&RadioTapMCSKnownHTFormat != 0 }
+func (r RadioTapMCSKnown) FECType() bool       { return r&RadioTapMCSKnownFECType != 0 }
+func (r RadioTapMCSKnown) STBC() bool          { return r&RadioTapMCSKnownSTBC != 0 }
+func (r RadioTapMCSKnown) NESS() bool          { return r&RadioTapMCSKnownNESS != 0 }
+func (r RadioTapMCSKnown) NESS1() bool         { return r&RadioTapMCSKnownNESS1 != 0 }
 
 type RadioTapMCSFlags uint8
 
@@ -435,16 +435,16 @@ const (
 	RadioTapMCSFlagsNESS0                          = 0x80
 )
 
-func (self RadioTapMCSFlags) Bandwidth() int {
-	return int(self & RadioTapMCSFlagsBandwidthMask)
+func (r RadioTapMCSFlags) Bandwidth() int {
+	return int(r & RadioTapMCSFlagsBandwidthMask)
 }
-func (self RadioTapMCSFlags) ShortGI() bool    { return self&RadioTapMCSFlagsShortGI != 0 }
-func (self RadioTapMCSFlags) Greenfield() bool { return self&RadioTapMCSFlagsGreenfield != 0 }
-func (self RadioTapMCSFlags) FECLDPC() bool    { return self&RadioTapMCSFlagsFECLDPC != 0 }
-func (self RadioTapMCSFlags) STBC() int {
-	return int(self&RadioTapMCSFlagsSTBCMask) >> 5
+func (r RadioTapMCSFlags) ShortGI() bool    { return r&RadioTapMCSFlagsShortGI != 0 }
+func (r RadioTapMCSFlags) Greenfield() bool { return r&RadioTapMCSFlagsGreenfield != 0 }
+func (r RadioTapMCSFlags) FECLDPC() bool    { return r&RadioTapMCSFlagsFECLDPC != 0 }
+func (r RadioTapMCSFlags) STBC() int {
+	return int(r&RadioTapMCSFlagsSTBCMask) >> 5
 }
-func (self RadioTapMCSFlags) NESS0() bool { return self&RadioTapMCSFlagsNESS0 != 0 }
+func (r RadioTapMCSFlags) NESS0() bool { return r&RadioTapMCSFlagsNESS0 != 0 }
 
 type RadioTapAMPDUStatus struct {
 	Reference uint32
@@ -482,15 +482,15 @@ const (
 	RadioTapAMPDUDelimCRCKnown
 )
 
-func (self RadioTapAMPDUStatusFlags) ReportZerolen() bool {
-	return self&RadioTapAMPDUStatusFlagsReportZerolen != 0
+func (r RadioTapAMPDUStatusFlags) ReportZerolen() bool {
+	return r&RadioTapAMPDUStatusFlagsReportZerolen != 0
 }
-func (self RadioTapAMPDUStatusFlags) IsZerolen() bool   { return self&RadioTapAMPDUIsZerolen != 0 }
-func (self RadioTapAMPDUStatusFlags) LastKnown() bool   { return self&RadioTapAMPDULastKnown != 0 }
-func (self RadioTapAMPDUStatusFlags) IsLast() bool      { return self&RadioTapAMPDUIsLast != 0 }
-func (self RadioTapAMPDUStatusFlags) DelimCRCErr() bool { return self&RadioTapAMPDUDelimCRCErr != 0 }
-func (self RadioTapAMPDUStatusFlags) DelimCRCKnown() bool {
-	return self&RadioTapAMPDUDelimCRCKnown != 0
+func (r RadioTapAMPDUStatusFlags) IsZerolen() bool   { return r&RadioTapAMPDUIsZerolen != 0 }
+func (r RadioTapAMPDUStatusFlags) LastKnown() bool   { return r&RadioTapAMPDULastKnown != 0 }
+func (r RadioTapAMPDUStatusFlags) IsLast() bool      { return r&RadioTapAMPDUIsLast != 0 }
+func (r RadioTapAMPDUStatusFlags) DelimCRCErr() bool { return r&RadioTapAMPDUDelimCRCErr != 0 }
+func (r RadioTapAMPDUStatusFlags) DelimCRCKnown() bool {
+	return r&RadioTapAMPDUDelimCRCKnown != 0
 }
 
 type RadioTapVHT struct {
@@ -844,72 +844,72 @@ const (
 	RadiotapHEData1DopplerKnown                RadiotapHEData1 = 0x8000
 )
 
-func (self RadiotapHEData1) HE_PPDUFormat() RadiotapHePpduFormat {
-	return RadiotapHePpduFormat(self & 0x0003)
+func (r RadiotapHEData1) HE_PPDUFormat() RadiotapHePpduFormat {
+	return RadiotapHePpduFormat(r & 0x0003)
 }
 
-func (self RadiotapHEData1) BSSColorKnown() bool {
-	return self&RadiotapHEData1BSSColorKnown != 0
+func (r RadiotapHEData1) BSSColorKnown() bool {
+	return r&RadiotapHEData1BSSColorKnown != 0
 }
 
-func (self RadiotapHEData1) BeamChangeKnown() bool {
-	return self&RadiotapHEData1BeamChangeKnown != 0
+func (r RadiotapHEData1) BeamChangeKnown() bool {
+	return r&RadiotapHEData1BeamChangeKnown != 0
 }
 
-func (self RadiotapHEData1) ULDLKnown() bool {
-	return self&RadiotapHEData1ULDLKnown != 0
+func (r RadiotapHEData1) ULDLKnown() bool {
+	return r&RadiotapHEData1ULDLKnown != 0
 }
 
-func (self RadiotapHEData1) DataMCSKnown() bool {
-	return self&RadiotapHEData1DataMCSKnown != 0
+func (r RadiotapHEData1) DataMCSKnown() bool {
+	return r&RadiotapHEData1DataMCSKnown != 0
 }
 
-func (self RadiotapHEData1) DataDCMKnown() bool {
-	return self&RadiotapHEData1DataDCMKnown != 0
+func (r RadiotapHEData1) DataDCMKnown() bool {
+	return r&RadiotapHEData1DataDCMKnown != 0
 }
 
-func (self RadiotapHEData1) CodingKnown() bool {
-	return self&RadiotapHEData1CodingKnown != 0
+func (r RadiotapHEData1) CodingKnown() bool {
+	return r&RadiotapHEData1CodingKnown != 0
 }
 
-func (self RadiotapHEData1) LDPCExtraSymbolSegmentKnown() bool {
-	return self&RadiotapHEData1LDPCExtraSymbolSegmentKnown != 0
+func (r RadiotapHEData1) LDPCExtraSymbolSegmentKnown() bool {
+	return r&RadiotapHEData1LDPCExtraSymbolSegmentKnown != 0
 }
 
-func (self RadiotapHEData1) STBCKnown() bool {
-	return self&RadiotapHEData1STBCKnown != 0
+func (r RadiotapHEData1) STBCKnown() bool {
+	return r&RadiotapHEData1STBCKnown != 0
 }
 
-func (self RadiotapHEData1) SpatialReuseKnown() bool {
-	return self&RadiotapHEData1SpatialReuseKnown != 0
+func (r RadiotapHEData1) SpatialReuseKnown() bool {
+	return r&RadiotapHEData1SpatialReuseKnown != 0
 }
 
-func (self RadiotapHEData1) SpatialReuse1Known() bool {
-	return self&RadiotapHEData1SpatialReuse1Known != 0
+func (r RadiotapHEData1) SpatialReuse1Known() bool {
+	return r&RadiotapHEData1SpatialReuse1Known != 0
 }
 
-func (self RadiotapHEData1) SpatialReuse2Known() bool {
-	return self&RadiotapHEData1SpatialReuse2Known != 0
+func (r RadiotapHEData1) SpatialReuse2Known() bool {
+	return r&RadiotapHEData1SpatialReuse2Known != 0
 }
 
-func (self RadiotapHEData1) StaIDKnown() bool {
-	return self&RadiotapHEData1StaIDKnown != 0
+func (r RadiotapHEData1) StaIDKnown() bool {
+	return r&RadiotapHEData1StaIDKnown != 0
 }
 
-func (self RadiotapHEData1) SpatialReuse3Known() bool {
-	return self&RadiotapHEData1SpatialReuse3Known != 0
+func (r RadiotapHEData1) SpatialReuse3Known() bool {
+	return r&RadiotapHEData1SpatialReuse3Known != 0
 }
 
-func (self RadiotapHEData1) SpatialReuse4Known() bool {
-	return self&RadiotapHEData1SpatialReuse4Known != 0
+func (r RadiotapHEData1) SpatialReuse4Known() bool {
+	return r&RadiotapHEData1SpatialReuse4Known != 0
 }
 
-func (self RadiotapHEData1) DataBWRUAllocationKnown() bool {
-	return self&RadiotapHEData1DataBWRUAllocationKnown != 0
+func (r RadiotapHEData1) DataBWRUAllocationKnown() bool {
+	return r&RadiotapHEData1DataBWRUAllocationKnown != 0
 }
 
-func (self RadiotapHEData1) DopplerKnown() bool {
-	return self&RadiotapHEData1DopplerKnown != 0
+func (r RadiotapHEData1) DopplerKnown() bool {
+	return r&RadiotapHEData1DopplerKnown != 0
 }
 
 type RadiotapHePpduFormat uint8
@@ -921,8 +921,8 @@ const (
 	RadiotapHePpduFormatHE_TRIG
 )
 
-func (self RadiotapHePpduFormat) String() string {
-	switch self {
+func (r RadiotapHePpduFormat) String() string {
+	switch r {
 	case RadiotapHePpduFormatHE_SU:
 		return "HE SU"
 	case RadiotapHePpduFormatHE_EXT_SU:
@@ -932,7 +932,7 @@ func (self RadiotapHePpduFormat) String() string {
 	case RadiotapHePpduFormatHE_TRIG:
 		return "HE TRIG"
 	}
-	return fmt.Sprintf("HE Unknown(%d)", self)
+	return fmt.Sprintf("HE Unknown(%d)", r)
 }
 
 type RadiotapHEData2 uint16
@@ -951,48 +951,48 @@ const (
 	RadiotapHEData2PriSec80MHz              RadiotapHEData2 = 0x8000
 )
 
-func (self RadiotapHEData2) PriSec80MHzKnown() bool {
-	return self&RadiotapHEData2PriSec80MHzKnown != 0
+func (r RadiotapHEData2) PriSec80MHzKnown() bool {
+	return r&RadiotapHEData2PriSec80MHzKnown != 0
 }
 
-func (self RadiotapHEData2) GIKnown() bool {
-	return self&RadiotapHEData2GIKnown != 0
+func (r RadiotapHEData2) GIKnown() bool {
+	return r&RadiotapHEData2GIKnown != 0
 }
 
-func (self RadiotapHEData2) NumLTFKnown() bool {
-	return self&RadiotapHEData2NumLTFKnown != 0
+func (r RadiotapHEData2) NumLTFKnown() bool {
+	return r&RadiotapHEData2NumLTFKnown != 0
 }
 
-func (self RadiotapHEData2) PreFECPaddingFactorKnown() bool {
-	return self&RadiotapHEData2PreFECPaddingFactorKnown != 0
+func (r RadiotapHEData2) PreFECPaddingFactorKnown() bool {
+	return r&RadiotapHEData2PreFECPaddingFactorKnown != 0
 }
 
-func (self RadiotapHEData2) TxBFKnown() bool {
-	return self&RadiotapHEData2TxBFKnown != 0
+func (r RadiotapHEData2) TxBFKnown() bool {
+	return r&RadiotapHEData2TxBFKnown != 0
 }
 
-func (self RadiotapHEData2) PEDisambiguityKnown() bool {
-	return self&RadiotapHEData2PEDisambiguityKnown != 0
+func (r RadiotapHEData2) PEDisambiguityKnown() bool {
+	return r&RadiotapHEData2PEDisambiguityKnown != 0
 }
 
-func (self RadiotapHEData2) TXOPKnown() bool {
-	return self&RadiotapHEData2TXOPKnown != 0
+func (r RadiotapHEData2) TXOPKnown() bool {
+	return r&RadiotapHEData2TXOPKnown != 0
 }
 
-func (self RadiotapHEData2) MidamblePeriodicityKnown() bool {
-	return self&RadiotapHEData2MidamblePeriodicityKnown != 0
+func (r RadiotapHEData2) MidamblePeriodicityKnown() bool {
+	return r&RadiotapHEData2MidamblePeriodicityKnown != 0
 }
 
-func (self RadiotapHEData2) RUAllocationOffset() int {
-	return int(self&RadiotapHEData2RUAllocationOffset) >> 8
+func (r RadiotapHEData2) RUAllocationOffset() int {
+	return int(r&RadiotapHEData2RUAllocationOffset) >> 8
 }
 
-func (self RadiotapHEData2) RUAllocationOffsetKnown() bool {
-	return self&RadiotapHEData2RUAllocationOffsetKnown != 0
+func (r RadiotapHEData2) RUAllocationOffsetKnown() bool {
+	return r&RadiotapHEData2RUAllocationOffsetKnown != 0
 }
 
-func (self RadiotapHEData2) PriSec80MHz() bool {
-	return self&RadiotapHEData2PriSec80MHz != 0
+func (r RadiotapHEData2) PriSec80MHz() bool {
+	return r&RadiotapHEData2PriSec80MHz != 0
 }
 
 type RadiotapHEPriSec80MHz bool
@@ -1010,36 +1010,36 @@ const (
 	RadiotapHEData3STBC                   RadiotapHEData3 = 0x8000
 )
 
-func (self RadiotapHEData3) BSSColor() int {
-	return int(self & RadiotapHEData3BSSColorMask)
+func (r RadiotapHEData3) BSSColor() int {
+	return int(r & RadiotapHEData3BSSColorMask)
 }
 
-func (self RadiotapHEData3) BeamChange() bool {
-	return self&RadiotapHEData3BeamChange != 0
+func (r RadiotapHEData3) BeamChange() bool {
+	return r&RadiotapHEData3BeamChange != 0
 }
 
-func (self RadiotapHEData3) ULDL() bool {
-	return self&RadiotapHEData3ULDL != 0
+func (r RadiotapHEData3) ULDL() bool {
+	return r&RadiotapHEData3ULDL != 0
 }
 
-func (self RadiotapHEData3) DataMCS() uint8 {
-	return uint8((self & RadiotapHEData3DataMCSMask) >> 8)
+func (r RadiotapHEData3) DataMCS() uint8 {
+	return uint8((r & RadiotapHEData3DataMCSMask) >> 8)
 }
 
-func (self RadiotapHEData3) DataDCM() bool {
-	return self&RadiotapHEData3DataDCM != 0
+func (r RadiotapHEData3) DataDCM() bool {
+	return r&RadiotapHEData3DataDCM != 0
 }
 
-func (self RadiotapHEData3) Coding() RadiotapHECoding {
-	return self&RadiotapHEData3Coding != 0
+func (r RadiotapHEData3) Coding() RadiotapHECoding {
+	return r&RadiotapHEData3Coding != 0
 }
 
-func (self RadiotapHEData3) LDPCExtraSymbolSegment() bool {
-	return self&RadiotapHEData3LDPCEXtraSymbolSegment != 0
+func (r RadiotapHEData3) LDPCExtraSymbolSegment() bool {
+	return r&RadiotapHEData3LDPCEXtraSymbolSegment != 0
 }
 
-func (self RadiotapHEData3) STBC() bool {
-	return self&RadiotapHEData3STBC != 0
+func (r RadiotapHEData3) STBC() bool {
+	return r&RadiotapHEData3STBC != 0
 }
 
 type RadiotapHECoding bool
@@ -1237,20 +1237,20 @@ const (
 	RadiotapHEData6MidamblePeriodic RadiotapHEData6 = 0x8000
 )
 
-func (self RadiotapHEData6) NSTS() int {
-	return int(self & RadiotapHEData6NSTS)
+func (r RadiotapHEData6) NSTS() int {
+	return int(r & RadiotapHEData6NSTS)
 }
 
-func (self RadiotapHEData6) Doppler() bool {
-	return self&RadiotapHEData6Doppler != 0
+func (r RadiotapHEData6) Doppler() bool {
+	return r&RadiotapHEData6Doppler != 0
 }
 
-func (self RadiotapHEData6) TXOP() int {
-	return int((self & RadiotapHEData6TXOP) >> 8)
+func (r RadiotapHEData6) TXOP() int {
+	return int((r & RadiotapHEData6TXOP) >> 8)
 }
 
-func (self RadiotapHEData6) MidamblePeriodicity() MidamblePeriodicity {
-	return MidamblePeriodicity((self & RadiotapHEData6MidamblePeriodic) >> 15)
+func (r RadiotapHEData6) MidamblePeriodicity() MidamblePeriodicity {
+	return MidamblePeriodicity((r & RadiotapHEData6MidamblePeriodic) >> 15)
 }
 
 func decodeRadioTap(data []byte, p gopacket.PacketBuilder) error {
@@ -1315,7 +1315,7 @@ func (m *RadioTap) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) erro
 		df.SetTruncated()
 		return errors.New("RadioTap too small")
 	}
-	m.Version = uint8(data[0])
+	m.Version = data[0]
 	m.Length = binary.LittleEndian.Uint16(data[2:4])
 	m.Present = RadioTapPresent(binary.LittleEndian.Uint32(data[4:8]))
 
@@ -1386,15 +1386,15 @@ func (m *RadioTap) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) erro
 		offset++
 	}
 	if m.Present.Antenna() {
-		m.Antenna = uint8(data[offset])
+		m.Antenna = data[offset]
 		offset++
 	}
 	if m.Present.DBAntennaSignal() {
-		m.DBAntennaSignal = uint8(data[offset])
+		m.DBAntennaSignal = data[offset]
 		offset++
 	}
 	if m.Present.DBAntennaNoise() {
-		m.DBAntennaNoise = uint8(data[offset])
+		m.DBAntennaNoise = data[offset]
 		offset++
 	}
 	if m.Present.RxFlags() {
@@ -1408,18 +1408,18 @@ func (m *RadioTap) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) erro
 		offset += 2
 	}
 	if m.Present.RtsRetries() {
-		m.RtsRetries = uint8(data[offset])
+		m.RtsRetries = data[offset]
 		offset++
 	}
 	if m.Present.DataRetries() {
-		m.DataRetries = uint8(data[offset])
+		m.DataRetries = data[offset]
 		offset++
 	}
 	if m.Present.MCS() {
 		m.MCS = RadioTapMCS{
 			RadioTapMCSKnown(data[offset]),
 			RadioTapMCSFlags(data[offset+1]),
-			uint8(data[offset+2]),
+			data[offset+2],
 		}
 		offset += 3
 	}
@@ -1428,7 +1428,7 @@ func (m *RadioTap) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) erro
 		m.AMPDUStatus = RadioTapAMPDUStatus{
 			Reference: binary.LittleEndian.Uint32(data[offset:]),
 			Flags:     RadioTapAMPDUStatusFlags(binary.LittleEndian.Uint16(data[offset+4:])),
-			CRC:       uint8(data[offset+6]),
+			CRC:       data[offset+6],
 		}
 		offset += 8
 	}
@@ -1437,15 +1437,15 @@ func (m *RadioTap) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) erro
 		m.VHT = RadioTapVHT{
 			Known:     RadioTapVHTKnown(binary.LittleEndian.Uint16(data[offset:])),
 			Flags:     RadioTapVHTFlags(data[offset+2]),
-			Bandwidth: uint8(data[offset+3]),
+			Bandwidth: data[offset+3],
 			MCSNSS: [4]RadioTapVHTMCSNSS{
 				RadioTapVHTMCSNSS(data[offset+4]),
 				RadioTapVHTMCSNSS(data[offset+5]),
 				RadioTapVHTMCSNSS(data[offset+6]),
 				RadioTapVHTMCSNSS(data[offset+7]),
 			},
-			Coding:     uint8(data[offset+8]),
-			GroupId:    uint8(data[offset+9]),
+			Coding:     data[offset+8],
+			GroupId:    data[offset+9],
 			PartialAID: binary.LittleEndian.Uint16(data[offset+10:]),
 		}
 		offset += 12
@@ -1583,17 +1583,17 @@ func (m RadioTap) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.Serializ
 	}
 
 	if m.Present.Antenna() {
-		buf[offset] = uint8(m.Antenna)
+		buf[offset] = m.Antenna
 		offset++
 	}
 
 	if m.Present.DBAntennaSignal() {
-		buf[offset] = uint8(m.DBAntennaSignal)
+		buf[offset] = m.DBAntennaSignal
 		offset++
 	}
 
 	if m.Present.DBAntennaNoise() {
-		buf[offset] = uint8(m.DBAntennaNoise)
+		buf[offset] = m.DBAntennaNoise
 		offset++
 	}
 
@@ -1622,7 +1622,7 @@ func (m RadioTap) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.Serializ
 	if m.Present.MCS() {
 		buf[offset] = uint8(m.MCS.Known)
 		buf[offset+1] = uint8(m.MCS.Flags)
-		buf[offset+2] = uint8(m.MCS.MCS)
+		buf[offset+2] = m.MCS.MCS
 
 		offset += 3
 	}
@@ -1644,13 +1644,13 @@ func (m RadioTap) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.Serializ
 		binary.LittleEndian.PutUint16(buf[offset:], uint16(m.VHT.Known))
 
 		buf[offset+2] = uint8(m.VHT.Flags)
-		buf[offset+3] = uint8(m.VHT.Bandwidth)
+		buf[offset+3] = m.VHT.Bandwidth
 		buf[offset+4] = uint8(m.VHT.MCSNSS[0])
 		buf[offset+5] = uint8(m.VHT.MCSNSS[1])
 		buf[offset+6] = uint8(m.VHT.MCSNSS[2])
 		buf[offset+7] = uint8(m.VHT.MCSNSS[3])
-		buf[offset+8] = uint8(m.VHT.Coding)
-		buf[offset+9] = uint8(m.VHT.GroupId)
+		buf[offset+8] = m.VHT.Coding
+		buf[offset+9] = m.VHT.GroupId
 
 		binary.LittleEndian.PutUint16(buf[offset+10:offset+12], m.VHT.PartialAID)
 

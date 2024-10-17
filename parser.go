@@ -75,14 +75,14 @@ type DecodingLayerSparse []DecodingLayer
 
 // Put implements DecodingLayerContainer interface.
 func (dl DecodingLayerSparse) Put(d DecodingLayer) DecodingLayerContainer {
-	maxLayerType := LayerType(len(dl) - 1)
+	maxLayerTypeLen := LayerType(len(dl) - 1)
 	for _, typ := range d.CanDecode().LayerTypes() {
-		if typ > maxLayerType {
-			maxLayerType = typ
+		if typ > maxLayerTypeLen {
+			maxLayerTypeLen = typ
 		}
 	}
 
-	if extra := maxLayerType - LayerType(len(dl)) + 1; extra > 0 {
+	if extra := maxLayerTypeLen - LayerType(len(dl)) + 1; extra > 0 {
 		dl = append(dl, make([]DecodingLayer, extra)...)
 	}
 

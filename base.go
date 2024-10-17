@@ -43,19 +43,19 @@ type Payload []byte
 func (p Payload) LayerType() LayerType { return LayerTypePayload }
 
 // LayerContents returns the bytes making up this layer.
-func (p Payload) LayerContents() []byte { return []byte(p) }
+func (p Payload) LayerContents() []byte { return p }
 
 // LayerPayload returns the payload within this layer.
 func (p Payload) LayerPayload() []byte { return nil }
 
 // Payload returns this layer as bytes.
-func (p Payload) Payload() []byte { return []byte(p) }
+func (p Payload) Payload() []byte { return p }
 
 // String implements fmt.Stringer.
 func (p Payload) String() string { return fmt.Sprintf("%d byte(s)", len(p)) }
 
 // GoString implements fmt.GoStringer.
-func (p Payload) GoString() string { return LongBytesGoString([]byte(p)) }
+func (p Payload) GoString() string { return LongBytesGoString(p) }
 
 // CanDecode implements DecodingLayer.
 func (p Payload) CanDecode() LayerClass { return LayerTypePayload }
@@ -65,7 +65,7 @@ func (p Payload) NextLayerType() LayerType { return LayerTypeZero }
 
 // DecodeFromBytes implements DecodingLayer.
 func (p *Payload) DecodeFromBytes(data []byte, df DecodeFeedback) error {
-	*p = Payload(data)
+	*p = data
 	return nil
 }
 
@@ -100,13 +100,13 @@ type Fragment []byte
 func (p *Fragment) LayerType() LayerType { return LayerTypeFragment }
 
 // LayerContents implements Layer.
-func (p *Fragment) LayerContents() []byte { return []byte(*p) }
+func (p *Fragment) LayerContents() []byte { return *p }
 
 // LayerPayload implements Layer.
 func (p *Fragment) LayerPayload() []byte { return nil }
 
 // Payload returns this layer as a byte slice.
-func (p *Fragment) Payload() []byte { return []byte(*p) }
+func (p *Fragment) Payload() []byte { return *p }
 
 // String implements fmt.Stringer.
 func (p *Fragment) String() string { return fmt.Sprintf("%d byte(s)", len(*p)) }
@@ -119,7 +119,7 @@ func (p *Fragment) NextLayerType() LayerType { return LayerTypeZero }
 
 // DecodeFromBytes implements DecodingLayer.
 func (p *Fragment) DecodeFromBytes(data []byte, df DecodeFeedback) error {
-	*p = Fragment(data)
+	*p = data
 	return nil
 }
 

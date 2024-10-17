@@ -150,7 +150,7 @@ func (a *ASF) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.SerializeOpt
 		return err
 	}
 	binary.BigEndian.PutUint32(bytes[:4], a.Enterprise)
-	bytes[4] = uint8(a.Type)
+	bytes[4] = a.Type
 	bytes[5] = a.Tag
 	bytes[6] = 0x00
 	if opts.FixLengths {
