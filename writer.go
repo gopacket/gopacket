@@ -205,10 +205,13 @@ func (w *serializeBuffer) PushLayer(l LayerType) {
 //	gopacket.SerializeLayers(buf, opts, d, e, f)
 //	secondPayload := buf.Bytes()  // contains byte representation of d(e(f)). firstPayload is now invalidated, since the SerializeLayers call Clears buf.
 func SerializeLayers(w SerializeBuffer, opts SerializeOptions, layers ...SerializableLayer) error {
-	w.Clear()
+	err := w.Clear()
+	if err != nil {
+		return err
+	}
 	for i := len(layers) - 1; i >= 0; i-- {
 		layer := layers[i]
-		err := layer.SerializeTo(w, opts)
+		err = layer.SerializeTo(w, opts)
 		if err != nil {
 			return err
 		}
