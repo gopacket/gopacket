@@ -1,18 +1,13 @@
-package gtp2
+package layers
 
 import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
+	"github.com/gopacket/gopacket"
 )
 
-// LayerTypeGTPv2 registers GTPv2 layer type for use with GoPacket
-var LayerTypeGTPv2 = gopacket.RegisterLayerType(1010,
-	gopacket.LayerTypeMetadata{Name: "GTPv2", Decoder: gopacket.DecodeFunc(decodeGTPv2)})
-
-const gtpMinimumSizeInBytes int = 4
+const gtp2MinimumSizeInBytes int = 4
 
 // IE represents an Information Element in GTPv2, a key component for message structure
 type IE struct {
@@ -39,15 +34,9 @@ type GTPv2 struct {
 	Payload  []byte
 }
 
-func init() {
-	// Registers GTPv2 to be identified and processed over its standard UDP port, 2123
-	udpPort := layers.UDPPort(2123)
-	layers.RegisterUDPPortLayerType(udpPort, LayerTypeGTPv2)
-}
-
 // DecodeFromBytes analyses a byte slice and attempts to decode it as a GTPv2 packet
 func (g *GTPv2) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
-	hLen := gtpMinimumSizeInBytes
+	hLen := gtp2MinimumSizeInBytes
 	dLen := len(data)
 	if dLen < hLen {
 		return fmt.Errorf("GTP packet too small: %d bytes", dLen)

@@ -1,11 +1,10 @@
-package gtp2
+package layers
 
 import (
 	"reflect"
 	"testing"
 
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
+	"github.com/gopacket/gopacket"
 )
 
 // testGTPv2Packet packet is:
@@ -28,7 +27,7 @@ var testGTPv2Packet = []byte{
 }
 
 func TestGTPv2Packet(t *testing.T) {
-	p := gopacket.NewPacket(testGTPv2Packet, layers.LayerTypeEthernet, gopacket.Default)
+	p := gopacket.NewPacket(testGTPv2Packet, LayerTypeEthernet, gopacket.Default)
 	if p.ErrorLayer() != nil {
 		t.Error("Failed to decode packet:", p.ErrorLayer().Error())
 	}
