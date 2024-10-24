@@ -1056,6 +1056,16 @@ func (rr *DNSResourceRecord) decodeRData(data []byte, offset int, buffer *[]byte
 			return err
 		}
 		rr.OPT = allOPT
+	case DNSTypeRRSIG:
+		err := rr.RRSIG.decode(data, offset)
+		if err != nil {
+			return err
+		}
+	case DNSTypeDNSKEY:
+		err := rr.DNSKEY.decode(data, offset)
+		if err != nil {
+			return err
+		}
 	case DNSTypeSVCB, DNSTypeHTTPS:
 		svcb, err := decodeSVCB(data, offset, buffer)
 		if err != nil {
@@ -1211,13 +1221,55 @@ type DNSRRSIG struct {
 }
 
 func (rrsig DNSRRSIG) size() int {
-	return 18 + len(rrsig.SignerName) + len(rrsig.Signature)
+	// 18 bytes for the fixed fields, 2 bytes for the first Label Length, and ending 0x00 byte.
+	return 18 + len(rrsig.SignerName) + 2 + len(rrsig.Signature)
 }
 
 func (rrsig DNSRRSIG) String() string {
 	return fmt.Sprintf("RRSIG %d %d %d %d %d %d %d %v %v",
 		rrsig.TypeCovered, rrsig.Algorithm, rrsig.Labels, rrsig.OriginalTTL,
 		rrsig.Expiration, rrsig.Inception, rrsig.KeyTag, rrsig.SignerName, rrsig.Signature)
+}
+
+// RRSIG RDATA Wire Format
+// 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3 3
+// 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |          Type Covered        |   Algorithm   |     Labels     |
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |                          Original TTL                         |
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |                      Signature Expiration                     |
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |                      Signature Inception                      |
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |            Key Tag           |                                /
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+          Signer’s Name        /
+// /                                                               /
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// /                                         						/
+// /                            Signature                          /
+// / 																/
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+func (rrsig *DNSRRSIG) decode(data []byte, offset int) error {
+	if len(data) < offset+18 {
+		return errors.New("RRSIG too small")
+	}
+	var err error
+	rrsig.TypeCovered = DNSType(binary.BigEndian.Uint16(data[offset:]))
+	rrsig.Algorithm = DNSSECAlgorithm(data[offset+2])
+	rrsig.Labels = data[offset+3]
+	rrsig.OriginalTTL = binary.BigEndian.Uint32(data[offset+4:])
+	rrsig.Expiration = binary.BigEndian.Uint32(data[offset+8:])
+	rrsig.Inception = binary.BigEndian.Uint32(data[offset+12:])
+	rrsig.KeyTag = binary.BigEndian.Uint16(data[offset+16:])
+	_, offset, err = decodeName(data, offset+18, &rrsig.SignerName, 1)
+	rrsig.SignerName = rrsig.SignerName[1:] // remove the first '.'
+	if err != nil {
+		return err
+	}
+	rrsig.Signature = data[offset:]
+	return nil
 }
 
 func (rrsig DNSRRSIG) encode(data []byte, offset int) {
@@ -1228,8 +1280,7 @@ func (rrsig DNSRRSIG) encode(data []byte, offset int) {
 	binary.BigEndian.PutUint32(data[offset+8:], rrsig.Expiration)
 	binary.BigEndian.PutUint32(data[offset+12:], rrsig.Inception)
 	binary.BigEndian.PutUint16(data[offset+16:], rrsig.KeyTag)
-	offset += 18
-	offset += copy(data[offset:], rrsig.SignerName)
+	offset += encodeName(rrsig.SignerName, data[offset+18:], 0) + 18
 	copy(data[offset:], rrsig.Signature)
 }
 
@@ -1271,12 +1322,32 @@ func (dnskey DNSKEY) String() string {
 		dnskey.Flags, dnskey.Protocol, dnskey.Algorithm, dnskey.PublicKey)
 }
 
+// DNSKEY RDATA Wire Format
+// 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3 3
+// 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// |             Flags            |    Protocol   |    Algorithm   |                      |
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+// /                                                               /
+// /                           Public Key                          /
+// /                                                               /
+// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+func (dnskey *DNSKEY) decode(data []byte, offset int) error {
+	if len(data) < offset+4 {
+		return errors.New("DNSKEY too small")
+	}
+	dnskey.Flags = DNSKEYFlag(binary.BigEndian.Uint16(data[offset:]))
+	dnskey.Protocol = DNSKEYProtocol(data[offset+2])
+	dnskey.Algorithm = DNSSECAlgorithm(data[offset+3])
+	dnskey.PublicKey = data[offset+4:]
+	return nil
+}
+
 func (dnskey DNSKEY) encode(data []byte, offset int) {
 	binary.BigEndian.PutUint16(data[offset:], uint16(dnskey.Flags))
 	data[offset+2] = uint8(dnskey.Protocol)
 	data[offset+3] = uint8(dnskey.Algorithm)
-	offset += 4
-	copy(data[offset:], dnskey.PublicKey)
+	copy(data[offset+4:], dnskey.PublicKey)
 }
 
 // DNSKEYFlag common values

@@ -274,6 +274,180 @@ func TestParseDNSTypeOPT(t *testing.T) {
 	}
 }
 
+// Tested RRSIG Resource Record
+// ###[ DNS RRSIG Resource Record ]###
+//
+//	 rrname    = 'www.keytrap.test.'
+//	 type      = RRSIG
+//	 rclass    = IN
+//	 ttl       = 86400
+//	 rdlen     = 128
+//	 typecovered= A
+//	 algorithm = ECDSA Curve P-384 with SHA-384
+//	 labels    = 3
+//	 originalttl= 86400
+//	 expiration= Wed, 06 Nov 2024 01:29:18 +0800 (1730856558)
+//	 inception = Mon, 07 Oct 2024 01:29:18 +0800 (1728264558)
+//	 keytag    = 6350
+//	 signersname= 'keytrap.test.'
+//	 signature = '\\\x11ΖX\\xc3\\xe2PE\\xa5afm\\xed\\xac\\\\xd8Dnp\\xda\x0c\\xf0L\\x9fg\\xb5>\\xfc4\x00\\x8bw5oc\\xf7l\\xcf\\xe0a\\xc6\tR7!-Dk{\\x86\\xabI
+//				\\xc1qA\\xd5z\\xdea\\xc6\\xc5\\xe6\\x86J\x1e/2.\x0e\\xd5<U\\xae\x0eؼ\\x85!\\xd5\\xf9*me\\xa5\\xd9\\xed\\xc1\\xca\\xf48\\xe2\x00\\x98\x03y'
+//
+//		RRSIG Wire Format
+var testParseDNSTypeRRSIG = []byte{
+	0x03, 0x77, 0x77, 0x77, 0x07, 0x6b, 0x65, 0x79,
+	0x74, 0x72, 0x61, 0x70, 0x04, 0x74, 0x65, 0x73,
+	0x74, 0x00, 0x00, 0x2e, 0x00, 0x01, 0x00, 0x01,
+	0x51, 0x80, 0x00, 0x80, 0x00, 0x01, 0x0e, 0x03,
+	0x00, 0x01, 0x51, 0x80, 0x67, 0x2a, 0xc6, 0x6e,
+	0x67, 0x03, 0x39, 0x6e, 0x18, 0xce, 0x07, 0x6b,
+	0x65, 0x79, 0x74, 0x72, 0x61, 0x70, 0x04, 0x74,
+	0x65, 0x73, 0x74, 0x00, 0x5a, 0x32, 0x90, 0x08,
+	0x41, 0xf1, 0xf7, 0xad, 0x90, 0x7c, 0x0f, 0xf1,
+	0x88, 0x99, 0x3b, 0x94, 0xbe, 0x33, 0x8a, 0x2c,
+	0xff, 0x72, 0xfe, 0x22, 0xf4, 0xb6, 0x6d, 0xd8,
+	0xa1, 0x3a, 0x97, 0xf4, 0xa7, 0xf1, 0x22, 0x5f,
+	0x3e, 0x71, 0x14, 0x68, 0x50, 0xba, 0xaa, 0xc4,
+	0xd3, 0x5e, 0x41, 0x16, 0xa4, 0x14, 0x14, 0xfa,
+	0x58, 0xa8, 0x4b, 0x02, 0xfa, 0xc3, 0x31, 0x8a,
+	0x0e, 0x74, 0x98, 0x7f, 0xe5, 0x01, 0x66, 0xad,
+	0x82, 0x19, 0xd3, 0x6b, 0x22, 0x4c, 0x4a, 0xa2,
+	0x12, 0xa9, 0x0d, 0xb2, 0x80, 0xaa, 0x1d, 0xac,
+	0xc0, 0xbf, 0xc3, 0x0b, 0xc9, 0x63, 0x2e, 0x9b,
+	0x8d, 0x7f, 0x72, 0x05,
+}
+
+func TestParseDNSTypeRRSIG(t *testing.T) {
+	rr := DNSResourceRecord{}
+	rr.decode(testParseDNSTypeRRSIG, 0, nil, &[]byte{})
+	rrsig := &rr.RRSIG
+	if rrsig.TypeCovered != DNSTypeA {
+		t.Errorf("Incorrect RRSIG type covered, expected %d, got %d", DNSTypeA, rrsig.TypeCovered)
+	}
+	if rrsig.Algorithm != DNSSECAlgorithmECDSAP384SHA384 {
+		t.Errorf("Incorrect RRSIG algorithm, expected %d, got %d", DNSSECAlgorithmECDSAP384SHA384, rrsig.Algorithm)
+	}
+	if rrsig.Labels != 3 {
+		t.Errorf("Incorrect RRSIG labels, expected %d, got %d", 3, rrsig.Labels)
+	}
+	if rrsig.OriginalTTL != 86400 {
+		t.Errorf("Incorrect RRSIG original TTL, expected %d, got %d", 86400, rrsig.OriginalTTL)
+	}
+	if rrsig.Expiration != uint32(1730856558) {
+		t.Errorf("Incorrect RRSIG expiration, expected %d, got %d", 1730856558, rrsig.Expiration)
+	}
+	if rrsig.Inception != uint32(1728264558) {
+		t.Errorf("Incorrect RRSIG inception, expected %d, got %d", 1728264558, rrsig.Inception)
+	}
+	if rrsig.KeyTag != 6350 {
+		t.Errorf("Incorrect RRSIG key tag, expected %d, got %d", 6350, rrsig.KeyTag)
+	}
+	if string(rrsig.SignerName) != "keytrap.test" {
+		t.Errorf("Incorrect RRSIG signer name, expected %q, got %q", "keytrap.test.", string(rrsig.SignerName))
+	}
+	// ECDSA Curve P-384 with SHA-384 signature is 96 bytes long
+	if !bytes.Equal(rrsig.Signature, testParseDNSTypeRRSIG[len(testParseDNSTypeRRSIG)-96:]) {
+		t.Errorf("Incorrect RRSIG signature, expected \n%v,\ngot \n%v", testParseDNSTypeRRSIG[len(testParseDNSTypeRRSIG)-96:], rrsig.Signature)
+	}
+}
+
+func TestEncodeDNSTypeRRSIG(t *testing.T) {
+	rr := DNSResourceRecord{
+		Name:  []byte("www.keytrap.test"),
+		Type:  DNSTypeRRSIG,
+		Class: DNSClassIN,
+		TTL:   86400,
+		RRSIG: DNSRRSIG{
+			TypeCovered: DNSTypeA,
+			Algorithm:   DNSSECAlgorithmECDSAP384SHA384,
+			Labels:      3,
+			OriginalTTL: 86400,
+			Expiration:  1730856558,
+			Inception:   1728264558,
+			KeyTag:      6350,
+			SignerName:  []byte("keytrap.test"),
+			Signature:   testParseDNSTypeRRSIG[len(testParseDNSTypeRRSIG)-96:],
+		},
+	}
+	wireData := make([]byte, len(testParseDNSTypeRRSIG))
+	rr.encode(wireData, 0, gopacket.SerializeOptions{})
+	if !bytes.Equal(wireData, testParseDNSTypeRRSIG) {
+		t.Errorf("Incorrect RRSIG wire format, expected \n%v,\ngot \n%v\n", testParseDNSTypeRRSIG, wireData)
+	}
+}
+
+// Tested DNSKEY Resource Record
+// ###[ DNS DNSKEY Resource Record ]###
+//
+//	rrname    = 'keytrap.test.'
+//	type      = DNSKEY
+//	rclass    = IN
+//	ttl       = 86400
+//	rdlen     = 100
+//	flags     = SZ
+//	protocol  = 3
+//	algorithm = ECDSA Curve P-384 with SHA-384
+//	publickey = '32l\x15;@\\xa3H\\xfc\\xa8jC"\x11\x0c\\x9c\\xae\x08\\x99<\\x98\\xc0\\xcc\x03=N`\\xb7\\xf1Z]ޓ;\x0e\\x80\\xbd\\x90\\xc0\\x8fhe\\x85\\x9b\\xda\\xc4\\xc5\\xd5\\xeb\x10\\xb0\\xd4\\xc59\\x88\\xfb\\xf9e\n\\xdb\\xdc\\xd0\\xcbQO\\x93[N☞F\x0f\\xd6\n\\x8bD"\\x8b*h\\xfb8m/\\x86\\x86h\\xe1\\xbe\\xf3\\xbd2\x1f\x0b\\x98'
+//
+// DNSKEY Wire Format
+var testParseDNSTypeDNSKEY = []byte{
+	0x07, 0x6b, 0x65, 0x79, 0x74, 0x72, 0x61, 0x70,
+	0x04, 0x74, 0x65, 0x73, 0x74, 0x00, 0x00, 0x30,
+	0x00, 0x01, 0x00, 0x01, 0x51, 0x80, 0x00, 0x64,
+	0x01, 0x01, 0x03, 0x0e, 0x33, 0x32, 0x6c, 0x15,
+	0x3b, 0x40, 0xa3, 0x48, 0xfc, 0xa8, 0x6a, 0x43,
+	0x22, 0x11, 0x0c, 0x9c, 0xae, 0x08, 0x99, 0x3c,
+	0x98, 0xc0, 0xcc, 0x03, 0x3d, 0x4e, 0x60, 0xb7,
+	0xf1, 0x5a, 0x5d, 0xde, 0x93, 0x3b, 0x0e, 0x80,
+	0xbd, 0x90, 0xc0, 0x8f, 0x68, 0x65, 0x85, 0x9b,
+	0xda, 0xc4, 0xc5, 0xd5, 0xeb, 0x10, 0xb0, 0xd4,
+	0xc5, 0x39, 0x88, 0xfb, 0xf9, 0x65, 0x0a, 0xdb,
+	0xdc, 0xd0, 0xcb, 0x51, 0x4f, 0x93, 0x5b, 0x4e,
+	0xe2, 0x98, 0x9e, 0x46, 0x0f, 0xd6, 0x0a, 0x8b,
+	0x44, 0x22, 0x8b, 0x2a, 0x68, 0xfb, 0x38, 0x6d,
+	0x2f, 0x86, 0x86, 0x68, 0xe1, 0xbe, 0xf3, 0xbd,
+	0x32, 0x1f, 0x0b, 0x98,
+}
+
+func TestParseDNSTypeDNSKEY(t *testing.T) {
+	rr := DNSResourceRecord{}
+	rr.decode(testParseDNSTypeDNSKEY, 0, nil, &[]byte{})
+	dnskey := &rr.DNSKEY
+	if dnskey.Flags != DNSKEYFlagSecureEntryPoint {
+		t.Errorf("Incorrect DNSKEY flags, expected %d, got %d", 256, dnskey.Flags)
+	}
+	if dnskey.Protocol != DNSKEYProtocolValue {
+		t.Errorf("Incorrect DNSKEY protocol, expected %d, got %d", 3, dnskey.Protocol)
+	}
+	if dnskey.Algorithm != DNSSECAlgorithmECDSAP384SHA384 {
+		t.Errorf("Incorrect DNSKEY algorithm, expected %d, got %d", DNSSECAlgorithmECDSAP384SHA384, dnskey.Algorithm)
+	}
+	// ECDSA Curve P-384 with SHA-384 public key is 96 bytes long
+	if !bytes.Equal(dnskey.PublicKey, testParseDNSTypeDNSKEY[len(testParseDNSTypeDNSKEY)-96:]) {
+		t.Errorf("Incorrect DNSKEY public key, expected \n%v,\ngot \n%v", testParseDNSTypeDNSKEY[len(testParseDNSTypeDNSKEY)-96:], dnskey.PublicKey)
+	}
+}
+
+func TestEncodeDNSTypeDNSKEY(t *testing.T) {
+	rr := DNSResourceRecord{
+		Name:  []byte("keytrap.test"),
+		Type:  DNSTypeDNSKEY,
+		Class: DNSClassIN,
+		TTL:   86400,
+		DNSKEY: DNSKEY{
+			Flags:     DNSKEYFlagSecureEntryPoint,
+			Protocol:  DNSKEYProtocolValue,
+			Algorithm: DNSSECAlgorithmECDSAP384SHA384,
+			PublicKey: testParseDNSTypeDNSKEY[len(testParseDNSTypeDNSKEY)-96:],
+		},
+	}
+	wireData := make([]byte, len(testParseDNSTypeDNSKEY))
+	rr.encode(wireData, 0, gopacket.SerializeOptions{})
+	if !bytes.Equal(wireData, testParseDNSTypeDNSKEY) {
+		t.Errorf("Incorrect DNSKEY wire format, expected \n%v,\ngot \n%v\n", testParseDNSTypeDNSKEY, wireData)
+	}
+}
+
 var testParseDNSTypeSVCB = [][]byte{
 	{
 		0xf1, 0x0e, 0x81, 0x80, 0x00, 0x01, 0x00, 0x03,
