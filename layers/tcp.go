@@ -12,6 +12,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/gopacket/gopacket"
 )
@@ -32,6 +33,42 @@ type TCP struct {
 	Padding                                    []byte
 	opts                                       [4]TCPOption
 	tcpipchecksum
+}
+
+func (t *TCP) LogValue() slog.Value {
+	attrs := []slog.Attr{
+		slog.Int("srcPort", int(t.SrcPort)),
+		slog.Int("dstPort", int(t.DstPort)),
+		slog.Int("seq", int(t.Seq)),
+		slog.Int("ack", int(t.Ack)),
+		slog.Int("dataOffset", int(t.DataOffset)),
+		slog.Group("flags",
+			slog.Bool("FIN", t.FIN),
+			slog.Bool("SYN", t.SYN),
+			slog.Bool("RST", t.RST),
+			slog.Bool("PSH", t.PSH),
+			slog.Bool("ACK", t.ACK),
+			slog.Bool("URG", t.URG),
+			slog.Bool("ECE", t.ECE),
+			slog.Bool("CWR", t.CWR),
+			slog.Bool("NS", t.NS)),
+		slog.Int("window", int(t.Window)),
+		slog.Int("checksum", int(t.Checksum)),
+		slog.Int("urgent", int(t.Urgent)),
+	}
+	if len(t.Options) != 0 {
+		tcpOptionAttrs := make([]map[string]any, 0, len(t.Options))
+		for _, option := range t.Options {
+			tcpOptionAttrs = append(tcpOptionAttrs, option.getLogValueAttrsMap())
+		}
+		attrs = append(attrs, slog.Any("options", tcpOptionAttrs))
+	}
+
+	if len(t.Padding) != 0 {
+		attrs = append(attrs, slog.Any("padding", t.Padding))
+	}
+
+	return slog.GroupValue(attrs...)
 }
 
 // TCPOptionKind represents a TCP option code.
@@ -99,6 +136,44 @@ type TCPOption struct {
 	OptionType   TCPOptionKind
 	OptionLength uint8
 	OptionData   []byte
+}
+
+// getLogValueAttrsMap returns a map that should then be used in a slog.Any call.
+// This exists due to a issue in the JSON marshaling of slog.Value which stops LogValue implementations of structs
+// that contain a TCPOption such as TCP simply calling LogValue on a TCPOption which would be more performant.
+//
+// More details on this issue can be found here: https://github.com/golang/go/issues/63204
+func (t TCPOption) getLogValueAttrsMap() map[string]any {
+	switch t.OptionType {
+	case TCPOptionKindTimestamps:
+		if t.OptionLength == 10 && len(t.OptionData) == 8 {
+			return map[string]any{
+				"type":  t.OptionType.String(),
+				"tsVal": binary.BigEndian.Uint32(t.OptionData[:4]),
+				"tsEcr": binary.BigEndian.Uint16(t.OptionData[4:6]),
+			}
+		}
+	case TCPOptionKindMSS:
+		if t.OptionLength == 4 && len(t.OptionData) == 2 {
+			return map[string]any{
+				"type":   t.OptionType.String(),
+				"mssVal": binary.BigEndian.Uint16(t.OptionData)}
+		}
+	}
+	if len(t.OptionData) != 0 {
+		return map[string]any{
+			"type":   t.OptionType.String(),
+			"length": t.OptionLength,
+			"data":   t.OptionData}
+	}
+	return map[string]any{
+		"type":   t.OptionType.String(),
+		"length": t.OptionLength}
+
+}
+
+func (t TCPOption) LogValue() slog.Value {
+	return slog.AnyValue(t.getLogValueAttrsMap())
 }
 
 func (t TCPOption) String() string {
