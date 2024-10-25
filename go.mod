@@ -1,6 +1,6 @@
 module github.com/gopacket/gopacket
 
-go 1.23.0
+go 1.22.0
 
 require (
 	github.com/vishvananda/netlink v1.1.0
