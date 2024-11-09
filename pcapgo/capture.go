@@ -22,14 +22,13 @@ import (
 	"golang.org/x/sys/unix"
 
 	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/htons"
 )
 
 var hdrLen = unix.CmsgSpace(0)
 var auxLen = unix.CmsgSpace(int(unsafe.Sizeof(unix.TpacketAuxdata{})))
 var timensLen = unix.CmsgSpace(int(unsafe.Sizeof(unix.Timespec{})))
 var timeLen = unix.CmsgSpace(int(unsafe.Sizeof(unix.Timeval{})))
-
-func htons(data uint16) uint16 { return data<<8 | data>>8 }
 
 // EthernetHandle holds shared buffers and file descriptor of af_packet socket
 type EthernetHandle struct {
@@ -260,13 +259,13 @@ func NewEthernetHandle(ifname string) (*EthernetHandle, error) {
 		return nil, fmt.Errorf("couldn't query interface %s: %s", ifname, err)
 	}
 
-	fd, err := unix.Socket(unix.AF_PACKET, unix.SOCK_RAW, int(htons(unix.ETH_P_ALL)))
+	fd, err := unix.Socket(unix.AF_PACKET, unix.SOCK_RAW, int(htons.Htons(unix.ETH_P_ALL)))
 	if err != nil {
 		return nil, fmt.Errorf("couldn't open packet socket: %s", err)
 	}
 
 	addr := unix.SockaddrLinklayer{
-		Protocol: htons(unix.ETH_P_ALL),
+		Protocol: htons.Htons(unix.ETH_P_ALL),
 		Ifindex:  intf.Index,
 	}
 

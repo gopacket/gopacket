@@ -29,6 +29,7 @@ import (
 	"golang.org/x/sys/unix"
 
 	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/htons"
 )
 
 var pageSize = unix.Getpagesize()
@@ -163,7 +164,7 @@ func (h *TPacket) bindToInterface(ifaceName string) error {
 	}
 	h.ifIndex = ifIndex
 	s := &unix.SockaddrLinklayer{
-		Protocol: htons(uint16(unix.ETH_P_ALL)),
+		Protocol: htons.Htons(uint16(unix.ETH_P_ALL)),
 		Ifindex:  ifIndex,
 	}
 	return unix.Bind(h.fd, s)
@@ -254,7 +255,7 @@ func NewTPacket(opts ...interface{}) (h *TPacket, err error) {
 	if h.opts, err = parseOptions(opts...); err != nil {
 		return nil, err
 	}
-	fd, err := unix.Socket(unix.AF_PACKET, int(h.opts.socktype), int(htons(unix.ETH_P_ALL)))
+	fd, err := unix.Socket(unix.AF_PACKET, int(h.opts.socktype), int(htons.Htons(unix.ETH_P_ALL)))
 	if err != nil {
 		return nil, err
 	}
