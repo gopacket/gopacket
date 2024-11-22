@@ -294,7 +294,7 @@ func NewEthernetHandle(ifname string) (*EthernetHandle, error) {
 		return nil, fmt.Errorf("couldn't query interface %s: %s", ifname, err)
 	}
 
-	fd, err := unix.Socket(unix.AF_PACKET, unix.SOCK_RAW|unix.SOCK_NONBLOCK, int(htons.Htons(unix.ETH_P_ALL)))
+	fd, err := unix.Socket(unix.AF_PACKET, unix.SOCK_RAW|unix.SOCK_CLOEXEC|unix.SOCK_NONBLOCK, int(htons.Htons(unix.ETH_P_ALL)))
 	if err != nil {
 		return nil, fmt.Errorf("couldn't open packet socket: %s", err)
 	}
