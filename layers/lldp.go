@@ -951,8 +951,8 @@ func (l *LinkLayerDiscoveryInfo) Decode8021() (info LLDPInfo8021, err error) {
 			if err = checkLLDPOrgSpecificLen(o, 5); err != nil {
 				return
 			}
-			sup := (o.Info[0]&LLDPAggregationCapability > 0)
-			en := (o.Info[0]&LLDPAggregationStatus > 0)
+			sup := o.Info[0]&LLDPAggregationCapability > 0
+			en := o.Info[0]&LLDPAggregationStatus > 0
 			info.LinkAggregation = LLDPLinkAggregation{sup, en, binary.BigEndian.Uint32(o.Info[1:5])}
 		}
 	}
@@ -969,8 +969,8 @@ func (l *LinkLayerDiscoveryInfo) Decode8023() (info LLDPInfo8023, err error) {
 			if err = checkLLDPOrgSpecificLen(o, 5); err != nil {
 				return
 			}
-			sup := (o.Info[0]&LLDPMACPHYCapability > 0)
-			en := (o.Info[0]&LLDPMACPHYStatus > 0)
+			sup := o.Info[0]&LLDPMACPHYCapability > 0
+			en := o.Info[0]&LLDPMACPHYStatus > 0
 			ca := binary.BigEndian.Uint16(o.Info[1:3])
 			mau := binary.BigEndian.Uint16(o.Info[3:5])
 			info.MACPHYConfigStatus = LLDPMACPHYConfigStatus{sup, en, ca, mau}
@@ -978,12 +978,12 @@ func (l *LinkLayerDiscoveryInfo) Decode8023() (info LLDPInfo8023, err error) {
 			if err = checkLLDPOrgSpecificLen(o, 3); err != nil {
 				return
 			}
-			info.PowerViaMDI.PortClassPSE = (o.Info[0]&LLDPMDIPowerPortClass > 0)
-			info.PowerViaMDI.PSESupported = (o.Info[0]&LLDPMDIPowerCapability > 0)
-			info.PowerViaMDI.PSEEnabled = (o.Info[0]&LLDPMDIPowerStatus > 0)
-			info.PowerViaMDI.PSEPairsAbility = (o.Info[0]&LLDPMDIPowerPairsAbility > 0)
-			info.PowerViaMDI.PSEPowerPair = uint8(o.Info[1])
-			info.PowerViaMDI.PSEClass = uint8(o.Info[2])
+			info.PowerViaMDI.PortClassPSE = o.Info[0]&LLDPMDIPowerPortClass > 0
+			info.PowerViaMDI.PSESupported = o.Info[0]&LLDPMDIPowerCapability > 0
+			info.PowerViaMDI.PSEEnabled = o.Info[0]&LLDPMDIPowerStatus > 0
+			info.PowerViaMDI.PSEPairsAbility = o.Info[0]&LLDPMDIPowerPairsAbility > 0
+			info.PowerViaMDI.PSEPowerPair = o.Info[1]
+			info.PowerViaMDI.PSEClass = o.Info[2]
 			if len(o.Info) >= 7 {
 				info.PowerViaMDI.Type = LLDPPowerType((o.Info[3] & 0xc0) >> 6)
 				info.PowerViaMDI.Source = LLDPPowerSource((o.Info[3] & 0x30) >> 4)
@@ -1060,7 +1060,7 @@ func (l *LinkLayerDiscoveryInfo) DecodeMedia() (info LLDPInfoMedia, err error) {
 			info.NetworkPolicy.VLANId = (b & 0x1ffe) >> 1
 			b = binary.BigEndian.Uint16(o.Info[2:4])
 			info.NetworkPolicy.L2Priority = (b & 0x01c0) >> 6
-			info.NetworkPolicy.DSCPValue = uint8(o.Info[3] & 0x3f)
+			info.NetworkPolicy.DSCPValue = o.Info[3] & 0x3f
 		case LLDPMediaTypeLocation:
 			if err = checkLLDPOrgSpecificLen(o, 1); err != nil {
 				return
@@ -1078,12 +1078,12 @@ func (l *LinkLayerDiscoveryInfo) DecodeMedia() (info LLDPInfoMedia, err error) {
 				info.Location.Coordinate.LongitudeResolution = uint8(o.Info[5]&0xfc) >> 2
 				b = binary.BigEndian.Uint64(o.Info[5:13])
 				info.Location.Coordinate.Longitude = (b & 0x03ffffffff000000) >> 24
-				info.Location.Coordinate.AltitudeType = uint8((o.Info[10] & 0x30) >> 4)
+				info.Location.Coordinate.AltitudeType = (o.Info[10] & 0x30) >> 4
 				b1 := binary.BigEndian.Uint16(o.Info[10:12])
 				info.Location.Coordinate.AltitudeResolution = (b1 & 0xfc0) >> 6
 				b2 := binary.BigEndian.Uint32(o.Info[11:15])
 				info.Location.Coordinate.Altitude = b2 & 0x3fffffff
-				info.Location.Coordinate.Datum = uint8(o.Info[15])
+				info.Location.Coordinate.Datum = o.Info[15]
 			case LLDPLocationFormatAddress:
 				if err = checkLLDPOrgSpecificLen(o, 3); err != nil {
 					return
@@ -1216,17 +1216,17 @@ func (c *LinkLayerDiscoveryInfo) LayerType() gopacket.LayerType {
 }
 
 func getCapabilities(v uint16) (c LLDPCapabilities) {
-	c.Other = (v&LLDPCapsOther > 0)
-	c.Repeater = (v&LLDPCapsRepeater > 0)
-	c.Bridge = (v&LLDPCapsBridge > 0)
-	c.WLANAP = (v&LLDPCapsWLANAP > 0)
-	c.Router = (v&LLDPCapsRouter > 0)
-	c.Phone = (v&LLDPCapsPhone > 0)
-	c.DocSis = (v&LLDPCapsDocSis > 0)
-	c.StationOnly = (v&LLDPCapsStationOnly > 0)
-	c.CVLAN = (v&LLDPCapsCVLAN > 0)
-	c.SVLAN = (v&LLDPCapsSVLAN > 0)
-	c.TMPR = (v&LLDPCapsTmpr > 0)
+	c.Other = v&LLDPCapsOther > 0
+	c.Repeater = v&LLDPCapsRepeater > 0
+	c.Bridge = v&LLDPCapsBridge > 0
+	c.WLANAP = v&LLDPCapsWLANAP > 0
+	c.Router = v&LLDPCapsRouter > 0
+	c.Phone = v&LLDPCapsPhone > 0
+	c.DocSis = v&LLDPCapsDocSis > 0
+	c.StationOnly = v&LLDPCapsStationOnly > 0
+	c.CVLAN = v&LLDPCapsCVLAN > 0
+	c.SVLAN = v&LLDPCapsSVLAN > 0
+	c.TMPR = v&LLDPCapsTmpr > 0
 	return
 }
 
