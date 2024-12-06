@@ -354,6 +354,11 @@ func (w *NgWriter) WriteInterfaceStats(intf int, stats NgInterfaceStatistics) er
 
 // WritePacket writes out packet with the given data and capture info. The given InterfaceIndex must already be added to the file. InterfaceIndex 0 is automatically added by the NewWriter* methods.
 func (w *NgWriter) WritePacket(ci gopacket.CaptureInfo, data []byte) error {
+	return w.WritePacketWithOptions(ci, data, NgPacketOptions{})
+}
+
+// WritePacketWithOptions writes out packet with the given data, capture info and options. The given InterfaceIndex must already be added to the file. InterfaceIndex 0 is automatically added by the NewWriter* methods.
+func (w *NgWriter) WritePacketWithOptions(ci gopacket.CaptureInfo, data []byte, opts NgPacketOptions) error {
 	if ci.InterfaceIndex >= int(w.intf) || ci.InterfaceIndex < 0 {
 		return fmt.Errorf("Can't send statistics for non existent interface %d; have only %d interfaces", ci.InterfaceIndex, w.intf)
 	}
@@ -364,7 +369,11 @@ func (w *NgWriter) WritePacket(ci gopacket.CaptureInfo, data []byte) error {
 		return fmt.Errorf("invalid capture info %+v:  capture length > length", ci)
 	}
 
-	length := uint32(len(data)) + 32
+	options := opts.toNgOptions()
+	length := prepareNgOptions(options) +
+		28 + // metadata
+		uint32(len(data)) +
+		4 // trailer
 	padding := (4 - length&3) & 3
 	length += padding
 
@@ -385,9 +394,19 @@ func (w *NgWriter) WritePacket(ci gopacket.CaptureInfo, data []byte) error {
 	if _, err := w.w.Write(data); err != nil {
 		return err
 	}
+	if padding > 0 {
+		binary.LittleEndian.PutUint32(w.buf[:4], 0)
+		if _, err := w.w.Write(w.buf[:padding]); err != nil {
+			return err
+		}
+	}
 
-	binary.LittleEndian.PutUint32(w.buf[:4], 0)
-	_, err := w.w.Write(w.buf[4-padding : 8]) // padding + length
+	if err := w.writeOptions(options); err != nil {
+		return err
+	}
+
+	binary.LittleEndian.PutUint32(w.buf[:4], length)
+	_, err := w.w.Write(w.buf[:4])
 	return err
 }
 

@@ -214,6 +214,71 @@ func TestNgWriteComplex(t *testing.T) {
 	ngRunFileReadTest(test, "", false, t)
 }
 
+func TestNgWritePacketWithOptions(t *testing.T) {
+	buffer := &bytes.Buffer{}
+
+	w, err := NewNgWriter(buffer, layers.LinkTypeEthernet)
+	if err != nil {
+		t.Fatalf("init writer failed: %+v", err)
+	}
+	ci := gopacket.CaptureInfo{
+		Timestamp:      time.Unix(0, 0).UTC(),
+		Length:         len(ngPacketSource[0]),
+		CaptureLength:  len(ngPacketSource[0]),
+		InterfaceIndex: 0,
+	}
+	uint64V := func(v uint64) *uint64 { return &v }
+	uint32V := func(v uint32) *uint32 { return &v }
+
+	wOpts := NgPacketOptions{
+		Comments: []string{
+			"this is a comment",
+			"foobar",
+		},
+		Flags: &NgEpbFlags{
+			Direction: NgEpbFlagDirectionInbound,
+			Reception: NgEpbFlagReceptionTypeBroadcast,
+			FCSLen:    NewNgEpbFlagFCSLength(10),
+			LinkLayerErr: NgEpbFlagLinkLayerDependentErrorSymbol | NgEpbFlagLinkLayerDependentErrorPreamble |
+				NgEpbFlagLinkLayerDependentErrorStartFrameDelimiter | NgEpbFlagLinkLayerDependentErrorUnalignedFrame |
+				NgEpbFlagLinkLayerDependentErrorInterFrameGap | NgEpbFlagLinkLayerDependentErrorPacketTooShort |
+				NgEpbFlagLinkLayerDependentErrorPacketTooLong | NgEpbFlagLinkLayerDependentErrorCRC,
+		},
+		Hashes: []NgEpbHash{
+			{
+				Algorithm: NgEpbHashAlgorithmMD5,
+				Hash:      []byte{0x90, 0x01, 0x50, 0x98, 0x3c, 0xd2, 0x4f, 0xb0, 0xd6, 0x96, 0x3f, 0x7d, 0x28, 0xe1, 0x7f, 0x72},
+			},
+			{
+				Algorithm: NgEpbHashAlgorithmCRC32,
+				Hash:      []byte{0x90, 0x01, 0x50, 0x98},
+			},
+		},
+		DropCount: uint64V(0x02),
+		PacketID:  uint64V(0x1234567890abcdef),
+		Queue:     uint32V(0x01),
+		Verdicts: []NgEpbVerdict{
+			{
+				Type: NgEpbVerdictTypeLinuxeBPFXDP,
+				Data: []byte{0, 0, 0, 0, 0, 0, 0, 0x01},
+			},
+			{
+				Type: NgEpbVerdictTypeLinuxeBPFTC,
+				Data: []byte{0, 0, 0, 0, 0, 0, 0, 0x02},
+			},
+		},
+	}
+
+	err = w.WritePacketWithOptions(ci, ngPacketSource[0], wOpts)
+	if err != nil {
+		t.Fatalf("Couldn't write packet: %+v", err)
+	}
+	err = w.Flush()
+	if err != nil {
+		t.Fatalf("Couldn't flush buffer: %+v", err)
+	}
+}
+
 type ngDevNull struct{}
 
 func (w *ngDevNull) Write(p []byte) (n int, err error) {
