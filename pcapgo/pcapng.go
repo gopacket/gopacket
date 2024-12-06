@@ -105,6 +105,120 @@ const (
 	ngNameRecordEUI64               // EUI-64 record
 )
 
+const (
+	// Enhanced Packet Block
+	ngOptionCodeEpbFlags     ngOptionCode = iota + 2 // link-layer information
+	ngOptionCodeEpbHash                              // hash of the packet
+	ngOptionCodeEpbDropCount                         // number of packets lost
+	ngOptionCodeEpbPacketID                          // uniquely identifies the packet
+	ngOptionCodeEpbQueue                             // identifies on which queue of the interface the specific packet was received
+	ngOptionCodeEpbVerdict                           // a verdict of the packet
+)
+
+// NgEpbFlag Enhanced Packet Block Flags Word
+type NgEpbFlag uint32
+
+const (
+	NgEpbFlagDirectionMask     NgEpbFlag = 0b11 // bits 0-1
+	NgEpbFlagDirectionUnknown  NgEpbFlag = 0b00 // 00 = information not available
+	NgEpbFlagDirectionInbound  NgEpbFlag = 0b01 // 01 = inbound
+	NgEpbFlagDirectionOutbound NgEpbFlag = 0b10 // 10 = outbound
+)
+
+const (
+	NgEpbFlagReceptionTypeMask         NgEpbFlag = 0b11100 // bits 2-4
+	NgEpbFlagReceptionTypeNotSpecified NgEpbFlag = 0b00000 // 000 = not specified
+	NgEpbFlagReceptionTypeUnicast      NgEpbFlag = 0b00100 // 001 = unicast
+	NgEpbFlagReceptionTypeMulticast    NgEpbFlag = 0b01000 // 010 = multicast
+	NgEpbFlagReceptionTypeBroadcast    NgEpbFlag = 0b01100 // 011 = broadcast
+	NgEpbFlagReceptionTypePromiscuous  NgEpbFlag = 0b10000 // 100 = promiscuous
+)
+
+const (
+	NgEpbFlagFCSLengthMask         NgEpbFlag = 0b1111100000 // bits 5-8
+	NgEpbFlagFCSLengthNotAvailable NgEpbFlag = 0            // 0000 if this information is not available
+)
+
+const (
+	NgEpbFlagLinkLayerDependentErrorMask                NgEpbFlag = 0xFFFF0000 // bits 16-31
+	NgEpbFlagLinkLayerDependentErrorSymbol              NgEpbFlag = 1 << 31    // Bit 31 = symbol error
+	NgEpbFlagLinkLayerDependentErrorPreamble            NgEpbFlag = 1 << 30    // Bit 30 = preamble error
+	NgEpbFlagLinkLayerDependentErrorStartFrameDelimiter NgEpbFlag = 1 << 29    // Bit 29 = Start Frame Delimiter error
+	NgEpbFlagLinkLayerDependentErrorUnalignedFrame      NgEpbFlag = 1 << 28    // Bit 28 = unaligned frame error
+	NgEpbFlagLinkLayerDependentErrorInterFrameGap       NgEpbFlag = 1 << 27    // Bit 27 = wrong Inter Frame Gap error
+	NgEpbFlagLinkLayerDependentErrorPacketTooShort      NgEpbFlag = 1 << 26    // Bit 26 = packet too short error
+	NgEpbFlagLinkLayerDependentErrorPacketTooLong       NgEpbFlag = 1 << 25    // Bit 25 = packet too long error
+	NgEpbFlagLinkLayerDependentErrorCRC                 NgEpbFlag = 1 << 24    // Bit 24 = CRC error
+)
+
+type NgEpbFlags struct {
+	Direction    NgEpbFlag
+	Reception    NgEpbFlag
+	FCSLen       NgEpbFlag
+	LinkLayerErr NgEpbFlag
+}
+
+func NewNgEpbFlagFCSLength(n uint8) NgEpbFlag {
+	return NgEpbFlag(n<<5) & NgEpbFlagFCSLengthMask
+}
+
+func (f *NgEpbFlags) ToUint32() uint32 {
+	var result uint32
+	result = uint32(f.Direction) & uint32(NgEpbFlagDirectionMask)
+	result |= uint32(f.Reception) & uint32(NgEpbFlagReceptionTypeMask)
+	result |= uint32(f.FCSLen) & uint32(NgEpbFlagFCSLengthMask)
+	result |= uint32(f.LinkLayerErr) & uint32(NgEpbFlagLinkLayerDependentErrorMask)
+	return result
+}
+
+func (f *NgEpbFlags) FromUint32(value uint32) {
+	f.Direction = NgEpbFlag(value & uint32(NgEpbFlagDirectionMask))
+	f.Reception = NgEpbFlag(value & uint32(NgEpbFlagReceptionTypeMask))
+	f.FCSLen = NgEpbFlag(value & uint32(NgEpbFlagFCSLengthMask))
+	f.LinkLayerErr = NgEpbFlag(value & uint32(NgEpbFlagLinkLayerDependentErrorMask))
+}
+
+type NgEpbHashAlgorithm uint8
+
+const (
+	NgEpbHashAlgorithm2sComplement NgEpbHashAlgorithm = iota // 2s complement (algorithm octet = 0, size = XXX)
+	NgEpbHashAlgorithmXOR                                    // XOR (algorithm octet = 1, size=XXX)
+	NgEpbHashAlgorithmCRC32                                  // CRC32 (algorithm octet = 2, size = 4)
+	NgEpbHashAlgorithmMD5                                    //  MD-5 (algorithm octet = 3, size = 16)
+	NgEpbHashAlgorithmSHA1                                   //  SHA-1 (algorithm octet = 4, size = 20)
+	NgEpbHashAlgorithmToeplitz                               //  Toeplitz (algorithm octet = 5, size = 4)
+)
+
+type NgEpbHash struct {
+	Algorithm NgEpbHashAlgorithm
+	Hash      []byte
+}
+
+func (h NgEpbHash) toBytes() []byte {
+	v := []byte{byte(h.Algorithm)}
+	v = append(v, h.Hash...)
+	return v
+}
+
+type NgEpbVerdictType uint8
+
+const (
+	NgEpbVerdictTypeHardware     NgEpbVerdictType = iota // Hardware (type octet = 0, size = variable)
+	NgEpbVerdictTypeLinuxeBPFTC                          // Linux_eBPF_TC (type octet = 1, size = 8 (64-bit unsigned integer)
+	NgEpbVerdictTypeLinuxeBPFXDP                         // Linux_eBPF_XDP (type octet = 2, size = 8 (64-bit unsigned integer)
+)
+
+type NgEpbVerdict struct {
+	Type NgEpbVerdictType
+	Data []byte
+}
+
+func (vd NgEpbVerdict) toBytes() []byte {
+	v := []byte{byte(vd.Type)}
+	v = append(v, vd.Data...)
+	return v
+}
+
 // ngOption is a pcapng option
 type ngOption struct {
 	code   ngOptionCode
@@ -213,6 +327,86 @@ type NgSectionInfo struct {
 	Application string
 	// Comment can be an arbitrary comment. This value might be empty if this option is missing.
 	Comment string
+}
+
+// NgPacketOptions contains additional information of a pcapng packet
+type NgPacketOptions struct {
+	// Comments can be multiple arbitrary comments. This value might be empty if this option is missing.
+	Comments []string
+	// Flags is a 32-bit flags word containing link-layer information
+	Flags *NgEpbFlags
+	// Hashes contains a list of hash of the packet
+	Hashes []NgEpbHash
+	// DropCount is a 64-bit unsigned integer value specifying the number of packets lost (by the interface and the operating system)
+	// between this packet and the preceding one for the same interface or, for the first packet for an interface,
+	// between this packet and the start of the capture process
+	DropCount *uint64
+	// PacketID is a 64-bit unsigned integer that uniquely identifies the packet
+	PacketID *uint64
+	// Queue is a 32-bit unsigned integer that identifies on which queue of the interface the specific packet was received
+	Queue *uint32
+	// Verdicts stores a list of verdict of the packet
+	Verdicts []NgEpbVerdict
+}
+
+func (opts NgPacketOptions) toNgOptions() []ngOption {
+	var ngOpts []ngOption
+	for _, comment := range opts.Comments {
+		ngOpts = append(ngOpts, ngOption{
+			code:   ngOptionCodeComment,
+			raw:    comment,
+			length: uint16(len(comment)),
+		})
+	}
+	if opts.Flags != nil {
+		ngOpts = append(ngOpts, ngOption{
+			code:   ngOptionCodeEpbFlags,
+			raw:    opts.Flags.ToUint32(),
+			length: 4,
+		})
+	}
+	for _, hash := range opts.Hashes {
+		v := hash.toBytes()
+		ngOpts = append(ngOpts, ngOption{
+			code:   ngOptionCodeEpbHash,
+			raw:    v,
+			length: uint16(len(v)),
+		})
+	}
+	if opts.DropCount != nil {
+		v := *opts.DropCount
+		ngOpts = append(ngOpts, ngOption{
+			code:   ngOptionCodeEpbDropCount,
+			raw:    v,
+			length: 8,
+		})
+	}
+	if opts.PacketID != nil {
+		v := *opts.PacketID
+		ngOpts = append(ngOpts, ngOption{
+			code:   ngOptionCodeEpbPacketID,
+			raw:    v,
+			length: 8,
+		})
+	}
+	if opts.Queue != nil {
+		v := *opts.Queue
+		ngOpts = append(ngOpts, ngOption{
+			code:   ngOptionCodeEpbQueue,
+			raw:    v,
+			length: 4,
+		})
+	}
+	for _, verdict := range opts.Verdicts {
+		v := verdict.toBytes()
+		ngOpts = append(ngOpts, ngOption{
+			code:   ngOptionCodeEpbVerdict,
+			raw:    v,
+			length: uint16(len(v)),
+		})
+	}
+
+	return ngOpts
 }
 
 type ngAddressType uint16

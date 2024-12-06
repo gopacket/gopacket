@@ -558,9 +558,61 @@ FIND_PACKET:
 	return nil
 }
 
+func (r *NgReader) readPacketOptions() (NgPacketOptions, error) {
+	opts := NgPacketOptions{}
+
+OPTIONS:
+	for {
+		if err := r.readOption(); err != nil {
+			return opts, err
+		}
+		switch r.currentOption.code {
+		case ngOptionCodeEndOfOptions:
+			break OPTIONS
+		case ngOptionCodeComment:
+			opts.Comments = append(opts.Comments, string(r.currentOption.value))
+		case ngOptionCodeEpbFlags:
+			flags := NgEpbFlags{}
+			flags.FromUint32(binary.LittleEndian.Uint32(r.currentOption.value))
+			opts.Flags = &flags
+		case ngOptionCodeEpbHash:
+			v := make([]byte, len(r.currentOption.value)-1)
+			copy(v, r.currentOption.value[1:])
+			opts.Hashes = append(opts.Hashes, NgEpbHash{
+				Algorithm: NgEpbHashAlgorithm(r.currentOption.value[0]),
+				Hash:      v,
+			})
+		case ngOptionCodeEpbDropCount:
+			v := binary.LittleEndian.Uint64(r.currentOption.value)
+			opts.DropCount = &v
+		case ngOptionCodeEpbPacketID:
+			v := binary.LittleEndian.Uint64(r.currentOption.value)
+			opts.PacketID = &v
+		case ngOptionCodeEpbQueue:
+			v := binary.LittleEndian.Uint32(r.currentOption.value)
+			opts.Queue = &v
+		case ngOptionCodeEpbVerdict:
+			v := make([]byte, len(r.currentOption.value)-1)
+			copy(v, r.currentOption.value[1:])
+			opts.Verdicts = append(opts.Verdicts, NgEpbVerdict{
+				Type: NgEpbVerdictType(r.currentOption.value[0]),
+				Data: v,
+			})
+		}
+	}
+	return opts, nil
+}
+
 // ReadPacketData returns the next packet available from this data source.
 // If WantMixedLinkType is true, ci.AncillaryData[0] contains the link type.
 func (r *NgReader) ReadPacketData() (data []byte, ci gopacket.CaptureInfo, err error) {
+	data, ci, _, err = r.ReadPacketDataWithOptions()
+	return
+}
+
+// ReadPacketDataWithOptions returns the next packet available from this data source.
+// If WantMixedLinkType is true, ci.AncillaryData[0] contains the link type.
+func (r *NgReader) ReadPacketDataWithOptions() (data []byte, ci gopacket.CaptureInfo, opts NgPacketOptions, err error) {
 	if err = r.readPacketHeader(); err != nil {
 		return
 	}
@@ -573,8 +625,21 @@ func (r *NgReader) ReadPacketData() (data []byte, ci gopacket.CaptureInfo, err e
 	if err = r.readBytes(data); err != nil {
 		return
 	}
-	// handle options somehow - this would be expensive
-	_, err = r.r.Discard(int(r.currentBlock.length) - r.ci.CaptureLength)
+	r.currentBlock.length -= uint32(r.ci.CaptureLength)
+	padding := (4 - r.ci.CaptureLength&3) & 3
+	if padding > 0 {
+		if _, err = r.r.Discard(int(padding)); err != nil {
+			return
+		}
+		r.currentBlock.length -= uint32(padding)
+	}
+
+	if r.currentBlock.typ == ngBlockTypeEnhancedPacket {
+		if opts, err = r.readPacketOptions(); err != nil {
+			return
+		}
+	}
+	_, err = r.r.Discard(int(r.currentBlock.length))
 	return
 }
 
@@ -585,6 +650,17 @@ func (r *NgReader) ReadPacketData() (data []byte, ci gopacket.CaptureInfo, err e
 // It is not true zero copy, as data is still copied from the underlying reader. However,
 // this method avoids allocating heap memory for every packet.
 func (r *NgReader) ZeroCopyReadPacketData() (data []byte, ci gopacket.CaptureInfo, err error) {
+	data, ci, _, err = r.ZeroCopyReadPacketDataWithOptions()
+	return
+}
+
+// ZeroCopyReadPacketDataWithOptions returns the next packet available from this data source.
+// If WantMixedLinkType is true, ci.AncillaryData[0] contains the link type.
+// Warning: Like data, ci.AncillaryData is also reused and overwritten on the next call to ZeroCopyReadPacketData.
+//
+// It is not true zero copy, as data is still copied from the underlying reader. However,
+// this method avoids allocating heap memory for every packet.
+func (r *NgReader) ZeroCopyReadPacketDataWithOptions() (data []byte, ci gopacket.CaptureInfo, opts NgPacketOptions, err error) {
 	if err = r.readPacketHeader(); err != nil {
 		return
 	}
@@ -603,8 +679,21 @@ func (r *NgReader) ZeroCopyReadPacketData() (data []byte, ci gopacket.CaptureInf
 	if err = r.readBytes(data); err != nil {
 		return
 	}
-	// handle options somehow - this would be expensive
-	_, err = r.r.Discard(int(r.currentBlock.length) - ci.CaptureLength)
+	r.currentBlock.length -= uint32(r.ci.CaptureLength)
+	padding := (4 - r.ci.CaptureLength&3) & 3
+	if padding > 0 {
+		if _, err = r.r.Discard(int(padding)); err != nil {
+			return
+		}
+		r.currentBlock.length -= uint32(padding)
+	}
+
+	if r.currentBlock.typ == ngBlockTypeEnhancedPacket {
+		if opts, err = r.readPacketOptions(); err != nil {
+			return
+		}
+	}
+	_, err = r.r.Discard(int(r.currentBlock.length))
 	return
 }
 
