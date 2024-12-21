@@ -1974,13 +1974,8 @@ func TestNgReadPacketDataWithOptions(t *testing.T) {
 			"foobar",
 		},
 		Flags: &NgEpbFlags{
-			Direction: NgEpbFlagDirectionInbound,
+			Direction: NgEpbFlagDirectionOutbound,
 			Reception: NgEpbFlagReceptionTypeBroadcast,
-			FCSLen:    NewNgEpbFlagFCSLength(10),
-			LinkLayerErr: NgEpbFlagLinkLayerDependentErrorSymbol | NgEpbFlagLinkLayerDependentErrorPreamble |
-				NgEpbFlagLinkLayerDependentErrorStartFrameDelimiter | NgEpbFlagLinkLayerDependentErrorUnalignedFrame |
-				NgEpbFlagLinkLayerDependentErrorInterFrameGap | NgEpbFlagLinkLayerDependentErrorPacketTooShort |
-				NgEpbFlagLinkLayerDependentErrorPacketTooLong | NgEpbFlagLinkLayerDependentErrorCRC,
 		},
 		Hashes: []NgEpbHash{
 			{
