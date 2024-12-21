@@ -1956,6 +1956,80 @@ func setupNgReadBenchmark(b *testing.B) *NgReader {
 	return r
 }
 
+func TestNgReadPacketDataWithOptions(t *testing.T) {
+	data, err := os.ReadFile("tests/epb.pcapng")
+	if err != nil {
+		t.Fatalf("read file failed: %+v", err)
+	}
+	r, err := NewNgReader(bytes.NewReader(data), DefaultNgReaderOptions)
+	if err != nil {
+		t.Fatalf("init reader failed: %+v", err)
+	}
+
+	uint64V := func(v uint64) *uint64 { return &v }
+	uint32V := func(v uint32) *uint32 { return &v }
+	wantOpts := NgPacketOptions{
+		Comments: []string{
+			"this is a comment",
+			"foobar",
+		},
+		Flags: &NgEpbFlags{
+			Direction: NgEpbFlagDirectionOutbound,
+			Reception: NgEpbFlagReceptionTypeBroadcast,
+		},
+		Hashes: []NgEpbHash{
+			{
+				Algorithm: NgEpbHashAlgorithmMD5,
+				Hash:      []byte{0x90, 0x01, 0x50, 0x98, 0x3c, 0xd2, 0x4f, 0xb0, 0xd6, 0x96, 0x3f, 0x7d, 0x28, 0xe1, 0x7f, 0x72},
+			},
+			{
+				Algorithm: NgEpbHashAlgorithmCRC32,
+				Hash:      []byte{0x90, 0x01, 0x50, 0x98},
+			},
+		},
+		DropCount: uint64V(0x02),
+		PacketID:  uint64V(0x1234567890abcdef),
+		Queue:     uint32V(0x01),
+		Verdicts: []NgEpbVerdict{
+			{
+				Type: NgEpbVerdictTypeLinuxeBPFXDP,
+				Data: []byte{0, 0, 0, 0, 0, 0, 0, 0x01},
+			},
+			{
+				Type: NgEpbVerdictTypeLinuxeBPFTC,
+				Data: []byte{0, 0, 0, 0, 0, 0, 0, 0x02},
+			},
+		},
+	}
+
+	_, _, opts, err := r.ReadPacketDataWithOptions()
+	if err != nil {
+		t.Fatalf("read packets failed: %+v", err)
+	}
+
+	if !reflect.DeepEqual(opts.Comments, wantOpts.Comments) {
+		t.Fatalf("comments mismatch:\nwant: %+v\ngot:  %+v", wantOpts.Comments, opts.Comments)
+	}
+	if !reflect.DeepEqual(*opts.Flags, *wantOpts.Flags) {
+		t.Fatalf("flags mismatch:\nwant: %+v\ngot:  %+v", *wantOpts.Flags, *opts.Flags)
+	}
+	if !reflect.DeepEqual(opts.Hashes, wantOpts.Hashes) {
+		t.Fatalf("hashes mismatch:\nwant: %+v\ngot:  %+v", wantOpts.Hashes, opts.Hashes)
+	}
+	if !reflect.DeepEqual(*opts.DropCount, *wantOpts.DropCount) {
+		t.Fatalf("drop count mismatch:\nwant: %+v\ngot:  %+v", *wantOpts.DropCount, *opts.DropCount)
+	}
+	if !reflect.DeepEqual(*opts.PacketID, *wantOpts.PacketID) {
+		t.Fatalf("packet ID mismatch:\nwant: %+v\ngot:  %+v", *wantOpts.PacketID, *opts.PacketID)
+	}
+	if !reflect.DeepEqual(*opts.Queue, *wantOpts.Queue) {
+		t.Fatalf("queue mismatch:\nwant: %+v\ngot:  %+v", *wantOpts.Queue, *opts.Queue)
+	}
+	if !reflect.DeepEqual(opts.Verdicts, wantOpts.Verdicts) {
+		t.Fatalf("verdicts mismatch:\nwant: %+v\ngot:  %+v", wantOpts.Verdicts, opts.Verdicts)
+	}
+}
+
 func BenchmarkNgReadPacketData(b *testing.B) {
 	r := setupNgReadBenchmark(b)
 	b.ResetTimer()
