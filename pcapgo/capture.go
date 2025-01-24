@@ -20,7 +20,7 @@ import (
 	"golang.org/x/sys/unix"
 
 	"github.com/gopacket/gopacket"
-	"github.com/gopacket/gopacket/htons"
+	"github.com/gopacket/gopacket/endian"
 )
 
 var hdrLen = unix.CmsgSpace(0)
@@ -294,13 +294,13 @@ func NewEthernetHandle(ifname string) (*EthernetHandle, error) {
 		return nil, fmt.Errorf("couldn't query interface %s: %s", ifname, err)
 	}
 
-	fd, err := unix.Socket(unix.AF_PACKET, unix.SOCK_RAW|unix.SOCK_CLOEXEC|unix.SOCK_NONBLOCK, int(htons.Htons(unix.ETH_P_ALL)))
+	fd, err := unix.Socket(unix.AF_PACKET, unix.SOCK_RAW|unix.SOCK_CLOEXEC|unix.SOCK_NONBLOCK, int(endian.Htons(unix.ETH_P_ALL)))
 	if err != nil {
 		return nil, fmt.Errorf("couldn't open packet socket: %s", err)
 	}
 
 	addr := unix.SockaddrLinklayer{
-		Protocol: htons.Htons(unix.ETH_P_ALL),
+		Protocol: endian.Htons(unix.ETH_P_ALL),
 		Ifindex:  intf.Index,
 	}
 
