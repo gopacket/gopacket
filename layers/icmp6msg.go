@@ -56,7 +56,7 @@ const (
 
 	// ICMPv6OptRecursiveDNSServer is used in Router Advertisement messages to
 	// advertise recursive DNS servers.
-	ICMPv6OptRecursiveDNSServer ICMPv6Opt = 25
+	ICMPv6OptRecursiveDNSServer = 25
 )
 
 // ICMPv6Echo represents the structure of a ping.
