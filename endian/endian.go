@@ -5,16 +5,14 @@ import (
 	"math/bits"
 )
 
-func hostUsesNetByteorder() bool {
-	// Compiler eliminates string comparison since it knows both values
-	// at compile time, https://godbolt.org/z/YKKrEdGEx
-	return binary.NativeEndian.String() == binary.BigEndian.String()
+func isLittleEndian[Bo binary.ByteOrder](bo Bo) bool {
+	return bo.Uint16([]byte{0x12, 0x34}) == 0x3412
 }
 
 // Htons converts x from host to network byte order.
 func Htons(v uint16) uint16 {
-	if hostUsesNetByteorder() {
-		return v
+	if isLittleEndian(binary.NativeEndian) {
+		return bits.ReverseBytes16(v)
 	}
-	return bits.ReverseBytes16(v)
+	return v
 }
