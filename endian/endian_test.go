@@ -5,11 +5,12 @@ import (
 	"testing"
 )
 
-func TestHostUsesNetByteorder(t *testing.T) {
-	buf := [2]byte{0, 42}
-	hostIsNet := 42 == binary.NativeEndian.Uint16(buf[:])
-	if hostIsNet != hostUsesNetByteorder() {
-		t.Errorf("hostUsesNetByteorder: want %v, got %v", hostIsNet, hostUsesNetByteorder())
+func TestIsLittleEndian(t *testing.T) {
+	if !isLittleEndian(binary.LittleEndian) {
+		t.Error("binary.LittleEndian was not detected as little endian")
+	}
+	if isLittleEndian(binary.BigEndian) {
+		t.Error("binary.BigEndian was detected as little endian")
 	}
 }
 
