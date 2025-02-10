@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"os"
 	"reflect"
@@ -53,6 +54,19 @@ type CaptureInfo struct {
 	AncillaryData []interface{}
 }
 
+func (ci CaptureInfo) LogValue() slog.Value {
+	attrs := []slog.Attr{
+		slog.Time("timestamp", ci.Timestamp),
+		slog.Int("captureLength", ci.CaptureLength),
+		slog.Int("length", ci.Length),
+		slog.Int("interfaceIndex", ci.InterfaceIndex)}
+
+	if ci.AncillaryData != nil && len(ci.AncillaryData) > 0 {
+		attrs = append(attrs, slog.Any("ancillaryData", ci.AncillaryData))
+	}
+	return slog.GroupValue(attrs...)
+}
+
 // PacketMetadata contains metadata for a packet.
 type PacketMetadata struct {
 	CaptureInfo
@@ -62,6 +76,10 @@ type PacketMetadata struct {
 	// This is also set automatically for packets captured off the wire if
 	// CaptureInfo.CaptureLength < CaptureInfo.Length.
 	Truncated bool
+}
+
+func (pm PacketMetadata) LogValue() slog.Value {
+	return slog.GroupValue(slog.Any("captureInfo", pm.CaptureInfo), slog.Bool("truncated", pm.Truncated))
 }
 
 // Packet is the primary object used by gopacket.  Packets are created by a
@@ -77,6 +95,7 @@ type Packet interface {
 	// including a hex dump of all layers.  It uses LayerDump on each layer to
 	// output the layer.
 	Dump() string
+	LogValue() slog.Value
 
 	//// Functions for accessing arbitrary packet layers:
 	//// ------------------------------------------------------------------
@@ -490,6 +509,21 @@ func (p *packet) packetDump() string {
 // eagerPacket implements Packet and PacketBuilder.
 type eagerPacket struct {
 	packet
+}
+
+func (p packet) LogValue() slog.Value {
+	layerAtts := make([]any, 0, len(p.layers))
+	for _, layer := range p.layers {
+		if slogAwareLayer, ok := layer.(slog.LogValuer); ok {
+			layerAtts = append(layerAtts, slog.Any(layer.LayerType().String(), slogAwareLayer.LogValue()))
+			continue
+		}
+
+		layerAtts = append(layerAtts, slog.Group(layer.LayerType().String(),
+			slog.String("summary", LayerString(layer)),
+			slog.Any("contents", layer.LayerContents())))
+	}
+	return slog.GroupValue(slog.Any("metadata", p.metadata), slog.Group("layers", layerAtts...))
 }
 
 var errNilDecoder = errors.New("NextDecoder passed nil decoder, probably an unsupported decode type")
