@@ -313,7 +313,7 @@ func (d *NTP) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	//    Contents is supposed to contain the bytes of the data at this level.
 	//    Payload is supposed to contain the payload of this level.
 	// Here we set the baselayer to be the bytes of the NTP record.
-	d.BaseLayer = BaseLayer{Contents: data[:len(data)]}
+	d.BaseLayer = BaseLayer{Contents: data[:]}
 
 	// Extract the fields from the block of bytes.
 	// To make sense of this, refer to the packet diagram
@@ -360,7 +360,7 @@ func (d *NTP) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.SerializeOpt
 	h |= (uint8(d.LeapIndicator) << 6) & 0xC0
 	h |= (uint8(d.Version) << 3) & 0x38
 	h |= (uint8(d.Mode)) & 0x07
-	data[0] = byte(h)
+	data[0] = h
 	data[1] = byte(d.Stratum)
 	data[2] = byte(d.Poll)
 	data[3] = byte(d.Precision)

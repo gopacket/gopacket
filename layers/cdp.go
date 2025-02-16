@@ -294,15 +294,15 @@ func decodeCiscoDiscoveryInfo(data []byte, p gopacket.PacketBuilder) error {
 				return err
 			}
 			val := CDPCapability(binary.BigEndian.Uint32(val.Value[0:4]))
-			info.Capabilities.L3Router = (val&CDPCapMaskRouter > 0)
-			info.Capabilities.TBBridge = (val&CDPCapMaskTBBridge > 0)
-			info.Capabilities.SPBridge = (val&CDPCapMaskSPBridge > 0)
-			info.Capabilities.L2Switch = (val&CDPCapMaskSwitch > 0)
-			info.Capabilities.IsHost = (val&CDPCapMaskHost > 0)
-			info.Capabilities.IGMPFilter = (val&CDPCapMaskIGMPFilter > 0)
-			info.Capabilities.L1Repeater = (val&CDPCapMaskRepeater > 0)
-			info.Capabilities.IsPhone = (val&CDPCapMaskPhone > 0)
-			info.Capabilities.RemotelyManaged = (val&CDPCapMaskRemote > 0)
+			info.Capabilities.L3Router = val&CDPCapMaskRouter > 0
+			info.Capabilities.TBBridge = val&CDPCapMaskTBBridge > 0
+			info.Capabilities.SPBridge = val&CDPCapMaskSPBridge > 0
+			info.Capabilities.L2Switch = val&CDPCapMaskSwitch > 0
+			info.Capabilities.IsHost = val&CDPCapMaskHost > 0
+			info.Capabilities.IGMPFilter = val&CDPCapMaskIGMPFilter > 0
+			info.Capabilities.L1Repeater = val&CDPCapMaskRepeater > 0
+			info.Capabilities.IsPhone = val&CDPCapMaskPhone > 0
+			info.Capabilities.RemotelyManaged = val&CDPCapMaskRemote > 0
 		case CDPTLVVersion:
 			info.Version = string(val.Value)
 		case CDPTLVPlatform:
@@ -347,18 +347,18 @@ func decodeCiscoDiscoveryInfo(data []byte, p gopacket.PacketBuilder) error {
 			if err = checkCDPTLVLen(val, 1); err != nil {
 				return err
 			}
-			info.FullDuplex = (val.Value[0] == 1)
+			info.FullDuplex = val.Value[0] == 1
 		case CDPTLVVLANReply:
 			if err = checkCDPTLVLen(val, 3); err != nil {
 				return err
 			}
-			info.VLANReply.ID = uint8(val.Value[0])
+			info.VLANReply.ID = val.Value[0]
 			info.VLANReply.VLAN = binary.BigEndian.Uint16(val.Value[1:3])
 		case CDPTLVVLANQuery:
 			if err = checkCDPTLVLen(val, 3); err != nil {
 				return err
 			}
-			info.VLANQuery.ID = uint8(val.Value[0])
+			info.VLANQuery.ID = val.Value[0]
 			info.VLANQuery.VLAN = binary.BigEndian.Uint16(val.Value[1:3])
 		case CDPTLVPower:
 			if err = checkCDPTLVLen(val, 2); err != nil {
@@ -374,12 +374,12 @@ func decodeCiscoDiscoveryInfo(data []byte, p gopacket.PacketBuilder) error {
 			if err = checkCDPTLVLen(val, 1); err != nil {
 				return err
 			}
-			info.ExtendedTrust = uint8(val.Value[0])
+			info.ExtendedTrust = val.Value[0]
 		case CDPTLVUntrustedCOS:
 			if err = checkCDPTLVLen(val, 1); err != nil {
 				return err
 			}
-			info.UntrustedCOS = uint8(val.Value[0])
+			info.UntrustedCOS = val.Value[0]
 		case CDPTLVSysName:
 			info.SysName = string(val.Value)
 		case CDPTLVSysOID:
@@ -396,7 +396,7 @@ func decodeCiscoDiscoveryInfo(data []byte, p gopacket.PacketBuilder) error {
 			if err = checkCDPTLVLen(val, 2); err != nil {
 				return err
 			}
-			info.Location.Type = uint8(val.Value[0])
+			info.Location.Type = val.Value[0]
 			info.Location.Location = string(val.Value[1:])
 
 			//		case CDPTLVLExternalPortID:
@@ -474,10 +474,10 @@ func decodeCiscoDiscoveryInfo(data []byte, p gopacket.PacketBuilder) error {
 				return err
 			}
 			v := val.Value[0]
-			info.SparePairPoe.PSEFourWire = (v&CDPPoEFourWire > 0)
-			info.SparePairPoe.PDArchShared = (v&CDPPoEPDArch > 0)
-			info.SparePairPoe.PDRequestOn = (v&CDPPoEPDRequest > 0)
-			info.SparePairPoe.PSEOn = (v&CDPPoEPSE > 0)
+			info.SparePairPoe.PSEFourWire = v&CDPPoEFourWire > 0
+			info.SparePairPoe.PDArchShared = v&CDPPoEPDArch > 0
+			info.SparePairPoe.PDRequestOn = v&CDPPoEPDRequest > 0
+			info.SparePairPoe.PSEOn = v&CDPPoEPSE > 0
 		default:
 			info.Unknown = append(info.Unknown, val)
 		}
@@ -535,7 +535,7 @@ func decodeAddresses(v []byte) (addresses []net.IP, err error) {
 		if protocol == CDPAddressTypeIPV4 && addrlen == 4 {
 			addresses = append(addresses, net.IPv4(ab[0], ab[1], ab[2], ab[3]))
 		} else if protocol == CDPAddressTypeIPV6 && addrlen == 16 {
-			addresses = append(addresses, net.IP(ab))
+			addresses = append(addresses, ab)
 		} else {
 			// only handle IPV4 & IPV6 for now
 		}

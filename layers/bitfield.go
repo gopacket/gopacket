@@ -9,7 +9,7 @@ type bitfield [1024]uint64
 
 // set sets bit i in bitfield b to 1.
 func (b *bitfield) set(i uint16) {
-	b[i>>6] |= (1 << (i & 0x3f))
+	b[i>>6] |= 1 << (i & 0x3f)
 }
 
 // has reports whether bit i is set to 1 in bitfield b.

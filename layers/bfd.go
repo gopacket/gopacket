@@ -337,7 +337,7 @@ func (d *BFD) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 		return errors.New("BFD packet too short")
 	}
 
-	pLen := uint8(data[3])
+	pLen := data[3]
 	if len(data) != int(pLen) {
 		return errors.New("BFD packet length does not match")
 	}
@@ -346,14 +346,14 @@ func (d *BFD) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	//    Contents is supposed to contain the bytes of the data at this level.
 	//    Payload is supposed to contain the payload of this level.
 	// Here we set the baselayer to be the bytes of the BFD record.
-	d.BaseLayer = BaseLayer{Contents: data[:len(data)]}
+	d.BaseLayer = BaseLayer{Contents: data[:]}
 
 	// Extract the fields from the block of bytes.
 	// To make sense of this, refer to the packet diagram
 	// above and the section on endian conventions.
 
 	// The first few fields are all packed into the first 32 bits. Unpack them.
-	d.Version = BFDVersion(((data[0] & 0xE0) >> 5))
+	d.Version = BFDVersion((data[0] & 0xE0) >> 5)
 	d.Diagnostic = BFDDiagnostic(data[0] & 0x1F)
 	data = data[1:]
 
@@ -367,7 +367,7 @@ func (d *BFD) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	data = data[1:]
 
 	data, d.DetectMultiplier = data[1:], BFDDetectMultiplier(data[0])
-	data, _ = data[1:], uint8(data[0]) // Consume length
+	data, _ = data[1:], data[0] // Consume length
 
 	// The remaining fields can just be copied in big endian order.
 	data, d.MyDiscriminator = data[4:], BFDDiscriminator(binary.BigEndian.Uint32(data[:4]))
@@ -379,20 +379,20 @@ func (d *BFD) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	if d.AuthPresent && (len(data) > 2) {
 		d.AuthHeader = &BFDAuthHeader{}
 		data, d.AuthHeader.AuthType = data[1:], BFDAuthType(data[0])
-		data, _ = data[1:], uint8(data[0]) // Consume length
+		data, _ = data[1:], data[0] // Consume length
 		data, d.AuthHeader.KeyID = data[1:], BFDAuthKeyID(data[0])
 
 		switch d.AuthHeader.AuthType {
 		case BFDAuthTypePassword:
-			d.AuthHeader.Data = BFDAuthData(data)
+			d.AuthHeader.Data = data
 		case BFDAuthTypeKeyedMD5, BFDAuthTypeMeticulousKeyedMD5:
 			// Skipped reserved byte
 			data, d.AuthHeader.SequenceNumber = data[5:], BFDAuthSequenceNumber(binary.BigEndian.Uint32(data[1:5]))
-			d.AuthHeader.Data = BFDAuthData(data)
+			d.AuthHeader.Data = data
 		case BFDAuthTypeKeyedSHA1, BFDAuthTypeMeticulousKeyedSHA1:
 			// Skipped reserved byte
 			data, d.AuthHeader.SequenceNumber = data[5:], BFDAuthSequenceNumber(binary.BigEndian.Uint32(data[1:5]))
-			d.AuthHeader.Data = BFDAuthData(data)
+			d.AuthHeader.Data = data
 		}
 	}
 
@@ -411,14 +411,14 @@ func (d *BFD) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.SerializeOpt
 	// Pack the first few fields into the first 32 bits.
 	data[0] = byte(byte(d.Version<<5) | byte(d.Diagnostic))
 	h := uint8(0)
-	h |= (uint8(d.State) << 6)
-	h |= (uint8(bool2uint8(d.Poll)) << 5)
-	h |= (uint8(bool2uint8(d.Final)) << 4)
-	h |= (uint8(bool2uint8(d.ControlPlaneIndependent)) << 3)
-	h |= (uint8(bool2uint8(d.AuthPresent)) << 2)
-	h |= (uint8(bool2uint8(d.Demand)) << 1)
-	h |= uint8(bool2uint8(d.Multipoint))
-	data[1] = byte(h)
+	h |= uint8(d.State) << 6
+	h |= bool2uint8(d.Poll) << 5
+	h |= bool2uint8(d.Final) << 4
+	h |= bool2uint8(d.ControlPlaneIndependent) << 3
+	h |= bool2uint8(d.AuthPresent) << 2
+	h |= bool2uint8(d.Demand) << 1
+	h |= bool2uint8(d.Multipoint)
+	data[1] = h
 	data[2] = byte(d.DetectMultiplier)
 	data[3] = byte(d.Length())
 
@@ -430,7 +430,7 @@ func (d *BFD) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.SerializeOpt
 	binary.BigEndian.PutUint32(data[20:], uint32(d.RequiredMinEchoRxInterval))
 
 	if d.AuthPresent && (d.AuthHeader != nil) {
-		auth, err := b.AppendBytes(int(d.AuthHeader.Length()))
+		auth, err := b.AppendBytes(d.AuthHeader.Length())
 		if err != nil {
 			return err
 		}

@@ -429,7 +429,7 @@ func (r *NgReader) readInterfaceStatistics() error {
 	r.currentBlock.length -= 12
 	ifaceID := int(r.getUint32(r.buf[:4]))
 	ts := uint64(r.getUint32(r.buf[4:8]))<<32 | uint64(r.getUint32(r.buf[8:12]))
-	if int(ifaceID) >= len(r.ifaces) {
+	if ifaceID >= len(r.ifaces) {
 		return fmt.Errorf("Interface id %d not present in section (have only %d interfaces)", ifaceID, len(r.ifaces))
 	}
 	stats := &r.ifaces[ifaceID].Statistics
