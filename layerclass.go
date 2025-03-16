@@ -53,13 +53,13 @@ func (s LayerClassSlice) LayerTypes() (all []LayerType) {
 // you implement your own LayerType and give it a high value, this WILL create
 // a very large slice.
 func NewLayerClassSlice(types []LayerType) LayerClassSlice {
-	var max LayerType
+	var maxType LayerType
 	for _, typ := range types {
-		if typ > max {
-			max = typ
+		if typ > maxType {
+			maxType = typ
 		}
 	}
-	t := make([]bool, int(max+1))
+	t := make([]bool, int(maxType+1))
 	for _, typ := range types {
 		t[typ] = true
 	}

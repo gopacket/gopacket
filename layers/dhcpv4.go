@@ -136,11 +136,11 @@ func (d *DHCPv4) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error 
 	d.Xid = binary.BigEndian.Uint32(data[4:8])
 	d.Secs = binary.BigEndian.Uint16(data[8:10])
 	d.Flags = binary.BigEndian.Uint16(data[10:12])
-	d.ClientIP = net.IP(data[12:16])
-	d.YourClientIP = net.IP(data[16:20])
-	d.NextServerIP = net.IP(data[20:24])
-	d.RelayAgentIP = net.IP(data[24:28])
-	d.ClientHWAddr = net.HardwareAddr(data[28 : 28+d.HardwareLen])
+	d.ClientIP = data[12:16]
+	d.YourClientIP = data[16:20]
+	d.NextServerIP = data[20:24]
+	d.RelayAgentIP = data[24:28]
+	d.ClientHWAddr = data[28 : 28+d.HardwareLen]
 	d.ServerName = data[44:108]
 	d.File = data[108:236]
 	if binary.BigEndian.Uint32(data[236:240]) != DHCPMagic {

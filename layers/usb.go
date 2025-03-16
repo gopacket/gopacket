@@ -128,13 +128,13 @@ type USB struct {
 
 func (u *USB) LayerType() gopacket.LayerType { return LayerTypeUSB }
 
-func (m *USB) NextLayerType() gopacket.LayerType {
-	if m.Setup {
+func (u *USB) NextLayerType() gopacket.LayerType {
+	if u.Setup {
 		return LayerTypeUSBRequestBlockSetup
-	} else if m.Data {
+	} else if u.Data {
 	}
 
-	return m.TransferType.LayerType()
+	return u.TransferType.LayerType()
 }
 
 func decodeUSB(data []byte, p gopacket.PacketBuilder) error {
@@ -143,56 +143,56 @@ func decodeUSB(data []byte, p gopacket.PacketBuilder) error {
 	return decodingLayerDecoder(d, data, p)
 }
 
-func (m *USB) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+func (u *USB) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	if len(data) < 40 {
 		df.SetTruncated()
 		return errors.New("USB < 40 bytes")
 	}
-	m.ID = binary.LittleEndian.Uint64(data[0:8])
-	m.EventType = USBEventType(data[8])
-	m.TransferType = USBTransportType(data[9])
+	u.ID = binary.LittleEndian.Uint64(data[0:8])
+	u.EventType = USBEventType(data[8])
+	u.TransferType = USBTransportType(data[9])
 
-	m.EndpointNumber = data[10] & 0x7f
+	u.EndpointNumber = data[10] & 0x7f
 	if data[10]&uint8(USBTransportTypeTransferIn) > 0 {
-		m.Direction = USBDirectionTypeIn
+		u.Direction = USBDirectionTypeIn
 	} else {
-		m.Direction = USBDirectionTypeOut
+		u.Direction = USBDirectionTypeOut
 	}
 
-	m.DeviceAddress = data[11]
-	m.BusID = binary.LittleEndian.Uint16(data[12:14])
+	u.DeviceAddress = data[11]
+	u.BusID = binary.LittleEndian.Uint16(data[12:14])
 
 	if uint(data[14]) == 0 {
-		m.Setup = true
+		u.Setup = true
 	}
 
 	if uint(data[15]) == 0 {
-		m.Data = true
+		u.Data = true
 	}
 
-	m.TimestampSec = int64(binary.LittleEndian.Uint64(data[16:24]))
-	m.TimestampUsec = int32(binary.LittleEndian.Uint32(data[24:28]))
-	m.Status = int32(binary.LittleEndian.Uint32(data[28:32]))
-	m.UrbLength = binary.LittleEndian.Uint32(data[32:36])
-	m.UrbDataLength = binary.LittleEndian.Uint32(data[36:40])
+	u.TimestampSec = int64(binary.LittleEndian.Uint64(data[16:24]))
+	u.TimestampUsec = int32(binary.LittleEndian.Uint32(data[24:28]))
+	u.Status = int32(binary.LittleEndian.Uint32(data[28:32]))
+	u.UrbLength = binary.LittleEndian.Uint32(data[32:36])
+	u.UrbDataLength = binary.LittleEndian.Uint32(data[36:40])
 
-	m.Contents = data[:40]
-	m.Payload = data[40:]
+	u.Contents = data[:40]
+	u.Payload = data[40:]
 
-	if m.Setup {
-		m.Payload = data[40:]
-	} else if m.Data {
-		m.Payload = data[uint32(len(data))-m.UrbDataLength:]
+	if u.Setup {
+		u.Payload = data[40:]
+	} else if u.Data {
+		u.Payload = data[uint32(len(data))-u.UrbDataLength:]
 	}
 
 	// if 64 bit, dissect_linux_usb_pseudo_header_ext
 	if false {
-		m.UrbInterval = binary.LittleEndian.Uint32(data[40:44])
-		m.UrbStartFrame = binary.LittleEndian.Uint32(data[44:48])
-		m.UrbDataLength = binary.LittleEndian.Uint32(data[48:52])
-		m.IsoNumDesc = binary.LittleEndian.Uint32(data[52:56])
-		m.Contents = data[:56]
-		m.Payload = data[56:]
+		u.UrbInterval = binary.LittleEndian.Uint32(data[40:44])
+		u.UrbStartFrame = binary.LittleEndian.Uint32(data[44:48])
+		u.UrbDataLength = binary.LittleEndian.Uint32(data[48:52])
+		u.IsoNumDesc = binary.LittleEndian.Uint32(data[52:56])
+		u.Contents = data[:56]
+		u.Payload = data[56:]
 	}
 
 	// crc5 or crc16
@@ -212,18 +212,18 @@ type USBRequestBlockSetup struct {
 
 func (u *USBRequestBlockSetup) LayerType() gopacket.LayerType { return LayerTypeUSBRequestBlockSetup }
 
-func (m *USBRequestBlockSetup) NextLayerType() gopacket.LayerType {
+func (u *USBRequestBlockSetup) NextLayerType() gopacket.LayerType {
 	return gopacket.LayerTypePayload
 }
 
-func (m *USBRequestBlockSetup) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
-	m.RequestType = data[0]
-	m.Request = USBRequestBlockSetupRequest(data[1])
-	m.Value = binary.LittleEndian.Uint16(data[2:4])
-	m.Index = binary.LittleEndian.Uint16(data[4:6])
-	m.Length = binary.LittleEndian.Uint16(data[6:8])
-	m.Contents = data[:8]
-	m.Payload = data[8:]
+func (u *USBRequestBlockSetup) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+	u.RequestType = data[0]
+	u.Request = USBRequestBlockSetupRequest(data[1])
+	u.Value = binary.LittleEndian.Uint16(data[2:4])
+	u.Index = binary.LittleEndian.Uint16(data[4:6])
+	u.Length = binary.LittleEndian.Uint16(data[6:8])
+	u.Contents = data[:8]
+	u.Payload = data[8:]
 	return nil
 }
 
@@ -238,12 +238,12 @@ type USBControl struct {
 
 func (u *USBControl) LayerType() gopacket.LayerType { return LayerTypeUSBControl }
 
-func (m *USBControl) NextLayerType() gopacket.LayerType {
+func (u *USBControl) NextLayerType() gopacket.LayerType {
 	return gopacket.LayerTypePayload
 }
 
-func (m *USBControl) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
-	m.Contents = data
+func (u *USBControl) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+	u.Contents = data
 	return nil
 }
 
@@ -258,12 +258,12 @@ type USBInterrupt struct {
 
 func (u *USBInterrupt) LayerType() gopacket.LayerType { return LayerTypeUSBInterrupt }
 
-func (m *USBInterrupt) NextLayerType() gopacket.LayerType {
+func (u *USBInterrupt) NextLayerType() gopacket.LayerType {
 	return gopacket.LayerTypePayload
 }
 
-func (m *USBInterrupt) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
-	m.Contents = data
+func (u *USBInterrupt) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+	u.Contents = data
 	return nil
 }
 
@@ -278,12 +278,12 @@ type USBBulk struct {
 
 func (u *USBBulk) LayerType() gopacket.LayerType { return LayerTypeUSBBulk }
 
-func (m *USBBulk) NextLayerType() gopacket.LayerType {
+func (u *USBBulk) NextLayerType() gopacket.LayerType {
 	return gopacket.LayerTypePayload
 }
 
-func (m *USBBulk) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
-	m.Contents = data
+func (u *USBBulk) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+	u.Contents = data
 	return nil
 }
 

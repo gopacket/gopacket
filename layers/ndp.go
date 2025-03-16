@@ -234,7 +234,7 @@ func decodeNortelDiscovery(data []byte, p gopacket.PacketBuilder) error {
 	c.Chassis = NDPChassisType(data[7])
 	c.Backplane = NDPBackplaneType(data[8])
 	c.State = NDPState(data[9])
-	c.NumLinks = uint8(data[10])
+	c.NumLinks = data[10]
 	p.AddLayer(c)
 	return nil
 }
