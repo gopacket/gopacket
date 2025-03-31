@@ -192,17 +192,26 @@ func TestPacketRadiotap4(t *testing.T) {
 	checkLayers(p, []gopacket.LayerType{LayerTypeRadioTap}, t)
 	rt := p.Layer(LayerTypeRadioTap).(*RadioTap)
 
+	if len(rt.Present) != 3 {
+		t.Errorf("Expected 3 Present bitmap sets in packet, got %d", len(rt.Present))
+	}
 	if len(rt.RadioTapValues) != 3 {
 		t.Errorf("Expected 3 RadioTap namespaces in packet, got %d", len(rt.RadioTapValues))
 	}
 
 	// all three present bitmaps should have antenna dbm
 	for presentInd, present := range rt.Present {
+		if presentInd != 0 && !present.Antenna() {
+			t.Errorf("Expected RadioTap namespace %d to have antenna number present", presentInd)
+		}
 		if !present.DBMAntennaSignal() {
 			t.Errorf("Expected RadioTap namespace %d to have dBm antenna signal field present", presentInd)
 		}
 		if rt.RadioTapValues[presentInd].DBMAntennaSignal == 0 {
 			t.Errorf("Expected RadioTap namespace %d to have non-zero dBm antenna signal field", presentInd)
+		}
+		if presentInd == 2 && rt.RadioTapValues[presentInd].Antenna != 1 {
+			t.Errorf("Expected antenna ID in RadioTap namespace %d to be 1, but got %d", presentInd, rt.RadioTapValues[presentInd].Antenna)
 		}
 	}
 }
