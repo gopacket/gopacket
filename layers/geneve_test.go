@@ -374,3 +374,7 @@ func TestIsomorphicPacketGeneveFixLengths(t *testing.T) {
 		t.Errorf("Geneve isomorph mismatch, \nwant %#v\ngot %#v\n", gn, gnTranslated)
 	}
 }
+
+func TestGeneveAsDecodingLayer(t *testing.T) {
+	_ = gopacket.NewDecodingLayerParser(LayerTypeGeneve, &Geneve{})
+}
