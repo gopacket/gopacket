@@ -66,7 +66,7 @@ func (i *IPSecAH) CanDecode() gopacket.LayerClass {
 	return LayerTypeIPSecAH
 }
 
-// NextLayerType retuns the next layer we should see after IPSecAH
+// NextLayerType returns the next layer we should see after IPSecAH
 func (i *IPSecAH) NextLayerType() gopacket.LayerType {
 	return i.NextHeader.LayerType()
 }
