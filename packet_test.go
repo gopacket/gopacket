@@ -21,9 +21,30 @@ type embedding struct {
 	C, D int
 }
 
+type embeddedPointer struct {
+	A, B   *int
+	AA, BB *string
+}
+
+type embeddingPointer struct {
+	embeddedPointer
+	C, D int
+}
+
 func TestDumpEmbedded(t *testing.T) {
 	e := embedding{embedded: embedded{A: 1, B: 2}, C: 3, D: 4}
 	if got, want := layerString(reflect.ValueOf(e), false, false), "{A=1 B=2 C=3 D=4}"; got != want {
+		t.Errorf("embedded dump mismatch:\n   got: %v\n  want: %v", got, want)
+	}
+}
+
+func TestDumpEmbeddedPointer(t *testing.T) {
+	one := 1
+	two := 2
+	testString1 := "teststring1"
+	testString2 := "teststring2"
+	e := embeddingPointer{embeddedPointer: embeddedPointer{A: &one, B: &two, AA: &testString1, BB: &testString2}, C: 3, D: 4}
+	if got, want := layerString(reflect.ValueOf(e), false, false), "{A=1 B=2 AA=teststring1 BB=teststring2 C=3 D=4}"; got != want {
 		t.Errorf("embedded dump mismatch:\n   got: %v\n  want: %v", got, want)
 	}
 }

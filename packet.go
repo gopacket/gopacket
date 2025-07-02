@@ -315,8 +315,17 @@ func LayerDump(l Layer) string {
 func layerString(v reflect.Value, anonymous bool, writeSpace bool) string {
 	// Let String() functions take precedence.
 	if v.CanInterface() {
-		if s, ok := v.Interface().(fmt.Stringer); ok {
-			return s.String()
+		if v.CanAddr() {
+			ptr := v.Addr()
+			if ptr.CanInterface() {
+				if s, ok := ptr.Interface().(fmt.Stringer); ok {
+					return s.String()
+				}
+			}
+		} else {
+			if s, ok := v.Interface().(fmt.Stringer); ok {
+				return s.String()
+			}
 		}
 	}
 	// Reflect, and spit out all the exported fields as key=value.
