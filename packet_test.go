@@ -45,7 +45,7 @@ func TestDumpEmbeddedPointer(t *testing.T) {
 	testString2 := "teststring2"
 	e := embeddingPointer{embeddedPointer: embeddedPointer{A: &one, B: &two, AA: &testString1, BB: &testString2}, C: 3, D: 4}
 	if got, want := layerString(reflect.ValueOf(e), false, false), "{A=1 B=2 AA=teststring1 BB=teststring2 C=3 D=4}"; got != want {
-		t.Errorf("embedded dump mismatch:\n   got: %v\n  want: %v", got, want)
+		t.Errorf("embedded pointer dump mismatch:\n   got: %v\n  want: %v", got, want)
 	}
 }
 
