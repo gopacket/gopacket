@@ -113,7 +113,6 @@ func TestIPv4InvalidOptionLength(t *testing.T) {
 }
 
 func TestIPv4Options(t *testing.T) {
-	var ip4 IPv4 // reuse ip4 to test reset
 	for _, test := range []struct {
 		packet  string
 		options []IPv4Option
@@ -172,20 +171,42 @@ func TestIPv4Options(t *testing.T) {
 			},
 			padding: []byte{0x82, 0x0b, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3},
 		},
+		{
+			packet: "4800002803040000fe01c1e0af2db00095ab7e0b070704000000000100000000",
+			options: []IPv4Option{
+				{
+					OptionType:   7,
+					OptionLength: 7,
+					OptionData:   []byte{4, 0, 0, 0, 0},
+				},
+				{
+					OptionType:   1,
+					OptionLength: 1,
+				},
+				{
+					OptionType:   0,
+					OptionLength: 1,
+				},
+			},
+			padding: []byte{0, 0, 0},
+		},
 	} {
-		b, err := hex.DecodeString(test.packet)
-		if err != nil {
-			t.Fatalf("Failed to Decode header: %v", err)
-		}
-		err = ip4.DecodeFromBytes(b, gopacket.NilDecodeFeedback)
-		if err != nil {
-			t.Fatal("Unexpected error during decoding:", err)
-		}
-		if !reflect.DeepEqual(ip4.Options, test.options) {
-			t.Fatalf("Options mismatch.\nGot:\n%#v\nExpected:\n%#v\n", ip4.Options, test.options)
-		}
-		if !bytes.Equal(ip4.Padding, test.padding) {
-			t.Fatalf("Padding mismatch.\nGot:\n%#v\nExpected:\n%#v\n", ip4.Padding, test.padding)
-		}
+		t.Run(test.packet, func(t *testing.T) {
+			var ip4 IPv4 // reuse ip4 to test reset
+			b, err := hex.DecodeString(test.packet)
+			if err != nil {
+				t.Fatalf("Failed to Decode header: %v", err)
+			}
+			err = ip4.DecodeFromBytes(b, gopacket.NilDecodeFeedback)
+			if err != nil {
+				t.Fatal("Unexpected error during decoding:", err)
+			}
+			if !reflect.DeepEqual(ip4.Options, test.options) {
+				t.Fatalf("Options mismatch.\nGot:\n%#v\nExpected:\n%#v\n", ip4.Options, test.options)
+			}
+			if !bytes.Equal(ip4.Padding, test.padding) {
+				t.Fatalf("Padding mismatch.\nGot:\n%#v\nExpected:\n%#v\n", ip4.Padding, test.padding)
+			}
+		})
 	}
 }
