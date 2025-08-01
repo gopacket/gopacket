@@ -565,8 +565,9 @@ func (i *IPv6Routing) LayerType() gopacket.LayerType { return LayerTypeIPv6Routi
 
 // SerializeTo implementation according to gopacket.SerializableLayer
 func (i *IPv6Routing) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.SerializeOptions) error {
-	totalLen := 8 + len(i.SourceRoutingIPs)*16
-	hdrExtLen := (totalLen - 8) / 8
+	const ipv6HeaderBaseLen = 8
+	totalLen := ipv6HeaderBaseLen + len(i.SourceRoutingIPs)*net.IPv6len
+	hdrExtLen := (totalLen - ipv6HeaderBaseLen) / ipv6HeaderBaseLen
 
 	bytes, err := b.PrependBytes(totalLen)
 	if err != nil {
