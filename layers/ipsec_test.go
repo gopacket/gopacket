@@ -117,6 +117,10 @@ func BenchmarkDecodePacketIPSecAHTunnel(b *testing.B) {
 	}
 }
 
+func TestIPSecAHAsDecodingLayer(t *testing.T) {
+	_ = gopacket.NewDecodingLayerParser(LayerTypeIPSecAH, &IPSecAH{})
+}
+
 // testPacketIPSecESP is the packet:
 //
 //	04:30:37.629376 IP 190.0.0.1 > 190.0.0.2: ESP(spi=0x0000006e,seq=0x13), length 116
@@ -155,4 +159,8 @@ func BenchmarkDecodePacketIPSecESP(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		gopacket.NewPacket(testPacketIPSecESP, LinkTypeEthernet, gopacket.NoCopy)
 	}
+}
+
+func TestIPSecESPAsDecodingLayer(t *testing.T) {
+	_ = gopacket.NewDecodingLayerParser(LayerTypeIPSecESP, &IPSecESP{})
 }
