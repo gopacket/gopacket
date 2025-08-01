@@ -63,6 +63,9 @@ func (g *GTPv2) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 		g.TEID = binary.BigEndian.Uint32(data[4:8])
 	}
 
+	if len(data) < int(cIndex)+3 {
+		return fmt.Errorf("GTP packet too small for SequenceNumber: %d bytes", len(data))
+	}
 	g.SequenceNumber = uint32(data[cIndex])<<16 | uint32(data[cIndex+1])<<8 | uint32(data[cIndex+2])
 	g.Spare = data[cIndex+3]
 	hLen += 4
