@@ -29,30 +29,53 @@ var testGTPv2Packet = []byte{
 func TestGTPv2Packet(t *testing.T) {
 	p := gopacket.NewPacket(testGTPv2Packet, LayerTypeEthernet, gopacket.Default)
 	if p.ErrorLayer() != nil {
-		t.Error("Failed to decode packet:", p.ErrorLayer().Error())
+		t.Fatal("Failed to decode packet:", p.ErrorLayer().Error())
 	}
 
-	if got, ok := p.Layer(LayerTypeGTPv2).(*GTPv2); ok {
-		want := &GTPv2{
-			Version:          2,
-			PiggybackingFlag: false,
-			TEIDflag:         true,
-			MessagePriority:  0,
-			MessageType:      37,
-			MessageLength:    19,
-			TEID:             1779326497,
-			SequenceNumber:   3992219,
-			Spare:            0,
-			IEs:              []IE{{2, []byte{0x10, 0x00}}, {3, []byte{0x13}}},
+	gtpLayer := p.Layer(LayerTypeGTPv2)
+	if gtpLayer == nil {
+		t.Fatal("GTPv2 layer not found")
+	}
+	got, ok := gtpLayer.(*GTPv2)
+	if !ok {
+		t.Fatal("Incorrect type for GTPv2 layer")
+	}
 
-			Contents: testGTPv2Packet[42:65],
-			Payload:  []uint8{},
-		}
+	want := &GTPv2{
+		Version:          2,
+		PiggybackingFlag: false,
+		TEIDflag:         true,
+		MessagePriority:  0,
+		MessageType:      37,
+		MessageLength:    19,
+		TEID:             1779326497, // from bytes 4:8
+		SequenceNumber:   3992219,    // from bytes 8:11
+		Spare:            0,
+		IEs: []IE{
+			{Type: 2, Content: []byte{0x10, 0x00}},
+			{Type: 3, Content: []byte{0x13}},
+		},
+	}
 
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("GTP packet mismatch:\ngot  :\n%#v\n\nwant :\n%#v\n\n", got, want)
-		}
-	} else {
-		t.Error("Incorrect gtp packet")
+	if got.Version != want.Version ||
+		got.PiggybackingFlag != want.PiggybackingFlag ||
+		got.TEIDflag != want.TEIDflag ||
+		got.MessagePriority != want.MessagePriority ||
+		got.MessageType != want.MessageType ||
+		got.MessageLength != want.MessageLength ||
+		got.TEID != want.TEID ||
+		got.SequenceNumber != want.SequenceNumber ||
+		got.Spare != want.Spare ||
+		!reflect.DeepEqual(got.IEs, want.IEs) {
+		t.Errorf("GTPv2 header mismatch:\ngot  :\n%#v\n\nwant :\n%#v\n\n", got, want)
+	}
+
+	wantContents := testGTPv2Packet[42:65]
+	if !reflect.DeepEqual(got.LayerContents(), wantContents) {
+		t.Errorf("Contents mismatch:\ngot  : %v\nwant : %v", got.LayerContents(), wantContents)
+	}
+
+	if len(got.LayerPayload()) != 0 {
+		t.Errorf("Expected empty payload, got: %v", got.LayerPayload())
 	}
 }

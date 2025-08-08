@@ -19,6 +19,7 @@ type IE struct {
 // facilitating various control and mobility management messages between gateways and MME/S-GW.
 // Defined in the 3GPP TS 29.274 specification
 type GTPv2 struct {
+	BaseLayer
 	Version          uint8
 	PiggybackingFlag bool
 	TEIDflag         bool
@@ -29,9 +30,6 @@ type GTPv2 struct {
 	SequenceNumber   uint32
 	Spare            uint8
 	IEs              []IE
-
-	Contents []byte
-	Payload  []byte
 }
 
 // DecodeFromBytes analyses a byte slice and attempts to decode it as a GTPv2 packet
@@ -82,8 +80,7 @@ func (g *GTPv2) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 		cIndex += 4 + uint16(ieLength)
 	}
 
-	g.Contents = data[:cIndex]
-	g.Payload = data[cIndex:]
+	g.BaseLayer = BaseLayer{Contents: data[:cIndex], Payload: data[cIndex:]}
 	return nil
 
 }
@@ -97,7 +94,7 @@ func decodeGTPv2(data []byte, p gopacket.PacketBuilder) error {
 	}
 
 	p.AddLayer(gtp)
-	return nil
+	return p.NextDecoder(gtp.NextLayerType())
 }
 
 // LayerType returns LayerTypeGTPv2
