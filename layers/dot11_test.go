@@ -816,6 +816,16 @@ func TestDot11InformationElement(t *testing.T) {
 			},
 			errors.New("vendor extension size < 4"),
 		},
+		{
+			"Offset greater than len",
+			[]byte{0xdd, 0x03, 0x00, 0x50, 0xf2, 0x01, 0x02, 0x03, 0x04, 0x05},
+			Dot11InformationElement{
+				ID:     221,
+				Length: 3,
+				Info:   []byte{},
+			},
+			errors.New("information element length 5 too short, 6 required"),
+		},
 	}
 
 	for _, test := range cases {
