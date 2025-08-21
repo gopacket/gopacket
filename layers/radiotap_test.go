@@ -6,6 +6,7 @@
 package layers
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/gopacket/gopacket"
@@ -213,5 +214,60 @@ func TestPacketRadiotap4(t *testing.T) {
 		if presentInd == 2 && rt.RadioTapValues[presentInd].Antenna != 1 {
 			t.Errorf("Expected antenna ID in RadioTap namespace %d to be 1, but got %d", presentInd, rt.RadioTapValues[presentInd].Antenna)
 		}
+	}
+}
+
+func TestSerializeRadioTapRoundTrip(t *testing.T) {
+	cases := [][]byte{
+		testPacketRadiotap0,
+		testPacketRadiotap1,
+		//testPacketRadiotap3,
+		testPacketRadiotap4,
+	}
+
+	for i, testPacket := range cases {
+		t.Run(fmt.Sprintf("RoundTrip_radiotapPacket%d", i), func(t *testing.T) {
+			p := gopacket.NewPacket(testPacket, LayerTypeRadioTap, gopacket.Default)
+			if p.ErrorLayer() != nil {
+				t.Fatal("Failed to decode packet:", p.ErrorLayer().Error())
+			}
+			rt := p.Layer(LayerTypeRadioTap).(*RadioTap)
+
+			// Serialize the RadioTap layer
+			buf := gopacket.NewSerializeBuffer()
+			err := rt.SerializeTo(buf, gopacket.SerializeOptions{FixLengths: true})
+			if err != nil {
+				t.Fatal("Failed to serialize RadioTap layer:", err)
+			}
+
+			serialized := buf.Bytes()
+			if len(serialized) != int(rt.Length) {
+				t.Fatalf("Expected serialized RadioTap length %d, got %d", rt.Length, len(serialized))
+			}
+
+			// Create a new packet from the serialized data
+			newP := gopacket.NewPacket(serialized, LayerTypeRadioTap, gopacket.Default)
+			if newP.ErrorLayer() != nil {
+				t.Fatal("Failed to decode serialized packet:", newP.ErrorLayer().Error())
+			}
+
+			// Check if the original and new RadioTap layers are equal
+			newRt := newP.Layer(LayerTypeRadioTap).(*RadioTap)
+
+			if rt.Length != newRt.Length {
+				t.Errorf("Expected serialized RadioTap length %d, got %d", rt.Length, newRt.Length)
+			}
+			if len(rt.RadioTapValues) != len(newRt.RadioTapValues) {
+				t.Errorf("Expected %d RadioTap values, got %d", len(rt.RadioTapValues), len(newRt.RadioTapValues))
+			}
+			for i := range rt.RadioTapValues {
+				if rt.RadioTapValues[i].ChannelFrequency != newRt.RadioTapValues[i].ChannelFrequency ||
+					rt.RadioTapValues[i].DBMAntennaSignal != newRt.RadioTapValues[i].DBMAntennaSignal ||
+					rt.RadioTapValues[i].Antenna != newRt.RadioTapValues[i].Antenna ||
+					rt.RadioTapValues[i].Rate != newRt.RadioTapValues[i].Rate {
+					t.Errorf("RadioTap value mismatch at index %d", i)
+				}
+			}
+		})
 	}
 }
