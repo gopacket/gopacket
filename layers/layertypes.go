@@ -152,7 +152,7 @@ var (
 	LayerTypeMDP                          = gopacket.RegisterLayerType(147, gopacket.LayerTypeMetadata{Name: "MDP", Decoder: gopacket.DecodeFunc(decodeMDP)})
 	LayerTypeAGUEVar0                     = gopacket.RegisterLayerType(148, gopacket.LayerTypeMetadata{Name: "AGUEVar0", Decoder: gopacket.DecodeFunc(decodeAGUE)})
 	LayerTypeAGUEVar1                     = gopacket.RegisterLayerType(149, gopacket.LayerTypeMetadata{Name: "AGUEVar1", Decoder: gopacket.DecodeFunc(decodeAGUE)})
-  LayerTypeAPSP                         = gopacket.RegisterLayerType(150, gopacket.LayerTypeMetadata{Name: "APSP", Decoder: gopacket.DecodeFunc(decodeAPSP)})
+	LayerTypeAPSP                         = gopacket.RegisterLayerType(150, gopacket.LayerTypeMetadata{Name: "APSP", Decoder: gopacket.DecodeFunc(decodeAPSP)})
 	LayerTypeLinuxSLL2                    = gopacket.RegisterLayerType(276, gopacket.LayerTypeMetadata{Name: "Linux SLL2", Decoder: gopacket.DecodeFunc(decodeLinuxSLL2)})
 )
 
