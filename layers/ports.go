@@ -58,6 +58,8 @@ func (a TCPPort) LayerType() gopacket.LayerType {
 	switch a {
 	case 53:
 		return LayerTypeDNS
+	case 179:
+		return LayerTypeBGPv4
 	case 443: // https
 		return LayerTypeTLS
 	case 502: // modbustcp
