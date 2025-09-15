@@ -231,6 +231,14 @@ func (h *TPacket) setUpRing() (err error) {
 	return nil
 }
 
+// FD returns the Unix file descriptor of the AF_PACKET socket used by this
+// instance. The returned file descriptor should be used with great care to not
+// interfere with this implementation. The file descriptor must no longer be
+// used after Close was called.
+func (h *TPacket) FD() int {
+	return h.fd
+}
+
 // Close cleans up the TPacket.  It should not be used after the Close call.
 func (h *TPacket) Close() {
 	if h.fd == -1 {
