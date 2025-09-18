@@ -114,10 +114,10 @@ func (s *SocketStatsV3) QueueFreezes() uint {
 
 // TPacket implements packet receiving for Linux AF_PACKET versions 1, 2, and 3.
 type TPacket struct {
-	// ifIndex is the interface index the socket is bound to.
-	ifIndex int
 	// stats is simple statistics on TPacket's run. This MUST be the first entry to ensure alignment for sync.atomic
 	stats Stats
+	// ifIndex is the interface index the socket is bound to.
+	ifIndex int
 	// fd is the C file descriptor.
 	fd int
 	// ring points to the memory space of the ring buffer shared by tpacket and the kernel.
