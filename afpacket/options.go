@@ -67,6 +67,14 @@ const (
 	SocketDgram = OptSocketType(unix.SOCK_DGRAM)
 )
 
+// OptProtocol is the protocol that should be received by the socket.
+// It can be passed into NewTPacket.
+//
+// This should be an IEEE 802.3 protocol number in host byte order. To receive
+// packets of all protocols, use [unix.ETH_P_ALL] (this is the default). If set
+// to zero, no packets are received.
+type OptProtocol uint16
+
 // OptInterface is the specific interface to bind to.
 // It can be passed into NewTPacket.
 type OptInterface string
@@ -126,6 +134,7 @@ type options struct {
 	pollTimeout    time.Duration
 	version        OptTPacketVersion
 	socktype       OptSocketType
+	protocol       uint16
 	iface          string
 }
 
@@ -137,6 +146,7 @@ var defaultOpts = options{
 	pollTimeout:  DefaultPollTimeout,
 	version:      TPacketVersionHighestAvailable,
 	socktype:     SocketRaw,
+	protocol:     unix.ETH_P_ALL,
 }
 
 func parseOptions(opts ...interface{}) (ret options, err error) {
@@ -155,6 +165,8 @@ func parseOptions(opts ...interface{}) (ret options, err error) {
 			ret.pollTimeout = time.Duration(v)
 		case OptTPacketVersion:
 			ret.version = v
+		case OptProtocol:
+			ret.protocol = uint16(v)
 		case OptInterface:
 			ret.iface = string(v)
 		case OptSocketType:
