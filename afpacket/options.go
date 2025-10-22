@@ -107,6 +107,13 @@ type OptPollTimeout time.Duration
 // be provided if available.
 type OptAddVLANHeader bool
 
+// OptVNetHdrSize is the size of the virtio_net_hdr that all packets on the
+// socket will be prepended with. When this option is unset or zero, packets on
+// the socket will not use a virtio_net_hdr.
+// Valid sizes are either 10 or 12, depending on whether the num_buffers field
+// is needed.
+type OptVNetHdrSize int
+
 // Default constants used by options.
 const (
 	DefaultFrameSize    = 4096                   // Default value for OptFrameSize.
@@ -122,6 +129,7 @@ type options struct {
 	blockSize      int
 	numBlocks      int
 	addVLANHeader  bool
+	vnetHdrSize    int
 	blockTimeout   time.Duration
 	pollTimeout    time.Duration
 	version        OptTPacketVersion
@@ -161,6 +169,8 @@ func parseOptions(opts ...interface{}) (ret options, err error) {
 			ret.socktype = v
 		case OptAddVLANHeader:
 			ret.addVLANHeader = bool(v)
+		case OptVNetHdrSize:
+			ret.vnetHdrSize = int(v)
 		default:
 			err = errors.New("unknown type in options")
 			return

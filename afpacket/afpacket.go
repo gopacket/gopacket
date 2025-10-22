@@ -193,6 +193,14 @@ func (h *TPacket) setRequestedTPacketVersion() error {
 	return nil
 }
 
+// setTPacketVersion tries to enable virtio_net_hdr support for the socket and sets the used size.
+func (h *TPacket) setVNetHdrSize(size int) error {
+	if err := unix.SetsockoptInt(h.fd, unix.SOL_PACKET, unix.PACKET_VNET_HDR_SZ, size); err != nil {
+		return fmt.Errorf("setsockopt packet_vnet_hdr_sz: %v", err)
+	}
+	return nil
+}
+
 // setUpRing sets up the shared-memory ring buffer between the user process and the kernel.
 func (h *TPacket) setUpRing() (err error) {
 	totalSize := int(h.opts.framesPerBlock * h.opts.numBlocks * h.opts.frameSize)
@@ -265,6 +273,11 @@ func NewTPacket(opts ...interface{}) (h *TPacket, err error) {
 	}
 	if err = h.setRequestedTPacketVersion(); err != nil {
 		goto errlbl
+	}
+	if h.opts.vnetHdrSize > 0 {
+		if err = h.setVNetHdrSize(h.opts.vnetHdrSize); err != nil {
+			goto errlbl
+		}
 	}
 	if err = h.setUpRing(); err != nil {
 		goto errlbl
