@@ -164,7 +164,7 @@ func (h *TPacket) bindToInterface(ifaceName string) error {
 	}
 	h.ifIndex = ifIndex
 	s := &unix.SockaddrLinklayer{
-		Protocol: endian.Htons(uint16(unix.ETH_P_ALL)),
+		Protocol: endian.Htons(h.opts.protocol),
 		Ifindex:  ifIndex,
 	}
 	return unix.Bind(h.fd, s)
@@ -255,7 +255,7 @@ func NewTPacket(opts ...interface{}) (h *TPacket, err error) {
 	if h.opts, err = parseOptions(opts...); err != nil {
 		return nil, err
 	}
-	fd, err := unix.Socket(unix.AF_PACKET, int(h.opts.socktype), int(endian.Htons(unix.ETH_P_ALL)))
+	fd, err := unix.Socket(unix.AF_PACKET, int(h.opts.socktype), int(endian.Htons(h.opts.protocol)))
 	if err != nil {
 		return nil, err
 	}
