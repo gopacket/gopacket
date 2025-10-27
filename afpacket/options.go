@@ -110,7 +110,7 @@ type OptAddVLANHeader bool
 // OptVNetHdrSize is the size of the virtio_net_hdr that all packets on the
 // socket will be prepended with. When this option is unset or zero, packets on
 // the socket will not use a virtio_net_hdr.
-// Valid sizes are either 10 or 12, depending on whether the num_buffers field
+// Common sizes are either 10 or 12, depending on whether the num_buffers field
 // is needed.
 type OptVNetHdrSize int
 

@@ -193,7 +193,7 @@ func (h *TPacket) setRequestedTPacketVersion() error {
 	return nil
 }
 
-// setTPacketVersion tries to enable virtio_net_hdr support for the socket and sets the used size.
+// setVNetHdrSize tries to enable virtio_net_hdr support for the socket and sets the used size.
 func (h *TPacket) setVNetHdrSize(size int) error {
 	if err := unix.SetsockoptInt(h.fd, unix.SOL_PACKET, unix.PACKET_VNET_HDR_SZ, size); err != nil {
 		return fmt.Errorf("setsockopt packet_vnet_hdr_sz: %v", err)
