@@ -154,6 +154,7 @@ var (
 	LayerTypeAGUEVar1                     = gopacket.RegisterLayerType(149, gopacket.LayerTypeMetadata{Name: "AGUEVar1", Decoder: gopacket.DecodeFunc(decodeAGUE)})
 	LayerTypeAPSP                         = gopacket.RegisterLayerType(150, gopacket.LayerTypeMetadata{Name: "APSP", Decoder: gopacket.DecodeFunc(decodeAPSP)})
 	LayerTypeLinuxSLL2                    = gopacket.RegisterLayerType(276, gopacket.LayerTypeMetadata{Name: "Linux SLL2", Decoder: gopacket.DecodeFunc(decodeLinuxSLL2)})
+	LayerTypeBGPv4                        = gopacket.RegisterLayerType(277, gopacket.LayerTypeMetadata{Name: "BGPv4", Decoder: gopacket.DecodeFunc(decodeBGPv4)})
 )
 
 var (
