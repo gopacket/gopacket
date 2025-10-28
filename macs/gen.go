@@ -47,7 +47,7 @@ var ValidMACPrefixMap = validMACPrefixMap
 var validMACPrefixMap = map[[3]byte]string{
 `
 
-var url = flag.String("url", "http://standards-oui.ieee.org/oui/oui.txt", "URL to fetch MACs from")
+var url = flag.String("url", "https://standards-oui.ieee.org/oui/oui.txt", "URL to fetch MACs from")
 
 type mac struct {
 	prefix  [3]byte
@@ -63,7 +63,16 @@ func (m macs) Swap(i, j int)      { m[i], m[j] = m[j], m[i] }
 func main() {
 	flag.Parse()
 	fmt.Fprintf(os.Stderr, "Fetching MACs from %q\n", *url)
-	resp, err := http.Get(*url)
+
+	// Create request with custom User-Agent to avoid being blocked
+	req, err := http.NewRequest("GET", *url, nil)
+	if err != nil {
+		panic(err)
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; gopacket-macs-generator/1.0)")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		panic(err)
 	}
