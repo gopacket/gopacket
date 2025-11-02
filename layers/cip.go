@@ -224,7 +224,7 @@ func (c *CIP) parsePath(data []byte) {
 
 			switch logicalFormat {
 			case 0: // 8-bit
-				if offset+1 < len(data) {
+				if offset+2 <= len(data) {
 					value = uint32(data[offset+1])
 					size = 2
 				}
@@ -234,7 +234,7 @@ func (c *CIP) parsePath(data []byte) {
 					size = 4
 				}
 			case 2: // 32-bit
-				if offset+5 < len(data) {
+				if offset+6 <= len(data) {
 					value = binary.LittleEndian.Uint32(data[offset+2 : offset+6])
 					size = 6
 				}
