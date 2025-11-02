@@ -393,7 +393,7 @@ func (sb BGPv4ErrorUpdateMessageSubCode) String() string {
 	case BGPv4UnrecognizedWellknownAttribute:
 		return "Unrecognized Well-known Attribute"
 	case BGPv4MissingWellknownAttribute:
-		return "Missing Well-known attribute"
+		return "Missing Well-known Attribute"
 	case BGPv4AttributeFlagsError:
 		return "Attribute Flags Error"
 	case BGPv4AttributeLengthError:
