@@ -8,6 +8,7 @@ package layers
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 
 	"github.com/gopacket/gopacket"
 )
@@ -23,8 +24,130 @@ var (
 	ErrModbusInvalidProtocol = errors.New("invalid Modbus protocol ID (expected 0)")
 )
 
-// FC represents a Modbus function code
-type FC byte
+// ModbusFunctionCode represents a Modbus function code
+type ModbusFunctionCode byte
+
+// Modbus Function Code constants
+const (
+	ModbusFuncCodeReadCoils              ModbusFunctionCode = 0x01
+	ModbusFuncCodeReadDiscreteInputs     ModbusFunctionCode = 0x02
+	ModbusFuncCodeReadHoldingRegisters   ModbusFunctionCode = 0x03
+	ModbusFuncCodeReadInputRegisters     ModbusFunctionCode = 0x04
+	ModbusFuncCodeWriteSingleCoil        ModbusFunctionCode = 0x05
+	ModbusFuncCodeWriteSingleRegister    ModbusFunctionCode = 0x06
+	ModbusFuncCodeReadExceptionStatus    ModbusFunctionCode = 0x07
+	ModbusFuncCodeDiagnostics            ModbusFunctionCode = 0x08
+	ModbusFuncCodeGetCommEventCounter    ModbusFunctionCode = 0x0B
+	ModbusFuncCodeGetCommEventLog        ModbusFunctionCode = 0x0C
+	ModbusFuncCodeWriteMultipleCoils     ModbusFunctionCode = 0x0F
+	ModbusFuncCodeWriteMultipleRegisters ModbusFunctionCode = 0x10
+	ModbusFuncCodeReportSlaveID          ModbusFunctionCode = 0x11
+	ModbusFuncCodeReadFileRecord         ModbusFunctionCode = 0x14
+	ModbusFuncCodeWriteFileRecord        ModbusFunctionCode = 0x15
+	ModbusFuncCodeMaskWriteRegister      ModbusFunctionCode = 0x16
+	ModbusFuncCodeReadWriteMultipleRegs  ModbusFunctionCode = 0x17
+	ModbusFuncCodeReadFIFOQueue          ModbusFunctionCode = 0x18
+	ModbusFuncCodeEncapsulatedInterface  ModbusFunctionCode = 0x2B
+	// Exception mask (OR'd with function code for exception responses)
+	ModbusFuncCodeExceptionMask ModbusFunctionCode = 0x80
+)
+
+// String returns a human-readable string representation of the function code
+func (fc ModbusFunctionCode) String() string {
+	isException := (fc & ModbusFuncCodeExceptionMask) != 0
+	code := fc & ^ModbusFuncCodeExceptionMask
+
+	var name string
+	switch code {
+	case ModbusFuncCodeReadCoils:
+		name = "Read Coils"
+	case ModbusFuncCodeReadDiscreteInputs:
+		name = "Read Discrete Inputs"
+	case ModbusFuncCodeReadHoldingRegisters:
+		name = "Read Holding Registers"
+	case ModbusFuncCodeReadInputRegisters:
+		name = "Read Input Registers"
+	case ModbusFuncCodeWriteSingleCoil:
+		name = "Write Single Coil"
+	case ModbusFuncCodeWriteSingleRegister:
+		name = "Write Single Register"
+	case ModbusFuncCodeReadExceptionStatus:
+		name = "Read Exception Status"
+	case ModbusFuncCodeDiagnostics:
+		name = "Diagnostics"
+	case ModbusFuncCodeGetCommEventCounter:
+		name = "Get Comm Event Counter"
+	case ModbusFuncCodeGetCommEventLog:
+		name = "Get Comm Event Log"
+	case ModbusFuncCodeWriteMultipleCoils:
+		name = "Write Multiple Coils"
+	case ModbusFuncCodeWriteMultipleRegisters:
+		name = "Write Multiple Registers"
+	case ModbusFuncCodeReportSlaveID:
+		name = "Report Slave ID"
+	case ModbusFuncCodeReadFileRecord:
+		name = "Read File Record"
+	case ModbusFuncCodeWriteFileRecord:
+		name = "Write File Record"
+	case ModbusFuncCodeMaskWriteRegister:
+		name = "Mask Write Register"
+	case ModbusFuncCodeReadWriteMultipleRegs:
+		name = "Read/Write Multiple Registers"
+	case ModbusFuncCodeReadFIFOQueue:
+		name = "Read FIFO Queue"
+	case ModbusFuncCodeEncapsulatedInterface:
+		name = "Encapsulated Interface Transport"
+	default:
+		name = fmt.Sprintf("Unknown(0x%02X)", byte(code))
+	}
+
+	if isException {
+		return "Exception: " + name
+	}
+	return name
+}
+
+// ModbusExceptionCode represents a Modbus exception code
+type ModbusExceptionCode byte
+
+// Modbus Exception Code constants
+const (
+	ModbusExceptionIllegalFunction                    ModbusExceptionCode = 0x01
+	ModbusExceptionIllegalDataAddress                 ModbusExceptionCode = 0x02
+	ModbusExceptionIllegalDataValue                   ModbusExceptionCode = 0x03
+	ModbusExceptionSlaveDeviceFailure                 ModbusExceptionCode = 0x04
+	ModbusExceptionAcknowledge                        ModbusExceptionCode = 0x05
+	ModbusExceptionSlaveDeviceBusy                    ModbusExceptionCode = 0x06
+	ModbusExceptionMemoryParityError                  ModbusExceptionCode = 0x08
+	ModbusExceptionGatewayPathUnavailable             ModbusExceptionCode = 0x0A
+	ModbusExceptionGatewayTargetDeviceFailedToRespond ModbusExceptionCode = 0x0B
+)
+
+// String returns a human-readable string representation of the exception code
+func (ec ModbusExceptionCode) String() string {
+	switch ec {
+	case ModbusExceptionIllegalFunction:
+		return "Illegal Function"
+	case ModbusExceptionIllegalDataAddress:
+		return "Illegal Data Address"
+	case ModbusExceptionIllegalDataValue:
+		return "Illegal Data Value"
+	case ModbusExceptionSlaveDeviceFailure:
+		return "Slave Device Failure"
+	case ModbusExceptionAcknowledge:
+		return "Acknowledge"
+	case ModbusExceptionSlaveDeviceBusy:
+		return "Slave Device Busy"
+	case ModbusExceptionMemoryParityError:
+		return "Memory Parity Error"
+	case ModbusExceptionGatewayPathUnavailable:
+		return "Gateway Path Unavailable"
+	case ModbusExceptionGatewayTargetDeviceFailedToRespond:
+		return "Gateway Target Device Failed to Respond"
+	default:
+		return fmt.Sprintf("Unknown(0x%02X)", byte(ec))
+	}
+}
 
 // MBAP represents the Modbus Application Protocol header
 type MBAP struct {
@@ -56,7 +179,7 @@ func (m *Modbus) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error 
 	m.ProtocolID = binary.BigEndian.Uint16(data[2:4])
 	m.Length = binary.BigEndian.Uint16(data[4:6])
 	m.UnitID = data[6]
-	m.Exception = FC(data[7]).exception()
+	m.Exception = (data[7] & 0x80) != 0
 	m.FunctionCode = data[7] & 0x7f
 	end := int(m.Length) + 6
 	if len(data) < end || end < 8 {
@@ -90,67 +213,6 @@ func decodeModbus(data []byte, p gopacket.PacketBuilder) error {
 	return decodingLayerDecoder(modbus, data, p)
 }
 
-func (fc FC) exception() bool {
-	return (byte(fc) & 0x80) != 0
-}
-
-func (fc FC) masked() FC {
-	return fc & 0x7F
-}
-
-// String returns a human-readable representation of the function code
-func (fc FC) String() (s string) {
-	if fc.exception() {
-		s = `Exception: `
-		// We aren't passing by pointer, so it's safe to modify fc
-		fc = fc.masked()
-	}
-
-	switch fc {
-	case 1:
-		s += `Read Coil`
-	case 2:
-		s += `Read Discrete Inputs`
-	case 3:
-		s += `Read Holding Registers`
-	case 4:
-		s += `Read Input Registers`
-	case 5:
-		s += `Write Single Coil`
-	case 6:
-		s += `Write Single Register`
-	case 7:
-		s += `Read Exception Status`
-	case 8:
-		s += `Diagnostics`
-	case 0xb:
-		s += `Get Comm Event Counter`
-	case 0xc:
-		s += `Get Comm Event Log`
-	case 0xF:
-		s += `Write Multiple Coils`
-	case 0x10:
-		s += `Write Multiple Registers`
-	case 0x11:
-		s += `Report Slave ID`
-	case 0x14:
-		s += `Read File Record`
-	case 0x15:
-		s += `Write File Record`
-	case 0x16:
-		s += `Mask Write Register`
-	case 0x17:
-		s += `Read/Write Multiple Registers`
-	case 0x18:
-		s += `Read FIFO Queue`
-	case 0x2B:
-		s += `General References Request`
-	default:
-		s += `UNKNOWN`
-	}
-	return
-}
-
 // Validate checks if the Modbus packet is valid according to the protocol specification
 func (m *Modbus) Validate() error {
 	if m.ProtocolID != 0 {
@@ -169,7 +231,16 @@ func (m *Modbus) IsException() bool {
 	return m.Exception
 }
 
-// GetFunctionCode returns the Modbus function code as an FC type
-func (m *Modbus) GetFunctionCode() FC {
-	return FC(m.FunctionCode)
+// GetFunction returns the Modbus function code as a ModbusFunctionCode type
+func (m *Modbus) GetFunction() ModbusFunctionCode {
+	return ModbusFunctionCode(m.FunctionCode)
+}
+
+// GetExceptionCode returns the exception code from the first byte of ReqResp data
+// Returns 0 if this is not an exception response or if there is no data
+func (m *Modbus) GetExceptionCode() ModbusExceptionCode {
+	if !m.Exception || len(m.ReqResp) == 0 {
+		return 0
+	}
+	return ModbusExceptionCode(m.ReqResp[0])
 }

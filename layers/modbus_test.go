@@ -206,7 +206,7 @@ func TestModbusPcap(t *testing.T) {
 				if !modbus.IsException() {
 					t.Errorf("Packet %d: IsException() returned false for exception packet", packetCount)
 				}
-				fc := modbus.GetFunctionCode()
+				fc := modbus.GetFunction()
 				if fc.String() == "UNKNOWN" {
 					t.Logf("Packet %d: Unknown exception function code: %d", packetCount, modbus.FunctionCode)
 				}
@@ -226,7 +226,7 @@ func TestModbusPcap(t *testing.T) {
 	if lastModbus != nil {
 		t.Logf("Last Modbus packet: TransID=%d, FuncCode=%d (%s), Exception=%v",
 			lastModbus.TransactionID, lastModbus.FunctionCode,
-			lastModbus.GetFunctionCode().String(), lastModbus.Exception)
+			lastModbus.GetFunction().String(), lastModbus.Exception)
 	}
 }
 
@@ -381,11 +381,11 @@ func TestModbusPcapDetailedValidation(t *testing.T) {
 						t.Error("NextLayerType() should return LayerTypeZero")
 					}
 
-					// Verify GetFunctionCode helper
-					fc := modbus.GetFunctionCode()
+					// Verify GetFunction helper
+					fc := modbus.GetFunction()
 					fcStr := fc.String()
 					if fcStr == "" {
-						t.Error("GetFunctionCode().String() returned empty string")
+						t.Error("GetFunction().String() returned empty string")
 					}
 
 					// For non-exception packets, verify data length is reasonable
