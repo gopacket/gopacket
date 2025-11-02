@@ -357,7 +357,7 @@ func (sb BGPv4ErrorOpenMessageSubCode) String() string {
 	case BGPv4BadPeerAS:
 		return "Bad Peer AS"
 	case BGPv4BadBGPIdentifier:
-		return "Bag BGP Identifier"
+		return "Bad BGP Identifier"
 	case BGPv4UnsupportedOptionalParameter:
 		return "Unsupported Optional Parameter"
 	case BGPv4AuthenticationFailure:
