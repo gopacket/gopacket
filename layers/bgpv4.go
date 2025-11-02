@@ -17,7 +17,7 @@ import (
 	"github.com/gopacket/gopacket"
 )
 
-// This dissctor works for BGP version number 4 as defined by
+// This dissector works for BGP version number 4 as defined by
 // A Border Gateway Protocol 4 (BGP-4) [RFC4271] and
 // Route Refresh Capability for BGP-4 [RFC2918].
 //
