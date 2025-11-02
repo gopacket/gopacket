@@ -89,7 +89,7 @@ func (t BGPv4Type) String() string {
 // The minimum length of the OPEN message is 29 octets (including the
 // message header).
 type BGPv4Open struct {
-	// Versionindicates the protocol version
+	// Version indicates the protocol version
 	// number of the message. The current BGP version number is 4.
 	Version uint8
 	// MyAS indicates the Autonomous System number of the sender.
