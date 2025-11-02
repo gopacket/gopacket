@@ -229,7 +229,7 @@ func (c *CIP) parsePath(data []byte) {
 					size = 2
 				}
 			case 1: // 16-bit
-				if offset+3 < len(data) {
+				if offset+4 <= len(data) {
 					value = uint32(binary.LittleEndian.Uint16(data[offset+2 : offset+4]))
 					size = 4
 				}
