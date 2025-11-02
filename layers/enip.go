@@ -8,6 +8,7 @@ package layers
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 
 	"github.com/gopacket/gopacket"
 )
@@ -24,10 +25,6 @@ const (
 )
 
 var (
-	registerSession ENIPCommand = 0x0065
-	sendRRData      ENIPCommand = 0x006f
-	sendUnitData    ENIPCommand = 0x0070
-
 	// ErrENIPDataTooSmall is returned if an EtherNet/IP packet is truncated
 	ErrENIPDataTooSmall = errors.New("ENIP packet data truncated")
 	// ErrENIPUnknownDataFormat is returned if an unknown data format ID is encountered
@@ -36,6 +33,84 @@ var (
 
 // ENIPCommand is an EtherNet/IP command code
 type ENIPCommand uint16
+
+// ENIP Command constants
+const (
+	ENIPCommandNOP               ENIPCommand = 0x0000
+	ENIPCommandListServices      ENIPCommand = 0x0004
+	ENIPCommandListIdentity      ENIPCommand = 0x0063
+	ENIPCommandListInterfaces    ENIPCommand = 0x0064
+	ENIPCommandRegisterSession   ENIPCommand = 0x0065
+	ENIPCommandUnregisterSession ENIPCommand = 0x0066
+	ENIPCommandSendRRData        ENIPCommand = 0x006F
+	ENIPCommandSendUnitData      ENIPCommand = 0x0070
+	ENIPCommandIndicateStatus    ENIPCommand = 0x0072
+	ENIPCommandCancel            ENIPCommand = 0x0073
+)
+
+// String returns a human-readable string representation of the ENIP command
+func (ec ENIPCommand) String() string {
+	switch ec {
+	case ENIPCommandNOP:
+		return "NOP"
+	case ENIPCommandListServices:
+		return "ListServices"
+	case ENIPCommandListIdentity:
+		return "ListIdentity"
+	case ENIPCommandListInterfaces:
+		return "ListInterfaces"
+	case ENIPCommandRegisterSession:
+		return "RegisterSession"
+	case ENIPCommandUnregisterSession:
+		return "UnregisterSession"
+	case ENIPCommandSendRRData:
+		return "SendRRData"
+	case ENIPCommandSendUnitData:
+		return "SendUnitData"
+	case ENIPCommandIndicateStatus:
+		return "IndicateStatus"
+	case ENIPCommandCancel:
+		return "Cancel"
+	default:
+		return fmt.Sprintf("Unknown(0x%04X)", uint16(ec))
+	}
+}
+
+// ENIPStatus represents an EtherNet/IP status code
+type ENIPStatus uint32
+
+// ENIP Status constants
+const (
+	ENIPStatusSuccess              ENIPStatus = 0x0000
+	ENIPStatusInvalidCommand       ENIPStatus = 0x0001
+	ENIPStatusInsufficientMemory   ENIPStatus = 0x0002
+	ENIPStatusIncorrectData        ENIPStatus = 0x0003
+	ENIPStatusInvalidSessionHandle ENIPStatus = 0x0064
+	ENIPStatusInvalidLength        ENIPStatus = 0x0065
+	ENIPStatusUnsupportedProtocol  ENIPStatus = 0x0069
+)
+
+// String returns a human-readable string representation of the ENIP status
+func (es ENIPStatus) String() string {
+	switch es {
+	case ENIPStatusSuccess:
+		return "Success"
+	case ENIPStatusInvalidCommand:
+		return "Invalid Command"
+	case ENIPStatusInsufficientMemory:
+		return "Insufficient Memory"
+	case ENIPStatusIncorrectData:
+		return "Incorrect Data"
+	case ENIPStatusInvalidSessionHandle:
+		return "Invalid Session Handle"
+	case ENIPStatusInvalidLength:
+		return "Invalid Length"
+	case ENIPStatusUnsupportedProtocol:
+		return "Unsupported Protocol"
+	default:
+		return fmt.Sprintf("Unknown(0x%08X)", uint32(es))
+	}
+}
 
 // ENIP implements decoding of EtherNet/IP, a protocol used to transport the
 // Common Industrial Protocol over standard OSI networks. EtherNet/IP transports
@@ -61,6 +136,7 @@ type ENIPCommandSpecificData struct {
 
 func init() {
 	RegisterTCPPortLayerType(TCPPort(TCPPortENIP), LayerTypeENIP)
+	RegisterUDPPortLayerType(UDPPort(UDPPortENIP), LayerTypeENIP)
 }
 
 // DecodeFromBytes parses the contents of `data` as an EtherNet/IP packet.
@@ -81,7 +157,7 @@ func (enip *ENIP) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error
 func (enip *ENIP) getPayload(data []byte, df gopacket.DecodeFeedback) (err error) {
 	enip.CommandSpecific.Cmd = enip.Command
 	switch enip.Command {
-	case registerSession: // Register session command
+	case ENIPCommandRegisterSession: // Register session command
 		if len(data) < 28 { // 24 byte header + 4 byte protocol version/options
 			df.SetTruncated()
 			err = ErrENIPDataTooSmall
@@ -90,7 +166,7 @@ func (enip *ENIP) getPayload(data []byte, df gopacket.DecodeFeedback) (err error
 		enip.CommandSpecific.Data = data[24:28]
 		enip.Contents = data[0:28]
 		enip.Payload = data[28:]
-	case sendUnitData, sendRRData:
+	case ENIPCommandSendUnitData, ENIPCommandSendRRData:
 		if len(data) < enipMinSendRRDataPacketLen {
 			df.SetTruncated()
 			return ErrENIPDataTooSmall
@@ -163,11 +239,11 @@ func (enip *ENIP) CanDecode() gopacket.LayerClass { return LayerTypeENIP }
 // derived from the command specific data
 func (enip *ENIP) NextLayerType() (nl gopacket.LayerType) {
 	switch enip.Command {
-	case sendRRData:
+	case ENIPCommandSendRRData:
 		fallthrough
-	case sendUnitData:
+	case ENIPCommandSendUnitData:
 		nl = enip.CommandSpecific.NextLayer()
-	case registerSession:
+	case ENIPCommandRegisterSession:
 		fallthrough
 	default:
 		nl = gopacket.LayerTypePayload
