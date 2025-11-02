@@ -312,7 +312,7 @@ func TestPacketBGPv4RouteRefreshed(t *testing.T) {
 	}
 }
 
-// testPacketBGPv4Notification is a BGPv4 Notification messsage.
+// testPacketBGPv4Notification is a BGPv4 Notification message.
 //
 //	0000   	00 50 56 89 67 86 00 50 56 89 2e 9c 81 00 01 f5   .PV.g..PV.......
 //	0010	08 00 45 c0 00 9c fe 05 40 00 fd 06 8b 93 78 00   ..E.....@.....x.
