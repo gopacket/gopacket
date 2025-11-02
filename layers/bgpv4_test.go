@@ -356,7 +356,7 @@ func TestPacketBGPv4Notification(t *testing.T) {
 	}
 }
 
-// testPacketBGPv4NotificationWrongErrorCode is a BGPv4 Notification messsage
+// testPacketBGPv4NotificationWrongErrorCode is a BGPv4 Notification message
 // with an invalid error code 42.
 //
 //	0000   	00 50 56 89 67 86 00 50 56 89 2e 9c 81 00 01 f5   .PV.g..PV.......
