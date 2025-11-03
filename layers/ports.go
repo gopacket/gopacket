@@ -229,7 +229,7 @@ var sctpPortLayerTypeOverride bitfield
 var sctpPortLayerType = map[SCTPPort]gopacket.LayerType{}
 
 // RegisterSCTPPortLayerType creates a new mapping between a SCTPPort
-// and an underlaying LayerType.
+// and an underlying LayerType.
 func RegisterSCTPPortLayerType(port SCTPPort, layerType gopacket.LayerType) {
 	sctpPortLayerTypeOverride.set(uint16(port))
 	sctpPortLayerType[port] = layerType
