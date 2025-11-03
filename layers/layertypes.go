@@ -157,6 +157,7 @@ var (
 	LayerTypeCIP                          = gopacket.RegisterLayerType(152, gopacket.LayerTypeMetadata{Name: "CIP", Decoder: gopacket.DecodeFunc(decodeCIP)})
 	LayerTypeDiameter                     = gopacket.RegisterLayerType(153, gopacket.LayerTypeMetadata{Name: "Diameter", Decoder: gopacket.DecodeFunc(decodeDiameter)})
 	LayerTypeLinuxSLL2                    = gopacket.RegisterLayerType(276, gopacket.LayerTypeMetadata{Name: "Linux SLL2", Decoder: gopacket.DecodeFunc(decodeLinuxSLL2)})
+	LayerTypeBGPv4                        = gopacket.RegisterLayerType(277, gopacket.LayerTypeMetadata{Name: "BGPv4", Decoder: gopacket.DecodeFunc(decodeBGPv4)})
 )
 
 var (
