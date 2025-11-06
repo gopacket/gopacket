@@ -10,6 +10,7 @@ package layers
 import (
 	"encoding/binary"
 	"fmt"
+	"log/slog"
 
 	"github.com/gopacket/gopacket"
 )
@@ -22,6 +23,14 @@ type UDP struct {
 	Checksum         uint16
 	sPort, dPort     []byte
 	tcpipchecksum
+}
+
+func (u *UDP) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.Int("srcPort", int(u.SrcPort)),
+		slog.Int("dstPort", int(u.DstPort)),
+		slog.Int("length", int(u.Length)),
+		slog.Int("checksum", int(u.Checksum)))
 }
 
 // LayerType returns gopacket.LayerTypeUDP
