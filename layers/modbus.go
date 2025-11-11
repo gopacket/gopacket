@@ -233,6 +233,9 @@ func (m *Modbus) IsException() bool {
 
 // GetFunction returns the Modbus function code as a ModbusFunctionCode type
 func (m *Modbus) GetFunction() ModbusFunctionCode {
+	if m.Exception {
+		return ModbusFunctionCode(m.FunctionCode) | ModbusFuncCodeExceptionMask
+	}
 	return ModbusFunctionCode(m.FunctionCode)
 }
 
