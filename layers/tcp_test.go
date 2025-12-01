@@ -8,6 +8,7 @@ package layers
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/gopacket/gopacket"
@@ -158,5 +159,30 @@ func TestPacketMPTCPOptionDecode(t *testing.T) {
 
 	if !reflect.DeepEqual(expected, tcp.Options) {
 		t.Errorf("expected options to be %#v, but got %#v", expected, tcp.Options)
+	}
+}
+
+// testMPTCPInvalidLengthAndSubtype is the packet:
+//
+//	00:00:00.000000 IP 192.168.0.2.49220 > 192.68.0.3.443: Flags [A], seq 1, win=343, options [nop,unknown,mptls], length 0
+//	        0x0000:  0800 0000 0000 0001 0001 0006 0011 2233   .............."3
+//	        0x0010:  4455 ee33 4528 0034 c339 4000 2c06 0000   DU.3E(.4.9@.,...
+//	        0x0020:  c0a8 0002 c0a8 0003 c044 01bb 41db 076a   .........D..A..j
+//	        0x0030:  e385 9837 8010 0157 b67f 0000 0121 080a   ...7...W.....!..
+//	        0x0040:  164b d4ca f81e 00a0                       .K......
+var testMPTCPInvalidLengthAndSubtype = []byte{
+	0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x06, 0x00, 0x11, 0x22, 0x33,
+	0x44, 0x55, 0xee, 0x33, 0x45, 0x28, 0x00, 0x34, 0xc3, 0x39, 0x40, 0x00, 0x2c, 0x06, 0x00, 0x00,
+	0xc0, 0xa8, 0x00, 0x02, 0xc0, 0xa8, 0x00, 0x03, 0xc0, 0x44, 0x01, 0xbb, 0x41, 0xdb, 0x07, 0x6a,
+	0xe3, 0x85, 0x98, 0x37, 0x80, 0x10, 0x01, 0x57, 0xb6, 0x7f, 0x00, 0x00, 0x01, 0x21, 0x08, 0x0a,
+	0x16, 0x4b, 0xd4, 0xca, 0xf8, 0x1e, 0x00, 0xa0,
+}
+
+func TestMPTCPInvalidLengthAndSubtype(t *testing.T) {
+	t.Log("Starting packet decoding")
+	p := gopacket.NewPacket(testMPTCPInvalidLengthAndSubtype, LinkTypeLinuxSLL2, gopacket.Default)
+
+	if !strings.HasSuffix(p.ErrorLayer().Error().Error(), "MPTCP bad option length 0") {
+		t.Error("Failed to catch broken MPTCP packet")
 	}
 }
