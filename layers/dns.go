@@ -10,6 +10,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"strings"
 
@@ -297,6 +298,29 @@ type DNS struct {
 	// name decoding on a single object via multiple DecodeFromBytes calls
 	// requiring constant allocation of small byte slices.
 	buffer []byte
+}
+
+func (d *DNS) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.Int("ID", int(d.ID)),
+		slog.Bool("QR", d.QR),
+		slog.String("OPCode", d.OpCode.String()),
+		slog.Group("flags",
+			slog.Bool("authoritative answer", d.AA),
+			slog.Bool("truncated", d.TC),
+			slog.Bool("recursion desired", d.RD),
+			slog.Bool("recursion available", d.RA),
+			slog.Int("reserved", int(d.Z))),
+		slog.String("responseCode", d.ResponseCode.String()),
+		slog.Int("qdCount", int(d.QDCount)),
+		slog.Int("anCount", int(d.ANCount)),
+		slog.Int("nsCount", int(d.NSCount)),
+		slog.Int("arCount", int(d.ARCount)),
+		slog.Any("questions", d.Questions),
+		slog.Any("answers", d.Answers),
+		slog.Any("authorities", d.Authorities),
+		slog.Any("additionals", d.Additionals),
+	)
 }
 
 // LayerType returns gopacket.LayerTypeDNS.

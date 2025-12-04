@@ -11,6 +11,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"strings"
 
@@ -96,6 +97,20 @@ func (ip *IPv4) getIPv4OptionSize() uint8 {
 		optionSize += 4 - (optionSize % 4)
 	}
 	return optionSize
+}
+
+func (ip *IPv4) LogValue() slog.Value {
+	attrs := []slog.Attr{
+		slog.Int("version", int(ip.Version)),
+		slog.Int("ihl", int(ip.IHL)),
+		slog.Int("tos", int(ip.TOS)),
+		slog.Int("length", int(ip.Length)),
+		slog.String("srcIP", ip.SrcIP.String()),
+		slog.String("dstIP", ip.DstIP.String())}
+	if len(ip.Padding) != 0 {
+		attrs = append(attrs, slog.Any("padding", ip.Padding))
+	}
+	return slog.GroupValue(attrs...)
 }
 
 // SerializeTo writes the serialized form of this layer into the
