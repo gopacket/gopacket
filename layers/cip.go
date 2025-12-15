@@ -280,7 +280,13 @@ func (cip *CIP) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 		pathsize := data[offset]
 		offset++
 
-		if len(data) < cipBasePacketLen+int(2*pathsize) {
+		// Prevent uint8 overflow: pathsize is in 16-bit words and must be small enough to not overflow.
+		if pathsize > 127 {
+			df.SetTruncated()
+			return ErrCIPDataTooSmall
+		}
+		pathBytes := 2 * int(pathsize)
+		if len(data) < cipBasePacketLen+pathBytes {
 			df.SetTruncated()
 			return ErrCIPDataTooSmall
 		}

@@ -221,7 +221,7 @@ func processModbus(modbus *layers.Modbus, packet gopacket.Packet, count int, tim
 
 	if modbus.IsException() {
 		fmt.Printf("  Type:          Exception Response ⚠️\n")
-		fmt.Printf("  Function Code: 0x%02X (%s)\n", byte(functionCode&^layers.ModbusFuncCodeExceptionMask), functionCode.String())
+		fmt.Printf("  Function Code: 0x%02X (%s)\n", byte(functionCode), functionCode.String())
 
 		excCode := modbus.GetExceptionCode()
 		if excCode != 0 {

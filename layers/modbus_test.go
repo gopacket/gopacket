@@ -83,7 +83,7 @@ func TestModbusExceptionResponse(t *testing.T) {
 				Length:        3,
 				UnitID:        10,
 			},
-			FunctionCode: 0x8,
+			FunctionCode: 0x88,
 			Exception:    true,
 			ReqResp:      []uint8{0x0b},
 		}
@@ -196,9 +196,9 @@ func TestModbusPcap(t *testing.T) {
 				t.Errorf("Packet %d: Validation failed: %v", packetCount, err)
 			}
 
-			// Check function code is in valid range
-			if modbus.FunctionCode == 0 || modbus.FunctionCode > 127 {
-				t.Errorf("Packet %d: Invalid function code %d", packetCount, modbus.FunctionCode)
+			// Check function code is in valid range (base function code cannot be 0)
+			if (modbus.FunctionCode & 0x7f) == 0 {
+				t.Errorf("Packet %d: Invalid function code 0x%02X", packetCount, modbus.FunctionCode)
 			}
 
 			// Test helper methods

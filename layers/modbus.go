@@ -161,7 +161,7 @@ type MBAP struct {
 type Modbus struct {
 	BaseLayer
 	MBAP
-	FunctionCode uint8  // Modbus function code
+	FunctionCode uint8  // Raw Modbus function code byte (includes exception bit 0x80 if present)
 	Exception    bool   // True if this is an exception response
 	ReqResp      []byte // Request/Response data
 }
@@ -179,8 +179,8 @@ func (m *Modbus) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error 
 	m.ProtocolID = binary.BigEndian.Uint16(data[2:4])
 	m.Length = binary.BigEndian.Uint16(data[4:6])
 	m.UnitID = data[6]
-	m.Exception = (data[7] & 0x80) != 0
-	m.FunctionCode = data[7] & 0x7f
+	m.FunctionCode = data[7]
+	m.Exception = (m.FunctionCode & 0x80) != 0
 	end := int(m.Length) + 6
 	if len(data) < end || end < 8 {
 		df.SetTruncated()
@@ -233,9 +233,6 @@ func (m *Modbus) IsException() bool {
 
 // GetFunction returns the Modbus function code as a ModbusFunctionCode type
 func (m *Modbus) GetFunction() ModbusFunctionCode {
-	if m.Exception {
-		return ModbusFunctionCode(m.FunctionCode) | ModbusFuncCodeExceptionMask
-	}
 	return ModbusFunctionCode(m.FunctionCode)
 }
 

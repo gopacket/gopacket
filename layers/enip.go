@@ -211,7 +211,13 @@ func getDataFormatIDLen(id uint16, data []byte) (int, error) {
 		if len(data) < 2 {
 			return 0, ErrENIPDataTooSmall
 		}
-		return 4 + int(binary.LittleEndian.Uint16(data)), nil // Connected data item
+		length := int(binary.LittleEndian.Uint16(data))
+		totalLen := 4 + length
+		// Ensure the claimed item length fits in the remaining buffer (data includes the 2-byte length field)
+		if totalLen < 0 || length < 0 || 2+length > len(data) {
+			return 0, ErrENIPDataTooSmall
+		}
+		return totalLen, nil // Connected data item
 	case 0x00B1:
 		return 6, nil // Connected address item
 	case 0x00B2:
