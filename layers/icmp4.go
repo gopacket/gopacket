@@ -231,17 +231,28 @@ func (i *ICMPv4) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error 
 	return nil
 }
 
+// fix from google/gopacket pull request by https://github.com/cjacobs96
+// https://github.com/google/gopacket/pull/754
 // SerializeTo writes the serialized form of this layer into the
 // SerializationBuffer, implementing gopacket.SerializableLayer.
 // See the docs for gopacket.SerializableLayer for more info.
 func (i *ICMPv4) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.SerializeOptions) error {
-	bytes, err := b.PrependBytes(8)
+	//bytes, err := b.PrependBytes(8)
+	bytes, err := b.PrependBytes(8 + len(i.Payload)) //header size + payload size
 	if err != nil {
 		return err
 	}
 	i.TypeCode.SerializeTo(bytes)
 	binary.BigEndian.PutUint16(bytes[4:], i.Id)
 	binary.BigEndian.PutUint16(bytes[6:], i.Seq)
+
+	startIndex := 8 //start at after header offset
+	//copy payload into buffer
+	for _, element := range i.Payload {
+		bytes[startIndex] = byte(uint16(element))
+		startIndex += 1
+	}
+
 	if opts.ComputeChecksums {
 		bytes[2] = 0
 		bytes[3] = 0
