@@ -1881,14 +1881,83 @@ func TestNgFileReadGzipPacket(t *testing.T) {
 }
 
 func TestNgFileReadTruncatedGzipPacket(t *testing.T) {
-	test := []byte{
-		0x1f, 0x8b, 0x08,
+	type ngGzipTruncTest struct {
+		data        []byte
+		expectErr   error
+		description string
 	}
 
-	buf := bytes.NewBuffer(test)
+	tests := []ngGzipTruncTest{
+		{
+			data:        []byte{},
+			expectErr:   io.EOF,
+			description: "Empty data",
+		},
+		{
+			data:        []byte{0x1f},
+			expectErr:   io.ErrUnexpectedEOF,
+			description: "Partial GZIP Header",
+		},
+		{
+			data:        []byte{0x1f, 0x8b, 0x08},
+			expectErr:   io.ErrUnexpectedEOF,
+			description: "3 bytes of gzip header, missing rest",
+		},
+	}
+	for _, test := range tests {
+		buf := bytes.NewBuffer(test.data)
+		_, err := NewNgReader(buf, DefaultNgReaderOptions)
+		if err != test.expectErr {
+			t.Errorf("Test '%s' failed: expected error %v, got %v", test.description, test.expectErr, err)
+		}
+	}
+}
 
-	if _, err := NewNgReader(buf, DefaultNgReaderOptions); err == nil {
-		t.Error("Should fail but did not")
+func getBasicOnePacketPcap(t *testing.T) *bytes.Buffer {
+	var buf bytes.Buffer
+	w, err := NewNgWriter(&buf, layers.LinkTypeEthernet)
+	if err != nil {
+		t.Error("Unexpected error returned:", err)
+		t.FailNow()
+	}
+	err = w.WritePacket(gopacket.CaptureInfo{CaptureLength: 2, Length: 2}, []byte{1, 2})
+	if err != nil {
+		t.Error("Unexpected error returned:", err)
+		t.FailNow()
+	}
+	err = w.Flush()
+	if err != nil {
+		t.Error("Unexpected error returned:", err)
+		t.FailNow()
+	}
+	return &buf
+}
+
+// Tests that NgReader buffer discard passes along UnexpectedEOF to callers
+func TestTruncatedDiscard(t *testing.T) {
+	buf := getBasicOnePacketPcap(t)
+	buf.Truncate(buf.Len() - 1) // truncate last byte to simulate incomplete file
+	r, err := NewNgReader(buf, DefaultNgReaderOptions)
+	if err != nil {
+		t.Error("Unexpected error returned:", err)
+		t.FailNow()
+	}
+	_, _, err = r.ReadPacketData()
+	if err == io.ErrUnexpectedEOF {
+		return
+	} else {
+		t.Error("Expected io.ErrUnexpectedEOF, got:", err)
+		t.FailNow()
+	}
+}
+
+// Tests that truncated block headers return UnexpectedEOF
+func TestTruncatedBlockHeader(t *testing.T) {
+	buf := getBasicOnePacketPcap(t)
+	buf.Truncate(4) // truncate to half of the block header
+	_, err := NewNgReader(buf, DefaultNgReaderOptions)
+	if err != io.ErrUnexpectedEOF {
+		t.Error("Expected io.ErrUnexpectedEOF, got:", err)
 		t.FailNow()
 	}
 }

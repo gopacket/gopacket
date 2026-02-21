@@ -46,7 +46,7 @@ func newHWAddress(data []byte) *NgEUIAddress {
 }
 
 func (r *NgReader) readIPAddr(nr *NgNameRecord, length int) error {
-	if err := r.readBytes(r.buf[:length]); err != nil {
+	if _, err := r.readBytes(r.buf[:length]); err != nil {
 		return fmt.Errorf("could not read IP address: %v", err)
 	}
 	nr.Addr = newIPAddress(r.buf[:length])
@@ -54,18 +54,10 @@ func (r *NgReader) readIPAddr(nr *NgNameRecord, length int) error {
 }
 
 func (r *NgReader) readHWAddr(nr *NgNameRecord, length int) error {
-	if err := r.readBytes(r.buf[:length]); err != nil {
+	if _, err := r.readBytes(r.buf[:length]); err != nil {
 		return fmt.Errorf("could not read EUI address: %v", err)
 	}
 	nr.Addr = newHWAddress(r.buf[:])
-	return nil
-}
-
-func (r *NgReader) discard(length int) error {
-	if _, err := r.r.Discard(length); err != nil {
-		return fmt.Errorf("could not discard %d bytes: %v", length, err)
-	}
-	r.currentBlock.length -= uint32(length)
 	return nil
 }
 
@@ -73,7 +65,7 @@ func (r *NgReader) readNameResolutionBlock() error {
 
 	for r.currentBlock.length > 0 {
 		// Read name record header
-		if err := r.readBytes(r.buf[:4]); err != nil {
+		if _, err := r.readBytes(r.buf[:4]); err != nil {
 			return fmt.Errorf("could not read NameRecord Header block length: %v", err)
 		}
 		r.currentBlock.length -= 4

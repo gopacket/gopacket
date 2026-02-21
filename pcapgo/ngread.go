@@ -74,6 +74,10 @@ func NewNgReader(r io.Reader, options NgReaderOptions) (*NgReader, error) {
 
 	gzipMagic, err := reader.r.Peek(2)
 	if err != nil {
+		if err == io.EOF && len(gzipMagic) > 0 {
+			// We want the zero-pcap to still be valid, but partial reads are not
+			return nil, io.ErrUnexpectedEOF
+		}
 		return nil, err
 	}
 
@@ -106,15 +110,29 @@ func NewNgReader(r io.Reader, options NgReaderOptions) (*NgReader, error) {
 
 // This is way faster than calling io.ReadFull since io.ReadFull needs an itab lookup, does an additional function call into ReadAtLeast, and ReadAtLeast does additional stuff we don't need
 // Additionally this removes the bounds check compared to io.ReadFull due to the use of uint
-func (r *NgReader) readBytes(buffer []byte) error {
+func (r *NgReader) readBytes(buffer []byte) (uint, error) {
 	n := uint(0)
 	for n < uint(len(buffer)) {
 		nn, err := r.r.Read(buffer[n:])
 		n += uint(nn)
 		if err != nil {
-			return err
+			if err == io.EOF {
+				return n, io.ErrUnexpectedEOF
+			}
+			return n, err
 		}
 	}
+	return n, nil
+}
+
+func (r *NgReader) discard(length int) error {
+	if _, err := r.r.Discard(length); err != nil {
+		if err == io.EOF {
+			return io.ErrUnexpectedEOF
+		}
+		return fmt.Errorf("could not discard %d bytes: %v", length, err)
+	}
+	r.currentBlock.length -= uint32(length)
 	return nil
 }
 
@@ -145,14 +163,17 @@ func (r *NgReader) getUint64(buffer []byte) uint64 {
 
 // readBlock reads a the blocktype and length from the file. If the type is a section header, endianess is also read.
 func (r *NgReader) readBlock() error {
-	if err := r.readBytes(r.buf[0:8]); err != nil {
+	if n, err := r.readBytes(r.buf[0:8]); err != nil {
+		if err == io.ErrUnexpectedEOF && n == 0 {
+			return io.EOF // The start of a block is the only time an EOF is expected.
+		}
 		return err
 	}
 	r.currentBlock.typ = ngBlockType(r.getUint32(r.buf[0:4]))
 	// The next part is a bit fucked up since a section header could change the endianess...
 	// So first read then length just into a buffer, check if its a section header and then do the endianess part...
 	if r.currentBlock.typ == ngBlockTypeSectionHeader {
-		if err := r.readBytes(r.buf[8:12]); err != nil {
+		if _, err := r.readBytes(r.buf[8:12]); err != nil {
 			return err
 		}
 		if binary.BigEndian.Uint32(r.buf[8:12]) == ngByteOrderMagic {
@@ -178,7 +199,7 @@ func (r *NgReader) readOption() error {
 		r.currentOption.code = ngOptionCodeEndOfOptions
 		return nil
 	}
-	if err := r.readBytes(r.buf[:4]); err != nil {
+	if _, err := r.readBytes(r.buf[:4]); err != nil {
 		return err
 	}
 	r.currentBlock.length -= 4
@@ -196,18 +217,18 @@ func (r *NgReader) readOption() error {
 		} else {
 			r.currentOption.value = make([]byte, length)
 		}
-		if err := r.readBytes(r.currentOption.value); err != nil {
+		if _, err := r.readBytes(r.currentOption.value); err != nil {
 			return err
 		}
 		//consume padding
 		padding := length % 4
 		if padding > 0 {
 			padding = 4 - padding
-			if _, err := r.r.Discard(int(padding)); err != nil {
+			if err := r.discard(int(padding)); err != nil {
 				return err
 			}
 		}
-		r.currentBlock.length -= uint32(length + padding)
+		r.currentBlock.length -= uint32(length)
 	}
 	return nil
 }
@@ -230,7 +251,7 @@ func (r *NgReader) readSectionHeader() error {
 
 RESTART:
 	// read major, minor, section length
-	if err := r.readBytes(r.buf[:12]); err != nil {
+	if _, err := r.readBytes(r.buf[:12]); err != nil {
 		return err
 	}
 	r.currentBlock.length -= 12
@@ -243,7 +264,7 @@ RESTART:
 			// but this would mean user would be kept in the dark about whats going on...
 			return ErrNgVersionMismatch
 		}
-		if _, err := r.r.Discard(int(r.currentBlock.length)); err != nil {
+		if err := r.discard(int(r.currentBlock.length)); err != nil {
 			return err
 		}
 		if err := r.skipSection(); err != nil {
@@ -273,7 +294,7 @@ OPTIONS:
 		}
 	}
 
-	if _, err := r.r.Discard(int(r.currentBlock.length)); err != nil {
+	if err := r.discard(int(r.currentBlock.length)); err != nil {
 		return err
 	}
 	r.activeSection = true
@@ -299,7 +320,7 @@ func (r *NgReader) skipSection() error {
 		if r.currentBlock.typ == ngBlockTypeSectionHeader {
 			return nil
 		}
-		if _, err := r.r.Discard(int(r.currentBlock.length)); err != nil {
+		if err := r.discard(int(r.currentBlock.length)); err != nil {
 			return err
 		}
 	}
@@ -345,7 +366,7 @@ func (r *NgReader) firstInterface() error {
 				return err
 			}
 		}
-		if _, err := r.r.Discard(int(r.currentBlock.length)); err != nil {
+		if err := r.discard(int(r.currentBlock.length)); err != nil {
 			return err
 		}
 	}
@@ -353,7 +374,7 @@ func (r *NgReader) firstInterface() error {
 
 // readInterfaceDescriptor parses an interface descriptor, prepares timing calculation, and adds the interface details to the current list
 func (r *NgReader) readInterfaceDescriptor() error {
-	if err := r.readBytes(r.buf[:8]); err != nil {
+	if _, err := r.readBytes(r.buf[:8]); err != nil {
 		return err
 	}
 	r.currentBlock.length -= 8
@@ -386,7 +407,7 @@ OPTIONS:
 			intf.TimestampResolution = NgResolution(r.currentOption.value[0])
 		}
 	}
-	if _, err := r.r.Discard(int(r.currentBlock.length)); err != nil {
+	if err := r.discard(int(r.currentBlock.length)); err != nil {
 		return err
 	}
 	if intf.TimestampResolution == 0 {
@@ -423,7 +444,7 @@ func (r *NgReader) convertTime(ifaceID int, ts uint64) (int64, int64) {
 
 // readInterfaceStatistics updates the statistics of the given interface
 func (r *NgReader) readInterfaceStatistics() error {
-	if err := r.readBytes(r.buf[:12]); err != nil {
+	if _, err := r.readBytes(r.buf[:12]); err != nil {
 		return err
 	}
 	r.currentBlock.length -= 12
@@ -458,7 +479,7 @@ OPTIONS:
 			stats.PacketsDropped = r.getUint64(r.currentOption.value[:8])
 		}
 	}
-	if _, err := r.r.Discard(int(r.currentBlock.length)); err != nil {
+	if err := r.discard(int(r.currentBlock.length)); err != nil {
 		return err
 	}
 	if r.options.StatisticsCallback != nil {
@@ -479,7 +500,7 @@ FIND_PACKET:
 		}
 		switch r.currentBlock.typ {
 		case ngBlockTypeEnhancedPacket:
-			if err := r.readBytes(r.buf[:20]); err != nil {
+			if _, err := r.readBytes(r.buf[:20]); err != nil {
 				return err
 			}
 			r.currentBlock.length -= 20
@@ -492,7 +513,7 @@ FIND_PACKET:
 			r.ci.Length = int(r.getUint32(r.buf[16:20]))
 			break FIND_PACKET
 		case ngBlockTypeSimplePacket:
-			if err := r.readBytes(r.buf[:4]); err != nil {
+			if _, err := r.readBytes(r.buf[:4]); err != nil {
 				return err
 			}
 			r.currentBlock.length -= 4
@@ -520,7 +541,7 @@ FIND_PACKET:
 				return err
 			}
 		case ngBlockTypePacket:
-			if err := r.readBytes(r.buf[:20]); err != nil {
+			if _, err := r.readBytes(r.buf[:20]); err != nil {
 				return err
 			}
 			r.currentBlock.length -= 20
@@ -537,14 +558,14 @@ FIND_PACKET:
 				return err
 			}
 		default:
-			if _, err := r.r.Discard(int(r.currentBlock.length)); err != nil {
+			if err := r.discard(int(r.currentBlock.length)); err != nil {
 				return err
 			}
 		}
 	}
 	if !r.options.WantMixedLinkType {
 		if r.ifaces[r.ci.InterfaceIndex].LinkType != r.linkType {
-			if _, err := r.r.Discard(int(r.currentBlock.length)); err != nil {
+			if err := r.discard(int(r.currentBlock.length)); err != nil {
 				return err
 			}
 			if r.options.ErrorOnMismatchingLinkType {
@@ -622,16 +643,15 @@ func (r *NgReader) ReadPacketDataWithOptions() (data []byte, ci gopacket.Capture
 		ci.AncillaryData[0] = r.ancil[0]
 	}
 	data = make([]byte, r.ci.CaptureLength)
-	if err = r.readBytes(data); err != nil {
+	if _, err = r.readBytes(data); err != nil {
 		return
 	}
 	r.currentBlock.length -= uint32(r.ci.CaptureLength)
 	padding := (4 - r.ci.CaptureLength&3) & 3
 	if padding > 0 {
-		if _, err = r.r.Discard(int(padding)); err != nil {
+		if err = r.discard(int(padding)); err != nil {
 			return
 		}
-		r.currentBlock.length -= uint32(padding)
 	}
 
 	if r.currentBlock.typ == ngBlockTypeEnhancedPacket {
@@ -639,7 +659,7 @@ func (r *NgReader) ReadPacketDataWithOptions() (data []byte, ci gopacket.Capture
 			return
 		}
 	}
-	_, err = r.r.Discard(int(r.currentBlock.length))
+	err = r.discard(int(r.currentBlock.length))
 	return
 }
 
@@ -676,16 +696,15 @@ func (r *NgReader) ZeroCopyReadPacketDataWithOptions() (data []byte, ci gopacket
 		r.packetBuf = make([]byte, snaplen)
 	}
 	data = r.packetBuf[:ci.CaptureLength]
-	if err = r.readBytes(data); err != nil {
+	if _, err = r.readBytes(data); err != nil {
 		return
 	}
 	r.currentBlock.length -= uint32(r.ci.CaptureLength)
 	padding := (4 - r.ci.CaptureLength&3) & 3
 	if padding > 0 {
-		if _, err = r.r.Discard(int(padding)); err != nil {
+		if err = r.discard(int(padding)); err != nil {
 			return
 		}
-		r.currentBlock.length -= uint32(padding)
 	}
 
 	if r.currentBlock.typ == ngBlockTypeEnhancedPacket {
@@ -693,7 +712,7 @@ func (r *NgReader) ZeroCopyReadPacketDataWithOptions() (data []byte, ci gopacket
 			return
 		}
 	}
-	_, err = r.r.Discard(int(r.currentBlock.length))
+	err = r.discard(int(r.currentBlock.length))
 	return
 }
 
