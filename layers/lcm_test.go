@@ -34,12 +34,20 @@ var (
 	}
 
 	expectedChannel = "LCM_SELF_TEST"
+
+	// Short header with channel name but no fingerprint bytes after it
+	shortPacketEmptyPayload = []byte{
+		0x4c, 0x43, 0x30, 0x32, // magic
+		0x00, 0x00, 0x00, 0x00, // sequence number
+		0x4c, 0x43, 0x4d, 0x00, // channel "LCM" + null terminator
+	}
 )
 
 func TestLCMDecode(t *testing.T) {
 	testShortLCM(t)
 	testFragmentedLCM(t)
 	testInvalidLCM(t)
+	testEmptyPayloadLCM(t)
 }
 
 func testShortLCM(t *testing.T) {
@@ -152,5 +160,26 @@ func testInvalidLCM(t *testing.T) {
 	err := lcm.DecodeFromBytes(invalidPacket, gopacket.NilDecodeFeedback)
 	if err == nil {
 		t.Fatal("Did not detect LCM decode error.")
+	}
+}
+
+func testEmptyPayloadLCM(t *testing.T) {
+	lcm := LCM{}
+
+	err := lcm.DecodeFromBytes(shortPacketEmptyPayload, gopacket.NilDecodeFeedback)
+	if err != nil {
+		t.Fatalf("Unexpected error decoding LCM packet with empty payload: %v", err)
+	}
+
+	if lcm.ChannelName != "LCM" {
+		t.Errorf("Expected channel name %q but received %q", "LCM", lcm.ChannelName)
+	}
+
+	if lcm.Fingerprint() != 0 {
+		t.Errorf("Expected zero fingerprint but received %x", lcm.Fingerprint())
+	}
+
+	if len(lcm.Payload()) != 0 {
+		t.Errorf("Expected empty payload but received %d bytes", len(lcm.Payload()))
 	}
 }
