@@ -4,8 +4,8 @@
 // that can be found in the LICENSE file in the root of the source
 // tree.
 
-//go:build linux
-// +build linux
+//go:build linux || windows
+// +build linux windows
 
 package routing
 
@@ -25,16 +25,16 @@ func TestPrivateRoute(t *testing.T) {
 		name                          string
 		router                        router
 		routes                        routeSlice
-		input                         net.HardwareAddr
+		input                         int64
 		src, dst                      net.IP
-		wantIface                     int
+		wantIface                     int64
 		wantGateway, wantPreferredSrc net.IP
 		wantErr                       error
 	}{
 		{
 			name: "only static routes",
 			router: router{
-				ifaces: map[int]*net.Interface{
+				ifaces: map[int64]*net.Interface{
 					1: {
 						Index:        1,
 						MTU:          1500,
@@ -50,18 +50,24 @@ func TestPrivateRoute(t *testing.T) {
 						Flags:        net.FlagUp,
 					},
 				},
-				addrs: map[int]ipAddrs{
+				addrs: map[int64]ipAddrs{
 					1: {
-						v4: net.ParseIP("192.168.10.1/24"),
+						v4: []net.IPNet{{
+							IP: net.ParseIP("192.168.10.1"),
+							Mask: net.CIDRMask(24, 32),
+						}},
 					},
 					2: {
-						v4: net.ParseIP("192.168.20.1/24"),
+						v4: []net.IPNet{{
+							IP: net.ParseIP("192.168.20.1"),
+							Mask: net.CIDRMask(24, 32),
+						}},
 					},
 				},
 			},
-			routes: []*rtInfo{
+			routes: []rtInfo{
 				{
-					Dst: &net.IPNet{
+					Dst: net.IPNet{
 						IP:   net.ParseIP("192.168.10.0"),
 						Mask: net.IPv4Mask(255, 255, 255, 0),
 					},
@@ -69,7 +75,7 @@ func TestPrivateRoute(t *testing.T) {
 					OutputIface: 1,
 				},
 				{
-					Dst: &net.IPNet{
+					Dst: net.IPNet{
 						IP:   net.ParseIP("192.168.20.0"),
 						Mask: net.IPv4Mask(255, 255, 255, 0),
 					},
@@ -77,7 +83,7 @@ func TestPrivateRoute(t *testing.T) {
 					OutputIface: 2,
 				},
 			},
-			input:            net.HardwareAddr{0x54, 0x52, 0x00, 0x00, 0x00, 0x01},
+			input:            1,
 			src:              net.ParseIP("192.168.10.1"),
 			dst:              net.ParseIP("192.168.20.1"),
 			wantIface:        2,
@@ -88,7 +94,7 @@ func TestPrivateRoute(t *testing.T) {
 		{
 			name: "not exists route with default gateway",
 			router: router{
-				ifaces: map[int]*net.Interface{
+				ifaces: map[int64]*net.Interface{
 					1: {
 						Index:        1,
 						MTU:          1500,
@@ -104,23 +110,29 @@ func TestPrivateRoute(t *testing.T) {
 						Flags:        net.FlagUp,
 					},
 				},
-				addrs: map[int]ipAddrs{
+				addrs: map[int64]ipAddrs{
 					1: {
-						v4: net.ParseIP("192.168.10.1/24"),
+						v4: []net.IPNet{{
+							IP: net.ParseIP("192.168.10.1"),
+							Mask: net.CIDRMask(24, 32),
+						}},
 					},
 					2: {
-						v4: net.ParseIP("192.168.20.1/24"),
+						v4: []net.IPNet{{
+							IP: net.ParseIP("192.168.20.1"),
+							Mask: net.CIDRMask(24, 32),
+						}},
 					},
 				},
 			},
-			routes: []*rtInfo{
+			routes: []rtInfo{
 				{
 					Gateway:     net.ParseIP("192.168.20.254"),
 					PrefSrc:     net.ParseIP("192.168.20.1"),
 					OutputIface: 2,
 				},
 				{
-					Dst: &net.IPNet{
+					Dst: net.IPNet{
 						IP:   net.ParseIP("192.168.10.0"),
 						Mask: net.IPv4Mask(255, 255, 255, 0),
 					},
@@ -128,7 +140,7 @@ func TestPrivateRoute(t *testing.T) {
 					OutputIface: 1,
 				},
 				{
-					Dst: &net.IPNet{
+					Dst: net.IPNet{
 						IP:   net.ParseIP("192.168.20.0"),
 						Mask: net.IPv4Mask(255, 255, 255, 0),
 					},
@@ -136,7 +148,7 @@ func TestPrivateRoute(t *testing.T) {
 					OutputIface: 2,
 				},
 			},
-			input:            net.HardwareAddr{0x54, 0x52, 0x00, 0x00, 0x00, 0x01},
+			input:            1,
 			src:              net.ParseIP("192.168.10.1"),
 			dst:              net.ParseIP("192.168.30.2"),
 			wantIface:        2,
@@ -147,7 +159,7 @@ func TestPrivateRoute(t *testing.T) {
 		{
 			name: "exists route with default gateway",
 			router: router{
-				ifaces: map[int]*net.Interface{
+				ifaces: map[int64]*net.Interface{
 					1: {
 						Index:        1,
 						MTU:          1500,
@@ -163,23 +175,29 @@ func TestPrivateRoute(t *testing.T) {
 						Flags:        net.FlagUp,
 					},
 				},
-				addrs: map[int]ipAddrs{
+				addrs: map[int64]ipAddrs{
 					1: {
-						v4: net.ParseIP("192.168.10.1/24"),
+						v4: []net.IPNet{{
+							IP: net.ParseIP("192.168.10.1"),
+							Mask: net.CIDRMask(24, 32),
+						}},
 					},
 					2: {
-						v4: net.ParseIP("192.168.20.1/24"),
+						v4: []net.IPNet{{
+							IP: net.ParseIP("192.168.20.1"),
+							Mask: net.CIDRMask(24, 32),
+						}},
 					},
 				},
 			},
-			routes: []*rtInfo{
+			routes: []rtInfo{
 				{
 					Gateway:     net.ParseIP("192.168.20.254"),
 					PrefSrc:     net.ParseIP("192.168.20.1"),
 					OutputIface: 2,
 				},
 				{
-					Dst: &net.IPNet{
+					Dst: net.IPNet{
 						IP:   net.ParseIP("192.168.10.0"),
 						Mask: net.IPv4Mask(255, 255, 255, 0),
 					},
@@ -187,7 +205,7 @@ func TestPrivateRoute(t *testing.T) {
 					OutputIface: 1,
 				},
 				{
-					Dst: &net.IPNet{
+					Dst: net.IPNet{
 						IP:   net.ParseIP("192.168.20.0"),
 						Mask: net.IPv4Mask(255, 255, 255, 0),
 					},
@@ -195,7 +213,7 @@ func TestPrivateRoute(t *testing.T) {
 					OutputIface: 2,
 				},
 			},
-			input:            net.HardwareAddr{0x54, 0x52, 0x00, 0x00, 0x00, 0x01},
+			input:            1,
 			src:              net.ParseIP("192.168.10.1"),
 			dst:              net.ParseIP("192.168.20.2"),
 			wantIface:        2,
@@ -206,7 +224,7 @@ func TestPrivateRoute(t *testing.T) {
 		{
 			name: "not exists route without default gateway",
 			router: router{
-				ifaces: map[int]*net.Interface{
+				ifaces: map[int64]*net.Interface{
 					1: {
 						Index:        1,
 						MTU:          1500,
@@ -222,18 +240,24 @@ func TestPrivateRoute(t *testing.T) {
 						Flags:        net.FlagUp,
 					},
 				},
-				addrs: map[int]ipAddrs{
+				addrs: map[int64]ipAddrs{
 					1: {
-						v4: net.ParseIP("192.168.10.1/24"),
+						v4: []net.IPNet{{
+							IP: net.ParseIP("192.168.10.1"),
+							Mask: net.CIDRMask(24, 32),
+						}},
 					},
 					2: {
-						v4: net.ParseIP("192.168.20.1/24"),
+						v4: []net.IPNet{{
+							IP: net.ParseIP("192.168.20.1"),
+							Mask: net.CIDRMask(24, 32),
+						}},
 					},
 				},
 			},
-			routes: []*rtInfo{
+			routes: []rtInfo{
 				{
-					Dst: &net.IPNet{
+					Dst: net.IPNet{
 						IP:   net.ParseIP("192.168.10.0"),
 						Mask: net.IPv4Mask(255, 255, 255, 0),
 					},
@@ -241,7 +265,7 @@ func TestPrivateRoute(t *testing.T) {
 					OutputIface: 1,
 				},
 				{
-					Dst: &net.IPNet{
+					Dst: net.IPNet{
 						IP:   net.ParseIP("192.168.20.0"),
 						Mask: net.IPv4Mask(255, 255, 255, 0),
 					},
@@ -249,7 +273,7 @@ func TestPrivateRoute(t *testing.T) {
 					OutputIface: 2,
 				},
 			},
-			input:            net.HardwareAddr{0x54, 0x52, 0x00, 0x00, 0x00, 0x01},
+			input:            1,
 			src:              net.ParseIP("192.168.10.1"),
 			dst:              net.ParseIP("192.168.30.2"),
 			wantIface:        2,
@@ -261,7 +285,7 @@ func TestPrivateRoute(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			iface, gateway, preferredSrc, err := tt.router.route(tt.routes, tt.input, tt.src, tt.dst)
+			iface, gateway, preferredSrc, err := tt.router.route(tt.input, tt.src, tt.dst, false)
 			if tt.wantErr != nil {
 				if err != nil && tt.wantErr.Error() == err.Error() {
 					return
@@ -526,20 +550,30 @@ func TestRouting(t *testing.T) {
 var testRouter router
 
 func init() {
-	testRouter = router{ifaces: make(map[int]*net.Interface), addrs: make(map[int]ipAddrs)}
+	testRouter = router{ifaces: make(map[int64]*net.Interface), addrs: make(map[int64]ipAddrs)}
 	// Configure default route
 	defaultHW, _ := net.ParseMAC("01:23:45:67:89:ab")
 	defaultInterface := net.Interface{Index: 5, MTU: 1500, Name: "Default", HardwareAddr: defaultHW, Flags: 1}
 	testRouter.ifaces[2] = &defaultInterface
-	testRouter.addrs[2] = ipAddrs{v4: net.IPv4(192, 168, 1, 2)}
-	defaultRoute := &rtInfo{Gateway: net.IPv4(192, 168, 1, 1), InputIface: 0, OutputIface: 2, Priority: 600}
+	testRouter.addrs[2] = ipAddrs{
+		v4: []net.IPNet{{
+			IP: net.ParseIP("192.168.1.2"),
+			Mask: net.CIDRMask(24, 32),
+		}},
+	}
+	defaultRoute := rtInfo{Gateway: net.IPv4(192, 168, 1, 1), InputIface: 0, OutputIface: 2, Priority: 600}
 	testRouter.v4 = append(testRouter.v4, defaultRoute)
 	// Configure local route
 	localHW, _ := net.ParseMAC("01:23:45:67:89:ac")
 	localInterface := net.Interface{Index: 1, MTU: 1500, Name: "Local", HardwareAddr: localHW, Flags: 1}
 	testRouter.ifaces[1] = &localInterface
-	testRouter.addrs[1] = ipAddrs{v4: net.IPv4(10, 0, 0, 2)}
-	localRoute := &rtInfo{Dst: &net.IPNet{IP: net.IPv4(10, 0, 0, 0), Mask: net.CIDRMask(8, 32)},
+	testRouter.addrs[1] = ipAddrs{
+		v4: []net.IPNet{{
+			IP: net.ParseIP("10.0.0.2"),
+			Mask: net.CIDRMask(8, 32),
+		}},
+	}
+	localRoute := rtInfo{Dst: net.IPNet{IP: net.IPv4(10, 0, 0, 0), Mask: net.CIDRMask(8, 32)},
 		Gateway: net.IPv4(10, 0, 0, 1), InputIface: 0, OutputIface: 1, Priority: 300}
 	testRouter.v4 = append(testRouter.v4, localRoute)
 	sort.Sort(testRouter.v4)
