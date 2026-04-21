@@ -158,6 +158,7 @@ var (
 	LayerTypeModbus                       = gopacket.RegisterLayerType(153, gopacket.LayerTypeMetadata{Name: "Modbus", Decoder: gopacket.DecodeFunc(decodeModbus)})
 	LayerTypeDiameter                     = gopacket.RegisterLayerType(154, gopacket.LayerTypeMetadata{Name: "Diameter", Decoder: gopacket.DecodeFunc(decodeDiameter)})
 	LayerTypeLinuxSLL2                    = gopacket.RegisterLayerType(276, gopacket.LayerTypeMetadata{Name: "Linux SLL2", Decoder: gopacket.DecodeFunc(decodeLinuxSLL2)})
+	LayerTypePktap                        = gopacket.RegisterLayerType(300, gopacket.LayerTypeMetadata{Name: "ApplePktap", Decoder: gopacket.DecodeFunc(decodePktapV1)})
 )
 
 var (
