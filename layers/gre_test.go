@@ -14,6 +14,14 @@ import (
 	"github.com/gopacket/gopacket"
 )
 
+type truncationDecodeFeedback struct {
+	truncated bool
+}
+
+func (t *truncationDecodeFeedback) SetTruncated() {
+	t.truncated = true
+}
+
 // testPacketGRE is the packet:
 //
 //	15:08:08.003196 IP 192.168.1.1 > 192.168.1.2: GREv0, length 88: IP 172.16.1.1 > 172.16.2.1: ICMP echo request, id 4724, seq 1, length 64
@@ -254,6 +262,43 @@ func BenchmarkEncodePacketEthernetOverGRE(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		gopacket.SerializeLayers(buf, opts, testEthernetOverGRE...)
 		buf.Clear()
+	}
+}
+
+func TestGREDecodeFromBytesTruncatedOptionalFields(t *testing.T) {
+	tests := []struct {
+		name string
+		data []byte
+	}{
+		{
+			name: "missing checksum and offset",
+			data: []byte{0x80, 0x00, 0x08, 0x00},
+		},
+		{
+			name: "missing ack field",
+			data: []byte{0x00, 0x80, 0x08, 0x00},
+		},
+		{
+			name: "routing sre length overruns packet",
+			data: []byte{
+				0x40, 0x00, 0x08, 0x00,
+				0x00, 0x00, 0x00, 0x00,
+				0x00, 0x01, 0x00, 0x10,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gre GRE
+			df := &truncationDecodeFeedback{}
+			if err := gre.DecodeFromBytes(tt.data, df); err == nil {
+				t.Fatal("expected decode error")
+			}
+			if !df.truncated {
+				t.Fatal("expected packet to be marked truncated")
+			}
+		})
 	}
 }
 
