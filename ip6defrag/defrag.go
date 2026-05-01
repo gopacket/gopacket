@@ -2,8 +2,8 @@
 // SPDX-FileCopyrightText: 2022 Cloud <cloud@txthinking.com>
 // SPDX-License-Identifier: BSD-3-Clause
 //
-// The `ip6defrag` package was created by txthinking to provide IPv6 fragment reassembly (defragmentation) support.  
-// This feature was originally submitted as PR #943 to the google/gopacket repository: https://github.com/google/gopacket/pull/943  
+// The `ip6defrag` package was created by txthinking to provide IPv6 fragment reassembly (defragmentation) support.
+// This feature was originally submitted as PR #943 to the google/gopacket repository: https://github.com/google/gopacket/pull/943
 // Since google/gopacket has infrequent maintenance, I've ported the implementation to the active community fork: gopacket/gopacket.
 
 // Package ip6defrag implements a IPv6 defragmenter
@@ -54,30 +54,31 @@ func NewIPv6Defragmenter() *IPv6Defragmenter {
 // the packet, a new IPv6 layer will be returned, and will be set to
 // the entire defragmented packet,
 //
-// It use a map of all the running flows
+// # It use a map of all the running flows
 //
 // Usage example:
 //
 // var d = NewIPv6Defragmenter()
-// func HandlePacket(p gopacket.Packet) {
-// 	ipv6, ok := p.NetworkLayer().(*layers.IPv6)
-// 	if !ok {
-// 		// ignore: not ipv6
-// 		return
-// 	}
-// 	if fg, ok := p.Layer(layers.LayerTypeIPv6Fragment).(*layers.IPv6Fragment); ok {
-// 		if fg.NextHeader != layers.IPProtocolUDP && fg.NextHeader != layers.IPProtocolTCP {
-// 			// ignore: !TCP and !UDP fragment
-// 			return
-// 		}
-// 		ipv6 = d.DefragIPv6(ipv6, fg)
-// 		if ipv6 == nil {
-// 			// ignore: do nothing, wait next fragment
-// 			return
-// 		}
-// 	}
-// 	// You got the ipv6 layer
-// }
+//
+//	func HandlePacket(p gopacket.Packet) {
+//		ipv6, ok := p.NetworkLayer().(*layers.IPv6)
+//		if !ok {
+//			// ignore: not ipv6
+//			return
+//		}
+//		if fg, ok := p.Layer(layers.LayerTypeIPv6Fragment).(*layers.IPv6Fragment); ok {
+//			if fg.NextHeader != layers.IPProtocolUDP && fg.NextHeader != layers.IPProtocolTCP {
+//				// ignore: !TCP and !UDP fragment
+//				return
+//			}
+//			ipv6 = d.DefragIPv6(ipv6, fg)
+//			if ipv6 == nil {
+//				// ignore: do nothing, wait next fragment
+//				return
+//			}
+//		}
+//		// You got the ipv6 layer
+//	}
 func (d *IPv6Defragmenter) DefragIPv6(ipv6 *layers.IPv6, fg *layers.IPv6Fragment) *layers.IPv6 {
 	d.lock.Lock()
 	defer func() {

@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2022 Cloud <cloud@txthinking.com>
 // SPDX-License-Identifier: BSD-3-Clause
 //
-// The `ip6defrag` package was created by txthinking to provide IPv6 fragment reassembly (defragmentation) support.  
+// The `ip6defrag` package was created by txthinking to provide IPv6 fragment reassembly (defragmentation) support.
 // This feature was originally submitted as PR #943 to the google/gopacket repository: https://github.com/google/gopacket/pull/943  // Since google/gopacket has infrequent maintenance, I've ported the implementation to the active community fork: gopacket/gopacket.
 
 package ip6defrag
