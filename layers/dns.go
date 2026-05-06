@@ -341,51 +341,61 @@ func (d *DNS) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	d.NSCount = binary.BigEndian.Uint16(data[8:10])
 	d.ARCount = binary.BigEndian.Uint16(data[10:12])
 
-	d.Questions = d.Questions[:0]
-	d.Answers = d.Answers[:0]
-	d.Authorities = d.Authorities[:0]
-	d.Additionals = d.Additionals[:0]
-
 	offset := 12
 	var err error
-	for i := 0; i < int(d.QDCount); i++ {
-		var q DNSQuestion
-		if offset, err = q.decode(data, offset, df, &d.buffer); err != nil {
+
+	// Pre-allocate or reuse slice capacity for Questions
+	qdc := int(d.QDCount)
+	if cap(d.Questions) < qdc {
+		d.Questions = make([]DNSQuestion, qdc)
+	} else {
+		d.Questions = d.Questions[:qdc]
+	}
+	for i := 0; i < qdc; i++ {
+		if offset, err = d.Questions[i].decode(data, offset, df, &d.buffer); err != nil {
+			d.Questions = d.Questions[:i] // Keep successfully decoded questions
 			return err
 		}
-		d.Questions = append(d.Questions, q)
 	}
 
-	// For some horrible reason, if we do the obvious thing in this loop:
-	//   var r DNSResourceRecord
-	//   if blah := r.decode(blah); err != nil {
-	//     return err
-	//   }
-	//   d.Foo = append(d.Foo, r)
-	// the Go compiler thinks that 'r' escapes to the heap, causing a malloc for
-	// every Answer, Authority, and Additional.  To get around this, we do
-	// something really silly:  we append an empty resource record to our slice,
-	// then use the last value in the slice to call decode.  Since the value is
-	// already in the slice, there's no WAY it can escape... on the other hand our
-	// code is MUCH uglier :(
-	for i := 0; i < int(d.ANCount); i++ {
-		d.Answers = append(d.Answers, DNSResourceRecord{})
+	// Pre-allocate or reuse slice capacity for Answers
+	anc := int(d.ANCount)
+	if cap(d.Answers) < anc {
+		d.Answers = make([]DNSResourceRecord, anc)
+	} else {
+		d.Answers = d.Answers[:anc]
+	}
+	for i := 0; i < anc; i++ {
 		if offset, err = d.Answers[i].decode(data, offset, df, &d.buffer); err != nil {
-			d.Answers = d.Answers[:i] // strip off erroneous value
+			d.Answers = d.Answers[:i] // Keep successfully decoded answers
 			return err
 		}
 	}
-	for i := 0; i < int(d.NSCount); i++ {
-		d.Authorities = append(d.Authorities, DNSResourceRecord{})
+
+	// Pre-allocate or reuse slice capacity for Authorities
+	nsc := int(d.NSCount)
+	if cap(d.Authorities) < nsc {
+		d.Authorities = make([]DNSResourceRecord, nsc)
+	} else {
+		d.Authorities = d.Authorities[:nsc]
+	}
+	for i := 0; i < nsc; i++ {
 		if offset, err = d.Authorities[i].decode(data, offset, df, &d.buffer); err != nil {
-			d.Authorities = d.Authorities[:i] // strip off erroneous value
+			d.Authorities = d.Authorities[:i] // Keep successfully decoded authorities
 			return err
 		}
 	}
-	for i := 0; i < int(d.ARCount); i++ {
-		d.Additionals = append(d.Additionals, DNSResourceRecord{})
+
+	// Pre-allocate or reuse slice capacity for Additionals
+	arc := int(d.ARCount)
+	if cap(d.Additionals) < arc {
+		d.Additionals = make([]DNSResourceRecord, arc)
+	} else {
+		d.Additionals = d.Additionals[:arc]
+	}
+	for i := 0; i < arc; i++ {
 		if offset, err = d.Additionals[i].decode(data, offset, df, &d.buffer); err != nil {
-			d.Additionals = d.Additionals[:i] // strip off erroneous value
+			d.Additionals = d.Additionals[:i] // Keep successfully decoded additionals
 			return err
 		}
 		// extract extended RCODE from OPT RRs, RFC 6891 section 6.1.3

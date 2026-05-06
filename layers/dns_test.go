@@ -1443,3 +1443,49 @@ func TestDNSPacketWriteAnswer(t *testing.T) {
 		t.Fatalf("Encoded size, want %d got %d", want, got)
 	}
 }
+
+// BenchmarkDNSDecode is a focused benchmark for the DNS layer's DecodeFromBytes method.
+// It uses a packet with many resource records to highlight the performance gains
+// from pre-allocating slices, which reduces memory allocations.
+func BenchmarkDNSDecode(b *testing.B) {
+	// testBlankNameRootQuery is a good sample packet because it contains:
+	// 1 Question
+	// 13 Authority RRs
+	// 3 Additional RRs
+	// This will properly test the slice allocation improvements.
+	dnsLayerBytes := testBlankNameRootQuery[42:] // Skips Ethernet, IP, UDP headers
+
+	// Create a single DNS layer instance to be reused, which mimics a real-world
+	// high-performance scenario where you'd want to avoid reallocating the
+	// top-level struct itself.
+	d := &DNS{}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		// The function we are testing
+		err := d.DecodeFromBytes(dnsLayerBytes, gopacket.NilDecodeFeedback)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// BenchmarkDNSDecode_OneShot measures the "cold start" performance of decoding
+// into a new DNS struct each time, which highlights the allocation improvements.
+func BenchmarkDNSDecode_OneShot(b *testing.B) {
+	dnsLayerBytes := testBlankNameRootQuery[42:]
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		// d is now created inside the loop
+		d := &DNS{}
+		err := d.DecodeFromBytes(dnsLayerBytes, gopacket.NilDecodeFeedback)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
