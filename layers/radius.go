@@ -6,8 +6,15 @@
 package layers
 
 import (
+	"bytes"
+	"crypto/md5"
 	"encoding/binary"
+	"errors"
 	"fmt"
+	"net"
+	"strconv"
+	"time"
+	"unicode/utf8"
 
 	"github.com/gopacket/gopacket"
 )
@@ -92,6 +99,18 @@ type RADIUSAttribute struct {
 	Type   RADIUSAttributeType
 	Length RADIUSAttributeLength
 	Value  RADIUSAttributeValue
+}
+
+// Gets the RADIUSAttribute value as human readable string.
+func (a RADIUSAttribute) GetValueAsString() string {
+	if a.Value == nil {
+		return ""
+	}
+	if f, ok := radiusAttributeToStringFunctions[a.Type]; ok {
+		return f(a.Value)
+	} else {
+		return fmt.Sprintf("Unknown(%#02x)", a.Value)
+	}
 }
 
 // RADIUSAttributeType represents attribute type.
@@ -535,6 +554,132 @@ func (radius *RADIUS) Payload() []byte {
 	return radius.BaseLayer.Payload
 }
 
+// Decrypt the User-Password attribute using the shared secret
+func (radius *RADIUS) DecryptRADIUSUserPassword(secret string) error {
+	var encryptedPassword []byte
+	var index = 0
+
+	for i, a := range radius.Attributes {
+		if a.Type == RADIUSAttributeTypeUserPassword {
+			encryptedPassword = a.Value
+			index = i
+			break
+		}
+	}
+
+	if encryptedPassword == nil {
+		return errors.New("no attribute found")
+	}
+
+	if len(encryptedPassword) < 16 || len(encryptedPassword) > 128 || len(encryptedPassword)%16 != 0 {
+		return errors.New("invalid attribute length (" + strconv.Itoa(len(encryptedPassword)) + ")")
+	}
+
+	decryptedPassword := make([]byte, 0, len(encryptedPassword))
+
+	hash := md5.New()
+	hash.Write([]byte(secret))
+	hash.Write(radius.Authenticator[:])
+	decryptedPassword = hash.Sum(decryptedPassword)
+
+	for i, b := range encryptedPassword[:16] {
+		decryptedPassword[i] ^= b
+	}
+
+	for i := 16; i < len(encryptedPassword); i += 16 {
+		hash.Reset()
+		hash.Write([]byte(secret))
+		hash.Write(decryptedPassword[i-16 : i])
+		decryptedPassword = hash.Sum(decryptedPassword)
+
+		for j, b := range encryptedPassword[i : i+16] {
+			decryptedPassword[i+j] ^= b
+		}
+	}
+
+	//Remove padding if present
+	if i := bytes.IndexByte(decryptedPassword, 0); i > -1 {
+		radius.Attributes[index].Value = decryptedPassword[:i]
+	} else {
+		radius.Attributes[index].Value = decryptedPassword[:]
+	}
+	return nil
+}
+
+// Decrypt the Tunnel-Password attribute using the shared secret and the origin request authenticator
+func (radius *RADIUS) DecryptRADIUSTunnelPassword(secret string, requestAuthenticator [16]byte) error {
+	var encryptedPassword []byte
+	var index = 0
+
+	for i, a := range radius.Attributes {
+		if a.Type == RADIUSAttributeTypeTunnelPassword {
+			encryptedPassword = a.Value
+			index = i
+			break
+		}
+	}
+
+	if encryptedPassword == nil {
+		return errors.New("no attribute found")
+	}
+
+	var tag byte
+	//check if the first byte is a tag
+	if len(encryptedPassword) >= 1 && encryptedPassword[0] <= 0x1F {
+		tag = encryptedPassword[0]
+		encryptedPassword = encryptedPassword[1:]
+	}
+
+	if len(encryptedPassword) > 252 || len(encryptedPassword) < 18 || (len(encryptedPassword)-2)%16 != 0 {
+		return errors.New("invalid attribute length (" + strconv.Itoa(len(encryptedPassword)) + ")")
+	}
+
+	// salt MSB must be 1
+	if encryptedPassword[0]&0x80 != 0x80 {
+		return errors.New("invalid salt")
+	}
+
+	salt := append([]byte(nil), encryptedPassword[:2]...)
+	encryptedPassword = encryptedPassword[2:]
+
+	chunks := len(encryptedPassword) / 16
+	plaintext := make([]byte, chunks*16)
+
+	hash := md5.New()
+	var b [md5.Size]byte
+
+	for chunk := 0; chunk < chunks; chunk++ {
+		hash.Reset()
+
+		hash.Write([]byte(secret))
+		if chunk == 0 {
+			hash.Write(requestAuthenticator[:])
+			hash.Write(salt)
+		} else {
+			hash.Write(encryptedPassword[(chunk-1)*16 : chunk*16])
+		}
+		hash.Sum(b[:0])
+
+		for i := 0; i < 16; i++ {
+			plaintext[chunk*16+i] = encryptedPassword[chunk*16+i] ^ b[i]
+		}
+	}
+
+	passwordLength := plaintext[0]
+	if int(passwordLength) > (len(plaintext) - 1) {
+		return errors.New("invalid password length")
+	}
+
+	password := plaintext[1 : 1+passwordLength]
+
+	if tag == 0 {
+		radius.Attributes[index].Value = password
+	} else {
+		radius.Attributes[index].Value = append([]byte{tag}, password...)
+	}
+	return nil
+}
+
 func decodeRADIUS(data []byte, p gopacket.PacketBuilder) error {
 	radius := &RADIUS{}
 	err := radius.DecodeFromBytes(data, p)
@@ -557,4 +702,189 @@ func attributeValueLength(v []byte) (RADIUSAttributeLength, error) {
 	} else {
 		return RADIUSAttributeLength(n), nil
 	}
+}
+
+type RADIUSAttributeToStringFunc func(b RADIUSAttributeValue) string
+
+// RADIUSAttributeToStringFunc is a map[type]func which maps the right function to the right attribute value type.
+var radiusAttributeToStringFunctions = map[RADIUSAttributeType]RADIUSAttributeToStringFunc{
+
+	//string types
+	RADIUSAttributeTypeUserName:             utf8RADIUStoString,
+	RADIUSAttributeTypeFilterId:             utf8RADIUStoString,
+	RADIUSAttributeTypeReplyMessage:         utf8RADIUStoString,
+	RADIUSAttributeTypeCallbackNumber:       utf8RADIUStoString,
+	RADIUSAttributeTypeCallbackId:           utf8RADIUStoString,
+	RADIUSAttributeTypeFramedRoute:          utf8RADIUStoString,
+	RADIUSAttributeTypeState:                utf8RADIUStoString,
+	RADIUSAttributeTypeClass:                utf8RADIUStoString,
+	RADIUSAttributeTypeCalledStationId:      utf8RADIUStoString,
+	RADIUSAttributeTypeCallingStationId:     utf8RADIUStoString,
+	RADIUSAttributeTypeNASIdentifier:        utf8RADIUStoString,
+	RADIUSAttributeTypeProxyState:           utf8RADIUStoString,
+	RADIUSAttributeTypeLoginLATService:      utf8RADIUStoString,
+	RADIUSAttributeTypeLoginLATNode:         utf8RADIUStoString,
+	RADIUSAttributeTypeLoginLATGroup:        utf8RADIUStoString,
+	RADIUSAttributeTypeFramedAppleTalkZone:  utf8RADIUStoString,
+	RADIUSAttributeTypeLoginLATPort:         utf8RADIUStoString,
+	RADIUSAttributeTypeAcctSessionId:        utf8RADIUStoString,
+	RADIUSAttributeTypeAcctMultiSessionId:   utf8RADIUStoString,
+	RADIUSAttributeTypeAcctTunnelConnection: utf8RADIUStoString,
+	RADIUSAttributeTypeARAPSecurityData:     utf8RADIUStoString,
+	RADIUSAttributeTypeConnectInfo:          utf8RADIUStoString,
+	RADIUSAttributeTypeConfigurationToken:   utf8RADIUStoString,
+	RADIUSAttributeTypeEAPMessage:           utf8RADIUStoString,
+	RADIUSAttributeTypeMessageAuthenticator: utf8RADIUStoString,
+	RADIUSAttributeTypeNASPortId:            utf8RADIUStoString,
+	RADIUSAttributeTypeFramedPool:           utf8RADIUStoString,
+
+	//ip address types
+	RADIUSAttributeTypeNASIPAddress:     ipv4RADIUStoString,
+	RADIUSAttributeTypeFramedIPAddress:  ipv4RADIUStoString,
+	RADIUSAttributeTypeFramedIPNetmask:  ipv4RADIUStoString,
+	RADIUSAttributeTypeLoginIPHost:      ipv4RADIUStoString,
+	RADIUSAttributeTypeFramedIPXNetwork: ipv4RADIUStoString,
+
+	//int types
+	RADIUSAttributeTypeNASPort:                int32RADIUStoString,
+	RADIUSAttributeTypeServiceType:            int32RADIUStoString,
+	RADIUSAttributeTypeFramedProtocol:         int32RADIUStoString,
+	RADIUSAttributeTypeFramedRouting:          int32RADIUStoString,
+	RADIUSAttributeTypeFramedMTU:              int32RADIUStoString,
+	RADIUSAttributeTypeFramedCompression:      int32RADIUStoString,
+	RADIUSAttributeTypeLoginService:           int32RADIUStoString,
+	RADIUSAttributeTypeLoginTCPPort:           int32RADIUStoString,
+	RADIUSAttributeTypeSessionTimeout:         int32RADIUStoString,
+	RADIUSAttributeTypeIdleTimeout:            int32RADIUStoString,
+	RADIUSAttributeTypeTerminationAction:      int32RADIUStoString,
+	RADIUSAttributeTypeFramedAppleTalkLink:    int32RADIUStoString,
+	RADIUSAttributeTypeFramedAppleTalkNetwork: int32RADIUStoString,
+	RADIUSAttributeTypeNASPortType:            int32RADIUStoString,
+	RADIUSAttributeTypePortLimit:              int32RADIUStoString,
+	RADIUSAttributeTypeAcctStatusType:         int32RADIUStoString,
+	RADIUSAttributeTypeAcctDelayTime:          int32RADIUStoString,
+	RADIUSAttributeTypeAcctInputOctets:        int32RADIUStoString,
+	RADIUSAttributeTypeAcctOutputOctets:       int32RADIUStoString,
+	RADIUSAttributeTypeAcctAuthentic:          int32RADIUStoString,
+	RADIUSAttributeTypeAcctSessionTime:        int32RADIUStoString,
+	RADIUSAttributeTypeAcctInputPackets:       int32RADIUStoString,
+	RADIUSAttributeTypeAcctOutputPackets:      int32RADIUStoString,
+	RADIUSAttributeTypeAcctTerminateCause:     int32RADIUStoString,
+	RADIUSAttributeTypeAcctLinkCount:          int32RADIUStoString,
+	RADIUSAttributeTypeAcctTunnelPacketsLost:  int32RADIUStoString,
+	RADIUSAttributeTypeAcctInputGigawords:     int32RADIUStoString,
+	RADIUSAttributeTypeAcctOutputGigawords:    int32RADIUStoString,
+	RADIUSAttributeTypeARAPZoneAccess:         int32RADIUStoString,
+	RADIUSAttributeTypeARAPSecurity:           int32RADIUStoString,
+	RADIUSAttributeTypePasswordRetry:          int32RADIUStoString,
+	RADIUSAttributeTypePrompt:                 int32RADIUStoString,
+
+	//date types
+	RADIUSAttributeTypeEventTimestamp: timeRADIUStoString,
+
+	//tunnel ints
+	RADIUSAttributeTypeTunnelType:       tunnelInt32RADIUStoString,
+	RADIUSAttributeTypeTunnelMediumType: tunnelInt32RADIUStoString,
+	RADIUSAttributeTypeTunnelPreference: tunnelInt32RADIUStoString,
+
+	//tunnel strings
+	RADIUSAttributeTypeTunnelClientEndpoint: tunnelUtf8RADIUStoString,
+	RADIUSAttributeTypeTunnelServerEndpoint: tunnelUtf8RADIUStoString,
+	RADIUSAttributeTypeTunnelPrivateGroupID: tunnelUtf8RADIUStoString,
+	RADIUSAttributeTypeTunnelAssignmentID:   tunnelUtf8RADIUStoString,
+	RADIUSAttributeTypeTunnelClientAuthID:   tunnelUtf8RADIUStoString,
+	RADIUSAttributeTypeTunnelServerAuthID:   tunnelUtf8RADIUStoString,
+
+	//for the encrypted attributes, the packet must be decrypted first with the according decrypt func
+	//after that the decrypted value can be converted to a regular UTF-8 string
+	RADIUSAttributeTypeUserPassword:   utf8RADIUStoString,
+	RADIUSAttributeTypeTunnelPassword: tunnelUtf8RADIUStoString,
+
+	//Chap types
+	RADIUSAttributeTypeCHAPPassword:  chapRADIUStoString,
+	RADIUSAttributeTypeCHAPChallenge: chapRADIUStoString,
+
+	//ARAP types
+	RADIUSAttributeTypeARAPPassword: arapPwdRADIUStoString,
+
+	//vendor specific attributes
+	RADIUSAttributeTypeVendorSpecific: vendorRADIUStoString,
+}
+
+func utf8RADIUStoString(b RADIUSAttributeValue) string {
+	if !utf8.Valid(b) {
+		return fmt.Sprintf("%#02x", b)
+	}
+	return string(b)
+}
+
+func int32RADIUStoString(b RADIUSAttributeValue) string {
+	if len(b) != 4 {
+		return fmt.Sprintf("invalid length (%d) in value: %#02x", len(b), b)
+	}
+	return strconv.Itoa(int(binary.BigEndian.Uint32(b)))
+}
+
+func ipv4RADIUStoString(b RADIUSAttributeValue) string {
+	if len(b) != net.IPv4len {
+		return fmt.Sprintf("invalid length (%d) in value: %#02x", len(b), b)
+	}
+	return net.IP(b).String()
+}
+
+func timeRADIUStoString(b RADIUSAttributeValue) string {
+	if len(b) != 4 {
+		return fmt.Sprintf("invalid length (%d) in value: %#02x", len(b), b)
+	}
+	sec := binary.BigEndian.Uint32(b)
+	return time.Unix(int64(sec), 0).String()
+}
+
+func chapRADIUStoString(b RADIUSAttributeValue) string {
+	if len(b) < 2 {
+		return fmt.Sprintf("invalid length (%d) in value: %#02x", len(b), b)
+	}
+	chapid := fmt.Sprintf("%#02x", b[0])
+	chapValue := fmt.Sprintf("%#02x", b[1:])
+	return fmt.Sprintf("CHAP ID: %s, Value: %s", chapid, chapValue)
+}
+
+func tunnelInt32RADIUStoString(b RADIUSAttributeValue) string {
+	if len(b) != 4 {
+		return fmt.Sprintf("invalid length (%d) in value: %#02x", len(b), b)
+	}
+	tag := fmt.Sprintf("%#02x", b[0])
+	val := uint32(b[1])<<16 | uint32(b[2])<<8 | uint32(b[3])
+	return fmt.Sprintf("Tag: %s, Value: %d", tag, val)
+}
+
+func tunnelUtf8RADIUStoString(b RADIUSAttributeValue) string {
+	if len(b) >= 1 && b[0] <= 0x1F {
+		tag := fmt.Sprintf("%#02x", b[0])
+		val := string(b[1:])
+		return fmt.Sprintf("Tag: %s, Value: %s", tag, val)
+	} else {
+		val := string(b)
+		return fmt.Sprintf("Tag: -, Value: %s", val)
+	}
+}
+
+func vendorRADIUStoString(b RADIUSAttributeValue) string {
+	if len(b) < 4 {
+		return fmt.Sprintf("invalid length (%d) in value: %#02x", len(b), b)
+	}
+	vendorID := binary.BigEndian.Uint32(b[:4])
+	//This part could be extended and match the Vendor ID to a known vendor and then decode the rest of the value
+	return fmt.Sprintf("Vendor ID: %d, Value: %#02x", vendorID, b[4:])
+}
+
+func arapPwdRADIUStoString(b RADIUSAttributeValue) string {
+	if len(b) != 16 {
+		return fmt.Sprintf("invalid length (%d) in value: %#02x", len(b), b)
+	}
+	value1 := fmt.Sprintf("%#02x", b[:4])
+	value2 := fmt.Sprintf("%#02x", b[4:8])
+	value3 := fmt.Sprintf("%#02x", b[8:12])
+	value4 := fmt.Sprintf("%#02x", b[12:])
+	return fmt.Sprintf("Value1: %s, Value2: %s, Value3: %s, Value4: %s", value1, value2, value3, value4)
 }
