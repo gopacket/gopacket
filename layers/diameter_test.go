@@ -484,6 +484,65 @@ func TestDiameter3GPPVendorAVP(t *testing.T) {
 	}
 }
 
+// TestDiameterVendorAVPLengthUnderflow checks that a vendor AVP whose declared
+// 24-bit Length (8..11) is smaller than the 12-byte vendor header is rejected
+// before the dataLength subtraction, rather than underflowing the uint32 and
+// requesting a ~4 GiB allocation in make([]byte, dataLength). The AVP loop in
+// DecodeFromBytes stops at the first undecodable AVP, so the observable effect
+// of the fix is that the malicious AVP is dropped (no oversized Data buffer is
+// ever allocated) instead of the decoder attempting the huge make.
+func TestDiameterVendorAVPLengthUnderflow(t *testing.T) {
+	for _, avpLen := range []byte{0x08, 0x09, 0x0a, 0x0b} {
+		// 20-byte Diameter base header + a 12-byte vendor AVP whose Length
+		// field is avpLen (< 12). Total message length is 32 bytes.
+		data := []byte{
+			0x01, 0x00, 0x00, 0x20, // Version, Length (32)
+			0x80, 0x00, 0x01, 0x01, // Flags: Request, Command Code (257)
+			0x00, 0x00, 0x00, 0x00, // Application ID
+			0x00, 0x00, 0x00, 0x01, // Hop-by-Hop ID
+			0x00, 0x00, 0x00, 0x01, // End-to-End ID
+			// Vendor AVP
+			0x00, 0x00, 0x00, 0x01, // AVP Code: 1
+			0x80, 0x00, 0x00, avpLen, // Flags: Vendor, Length: avpLen (< 12)
+			0x00, 0x00, 0x00, 0x00, // Vendor ID
+		}
+
+		// The decoder must reject this AVP. The whole message decodes without
+		// crashing and yields no AVPs; in particular no AVP carries a buffer
+		// larger than the input (which is what the underflow would produce).
+		layer := &Diameter{}
+		if err := layer.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err != nil {
+			t.Fatalf("avpLen=%d: unexpected message-level decode error: %v", avpLen, err)
+		}
+		if len(layer.AVPs) != 0 {
+			t.Errorf("avpLen=%d: expected the underflowing vendor AVP to be rejected (0 AVPs), got %d", avpLen, len(layer.AVPs))
+		}
+		for _, avp := range layer.AVPs {
+			if len(avp.Data) > len(data) {
+				t.Errorf("avpLen=%d: AVP Data length %d exceeds input length %d (underflow not rejected)", avpLen, len(avp.Data), len(data))
+			}
+		}
+
+		// The recovering NewPacket path must also stay alive and not panic.
+		_ = gopacket.NewPacket(data, LayerTypeDiameter, gopacket.Default)
+	}
+
+	// Direct unit check on the decoder: an underflowing vendor AVP returns a
+	// non-nil error and never an oversized Data buffer.
+	rawAVP := []byte{
+		0x00, 0x00, 0x00, 0x01, // AVP Code: 1
+		0x80, 0x00, 0x00, 0x08, // Flags: Vendor, Length: 8 (< 12 vendor header)
+		0x00, 0x00, 0x00, 0x00, // Vendor ID
+	}
+	avp, _, err := decodeDiameterAVP(rawAVP)
+	if err == nil {
+		t.Fatalf("decodeDiameterAVP: expected an error for vendor AVP with Length 8 < header size 12, got nil")
+	}
+	if len(avp.Data) > len(rawAVP) {
+		t.Errorf("decodeDiameterAVP: returned Data length %d exceeds input length %d (underflow not rejected)", len(avp.Data), len(rawAVP))
+	}
+}
+
 // Benchmark Diameter decoding
 func BenchmarkDiameterDecoding(b *testing.B) {
 	data := []byte{
