@@ -112,6 +112,17 @@ func TestIPv4InvalidOptionLength(t *testing.T) {
 	}
 }
 
+func TestIPv4SerializeShortOptionLength(t *testing.T) {
+	ip := &IPv4{
+		SrcIP:   make([]byte, 4),
+		DstIP:   make([]byte, 4),
+		Options: []IPv4Option{{OptionType: 2, OptionLength: 1}},
+	}
+	if _, err := serialize(ip); err == nil {
+		t.Fatal("Expected an error for an option length below 2, but got none.")
+	}
+}
+
 func TestIPv4Options(t *testing.T) {
 	for _, test := range []struct {
 		packet  string
