@@ -1201,11 +1201,15 @@ func (a *Assembler) closeHalfConnection(conn *connection, half *halfconnection) 
 		log.Printf("%v closing", conn)
 	}
 	half.closed = true
-	for p := half.first; p != nil; p = p.next {
+
+	var next *page
+	for p := half.first; p != nil; p = next {
 		// FIXME: it should be already empty
+		next = p.next
 		a.pc.replace(p)
 		half.pages--
 	}
+
 	if conn.s2c.closed && conn.c2s.closed {
 		if half.stream.ReassemblyComplete(nil) { //FIXME: which context to pass ?
 			a.connPool.remove(conn)
