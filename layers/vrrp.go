@@ -116,6 +116,10 @@ func (v *VRRPv2) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error 
 	// populate the IPAddress field. The number of addresses is specified in the v.CountIPAddr field
 	// offset references the starting byte containing the list of ip addresses
 	offset := 8
+	if len(data) < offset+4*int(v.CountIPAddr) {
+		df.SetTruncated()
+		return errors.New("VRRPv2 packet too short for the advertised IP address count")
+	}
 	for i := uint8(0); i < v.CountIPAddr; i++ {
 		v.IPAddress = append(v.IPAddress, data[offset:offset+4])
 		offset += 4
