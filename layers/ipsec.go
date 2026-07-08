@@ -53,6 +53,7 @@ func (i *IPSecAH) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error
 	if i.ActualLength < 12 {
 		// Authentication data starts at byte 12; a shorter header would make
 		// the data[12:ActualLength] slice below have out-of-order bounds.
+		df.SetTruncated()
 		return errors.New("AH packet ActualLength < 12")
 	}
 	if len(data) < i.ActualLength {
