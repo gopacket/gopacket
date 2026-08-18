@@ -57,7 +57,7 @@ var _ gopacket.DecodingLayer = (*Geneve)(nil)
 func (gn *Geneve) LayerType() gopacket.LayerType { return LayerTypeGeneve }
 
 func decodeGeneveOption(data []byte, gn *Geneve, df gopacket.DecodeFeedback) (*GeneveOption, uint8, error) {
-	if len(data) < 3 {
+	if len(data) < 4 {
 		df.SetTruncated()
 		return nil, 0, errors.New("geneve option too small")
 	}
@@ -79,7 +79,7 @@ func decodeGeneveOption(data []byte, gn *Geneve, df gopacket.DecodeFeedback) (*G
 }
 
 func (gn *Geneve) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
-	if len(data) < 7 {
+	if len(data) < 8 {
 		df.SetTruncated()
 		return errors.New("geneve packet too short")
 	}
@@ -96,21 +96,21 @@ func (gn *Geneve) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error
 	copy(buf[1:], data[4:7])
 	gn.VNI = binary.BigEndian.Uint32(buf[:])
 
-	offset, length := uint8(8), int32(gn.OptionsLength)
-	if len(data) < int(length+7) {
+	offset, length := 8, int(gn.OptionsLength)
+	if len(data) < offset+length {
 		df.SetTruncated()
 		return errors.New("geneve packet too short")
 	}
 
 	for length > 0 {
-		opt, len, err := decodeGeneveOption(data[offset:], gn, df)
+		opt, l, err := decodeGeneveOption(data[offset:], gn, df)
 		if err != nil {
 			return err
 		}
 		gn.Options = append(gn.Options, opt)
 
-		length -= int32(len)
-		offset += len
+		length -= int(l)
+		offset += int(l)
 	}
 
 	gn.BaseLayer = BaseLayer{data[:offset], data[offset:]}

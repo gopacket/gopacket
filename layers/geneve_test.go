@@ -378,3 +378,35 @@ func TestIsomorphicPacketGeneveFixLengths(t *testing.T) {
 func TestGeneveAsDecodingLayer(t *testing.T) {
 	_ = gopacket.NewDecodingLayerParser(LayerTypeGeneve, &Geneve{})
 }
+
+// TestGeneveDecodeMalformed feeds crafted short/truncated Geneve packets that
+// previously ran past the end of the buffer. The 7-byte case is the fuzzer
+// input that panicked with "slice bounds out of range [8:7]": the base header
+// is 8 bytes but the length guard only required 7, so slicing off the base
+// header overran a 7-byte buffer. Each case must return an error, never panic.
+func TestGeneveDecodeMalformed(t *testing.T) {
+	cases := []struct {
+		name string
+		data []byte
+	}{
+		{"fuzz-7-byte-base-overrun", []byte{0x00, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30}},
+		{"empty", []byte{}},
+		{"one-byte", []byte{0x00}},
+		{"base-declares-options-but-truncated", []byte{0x01, 0, 0, 0, 0, 0, 0, 0}},
+		{"option-length-overruns-remaining", []byte{0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x1f}},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			defer func() {
+				if r := recover(); r != nil {
+					t.Fatalf("Geneve decoder panicked on crafted input: %v", r)
+				}
+			}()
+			gn := &Geneve{}
+			if err := gn.DecodeFromBytes(c.data, gopacket.NilDecodeFeedback); err == nil {
+				t.Errorf("expected error on malformed input, got nil")
+			}
+		})
+	}
+}
