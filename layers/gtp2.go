@@ -37,6 +37,7 @@ func (g *GTPv2) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	hLen := gtp2MinimumSizeInBytes
 	dLen := len(data)
 	if dLen < hLen {
+		df.SetTruncated()
 		return fmt.Errorf("GTP packet too small: %d bytes", dLen)
 	}
 	g.Version = (data[0] >> 5) & 0x07
@@ -46,38 +47,53 @@ func (g *GTPv2) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	g.MessageType = data[1]
 	g.MessageLength = binary.BigEndian.Uint16(data[2:4])
 
-	pLen := 4 + g.MessageLength
-	if uint16(dLen) < pLen {
+	pLen := 4 + int(g.MessageLength)
+	if dLen < pLen {
+		df.SetTruncated()
 		return fmt.Errorf("GTP packet too small: %d bytes", dLen)
 	}
 
-	cIndex := uint16(hLen)
+	cIndex := hLen
 	if g.TEIDflag {
 		hLen += 4
 		cIndex += 4
 		if dLen < hLen {
+			df.SetTruncated()
 			return fmt.Errorf("GTP packet too small: %d bytes", dLen)
 		}
 		g.TEID = binary.BigEndian.Uint32(data[4:8])
 	}
 
-	if len(data) < int(cIndex)+3 {
-		return fmt.Errorf("GTP packet too small for SequenceNumber: %d bytes", len(data))
+	// SequenceNumber is 3 bytes and is followed by a 1-byte Spare field, so
+	// four bytes must be present from cIndex.
+	if dLen < cIndex+4 {
+		df.SetTruncated()
+		return fmt.Errorf("GTP packet too small for SequenceNumber: %d bytes", dLen)
 	}
 	g.SequenceNumber = uint32(data[cIndex])<<16 | uint32(data[cIndex+1])<<8 | uint32(data[cIndex+2])
 	g.Spare = data[cIndex+3]
 	hLen += 4
 	cIndex += 4
 
-	for cIndex < uint16(dLen) {
+	for cIndex < dLen {
+		// Every Information Element carries a 4-byte header (1-byte Type,
+		// 2-byte Length, 1-byte Spare/Instance) ahead of its content.
+		if cIndex+4 > dLen {
+			df.SetTruncated()
+			return fmt.Errorf("GTP IE header truncated at offset %d", cIndex)
+		}
 		ieType := data[cIndex]
-		ieLength := binary.BigEndian.Uint16(data[cIndex+1 : cIndex+3])
-		if cIndex+4+uint16(ieLength) > uint16(dLen) {
+		// Compute bounds in int; cIndex, and the 16-bit IE length can each
+		// approach 65535, so uint16 arithmetic here would wrap and defeat the
+		// check below.
+		ieLength := int(binary.BigEndian.Uint16(data[cIndex+1 : cIndex+3]))
+		if cIndex+4+ieLength > dLen {
+			df.SetTruncated()
 			return fmt.Errorf("IE %d exceeds packet length", ieType)
 		}
-		ieContent := data[cIndex+4 : cIndex+4+uint16(ieLength)]
+		ieContent := data[cIndex+4 : cIndex+4+ieLength]
 		g.IEs = append(g.IEs, IE{Type: ieType, Content: ieContent})
-		cIndex += 4 + uint16(ieLength)
+		cIndex += 4 + ieLength
 	}
 
 	g.BaseLayer = BaseLayer{Contents: data[:cIndex], Payload: data[cIndex:]}

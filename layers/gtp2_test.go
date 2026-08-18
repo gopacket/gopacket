@@ -79,3 +79,49 @@ func TestGTPv2Packet(t *testing.T) {
 		t.Errorf("Expected empty payload, got: %v", got.LayerPayload())
 	}
 }
+
+// TestGTPv2DecodeMalformed feeds crafted, undersized/overflowing GTPv2 messages
+// to DecodeFromBytes. Before the bounds fixes each of these panicked with an
+// out-of-range slice or index; the only acceptable outcomes now are a returned
+// error or a successful decode, never a panic.
+func TestGTPv2DecodeMalformed(t *testing.T) {
+	cases := []struct {
+		name string
+		data []byte
+	}{
+		{
+			// SequenceNumber(3) + Spare(1) need four bytes past the header, but
+			// only three are present. The Spare read at data[cIndex+3] was
+			// previously guarded by a "+3" check and ran off the end.
+			name: "spare byte off-by-one",
+			data: []byte{0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+		},
+		{
+			// A single trailing byte after the header: the IE loop read the
+			// 2-byte length at data[cIndex+1:cIndex+3] while only guaranteeing
+			// one remaining byte.
+			name: "truncated IE header",
+			data: []byte{0x00, 0x01, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0xAA},
+		},
+		{
+			// IE length 0xFFFF: cIndex+4+ieLength was computed in uint16 and
+			// wrapped, passing the bounds check and then slicing data[12:11].
+			name: "IE length uint16 overflow",
+			data: []byte{0x00, 0x01, 0x00, 0x0C, 0x00, 0x00, 0x00, 0x00, 0xAA, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			defer func() {
+				if r := recover(); r != nil {
+					t.Fatalf("DecodeFromBytes panicked on %s: %v", tc.name, r)
+				}
+			}()
+			g := &GTPv2{}
+			// A returned error is expected and fine; the assertion is only that
+			// nothing panics.
+			_ = g.DecodeFromBytes(tc.data, gopacket.NilDecodeFeedback)
+		})
+	}
+}
