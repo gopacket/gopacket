@@ -219,6 +219,10 @@ func (c *CiscoDiscovery) LayerType() gopacket.LayerType {
 }
 
 func decodeCiscoDiscovery(data []byte, p gopacket.PacketBuilder) error {
+	if len(data) < 4 {
+		p.SetTruncated()
+		return errors.New("CiscoDiscovery < 4 bytes")
+	}
 	c := &CiscoDiscovery{
 		Version:  data[0],
 		TTL:      data[1],
