@@ -212,3 +212,52 @@ func TestDecodeOOBRegressionLinkLayers(t *testing.T) {
 		})
 	}
 }
+
+// TestDecodeSCTPChunkRegression covers GHSA-358w-w75h-x6rx: SCTP chunk
+// sub-decoders read their fixed fields and parameter TLVs using declared
+// lengths and counts that were never checked against the chunk size.
+func TestDecodeSCTPChunkRegression(t *testing.T) {
+	cases := []struct {
+		name  string
+		chunk []byte
+	}{
+		{"Init/short", []byte{1, 0, 0, 8, 0, 0, 0, 0}},
+		{"InitAck/short", []byte{2, 0, 0, 8, 0, 0, 0, 0}},
+		{"Init/len15", []byte{1, 0, 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+		{"Sack/count-overrun", []byte{3, 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1}},
+		{"Shutdown/short", []byte{7, 0, 0, 4}},
+		{"Error/param-len-zero", []byte{9, 0, 0, 8, 0, 1, 0, 0}},
+		{"Error/param-len-overrun", []byte{9, 0, 0, 8, 0, 1, 0, 0x40}},
+		{"Heartbeat/param-len-zero", []byte{4, 0, 0, 8, 0, 1, 0, 0}},
+		{"Error/param-header-short", []byte{9, 0, 0, 6, 0, 1, 0, 0}},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			defer func() {
+				if r := recover(); r != nil {
+					t.Fatalf("SCTP decoder panicked on crafted chunk: %v", r)
+				}
+			}()
+			data := append(make([]byte, 12), c.chunk...)
+			gopacket.NewPacket(data, LayerTypeSCTP, gopacket.DecodeOptions{SkipDecodeRecovery: true})
+		})
+	}
+}
+
+// TestDecodeSCTPParameterPadding checks that a final parameter whose padding
+// is excluded from the chunk length (RFC 9260 3.2) still decodes.
+func TestDecodeSCTPParameterPadding(t *testing.T) {
+	// Heartbeat chunk, length 9: one 5-byte parameter, then 3 padding bytes.
+	data := append(make([]byte, 12), 4, 0, 0, 9, 0, 1, 0, 5, 0xAA, 0, 0, 0)
+
+	p := gopacket.NewPacket(data, LayerTypeSCTP, gopacket.DecodeOptions{SkipDecodeRecovery: true})
+	if p.ErrorLayer() != nil {
+		t.Fatalf("unexpected decode error: %v", p.ErrorLayer().Error())
+	}
+
+	hb, ok := p.Layer(LayerTypeSCTPHeartbeat).(*SCTPHeartbeat)
+	if !ok || len(hb.Parameters) != 1 || len(hb.Parameters[0].Value) != 1 {
+		t.Fatalf("heartbeat parameter not decoded: %+v", hb)
+	}
+}
