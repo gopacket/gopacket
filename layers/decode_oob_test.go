@@ -8,6 +8,7 @@ package layers
 
 import (
 	"encoding/binary"
+	"runtime"
 	"testing"
 
 	"github.com/gopacket/gopacket"
@@ -373,5 +374,54 @@ func TestSTPSerializeInvalidPriority(t *testing.T) {
 	badSys := &STP{RouteID: STPSwitchID{SysID: 4096, HwAddr: make([]byte, 6)}, BridgeID: STPSwitchID{HwAddr: make([]byte, 6)}}
 	if err := badSys.SerializeTo(gopacket.NewSerializeBuffer(), gopacket.SerializeOptions{}); err == nil {
 		t.Fatal("SysID 4096 must return an error")
+	}
+}
+
+// nestedDiameterMessage builds a message whose AVP region is one FailedAVP
+// (code 279, Grouped, non-vendor) nested depth levels deep. Each level costs
+// only an 8-byte header, so a small message forces deep recursion.
+func nestedDiameterMessage(depth int) []byte {
+	body := []byte{}
+	for i := 0; i < depth; i++ {
+		avp := make([]byte, 8+len(body))
+		binary.BigEndian.PutUint32(avp[0:4], 279)
+		binary.BigEndian.PutUint32(avp[4:8], uint32(len(avp)))
+		copy(avp[8:], body)
+		body = avp
+	}
+	hdr := make([]byte, 20)
+	hdr[0] = 1
+	l := uint32(len(hdr) + len(body))
+	hdr[1], hdr[2], hdr[3] = byte(l>>16), byte(l>>8), byte(l)
+	return append(hdr, body...)
+}
+
+// TestDiameterNestedGroupedAVP: grouped AVPs recursed without a depth cap and
+// copied the whole remaining payload at every level, so retained memory grew
+// with the square of the input. The decoder must stop descending at a fixed
+// depth and keep total allocation linear in the input.
+func TestDiameterNestedGroupedAVP(t *testing.T) {
+	msg := nestedDiameterMessage(8192)
+
+	var before, after runtime.MemStats
+	runtime.GC()
+	runtime.ReadMemStats(&before)
+	d := &Diameter{}
+	if err := d.DecodeFromBytes(msg, gopacket.NilDecodeFeedback); err != nil {
+		t.Fatalf("decode failed: %v", err)
+	}
+	runtime.ReadMemStats(&after)
+
+	grew := after.TotalAlloc - before.TotalAlloc
+	if limit := uint64(len(msg)) * 64; grew > limit {
+		t.Fatalf("decoding %d bytes allocated %d bytes, limit %d", len(msg), grew, limit)
+	}
+
+	depth := 0
+	for avp := &d.AVPs[0]; len(avp.GroupedAVPs) > 0; avp = &avp.GroupedAVPs[0] {
+		depth++
+	}
+	if depth > maxDiameterGroupedDepth {
+		t.Fatalf("grouped AVP depth %d exceeds cap %d", depth, maxDiameterGroupedDepth)
 	}
 }
