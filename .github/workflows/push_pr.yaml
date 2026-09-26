@@ -12,7 +12,7 @@ permissions:
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
 
     - name: Check out code into the Go module directory
@@ -25,8 +25,9 @@ jobs:
 
     - name: Get dependencies
       run: |
-        sudo apt install -y libpcap-dev
-        go get -v
+        sudo apt-get update
+        sudo apt-get install -y libpcap-dev
+        go mod download
 
     - name: check code formatting
       run: |
@@ -38,9 +39,11 @@ jobs:
     - name: check linting
       if: always()
       run: |
-        go get golang.org/x/lint/golint
-        DIRS=". tcpassembly tcpassembly/tcpreader ip4defrag reassembly macs pcapgo pcap afpacket pfring routing defrag/lcmdefrag"
+        go install golang.org/x/lint/golint@latest
+        export PATH="$PATH:$(go env GOPATH)/bin"
+        DIRS="tcpassembly tcpassembly/tcpreader ip4defrag reassembly macs pcap pfring routing defrag/lcmdefrag"
         # Add subdirectories here as we clean up golint on each.
+        # Not yet clean: . pcapgo afpacket
         for subdir in $DIRS; do
           pushd $subdir
           if golint |
