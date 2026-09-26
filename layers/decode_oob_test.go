@@ -7,6 +7,7 @@
 package layers
 
 import (
+	"encoding/binary"
 	"testing"
 
 	"github.com/gopacket/gopacket"
@@ -260,4 +261,70 @@ func TestDecodeSCTPParameterPadding(t *testing.T) {
 	if !ok || len(hb.Parameters) != 1 || len(hb.Parameters[0].Value) != 1 {
 		t.Fatalf("heartbeat parameter not decoded: %+v", hb)
 	}
+}
+
+// TestDecodeOOBRegressionBatch3 covers the 2026-09 batch of decoder panics
+// (sFlow sample loop, OSPFv2/v3 LSA headers, MDP TLVs, GTPv2 IE header,
+// Geneve header and option, CDP header). Each input declares more structure
+// than the buffer holds.
+func TestDecodeOOBRegressionBatch3(t *testing.T) {
+	sflow := make([]byte, 28)
+	binary.BigEndian.PutUint32(sflow[0:4], 5)
+	binary.BigEndian.PutUint32(sflow[4:8], 1)
+	binary.BigEndian.PutUint32(sflow[24:28], 1) // SampleCount=1, no sample
+
+	ospf3 := make([]byte, 20)
+	ospf3[0], ospf3[1] = 3, 4 // v3, Link State Update
+	binary.BigEndian.PutUint16(ospf3[2:4], 20)
+	binary.BigEndian.PutUint32(ospf3[16:20], 1) // one LSA, no body
+
+	ospf2 := make([]byte, 28)
+	ospf2[0], ospf2[1] = 2, 4
+	binary.BigEndian.PutUint16(ospf2[2:4], 28)
+	binary.BigEndian.PutUint32(ospf2[24:28], 1)
+
+	mdp := make([]byte, 30)
+	mdp[28], mdp[29] = MdpTlvDeviceInfo, 0xFF
+
+	gtp2 := make([]byte, 9) // 8-byte header + 1 byte of IE header
+	gtp2[0], gtp2[1] = 0x20, 0x01
+	binary.BigEndian.PutUint16(gtp2[2:4], 4)
+
+	geneveOpt := make([]byte, 11) // 8-byte header, OptLen=4, only 3 option bytes
+	geneveOpt[0] = 1
+
+	cases := []struct {
+		name  string
+		layer func() gopacket.DecodingLayer
+		data  []byte
+	}{
+		{"SFlow/sample-count-no-body", func() gopacket.DecodingLayer { return &SFlowDatagram{} }, sflow},
+		{"OSPFv3/lsu-no-lsa", func() gopacket.DecodingLayer { return &OSPFv3{} }, ospf3},
+		{"OSPFv2/lsu-no-lsa", func() gopacket.DecodingLayer { return &OSPFv2{} }, ospf2},
+		{"MDP/tlv-length-overrun", func() gopacket.DecodingLayer { return &MDP{} }, mdp},
+		{"GTPv2/ie-header-truncated", func() gopacket.DecodingLayer { return &GTPv2{} }, gtp2},
+		{"Geneve/7-byte-header", func() gopacket.DecodingLayer { return &Geneve{} }, make([]byte, 7)},
+		{"Geneve/3-byte-option", func() gopacket.DecodingLayer { return &Geneve{} }, geneveOpt},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			defer func() {
+				if r := recover(); r != nil {
+					t.Fatalf("decoder panicked on crafted input: %v", r)
+				}
+			}()
+			_ = c.layer().DecodeFromBytes(c.data, gopacket.NilDecodeFeedback)
+		})
+	}
+
+	// CDP has no DecodingLayer; drive it through the non-recovering packet path.
+	t.Run("CDP/2-byte-header", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Fatalf("decoder panicked on crafted input: %v", r)
+			}
+		}()
+		gopacket.NewPacket([]byte{0x00, 0x01}, LayerTypeCiscoDiscovery, gopacket.DecodeOptions{SkipDecodeRecovery: true})
+	})
 }

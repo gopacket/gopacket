@@ -1930,3 +1930,26 @@ func BenchmarkDecodeSFlowLayerPacket2(b *testing.B) {
 		sflow.DecodeFromBytes(SFlowTestPacket2[ /*eth*/ 14+ /*ipv4*/ 20+ /*udp*/ 8:], gopacket.NilDecodeFeedback)
 	}
 }
+
+// FuzzDecodeSFlow drives SFlowDatagram.DecodeFromBytes, the non-recovering
+// path, with mutations of the test datagrams. Any panic is a bug: a crafted
+// datagram must produce an error, never a crash.
+func FuzzDecodeSFlow(f *testing.F) {
+	seeds := [][]byte{
+		SFlowTestPacket1[42:], SFlowTestPacket2[42:], SFlowTestPacket3, SFlowTestPacket4,
+		SFlowTestPacket5, SFlowTestPacket6, SFlowTestPacket7, SFlowTestPacket8,
+		SFlowTestPacket9, SFlowTestPacket10, SFlowTestPacket11, SFlowEthernetFramePacket,
+		SFlowTestPacket12, SFlowTestPacket13,
+	}
+	for _, s := range seeds {
+		f.Add(s)
+	}
+	f.Fuzz(func(t *testing.T, data []byte) {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Fatalf("SFlow decoder panicked: %v", r)
+			}
+		}()
+		_ = (&SFlowDatagram{}).DecodeFromBytes(data, gopacket.NilDecodeFeedback)
+	})
+}
