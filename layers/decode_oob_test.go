@@ -328,3 +328,50 @@ func TestDecodeOOBRegressionBatch3(t *testing.T) {
 		gopacket.NewPacket([]byte{0x00, 0x01}, LayerTypeCiscoDiscovery, gopacket.DecodeOptions{SkipDecodeRecovery: true})
 	})
 }
+
+// TestDHCPv6OptionStringOddOro: an ORO option with an odd length decodes fine
+// but String() read one byte past its data. String() runs outside the decode
+// recovery boundary, so this crashed callers of Packet.Dump/LayerString.
+func TestDHCPv6OptionStringOddOro(t *testing.T) {
+	msg := make([]byte, 9)
+	msg[0] = 1
+	binary.BigEndian.PutUint16(msg[4:6], uint16(DHCPv6OptOro))
+	binary.BigEndian.PutUint16(msg[6:8], 1)
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("String() panicked: %v", r)
+		}
+	}()
+	p := gopacket.NewPacket(msg, LayerTypeDHCPv6, gopacket.Default)
+	for _, l := range p.Layers() {
+		_ = gopacket.LayerString(l)
+	}
+}
+
+// TestSTPSerializeInvalidPriority: SerializeTo used panic() for an invalid
+// priority or system ID. A decoded BPDU can carry either, so re-serializing
+// attacker-controlled STP crashed the process. Priority 0 is also legal
+// (802.1D allows 0..61440 in steps of 4096) and must round-trip.
+func TestSTPSerializeInvalidPriority(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("SerializeTo panicked: %v", r)
+		}
+	}()
+
+	zero := &STP{RouteID: STPSwitchID{HwAddr: make([]byte, 6)}, BridgeID: STPSwitchID{HwAddr: make([]byte, 6)}}
+	if err := zero.SerializeTo(gopacket.NewSerializeBuffer(), gopacket.SerializeOptions{}); err != nil {
+		t.Fatalf("priority 0 must serialize, got %v", err)
+	}
+
+	bad := &STP{RouteID: STPSwitchID{Priority: 1, HwAddr: make([]byte, 6)}, BridgeID: STPSwitchID{HwAddr: make([]byte, 6)}}
+	if err := bad.SerializeTo(gopacket.NewSerializeBuffer(), gopacket.SerializeOptions{}); err == nil {
+		t.Fatal("priority 1 must return an error")
+	}
+
+	badSys := &STP{RouteID: STPSwitchID{SysID: 4096, HwAddr: make([]byte, 6)}, BridgeID: STPSwitchID{HwAddr: make([]byte, 6)}}
+	if err := badSys.SerializeTo(gopacket.NewSerializeBuffer(), gopacket.SerializeOptions{}); err == nil {
+		t.Fatal("SysID 4096 must return an error")
+	}
+}
