@@ -111,6 +111,7 @@ var (
 	pcapOpenLivePtr,
 	pcapOpenOfflinePtr,
 	pcapClosePtr,
+	pcapBreakloopPtr,
 	pcapGeterrPtr,
 	pcapStatsPtr,
 	pcapCompilePtr,
@@ -203,6 +204,7 @@ func LoadWinPCAP() error {
 	pcapOpenLivePtr = mustLoad("pcap_open_live")
 	pcapOpenOfflinePtr = mustLoad("pcap_open_offline")
 	pcapClosePtr = mustLoad("pcap_close")
+	pcapBreakloopPtr = mightLoad("pcap_breakloop")
 	pcapGeterrPtr = mustLoad("pcap_geterr")
 	pcapStatsPtr = mustLoad("pcap_stats")
 	pcapCompilePtr = mustLoad("pcap_compile")
@@ -349,6 +351,13 @@ func (p *Handle) pcapClose() {
 		_, _, _ = syscall.Syscall(pcapClosePtr, 1, uintptr(p.cptr), 0, 0)
 	}
 	p.cptr = 0
+}
+
+func (p *Handle) pcapBreakloop() {
+	if pcapBreakloopPtr == 0 {
+		return
+	}
+	_, _, _ = syscall.Syscall(pcapBreakloopPtr, 1, uintptr(p.cptr), 0, 0)
 }
 
 func (p *Handle) pcapGeterr() error {

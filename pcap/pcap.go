@@ -386,6 +386,11 @@ func (p *Handle) Close() {
 
 	atomic.StoreUint64(&p.stop, 1)
 
+	// Wake a reader blocked in pcap_next_ex (BlockForever), otherwise the
+	// lock below waits for the next packet, which may never come. libpcap
+	// allows calling this from another thread.
+	p.pcapBreakloop()
+
 	// wait for packet reader to stop
 	p.mu.Lock()
 	defer p.mu.Unlock()

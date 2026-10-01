@@ -270,6 +270,10 @@ func (p *Handle) pcapClose() {
 	p.cptr = nil
 }
 
+func (p *Handle) pcapBreakloop() {
+	C.pcap_breakloop(p.cptr)
+}
+
 func (p *Handle) pcapGeterr() error {
 	return errors.New(C.GoString(C.pcap_geterr(p.cptr)))
 }
