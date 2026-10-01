@@ -916,15 +916,10 @@ type PacketSource struct {
 }
 
 // NewZeroCopyPacketSource creates a zero copy packet data source.
-//
-// Packets and PacketsCtx panic if NoCopy is also set, because the buffered
-// channel would hold packets whose data the source has already overwritten.
-// Use NextPacket to read with NoCopy.
 func NewZeroCopyPacketSource(source ZeroCopyPacketDataSource, decoder Decoder, opts ...PacketSourceOption) *PacketSource {
 	ps := &PacketSource{
-		zeroCopy: true,
-		source:   source.ZeroCopyReadPacketData,
-		decoder:  decoder,
+		source:  source.ZeroCopyReadPacketData,
+		decoder: decoder,
 	}
 
 	for idx := range opts {
