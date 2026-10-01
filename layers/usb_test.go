@@ -73,3 +73,29 @@ func BenchmarkDecodePacketUSB0(b *testing.B) {
 		gopacket.NewPacket(testPacketUSB0, LinkTypeLinuxUSB, gopacket.NoCopy)
 	}
 }
+
+// TestUSBRequestBlockSetupTruncated ensures the setup-packet decoder rejects
+// short input with a truncated error instead of panicking with an index out of
+// range. Every sibling USB decoder guards its length; this one did not, so an
+// input shorter than 8 bytes (found via fuzzing, e.g. "\x00m70") panicked in
+// DecodeFromBytes.
+func TestUSBRequestBlockSetupTruncated(t *testing.T) {
+	for _, n := range []int{0, 1, 2, 7} {
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					t.Fatalf("DecodeFromBytes panicked on %d-byte input: %v", n, r)
+				}
+			}()
+			u := &USBRequestBlockSetup{}
+			if err := u.DecodeFromBytes(make([]byte, n), gopacket.NilDecodeFeedback); err == nil {
+				t.Errorf("expected an error for %d-byte input, got nil", n)
+			}
+		}()
+	}
+	// A full 8-byte setup packet still decodes without error.
+	u := &USBRequestBlockSetup{}
+	if err := u.DecodeFromBytes(make([]byte, 8), gopacket.NilDecodeFeedback); err != nil {
+		t.Fatalf("8-byte input should decode, got %v", err)
+	}
+}
