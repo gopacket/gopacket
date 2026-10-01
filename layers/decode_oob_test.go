@@ -304,6 +304,8 @@ func TestDecodeOOBRegressionBatch3(t *testing.T) {
 		{"OSPFv2/lsu-no-lsa", func() gopacket.DecodingLayer { return &OSPFv2{} }, ospf2},
 		{"MDP/tlv-length-overrun", func() gopacket.DecodingLayer { return &MDP{} }, mdp},
 		{"GTPv2/ie-header-truncated", func() gopacket.DecodingLayer { return &GTPv2{} }, gtp2},
+		// Sequence number present, spare byte missing.
+		{"GTPv2/spare-byte-missing", func() gopacket.DecodingLayer { return &GTPv2{} }, []byte{0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}},
 		{"Geneve/7-byte-header", func() gopacket.DecodingLayer { return &Geneve{} }, make([]byte, 7)},
 		{"Geneve/3-byte-option", func() gopacket.DecodingLayer { return &Geneve{} }, geneveOpt},
 	}
