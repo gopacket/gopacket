@@ -11,6 +11,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 
 	"github.com/gopacket/gopacket"
@@ -40,6 +41,18 @@ type IPv6 struct {
 	HopByHop     *IPv6HopByHop
 	// hbh will be pointed to by HopByHop if that layer exists.
 	hbh IPv6HopByHop
+}
+
+func (ipv6 *IPv6) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.Int("version", int(ipv6.Version)),
+		slog.Int("trafficClass", int(ipv6.TrafficClass)),
+		slog.Int("flowLabel", int(ipv6.FlowLabel)),
+		slog.Int("length", int(ipv6.Length)),
+		slog.String("nextHeader", ipv6.NextHeader.String()),
+		slog.Int("hopLimit", int(ipv6.HopLimit)),
+		slog.String("srcIP", ipv6.SrcIP.String()),
+		slog.String("dstIP", ipv6.DstIP.String()))
 }
 
 // LayerType returns LayerTypeIPv6
