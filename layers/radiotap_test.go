@@ -6,6 +6,7 @@
 package layers
 
 import (
+	"bytes"
 	"fmt"
 	"testing"
 
@@ -270,4 +271,52 @@ func TestSerializeRadioTapRoundTrip(t *testing.T) {
 			}
 		})
 	}
+}
+
+// testPacketRadiotapVendor carries one vendor namespace after the radiotap
+// namespace. Layout of the vendor namespace header (6 bytes, 2-byte aligned):
+//
+// OUI[3] | sub_namespace u8 | skip_length u16 | vendor data
+var testPacketRadiotapVendor = []byte{
+       0x00, 0x00, 0x16, 0x00, // version, pad, length 22
+       0x02, 0x00, 0x00, 0xc0, // present: Flags, VendorNamespace, EXT
+       0x00, 0x00, 0x00, 0x00, // present: vendor namespace bitmap
+       0x00,             // Flags
+       0x00,             // align to 2
+       0x00, 0x11, 0x22, // OUI
+       0x07,       // sub_namespace
+       0x02, 0x00, // skip_length 2
+       0xaa, 0xbb, // vendor data
+}
+
+func TestRadiotapVendorNamespace(t *testing.T) {
+       rt := &RadioTap{}
+       if err := rt.DecodeFromBytes(testPacketRadiotapVendor, gopacket.NilDecodeFeedback); err != nil {
+               t.Fatal("Failed to decode:", err)
+       }
+       if len(rt.VendorValues) != 1 {
+               t.Fatalf("Expected 1 vendor namespace, got %d", len(rt.VendorValues))
+       }
+
+       v := rt.VendorValues[0]
+       if !bytes.Equal(v.OUI, []byte{0x00, 0x11, 0x22}) {
+               t.Errorf("OUI: got %x", v.OUI)
+       }
+       if v.SubNamespace != 0x07 {
+               t.Errorf("SubNamespace: got %d, want 7", v.SubNamespace)
+       }
+       if v.SkipLength != 2 {
+               t.Errorf("SkipLength: got %d, want 2", v.SkipLength)
+       }
+       if !bytes.Equal(v.Contents, []byte{0xaa, 0xbb}) {
+               t.Errorf("Contents: got %x", v.Contents)
+       }
+
+       buf := gopacket.NewSerializeBuffer()
+       if err := rt.SerializeTo(buf, gopacket.SerializeOptions{FixLengths: true}); err != nil {
+               t.Fatal("Failed to serialize:", err)
+       }
+       if !bytes.Equal(buf.Bytes(), testPacketRadiotapVendor) {
+               t.Errorf("Round trip mismatch:\ngot %x\nwant %x", buf.Bytes(), testPacketRadiotapVendor)
+       }
 }

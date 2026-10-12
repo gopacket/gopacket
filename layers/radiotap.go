@@ -1578,10 +1578,10 @@ func (v VendorNamespace) decodeVendorNamespace(data []byte, offset uint16, prese
 	offset += align(offset, 2)
 
 	v.OUI = data[offset : offset+3]
-	offset += 4
+	offset += 3
 
 	v.SubNamespace = data[offset]
-	offset += 2
+	offset += 1
 
 	v.SkipLength = binary.LittleEndian.Uint16(data[offset:])
 	offset += 2
@@ -1808,9 +1808,9 @@ func (v VendorNamespace) serializeTo(buf []byte, offset uint16, present RadioTap
 	offset += align(offset, 2)
 
 	copy(buf[offset:], v.OUI[0:3])
-	offset += 4
+	offset += 3
 	buf[offset] = v.SubNamespace
-	offset += 2
+	offset += 1
 	binary.LittleEndian.PutUint16(buf[offset:], v.SkipLength)
 	offset += 2
 	copy(buf[offset:], v.Contents)
