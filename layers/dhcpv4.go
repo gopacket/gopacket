@@ -154,6 +154,7 @@ func (d *DHCPv4) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error 
 
 	if len(data) <= 240 {
 		// DHCP Packet could have no option (??)
+		d.Contents = data
 		return nil
 	}
 

@@ -59,6 +59,9 @@ type MLDv2MulticastListenerQueryMessage struct {
 
 // DecodeFromBytes decodes the given bytes into this layer.
 func (m *MLDv2MulticastListenerQueryMessage) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+	// start from a clean layer: DecodingLayerParser reuses one per packet
+	*m = MLDv2MulticastListenerQueryMessage{}
+
 	if len(data) < 24 {
 		df.SetTruncated()
 		return errors.New("ICMP layer less than 24 bytes for Multicast Listener Query Message V2")
@@ -307,6 +310,9 @@ type MLDv2MulticastListenerReportMessage struct {
 
 // DecodeFromBytes decodes the given bytes into this layer.
 func (m *MLDv2MulticastListenerReportMessage) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+	// start from a clean layer: DecodingLayerParser reuses one per packet
+	*m = MLDv2MulticastListenerReportMessage{}
+
 	if len(data) < 4 {
 		df.SetTruncated()
 		return errors.New("ICMP layer less than 4 bytes for Multicast Listener Report Message V2")

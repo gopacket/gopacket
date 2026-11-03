@@ -210,6 +210,7 @@ func (ip *IPv4) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	}
 
 	ip.Options = ip.Options[:0]
+	ip.Padding = nil
 	ip.Contents = data[:ip.IHL*4]
 	ip.Payload = data[ip.IHL*4:]
 

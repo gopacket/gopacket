@@ -45,6 +45,9 @@ func (g *GTPv1U) LayerType() gopacket.LayerType { return LayerTypeGTPv1U }
 
 // DecodeFromBytes analyses a byte slice and attempts to decode it as a GTPv1U packet
 func (g *GTPv1U) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+	// start from a clean layer: DecodingLayerParser reuses one per packet
+	*g = GTPv1U{}
+
 	hLen := gtpMinimumSizeInBytes
 	dLen := len(data)
 	if dLen < hLen {

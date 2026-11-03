@@ -253,6 +253,9 @@ type CIP struct {
 
 // DecodeFromBytes unpacks a CIP packet in the `data` argument into the receiver.
 func (cip *CIP) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+	// start from a clean layer: DecodingLayerParser reuses one per packet
+	*cip = CIP{}
+
 	// Initial bounds check
 	if len(data) < cipBasePacketLen {
 		df.SetTruncated()

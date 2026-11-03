@@ -677,6 +677,9 @@ func (i *IPv6Destination) LayerType() gopacket.LayerType { return LayerTypeIPv6D
 
 // DecodeFromBytes implementation according to gopacket.DecodingLayer
 func (i *IPv6Destination) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+	// start from a clean layer: DecodingLayerParser reuses one per packet
+	*i = IPv6Destination{}
+
 	var err error
 	i.ipv6ExtensionBase, err = decodeIPv6ExtensionBase(data, df)
 	if err != nil {

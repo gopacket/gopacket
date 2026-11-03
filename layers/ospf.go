@@ -564,6 +564,9 @@ func getLSAs(num uint32, data []byte) ([]LSA, error) {
 
 // DecodeFromBytes decodes the given bytes into the OSPF layer.
 func (ospf *OSPFv2) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+	// start from a clean layer: DecodingLayerParser reuses one per packet
+	*ospf = OSPFv2{}
+
 	if len(data) < 24 {
 		return fmt.Errorf("Packet too smal for OSPF Version 2")
 	}
@@ -661,6 +664,8 @@ func (ospf *OSPFv2) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) err
 
 // DecodeFromBytes decodes the given bytes into the OSPF layer.
 func (ospf *OSPFv3) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+	// start from a clean layer: DecodingLayerParser reuses one per packet
+	*ospf = OSPFv3{}
 
 	if len(data) < 16 {
 		return fmt.Errorf("Packet too smal for OSPF Version 3")

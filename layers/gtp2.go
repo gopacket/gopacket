@@ -34,6 +34,9 @@ type GTPv2 struct {
 
 // DecodeFromBytes analyses a byte slice and attempts to decode it as a GTPv2 packet
 func (g *GTPv2) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+	// start from a clean layer: DecodingLayerParser reuses one per packet
+	*g = GTPv2{}
+
 	hLen := gtp2MinimumSizeInBytes
 	dLen := len(data)
 	if dLen < hLen {

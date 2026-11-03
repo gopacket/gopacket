@@ -184,6 +184,9 @@ const eapolKeyFrameLen = 95
 
 // DecodeFromBytes decodes the given bytes into this layer.
 func (ek *EAPOLKey) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+	// start from a clean layer: DecodingLayerParser reuses one per packet
+	*ek = EAPOLKey{}
+
 	if len(data) < eapolKeyFrameLen {
 		df.SetTruncated()
 		return fmt.Errorf("EAPOLKey length %v too short, %v required",

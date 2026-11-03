@@ -1345,6 +1345,9 @@ type RadioTap struct {
 func (m *RadioTap) LayerType() gopacket.LayerType { return LayerTypeRadioTap }
 
 func (m *RadioTap) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+	// start from a clean layer: DecodingLayerParser reuses one per packet
+	*m = RadioTap{}
+
 	dataLen := uint16(len(data))
 	if dataLen < 8 {
 		df.SetTruncated()

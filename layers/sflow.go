@@ -305,6 +305,9 @@ func (s SFlowIPType) Length() int {
 }
 
 func (s *SFlowDatagram) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+	// start from a clean layer: DecodingLayerParser reuses one per packet
+	*s = SFlowDatagram{}
+
 	var agentAddressType SFlowIPType
 
 	// a sampled datagram's own sampled packets are one level deeper

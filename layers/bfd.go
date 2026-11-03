@@ -330,6 +330,8 @@ func decodeBFD(data []byte, p gopacket.PacketBuilder) error {
 // and returns nil.
 // Upon failure, it returns an error (non nil).
 func (d *BFD) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+	// start from a clean layer: DecodingLayerParser reuses one per packet
+	*d = BFD{}
 
 	// If the data block is too short to be a BFD record, then return an error.
 	if len(data) < bfdMinimumRecordSizeInBytes {

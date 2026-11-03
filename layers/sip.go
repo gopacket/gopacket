@@ -245,6 +245,9 @@ func (s *SIP) NextLayerType() gopacket.LayerType {
 
 // DecodeFromBytes decodes the slice into the SIP struct.
 func (s *SIP) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+	// start from a clean layer: DecodingLayerParser reuses one per packet
+	*s = SIP{Headers: make(map[string][]string), contentLength: -1}
+
 	// Init some vars for parsing follow-up
 	var countLines int
 	var line []byte

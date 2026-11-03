@@ -93,6 +93,7 @@ func (d *DHCPv6) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error 
 	}
 	d.BaseLayer = BaseLayer{Contents: data}
 	d.Options = d.Options[:0]
+	d.HopCount, d.LinkAddr, d.PeerAddr, d.TransactionID = 0, nil, nil, nil
 	d.MsgType = DHCPv6MsgType(data[0])
 
 	offset := 0
@@ -267,6 +268,9 @@ type DHCPv6DUID struct {
 
 // DecodeFromBytes decodes the given bytes into a DHCPv6DUID
 func (d *DHCPv6DUID) DecodeFromBytes(data []byte) error {
+	// start from a clean layer: DecodingLayerParser reuses one per packet
+	*d = DHCPv6DUID{}
+
 	if len(data) < 2 {
 		return fmt.Errorf("Not enough bytes to decode: %d", len(data))
 	}

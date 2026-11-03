@@ -144,6 +144,9 @@ func decodeUSB(data []byte, p gopacket.PacketBuilder) error {
 }
 
 func (m *USB) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+	// start from a clean layer: DecodingLayerParser reuses one per packet
+	*m = USB{}
+
 	if len(data) < 40 {
 		df.SetTruncated()
 		return errors.New("USB < 40 bytes")

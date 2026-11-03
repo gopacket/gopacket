@@ -1053,6 +1053,9 @@ var dataDecodeMap = map[Dot11Type]func() gopacket.DecodingLayer{
 }
 
 func (m *Dot11) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+	// start from a clean layer: DecodingLayerParser reuses one per packet
+	*m = Dot11{}
+
 	if len(data) < 10 {
 		df.SetTruncated()
 		return fmt.Errorf("Dot11 length %v too short, %v required", len(data), 10)
@@ -1615,6 +1618,9 @@ func checkOffsetLength(start int, end int, df *gopacket.DecodeFeedback) error {
 }
 
 func (m *Dot11InformationElement) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+	// start from a clean layer: DecodingLayerParser reuses one per packet
+	*m = Dot11InformationElement{}
+
 	if len(data) < 2 {
 		df.SetTruncated()
 		return fmt.Errorf("Dot11InformationElement length %v too short, %v required", len(data), 2)
