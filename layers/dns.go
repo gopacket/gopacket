@@ -491,19 +491,15 @@ func dnsLabelNeedsPreservation(label []byte) bool {
 	return false
 }
 
-// collectDNSWireLabels reads the literal wire labels of a name in data[offset:end].
-// It stops at the first compression pointer or out-of-range length, returning the
-// labels gathered so far; the caller appends any pointed-to labels separately.
-func collectDNSWireLabels(data []byte, offset, end int) dnsNameLabels {
+// collectDNSWireLabels follows the validated name and preserves its wire labels.
+func collectDNSWireLabels(data []byte, offset int) dnsNameLabels {
 	var labels dnsNameLabels
-	for offset < end {
-		if offset >= len(data) || data[offset]&0xc0 != 0 {
-			return labels
+	for data[offset] != 0x00 {
+		if data[offset]&0xc0 == 0xc0 {
+			offset = int(binary.BigEndian.Uint16(data[offset:offset+2]) & 0x3fff)
+			continue
 		}
 		next := offset + int(data[offset]) + 1
-		if next > end || next > len(data) {
-			return labels
-		}
 		labels = append(labels, bytes.Clone(data[offset+1:next]))
 		offset = next
 	}
@@ -846,10 +842,8 @@ loop:
 			label := data[index+1 : index2]
 			*buffer = append(*buffer, '.')
 			*buffer = append(*buffer, label...)
-			if labels != nil {
-				labels = append(labels, bytes.Clone(label))
-			} else if dnsLabelNeedsPreservation(label) {
-				labels = collectDNSWireLabels(data, offset, index2)
+			if labels == nil && dnsLabelNeedsPreservation(label) {
+				labels = dnsNameLabels{}
 			}
 			index = index2
 
@@ -884,19 +878,20 @@ loop:
 			// decodeName is written, calling it appends the decoded name to the
 			// current buffer.  We already have the start of the buffer, then, so
 			// once this call is done buffer[start:] will contain our full name.
-			pointedName, pointedLabels, _, err := decodeName(data, offsetp, buffer, level+1)
+			_, pointedLabels, _, err := decodeName(data, offsetp, buffer, level+1)
 			if err != nil {
 				return nil, nil, 0, err
 			}
+			// The check above only bounds the labels of this level.  The
+			// 255 octet limit applies to the whole name, so also count what
+			// the pointer resolved to (buffer[start:] plus the root label),
+			// otherwise a chain of pointers can expand a two byte reference
+			// into a name of tens of kilobytes.
+			if len(*buffer)-start+1 > 255 {
+				return nil, nil, 0, errDNSNameTooLong
+			}
 			if pointedLabels != nil {
-				if labels == nil {
-					labels = collectDNSWireLabels(data, offset, index)
-				}
-				labels = append(labels, pointedLabels...)
-			} else if labels != nil && len(pointedName) > 0 {
-				for _, lbl := range bytes.Split(pointedName, []byte{'.'}) {
-					labels = append(labels, bytes.Clone(lbl))
-				}
+				labels = pointedLabels
 			}
 			index++ // pointer is two bytes, so add an extra byte here.
 			break loop
@@ -912,6 +907,9 @@ loop:
 		if index >= len(data) {
 			return nil, nil, 0, errDNSIndexOutOfRange
 		}
+	}
+	if labels != nil && level == 1 {
+		labels = collectDNSWireLabels(data, offset)
 	}
 	if len(*buffer) <= start {
 		return (*buffer)[start:], labels, index + 1, nil

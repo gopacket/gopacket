@@ -196,6 +196,97 @@ func TestDNSDecodeMutateEncode(t *testing.T) {
 	}
 }
 
+// TestDNSDottedLabelCompressed checks that the preserved labels are those of the
+// whole name when it is compressed, wherever the label with the literal dot sits
+// relative to the compression pointers.
+func TestDNSDottedLabelCompressed(t *testing.T) {
+	ptr := func(offset int) []byte { return []byte{0xc0 | byte(offset>>8), byte(offset)} }
+	label := func(l string) []byte { return append([]byte{byte(len(l))}, l...) }
+	tests := []struct {
+		name func(offsets []int) []byte // offsets[i] is where the name of question i starts
+		want []byte
+	}{
+		{func([]int) []byte { return dottestWireName("a.b", "c") }, dottestWireName("a.b", "c")},
+		{func([]int) []byte { return dottestWireName("e", "f") }, dottestWireName("e", "f")},
+		{func(o []int) []byte { return append(label("d"), ptr(o[0])...) }, dottestWireName("d", "a.b", "c")},
+		{func(o []int) []byte { return append(label("g.h"), ptr(o[1])...) }, dottestWireName("g.h", "e", "f")},
+		{func(o []int) []byte { return append(label("i\\j"), ptr(o[2])...) }, dottestWireName("i\\j", "d", "a.b", "c")},
+		{func(o []int) []byte { return ptr(o[2]) }, dottestWireName("d", "a.b", "c")},
+		{func(o []int) []byte { return ptr(o[5]) }, dottestWireName("d", "a.b", "c")},
+	}
+
+	pkt := dottestHeader(uint16(len(tests)), 0)
+	want := dottestHeader(uint16(len(tests)), 0)
+	var offsets []int
+	for _, tt := range tests {
+		offsets = append(offsets, len(pkt))
+		pkt = append(append(pkt, tt.name(offsets)...), 0x00, byte(DNSTypeA), 0x00, 0x01)
+		want = append(append(want, tt.want...), 0x00, byte(DNSTypeA), 0x00, 0x01)
+	}
+
+	var dns DNS
+	if err := dns.DecodeFromBytes(pkt, gopacket.NilDecodeFeedback); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	buf := gopacket.NewSerializeBuffer()
+	if err := dns.SerializeTo(buf, gopacket.SerializeOptions{FixLengths: true}); err != nil {
+		t.Fatalf("serialize: %v", err)
+	}
+	if !bytes.Equal(buf.Bytes(), want) {
+		t.Errorf("compressed names not re-encoded with their wire labels:\n got %x\nwant %x", buf.Bytes(), want)
+	}
+}
+
+// TestDNSDottedLabelPointerChain: the preserved label list was copied into a new
+// slice at every compression pointer, so a two-byte reference to a name behind a
+// long pointer chain cost hundreds of allocations. Decoding a name through
+// pointers must not allocate more than decoding the same name spelled out.
+func TestDNSDottedLabelPointerChain(t *testing.T) {
+	const numLabels = 127
+	labels := make([]string, numLabels)
+	for i := range labels {
+		labels[i] = "a"
+	}
+	labels[numLabels-1] = "."
+
+	pkt := dottestHeader(0, 0)
+	spelledOut := len(pkt)
+	pkt = append(pkt, dottestWireName(labels...)...)
+
+	// Every hop is a bare pointer to the hop before.
+	bare := spelledOut
+	for i := 1; i < maxRecursionLevel; i++ {
+		pkt = append(pkt, 0xc0|byte(bare>>8), byte(bare))
+		bare = len(pkt) - 2
+	}
+
+	// Every hop is one label and a pointer to the hop before.
+	perLabel := len(pkt)
+	pkt = append(pkt, dottestWireName(".")...)
+	for i := 1; i < numLabels; i++ {
+		pkt = append(pkt, 1, 'a', 0xc0|byte(perLabel>>8), byte(perLabel))
+		perLabel = len(pkt) - 4
+	}
+
+	allocs := func(offset int) float64 {
+		buffer := make([]byte, 0, 256)
+		return testing.AllocsPerRun(10, func() {
+			buffer = buffer[:0]
+			_, got, _, err := decodeName(pkt, offset, &buffer, 1)
+			if err != nil || len(got) != numLabels {
+				t.Fatalf("decodeName at %d: %d labels, err %v", offset, len(got), err)
+			}
+		})
+	}
+	limit := allocs(spelledOut)
+	if got := allocs(bare); got > limit {
+		t.Errorf("chain of bare pointers: %v allocations, spelled out %v", got, limit)
+	}
+	if got := allocs(perLabel); got > limit {
+		t.Errorf("chain of one label per pointer: %v allocations, spelled out %v", got, limit)
+	}
+}
+
 // FuzzDecodeSerializeDNS fuzzes the decode -> serialize round trip: any input
 // that decodes without error must re-serialize without panicking. This guards
 // the name encoder's buffer sizing, which sizes the output with one routine and

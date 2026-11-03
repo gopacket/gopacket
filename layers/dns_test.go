@@ -1322,6 +1322,50 @@ func TestMalformedDNSOPT(t *testing.T) {
 	}
 }
 
+// dnsPointerChainQuery builds a query whose question name is a chain of
+// compression pointers: hops nodes of [62 octet label][pointer to the next
+// node], ending in a node with a label of lastLabelLen octets and the root.
+func dnsPointerChainQuery(hops, lastLabelLen int) []byte {
+	msg := []byte{0x12, 0x34, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+	for i := 0; i < hops; i++ {
+		msg = append(msg, 62)
+		msg = append(msg, bytes.Repeat([]byte{'a'}, 62)...)
+		next := len(msg) + 2
+		msg = append(msg, 0xc0|byte(next>>8), byte(next))
+	}
+	msg = append(msg, byte(lastLabelLen))
+	msg = append(msg, bytes.Repeat([]byte{'b'}, lastLabelLen)...)
+	msg = append(msg, 0x00)
+	return append(msg, 0x00, 0x01, 0x00, 0x01)
+}
+
+func TestDNSNameTooLongThroughPointers(t *testing.T) {
+	// Every hop passes the per-level length check, so only a check on the
+	// whole name rejects this.
+	for _, hops := range []int{5, 250} {
+		var dns DNS
+		err := dns.DecodeFromBytes(dnsPointerChainQuery(hops, 1), gopacket.NilDecodeFeedback)
+		if err != errDNSNameTooLong {
+			t.Errorf("%d hops: got error %v, want %v", hops, err, errDNSNameTooLong)
+		}
+	}
+}
+
+func TestDNSNameLengthLimitThroughPointers(t *testing.T) {
+	// 4 hops of 63 octets, a 2-octet label and the root make exactly 255
+	// octets, which is still a valid name; one more octet is not.
+	var dns DNS
+	if err := dns.DecodeFromBytes(dnsPointerChainQuery(4, 1), gopacket.NilDecodeFeedback); err != nil {
+		t.Fatalf("255 octet name rejected: %v", err)
+	}
+	if got, want := len(dns.Questions[0].Name), 4*63+1; got != want {
+		t.Errorf("decoded name is %d bytes, want %d", got, want)
+	}
+	if err := dns.DecodeFromBytes(dnsPointerChainQuery(4, 2), gopacket.NilDecodeFeedback); err != errDNSNameTooLong {
+		t.Errorf("256 octet name: got error %v, want %v", err, errDNSNameTooLong)
+	}
+}
+
 // testPacketDNSPanic7 is the packet:
 //
 //	07:56:25.174747 IP 10.77.0.11.53 > 10.1.0.67.55777: 41808*-| 3/7/0 TXT "google-site-verification=DC2uC-T8kD33lINhNzfo0bNBrw-vrCXs5BPF5BXY56g", TXT "v=spf1 include:spf-a.outlook.com include:spf-b.outlook.com ip4:157.55.9.128/25 include:spf.protection.outlook.com include:spf-a.hotmail.com include:_spf-ssg-b.microsoft.com include:_spf-ssg-c.microsoft.com ~all", TXT "google-site-verification=0iLWhIMhXEkeWwWfFU4ursTn-_OvoOjaA0Lr7Pg1sEM" (512)
