@@ -292,6 +292,19 @@ func (i *IGMP) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	// common IGMP header values between versions 1..3 of IGMP specification..
 	i.Type = IGMPType(data[0])
 
+	// drop state left over from a previously decoded packet, since the
+	// per-type decoders below append to these slices and only set the fields
+	// their message type carries.
+	i.GroupRecords = nil
+	i.SourceAddresses = nil
+	i.NumberOfGroupRecords = 0
+	i.NumberOfSources = 0
+	i.MaxResponseTime = 0
+	i.GroupAddress = nil
+	i.SupressRouterProcessing = false
+	i.RobustnessValue = 0
+	i.IntervalTime = 0
+
 	switch i.Type {
 	case IGMPMembershipQuery:
 		i.decodeIGMPv3MembershipQuery(data)

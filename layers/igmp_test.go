@@ -7,6 +7,7 @@
 package layers
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/gopacket/gopacket"
@@ -166,6 +167,50 @@ func TestIGMPv3MembershipReport2Records(t *testing.T) {
 	igmp := p.Layer(LayerTypeIGMP).(*IGMP)
 	if igmp.Type != IGMPMembershipReportV3 {
 		t.Fatal("Invalid IGMP type")
+	}
+}
+
+// TestIGMPv3DecodeFromBytesReuse checks that a reused IGMP layer, as in a
+// DecodingLayerParser, does not accumulate records across packets.
+func TestIGMPv3DecodeFromBytesReuse(t *testing.T) {
+	var igmp IGMP
+	query := igmp3v3MembershipQueryPacket[38:]
+	report := igmpv3MembershipReport2Records[38:]
+	for n := 0; n < 3; n++ {
+		if err := igmp.DecodeFromBytes(query, gopacket.NilDecodeFeedback); err != nil {
+			t.Fatal("Failed to decode query:", err)
+		}
+		if err := igmp.DecodeFromBytes(report, gopacket.NilDecodeFeedback); err != nil {
+			t.Fatal("Failed to decode report:", err)
+		}
+		if len(igmp.GroupRecords) != 2 {
+			t.Fatalf("Expected 2 group records after decode %d, got %d", n, len(igmp.GroupRecords))
+		}
+		if len(igmp.SourceAddresses) != 0 || igmp.GroupAddress != nil {
+			t.Fatal("Query state leaked into report decode")
+		}
+	}
+}
+
+// TestIGMPv3DecodeFromBytesKeptRecords checks that decoding into a reused
+// IGMP leaves the group records a caller kept from the previous decode as
+// they were.
+func TestIGMPv3DecodeFromBytesKeptRecords(t *testing.T) {
+	var igmp IGMP
+	report := igmpv3MembershipReport2Records[38:]
+	if err := igmp.DecodeFromBytes(report, gopacket.NilDecodeFeedback); err != nil {
+		t.Fatal("Failed to decode report:", err)
+	}
+	kept := igmp.GroupRecords
+	want := append([]IGMPv3GroupRecord(nil), kept...)
+
+	other := append([]byte(nil), report...)
+	other[8] ^= 0xff // record type of the first group record
+	if err := igmp.DecodeFromBytes(other, gopacket.NilDecodeFeedback); err != nil {
+		t.Fatal("Failed to decode report:", err)
+	}
+	if !reflect.DeepEqual(kept, want) {
+		t.Errorf("Kept group records changed by the next decode:\ngot  %+v\nwant %+v", kept, want)
 	}
 }
 

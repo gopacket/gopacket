@@ -88,3 +88,46 @@ func BenchmarkDecodePacketLLDP(b *testing.B) {
 		gopacket.NewPacket(testPacketLLDP, LinkTypeEthernet, gopacket.NoCopy)
 	}
 }
+
+// TestLLDPOrgSpecificShortInfo checks that the Decode methods, which run
+// outside of the panic recovery in NewPacket, don't read past the end of an
+// Org Specific TLV that is one byte shorter than the fields they use.
+func TestLLDPOrgSpecificShortInfo(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		tlv     LLDPOrgSpecificTLV
+		decode  func(*LinkLayerDiscoveryInfo) error
+		wantErr bool
+	}{
+		{
+			name:    "8021/VLANName",
+			tlv:     LLDPOrgSpecificTLV{IEEEOUI8021, LLDP8021SubtypeVLANName, []byte{0x00, 0x64}},
+			decode:  func(l *LinkLayerDiscoveryInfo) error { _, err := l.Decode8021(); return err },
+			wantErr: true,
+		},
+		{
+			name:    "8021/ProtocolIdentity",
+			tlv:     LLDPOrgSpecificTLV{IEEEOUI8021, LLDP8021SubtypeProtocolIdentity, []byte{0x03, 0x88, 0x8e}},
+			decode:  func(l *LinkLayerDiscoveryInfo) error { _, err := l.Decode8021(); return err },
+			wantErr: true,
+		},
+		{
+			name:   "8023/MDIPower",
+			tlv:    LLDPOrgSpecificTLV{IEEEOUI8023, LLDP8023SubtypeMDIPower, []byte{0x07, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00}},
+			decode: func(l *LinkLayerDiscoveryInfo) error { _, err := l.Decode8023(); return err },
+		},
+		{
+			name:    "Media/LocationAddress",
+			tlv:     LLDPOrgSpecificTLV{IEEEOUIMedia, uint8(LLDPMediaTypeLocation), []byte{byte(LLDPLocationFormatAddress), 0x03, 0x02, 'U'}},
+			decode:  func(l *LinkLayerDiscoveryInfo) error { _, err := l.DecodeMedia(); return err },
+			wantErr: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.decode(&LinkLayerDiscoveryInfo{OrgTLVs: []LLDPOrgSpecificTLV{tc.tlv}})
+			if (err != nil) != tc.wantErr {
+				t.Errorf("got error %v, want error: %v", err, tc.wantErr)
+			}
+		})
+	}
+}

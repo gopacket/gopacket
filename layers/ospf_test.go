@@ -7,6 +7,7 @@
 package layers
 
 import (
+	"bytes"
 	"encoding/binary"
 	"net"
 	"reflect"
@@ -1290,8 +1291,186 @@ func TestPacketOSPFInvalidLSA(t *testing.T) {
 	checkLayers(p, []gopacket.LayerType{LayerTypeEthernet, LayerTypeIPv4, gopacket.LayerTypeDecodeFailure}, t)
 }
 
+// TestOSPFShortLSABody checks that an LSA whose length covers the header but not
+// the body of its type is rejected, both at the end of the packet and in front
+// of further bytes. DecodeFromBytes is called directly, so a panic fails the test.
+func TestOSPFShortLSABody(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		version uint8
+		lstype  uint16
+		minLen  int
+	}{
+		{"RouterLSAV2", 2, RouterLSAtypeV2, 24},
+		{"NetworkLSAV2", 2, NetworkLSAtypeV2, 24},
+		{"ASExternalLSAV2", 2, ASExternalLSAtypeV2, 36},
+		{"NSSALSAV2", 2, NSSALSAtypeV2, 36},
+		{"RouterLSA", 3, RouterLSAtype, 24},
+		{"NetworkLSA", 3, NetworkLSAtype, 24},
+		{"InterAreaPrefixLSA", 3, InterAreaPrefixLSAtype, 28},
+		{"InterAreaRouterLSA", 3, InterAreaRouterLSAtype, 32},
+		{"ASExternalLSA", 3, ASExternalLSAtype, 28},
+		{"NSSALSA", 3, NSSALSAtype, 28},
+		{"LinkLSA", 3, LinkLSAtype, 44},
+		{"IntraAreaPrefixLSA", 3, IntraAreaPrefixLSAtype, 32},
+	} {
+		decode := func(lsalength, trailing int, fill byte) error {
+			hdrLen := 20 // OSPFv3 header and number of LSAs
+			var layer gopacket.DecodingLayer = &OSPFv3{}
+			if tc.version == 2 {
+				hdrLen = 28
+				layer = &OSPFv2{}
+			}
+			data := make([]byte, hdrLen+lsalength+trailing)
+			data[0], data[1] = tc.version, uint8(OSPFLinkStateUpdate)
+			binary.BigEndian.PutUint16(data[2:4], uint16(len(data)))
+			binary.BigEndian.PutUint32(data[hdrLen-4:hdrLen], 1)
+			lsa := data[hdrLen:]
+			binary.BigEndian.PutUint16(lsa[2:4], tc.lstype)
+			binary.BigEndian.PutUint16(lsa[18:20], uint16(lsalength))
+			for i := 20; i < len(lsa); i++ {
+				lsa[i] = fill
+			}
+			return layer.DecodeFromBytes(data, gopacket.NilDecodeFeedback)
+		}
+		for _, trailing := range []int{0, 100} {
+			for lsalength := 20; lsalength < tc.minLen; lsalength++ {
+				if err := decode(lsalength, trailing, 0); err == nil {
+					t.Errorf("%s: length %d with %d trailing bytes decoded successfully", tc.name, lsalength, trailing)
+				}
+			}
+			if err := decode(tc.minLen, trailing, 0); err != nil {
+				t.Errorf("%s: length %d with %d trailing bytes: %v", tc.name, tc.minLen, trailing, err)
+			}
+			// Every flag set and the largest counts and prefix lengths.
+			for lsalength := 20; lsalength < 128; lsalength++ {
+				decode(lsalength, trailing, 0xff)
+			}
+		}
+	}
+}
+
 func BenchmarkDecodePacketPacket4(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		gopacket.NewPacket(testPacketOSPF3LSAck, LinkTypeEthernet, gopacket.NoCopy)
+	}
+}
+
+// TestOSPFIntraAreaPrefixTwoPrefixes checks that every prefix of a valid
+// Intra-Area-Prefix LSA is decoded: each takes 4 bytes plus its address
+// prefix in 32 bit words (RFC 5340 A.4.1), not 4 bytes plus its bit length.
+func TestOSPFIntraAreaPrefixTwoPrefixes(t *testing.T) {
+	const lsaLength = 20 + 12 + 2*(4+8)
+
+	data := make([]byte, lsaLength)
+	binary.BigEndian.PutUint16(data[18:20], lsaLength)
+	binary.BigEndian.PutUint16(data[20:22], 2) // number of prefixes
+	for i, off := range []int{32, 44} {
+		data[off] = 64 // prefix length in bits
+		binary.BigEndian.PutUint16(data[off+2:off+4], uint16(10+i))
+		for j := 0; j < 8; j++ {
+			data[off+4+j] = byte(i + 1)
+		}
+	}
+
+	content, err := extractLSAInformation(IntraAreaPrefixLSAtype, lsaLength, data)
+	if err != nil {
+		t.Fatal("Unexpected error:", err)
+	}
+	prefixes := content.(IntraAreaPrefixLSA).Prefixes
+	if len(prefixes) != 2 {
+		t.Fatalf("got %d prefixes, want 2", len(prefixes))
+	}
+	for i, p := range prefixes {
+		want := []byte{byte(i + 1), byte(i + 1), byte(i + 1), byte(i + 1), byte(i + 1), byte(i + 1), byte(i + 1), byte(i + 1)}
+		if p.Metric != uint16(10+i) || !reflect.DeepEqual(p.AddressPrefix, want) {
+			t.Errorf("prefix %d: got metric %d, address %v", i, p.Metric, p.AddressPrefix)
+		}
+	}
+}
+
+// ospfv3LSA returns an OSPFv3 LSA header of the given type and length,
+// followed by body.
+func ospfv3LSA(lstype uint16, body []byte) []byte {
+	lsa := make([]byte, 20, 20+len(body))
+	binary.BigEndian.PutUint16(lsa[2:4], lstype)
+	binary.BigEndian.PutUint16(lsa[18:20], uint16(20+len(body)))
+	return append(lsa, body...)
+}
+
+// TestOSPFLinkLSATwoPrefixes checks that every prefix of a Link-LSA is
+// decoded: each takes 4 bytes plus its address prefix in 32 bit words
+// (RFC 5340 A.4.9), not 4 bytes plus its byte length.
+func TestOSPFLinkLSATwoPrefixes(t *testing.T) {
+	body := make([]byte, 24)                                 // priority/options, link local address
+	binary.BigEndian.PutUint32(body[20:24], 2)               // number of prefixes
+	body = append(body, 48, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) // /48, 6 bytes padded to 8
+	body = append(body, 64, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2) // /64
+
+	lsa := ospfv3LSA(LinkLSAtype, body)
+	content, err := extractLSAInformation(LinkLSAtype, uint16(len(lsa)), lsa)
+	if err != nil {
+		t.Fatal("Unexpected error:", err)
+	}
+	prefixes := content.(LinkLSA).Prefixes
+	if len(prefixes) != 2 {
+		t.Fatalf("got %d prefixes, want 2", len(prefixes))
+	}
+	if prefixes[0].PrefixLength != 48 || !bytes.Equal(prefixes[0].AddressPrefix, []byte{1, 1, 1, 1, 1, 1}) {
+		t.Errorf("prefix 0: got /%d %v", prefixes[0].PrefixLength, prefixes[0].AddressPrefix)
+	}
+	if prefixes[1].PrefixLength != 64 || !bytes.Equal(prefixes[1].AddressPrefix, []byte{2, 2, 2, 2, 2, 2, 2, 2}) {
+		t.Errorf("prefix 1: got /%d %v", prefixes[1].PrefixLength, prefixes[1].AddressPrefix)
+	}
+}
+
+// TestOSPFASExternalLSAForwardingAddress checks that the forwarding address
+// of an AS-External-LSA follows the address prefix padded to 32 bits
+// (RFC 5340 A.4.7).
+func TestOSPFASExternalLSAForwardingAddress(t *testing.T) {
+	body := []byte{0x02, 0, 0, 10} // F bit, metric 10
+	body = append(body, 48, 0, 0, 0)
+	body = append(body, 1, 1, 1, 1, 1, 1, 0, 0) // /48 prefix, padded
+	fwd := bytes.Repeat([]byte{0xfe}, 16)
+	body = append(body, fwd...)
+
+	lsa := ospfv3LSA(ASExternalLSAtype, body)
+	content, err := extractLSAInformation(ASExternalLSAtype, uint16(len(lsa)), lsa)
+	if err != nil {
+		t.Fatal("Unexpected error:", err)
+	}
+	got := content.(ASExternalLSA)
+	if !bytes.Equal(got.AddressPrefix, []byte{1, 1, 1, 1, 1, 1}) {
+		t.Errorf("address prefix: got %v", got.AddressPrefix)
+	}
+	if !bytes.Equal(got.ForwardingAddress, fwd) {
+		t.Errorf("forwarding address: got %v, want %v", got.ForwardingAddress, fwd)
+	}
+}
+
+// TestOSPFRouterLSAV2TOSMetrics checks that a Router-LSA link carrying TOS
+// metrics (RFC 2328 A.4.2) is stepped over, so the links after it decode and
+// the LSA is not rejected as short.
+func TestOSPFRouterLSAV2TOSMetrics(t *testing.T) {
+	body := []byte{0, 0, 0, 2}                                     // flags, 2 links
+	body = append(body, 10, 0, 0, 1, 255, 255, 255, 0, 3, 1, 0, 5) // link 1, 1 TOS entry, metric 5
+	body = append(body, 2, 0, 0, 20)                               // TOS 2 metric 20
+	body = append(body, 10, 0, 0, 2, 255, 255, 255, 0, 3, 0, 0, 7) // link 2, metric 7
+
+	lsa := make([]byte, 20, 20+len(body))
+	lsa[3] = RouterLSAtypeV2
+	binary.BigEndian.PutUint16(lsa[18:20], uint16(20+len(body)))
+	lsa = append(lsa, body...)
+
+	content, err := extractLSAInformation(RouterLSAtypeV2, uint16(len(lsa)), lsa)
+	if err != nil {
+		t.Fatal("Unexpected error:", err)
+	}
+	routers := content.(RouterLSAV2).Routers
+	if len(routers) != 2 {
+		t.Fatalf("got %d links, want 2: %+v", len(routers), routers)
+	}
+	if routers[0].Metric != 5 || routers[1].Metric != 7 || routers[1].LinkID != 0x0a000002 {
+		t.Errorf("links decoded wrong: %+v", routers)
 	}
 }

@@ -35,3 +35,33 @@ func TestNewIPEndpoint(t *testing.T) {
 		}
 	}
 }
+
+// A transport header shorter than its fixed size still produces a transport
+// layer, but one whose ports were never decoded.  Formatting its endpoints
+// must not panic.
+func TestTruncatedTransportEndpointString(t *testing.T) {
+	for _, c := range []struct {
+		name  string
+		proto IPProtocol
+		hdr   []byte
+	}{
+		{"TCP", IPProtocolTCP, []byte{0x04, 0xd2, 0x00, 0x50, 0x00, 0x00, 0x00, 0x00}},
+		{"UDP", IPProtocolUDP, []byte{0x04, 0xd2, 0x00, 0x35}},
+		{"SCTP", IPProtocolSCTP, []byte{0x04, 0xd2, 0x00, 0x50}},
+	} {
+		ip := []byte{
+			0x45, 0x00, 0x00, byte(20 + len(c.hdr)), 0x00, 0x00, 0x00, 0x00, 0x40, byte(c.proto), 0x00, 0x00,
+			0xc0, 0xa8, 0x00, 0x01, 0xc0, 0xa8, 0x00, 0x02,
+		}
+		p := gopacket.NewPacket(append(ip, c.hdr...), LayerTypeIPv4, gopacket.Default)
+		tl := p.TransportLayer()
+		if tl == nil {
+			t.Errorf("%s: no transport layer", c.name)
+			continue
+		}
+		src, dst := tl.TransportFlow().Endpoints()
+		if s, d := src.String(), dst.String(); s != "" || d != "" {
+			t.Errorf("%s: truncated ports formatted as %q, %q, want empty", c.name, s, d)
+		}
+	}
+}

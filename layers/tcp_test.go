@@ -43,7 +43,46 @@ func TestTCPOptionKindString(t *testing.T) {
 				Version: 1,
 			},
 		},
-			"MPTCPOption(MP_CAPABLE Version 1)"}}
+			"MPTCPOption(MP_CAPABLE Version 1)"},
+		// An MPTCP option whose subtype is set but whose per-subtype pointer
+		// is not, as DecodeFromBytes leaves behind on a bad option length,
+		// must print the generic line rather than dereference nil.
+		{&TCPOption{
+			OptionType:      TCPOptionKindMultipathTCP,
+			OptionLength:    3,
+			OptionMultipath: MPTCPSubtypeMPCAPABLE,
+		},
+			"TCPOption(MultipathTCP:)"},
+		{&TCPOption{
+			OptionType:      TCPOptionKindMultipathTCP,
+			OptionLength:    8,
+			OptionMultipath: MPTCPSubtypeMPJOIN,
+		},
+			"TCPOption(MultipathTCP:)"},
+		{&TCPOption{
+			OptionType:      TCPOptionKindMultipathTCP,
+			OptionLength:    8,
+			OptionMultipath: MPTCPSubtypeMPPRIO,
+		},
+			"TCPOption(MultipathTCP:)"},
+		{&TCPOption{
+			OptionType:      TCPOptionKindMultipathTCP,
+			OptionLength:    8,
+			OptionMultipath: MPTCPSubtypeADDADDR,
+		},
+			"TCPOption(MultipathTCP:)"},
+		{&TCPOption{
+			OptionType:      TCPOptionKindMultipathTCP,
+			OptionLength:    3,
+			OptionMultipath: MPTCPSubtypeREMOVEADDR,
+		},
+			"TCPOption(MultipathTCP:)"},
+		{&TCPOption{
+			OptionType:      TCPOptionKindMultipathTCP,
+			OptionLength:    8,
+			OptionMultipath: MPTCPSubtypeMPTCPRST,
+		},
+			"TCPOption(MultipathTCP:)"}}
 
 	for _, tc := range testData {
 		if s := tc.o.String(); s != tc.s {
@@ -185,4 +224,8 @@ func TestMPTCPInvalidLengthAndSubtype(t *testing.T) {
 	if !strings.HasSuffix(p.ErrorLayer().Error().Error(), "MPTCP bad option length 0") {
 		t.Error("Failed to catch broken MPTCP packet")
 	}
+	// The rejected option stays in tcp.Options with its per-subtype pointer
+	// unset; stringifying the packet runs outside decode recovery and must
+	// not panic on it.
+	p.Dump()
 }

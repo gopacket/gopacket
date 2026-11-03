@@ -293,6 +293,12 @@ func getLSAsv2(num uint32, data []byte) ([]LSA, error) {
 }
 
 // extractLSAInformation extracts all the LSA information
+// ospfv3PrefixBytes returns the bytes an address prefix of prefixLen bits
+// occupies in an LSA: it is padded to 32 bit words (RFC 5340 A.4.1).
+func ospfv3PrefixBytes(prefixLen uint8) uint32 {
+	return (uint32(prefixLen) + 31) / 32 * 4
+}
+
 func extractLSAInformation(lstype, lsalength uint16, data []byte) (interface{}, error) {
 	if lsalength < 20 {
 		return nil, fmt.Errorf("Link State header length %v too short, %v required", lsalength, 20)
@@ -300,12 +306,16 @@ func extractLSAInformation(lstype, lsalength uint16, data []byte) (interface{}, 
 	if len(data) < int(lsalength) {
 		return nil, fmt.Errorf("Link State header length %v too short, %v required", len(data), lsalength)
 	}
+	// Only the header is known to be present. Confine the type specific parsing
+	// to this LSA, so that a short body is rejected instead of being read from
+	// whatever follows it in the packet.
+	data = data[:lsalength]
 	var content interface{}
 	switch lstype {
 	case RouterLSAtypeV2:
 		var routers []RouterV2
 		var j uint32
-		for j = 24; j < uint32(lsalength); j += 12 {
+		for j = 24; j < uint32(lsalength); {
 			if len(data) < int(j+12) {
 				return nil, errors.New("LSAtypeV2 too small")
 			}
@@ -316,6 +326,9 @@ func extractLSAInformation(lstype, lsalength uint16, data []byte) (interface{}, 
 				Metric:   binary.BigEndian.Uint16(data[j+10 : j+12]),
 			}
 			routers = append(routers, router)
+
+			// a link is followed by its TOS metrics, 4 bytes each (RFC 2328 A.4.2)
+			j += 12 + 4*uint32(data[j+9])
 		}
 		if len(data) < 24 {
 			return nil, errors.New("LSAtypeV2 too small")
@@ -329,6 +342,9 @@ func extractLSAInformation(lstype, lsalength uint16, data []byte) (interface{}, 
 	case NSSALSAtypeV2:
 		fallthrough
 	case ASExternalLSAtypeV2:
+		if len(data) < 36 {
+			return nil, errors.New("ASExternalLSAV2 too small")
+		}
 		content = ASExternalLSAV2{
 			NetworkMask:       binary.BigEndian.Uint32(data[20:24]),
 			ExternalBit:       data[24] & 0x80,
@@ -337,9 +353,15 @@ func extractLSAInformation(lstype, lsalength uint16, data []byte) (interface{}, 
 			ExternalRouteTag:  binary.BigEndian.Uint32(data[32:36]),
 		}
 	case NetworkLSAtypeV2:
+		if len(data) < 24 {
+			return nil, errors.New("NetworkLSAV2 too small")
+		}
 		var routers []uint32
 		var j uint32
 		for j = 24; j < uint32(lsalength); j += 4 {
+			if len(data) < int(j+4) {
+				return nil, errors.New("NetworkLSAV2 too small")
+			}
 			routers = append(routers, binary.BigEndian.Uint32(data[j:j+4]))
 		}
 		content = NetworkLSAV2{
@@ -347,9 +369,15 @@ func extractLSAInformation(lstype, lsalength uint16, data []byte) (interface{}, 
 			AttachedRouter: routers,
 		}
 	case RouterLSAtype:
+		if len(data) < 24 {
+			return nil, errors.New("RouterLSA too small")
+		}
 		var routers []Router
 		var j uint32
 		for j = 24; j < uint32(lsalength); j += 16 {
+			if len(data) < int(j+16) {
+				return nil, errors.New("RouterLSA too small")
+			}
 			router := Router{
 				Type:                uint8(data[j]),
 				Metric:              binary.BigEndian.Uint16(data[j+2 : j+4]),
@@ -365,9 +393,15 @@ func extractLSAInformation(lstype, lsalength uint16, data []byte) (interface{}, 
 			Routers: routers,
 		}
 	case NetworkLSAtype:
+		if len(data) < 24 {
+			return nil, errors.New("NetworkLSA too small")
+		}
 		var routers []uint32
 		var j uint32
 		for j = 24; j < uint32(lsalength); j += 4 {
+			if len(data) < int(j+4) {
+				return nil, errors.New("NetworkLSA too small")
+			}
 			routers = append(routers, binary.BigEndian.Uint32(data[j:j+4]))
 		}
 		content = NetworkLSA{
@@ -375,6 +409,9 @@ func extractLSAInformation(lstype, lsalength uint16, data []byte) (interface{}, 
 			AttachedRouter: routers,
 		}
 	case InterAreaPrefixLSAtype:
+		if len(data) < 28 {
+			return nil, errors.New("InterAreaPrefixLSA too small")
+		}
 		content = InterAreaPrefixLSA{
 			Metric:        binary.BigEndian.Uint32(data[20:24]) & 0x00FFFFFF,
 			PrefixLength:  uint8(data[24]),
@@ -382,6 +419,9 @@ func extractLSAInformation(lstype, lsalength uint16, data []byte) (interface{}, 
 			AddressPrefix: data[28:uint32(lsalength)],
 		}
 	case InterAreaRouterLSAtype:
+		if len(data) < 32 {
+			return nil, errors.New("InterAreaRouterLSA too small")
+		}
 		content = InterAreaRouterLSA{
 			Options:             binary.BigEndian.Uint32(data[20:24]) & 0x00FFFFFF,
 			Metric:              binary.BigEndian.Uint32(data[24:28]) & 0x00FFFFFF,
@@ -390,11 +430,22 @@ func extractLSAInformation(lstype, lsalength uint16, data []byte) (interface{}, 
 	case ASExternalLSAtype:
 		fallthrough
 	case NSSALSAtype:
+		if len(data) < 28 {
+			return nil, errors.New("ASExternalLSA too small")
+		}
 		flags := uint8(data[20])
 		prefixLen := uint8(data[24]) / 8
+		if len(data) < 28+int(prefixLen) {
+			return nil, errors.New("ASExternalLSA too small")
+		}
 		var forwardingAddress []byte
 		if (flags & 0x02) == 0x02 {
-			forwardingAddress = data[28+uint32(prefixLen) : 28+uint32(prefixLen)+16]
+			// the forwarding address follows the padded prefix (RFC 5340 A.4.7)
+			fwd := 28 + ospfv3PrefixBytes(data[24])
+			if len(data) < int(fwd)+16 {
+				return nil, errors.New("ASExternalLSA too small")
+			}
+			forwardingAddress = data[fwd : fwd+16]
 		}
 		content = ASExternalLSA{
 			Flags:             flags,
@@ -406,19 +457,28 @@ func extractLSAInformation(lstype, lsalength uint16, data []byte) (interface{}, 
 			ForwardingAddress: forwardingAddress,
 		}
 	case LinkLSAtype:
+		if len(data) < 44 {
+			return nil, errors.New("LinkLSA too small")
+		}
 		var prefixes []Prefix
 		var prefixOffset uint32 = 44
 		var j uint32
 		numOfPrefixes := binary.BigEndian.Uint32(data[40:44])
 		for j = 0; j < numOfPrefixes; j++ {
+			if len(data) < int(prefixOffset+4) {
+				return nil, errors.New("LinkLSA too small")
+			}
 			prefixLen := uint8(data[prefixOffset])
+			if len(data) < int(prefixOffset+4+uint32(prefixLen)/8) {
+				return nil, errors.New("LinkLSA too small")
+			}
 			prefix := Prefix{
 				PrefixLength:  prefixLen,
 				PrefixOptions: uint8(data[prefixOffset+1]),
 				AddressPrefix: data[prefixOffset+4 : prefixOffset+4+uint32(prefixLen)/8],
 			}
 			prefixes = append(prefixes, prefix)
-			prefixOffset = prefixOffset + 4 + uint32(prefixLen)/8
+			prefixOffset = prefixOffset + 4 + ospfv3PrefixBytes(prefixLen)
 		}
 		content = LinkLSA{
 			RtrPriority:      uint8(data[20]),
@@ -428,12 +488,21 @@ func extractLSAInformation(lstype, lsalength uint16, data []byte) (interface{}, 
 			Prefixes:         prefixes,
 		}
 	case IntraAreaPrefixLSAtype:
+		if len(data) < 32 {
+			return nil, errors.New("IntraAreaPrefixLSA too small")
+		}
 		var prefixes []Prefix
 		var prefixOffset uint32 = 32
 		var j uint16
 		numOfPrefixes := binary.BigEndian.Uint16(data[20:22])
 		for j = 0; j < numOfPrefixes; j++ {
+			if len(data) < int(prefixOffset+4) {
+				return nil, errors.New("IntraAreaPrefixLSA too small")
+			}
 			prefixLen := uint8(data[prefixOffset])
+			if len(data) < int(prefixOffset+4+uint32(prefixLen)/8) {
+				return nil, errors.New("IntraAreaPrefixLSA too small")
+			}
 			prefix := Prefix{
 				PrefixLength:  prefixLen,
 				PrefixOptions: uint8(data[prefixOffset+1]),
@@ -441,7 +510,7 @@ func extractLSAInformation(lstype, lsalength uint16, data []byte) (interface{}, 
 				AddressPrefix: data[prefixOffset+4 : prefixOffset+4+uint32(prefixLen)/8],
 			}
 			prefixes = append(prefixes, prefix)
-			prefixOffset = prefixOffset + 4 + uint32(prefixLen)
+			prefixOffset = prefixOffset + 4 + ospfv3PrefixBytes(prefixLen)
 		}
 		content = IntraAreaPrefixLSA{
 			NumOfPrefixes:  numOfPrefixes,
