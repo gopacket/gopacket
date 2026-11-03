@@ -7,8 +7,10 @@
 package gopacket
 
 import (
+	"errors"
 	"io"
 	"reflect"
+	"runtime/debug"
 	"testing"
 )
 
@@ -80,4 +82,62 @@ func TestConcatPacketSources(t *testing.T) {
 	if _, _, err := concat.ReadPacketData(); err != io.EOF {
 		t.Errorf("expected io.EOF, got %v", err)
 	}
+}
+
+// oneByteLayer has one byte of contents, the rest of the data is its payload.
+type oneByteLayer []byte
+
+func (l oneByteLayer) LayerType() LayerType  { return LayerTypeZero }
+func (l oneByteLayer) LayerContents() []byte { return l[:1] }
+func (l oneByteLayer) LayerPayload() []byte  { return l[1:] }
+
+// TestEagerDecodeDepth checks that eager decoding nests at most
+// maxEagerDecodeDepth layers, that this many fits in a small stack, and that
+// a decoder error below the limit surfaces as before.
+func TestEagerDecodeDepth(t *testing.T) {
+	errStop := errors.New("stop")
+	var dec DecodeFunc
+	dec = func(data []byte, p PacketBuilder) error {
+		if data[0] != 0 {
+			return errStop
+		}
+		p.AddLayer(oneByteLayer(data))
+		return p.NextDecoder(dec)
+	}
+	check := func(p Packet, layers int) {
+		t.Helper()
+		if got := len(p.Layers()); got != layers {
+			t.Errorf("expected %d layers, got %d", layers, got)
+		}
+	}
+
+	// The first decoder isn't called through NextDecoder, so one more layer
+	// than the depth fits. Cap the stack well under the default to show the
+	// limit keeps it small.
+	old := debug.SetMaxStack(64 << 20)
+	defer debug.SetMaxStack(old)
+	p := NewPacket(make([]byte, maxEagerDecodeDepth+1), dec, Default)
+	if p.ErrorLayer() != nil {
+		t.Errorf("unexpected error layer: %v", p.ErrorLayer().Error())
+	}
+	check(p, maxEagerDecodeDepth+1)
+
+	p = NewPacket(make([]byte, maxEagerDecodeDepth+2), dec, Default)
+	if p.ErrorLayer() == nil || p.ErrorLayer().Error() != errDecodeTooDeep {
+		t.Fatalf("expected error layer with %v, got %v", errDecodeTooDeep, p.ErrorLayer())
+	}
+	if got := len(p.ErrorLayer().LayerContents()); got != 1 {
+		t.Errorf("expected 1 byte in the error layer, got %d", got)
+	}
+
+	data := make([]byte, 1000)
+	data[500] = 1
+	p = NewPacket(data, dec, Default)
+	if p.ErrorLayer() == nil || p.ErrorLayer().Error() != errStop {
+		t.Fatalf("expected error layer with %v, got %v", errStop, p.ErrorLayer())
+	}
+	if got := len(p.ErrorLayer().LayerContents()); got != 500 {
+		t.Errorf("expected 500 bytes in the error layer, got %d", got)
+	}
+	check(p, 501)
 }

@@ -496,9 +496,18 @@ func (p *packet) packetDump() string {
 // eagerPacket implements Packet and PacketBuilder.
 type eagerPacket struct {
 	packet
+	// depth is how many NextDecoder calls are running, one per layer.
+	depth int
 }
 
+// maxEagerDecodeDepth bounds how deep NextDecoder nests. Each layer costs
+// stack frames, and the packet bytes decide how many layers there are: a
+// record stacking millions of 4 byte 802.1Q tags would overflow the goroutine
+// stack, which recover() can't catch. No real packet comes near this.
+const maxEagerDecodeDepth = 4096
+
 var errNilDecoder = errors.New("NextDecoder passed nil decoder, probably an unsupported decode type")
+var errDecodeTooDeep = errors.New("packet nests too many layers to decode")
 
 func (p *eagerPacket) NextDecoder(next Decoder) error {
 	if next == nil {
@@ -511,8 +520,14 @@ func (p *eagerPacket) NextDecoder(next Decoder) error {
 	if len(d) == 0 {
 		return nil
 	}
+	if p.depth >= maxEagerDecodeDepth {
+		return errDecodeTooDeep
+	}
 	// Since we're eager, immediately call the next decoder.
-	return next.Decode(d, p)
+	p.depth++
+	err := next.Decode(d, p)
+	p.depth--
+	return err
 }
 func (p *eagerPacket) initialDecode(dec Decoder) {
 	defer p.recoverDecodeError()
