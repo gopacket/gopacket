@@ -6,6 +6,8 @@
 package layers
 
 import (
+	"bytes"
+	"encoding/binary"
 	"net"
 	"reflect"
 	"testing"
@@ -1873,6 +1875,72 @@ func TestDecodeAppResourcesOvsdbCounter(t *testing.T) {
 	if !reflect.DeepEqual(want, got) {
 		t.Errorf("SFlow layer mismatch, \nwant:\n\n%#v\ngot:\n\n\n%#v\n\n", want, got)
 	}
+}
+
+// sflowFrame wraps an sFlow datagram in Ethernet, IPv4 and UDP headers to port 6343.
+func sflowFrame(datagram []byte) []byte {
+	eth := []byte{0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 2, 0x08, 0x00}
+	ip := []byte{0x45, 0, 0, 0, 0, 0, 0, 0, 64, 17, 0, 0, 10, 0, 0, 1, 10, 0, 0, 2}
+	binary.BigEndian.PutUint16(ip[2:4], uint16(20+8+len(datagram)))
+	udp := make([]byte, 8)
+	binary.BigEndian.PutUint16(udp[0:2], 6343)
+	binary.BigEndian.PutUint16(udp[2:4], 6343)
+	binary.BigEndian.PutUint16(udp[4:6], uint16(8+len(datagram)))
+	return bytes.Join([][]byte{eth, ip, udp, datagram}, nil)
+}
+
+// sflowSampling returns an sFlow datagram with one raw packet record holding frame.
+func sflowSampling(frame []byte) []byte {
+	padded := (len(frame) + 3) &^ 3
+	var data []byte
+	for _, v := range []int{
+		5, 1, 0x0a000001, 0, 1, 1, 1, // datagram with one sample
+		1, 32 + 24 + padded, 1, 0, 1, 1, 0, 0, 0, 1, // flow sample with one record
+		1, 16 + padded, 1, len(frame), 0, len(frame), // raw packet record
+	} {
+		data = binary.BigEndian.AppendUint32(data, uint32(v))
+	}
+	data = append(data, frame...)
+	return append(data, make([]byte, padded-len(frame))...)
+}
+
+// sampledHeader returns the sampled packet of the first record of d.
+func sampledHeader(d *SFlowDatagram) gopacket.Packet {
+	return d.FlowSamples[0].Records[0].(SFlowRawPacketFlowRecord).Header
+}
+
+// TestDecodeSampledSFlow checks that sampled sFlow traffic is decoded as
+// sFlow, but only maxSampledSFlowDepth levels deep: each level decodes a
+// copy of the one above, so unbounded nesting multiplies memory.
+func TestDecodeSampledSFlow(t *testing.T) {
+	p := gopacket.NewPacket(sflowSampling(SFlowTestPacket1), LayerTypeSFlow, gopacket.Default)
+	if p.ErrorLayer() != nil {
+		t.Fatal("Failed to decode packet:", p.ErrorLayer().Error())
+	}
+	header := sampledHeader(p.ApplicationLayer().(*SFlowDatagram))
+	checkLayers(header, []gopacket.LayerType{LayerTypeEthernet, LayerTypeIPv4, LayerTypeUDP, LayerTypeSFlow}, t)
+
+	const nesting = 10
+	frame := SFlowTestPacket1
+	for i := 0; i < nesting; i++ {
+		frame = sflowFrame(sflowSampling(frame))
+	}
+	p = gopacket.NewPacket(frame, LayerTypeEthernet, gopacket.Default)
+
+	depth := 0
+	for {
+		sflow, ok := p.Layer(LayerTypeSFlow).(*SFlowDatagram)
+		if !ok {
+			break
+		}
+		p = sampledHeader(sflow)
+		depth++
+	}
+	// the outermost datagram plus maxSampledSFlowDepth sampled ones
+	if depth != maxSampledSFlowDepth+1 {
+		t.Fatalf("decoded %d nested sFlow datagrams, want %d", depth, maxSampledSFlowDepth+1)
+	}
+	checkLayers(p, []gopacket.LayerType{LayerTypeEthernet, LayerTypeIPv4, LayerTypeUDP, gopacket.LayerTypePayload}, t)
 }
 
 func BenchmarkDecodeSFlowPacket1(b *testing.B) {
