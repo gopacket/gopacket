@@ -248,7 +248,7 @@ func (f *fragmentList) insert(in *layers.IPv4, t time.Time) (*layers.IPv4, error
 
 	f.LastSeen = t
 
-	fragLength := in.Length - 20
+	fragLength := in.Length - uint16(in.IHL)*4
 	// After inserting the Fragment, we update the counters
 	if f.Highest < fragOffset+fragLength {
 		f.Highest = fragOffset + fragLength
@@ -283,13 +283,13 @@ func (f *fragmentList) build(in *layers.IPv4) (*layers.IPv4, error) {
 		if frag.FragOffset*8 == currentOffset {
 			debug.Printf("defrag: building - adding %d\n", frag.FragOffset*8)
 			final = append(final, frag.Payload...)
-			currentOffset = currentOffset + frag.Length - 20
+			currentOffset = currentOffset + frag.Length - uint16(frag.IHL)*4
 		} else if frag.FragOffset*8 < currentOffset {
 			// overlapping fragment - let's take only what we need
 			startAt := currentOffset - frag.FragOffset*8
 			debug.Printf("defrag: building - overlapping, starting at %d\n",
 				startAt)
-			if startAt > frag.Length-20 {
+			if int(startAt) > len(frag.Payload) {
 				return nil, errors.New("defrag: building - invalid fragment")
 			}
 			final = append(final, frag.Payload[startAt:]...)

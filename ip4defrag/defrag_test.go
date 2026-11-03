@@ -278,6 +278,76 @@ func TestDefragIDField(t *testing.T) {
 
 }
 
+func TestDefragOverlapShortPayload(t *testing.T) {
+	frag := func(offset uint16, flags layers.IPv4Flag, ihl uint8, length uint16, payload int) *layers.IPv4 {
+		return &layers.IPv4{
+			Version:    4,
+			IHL:        ihl,
+			TTL:        15,
+			SrcIP:      net.IPv4(1, 1, 1, 1),
+			DstIP:      net.IPv4(2, 2, 2, 2),
+			Id:         0xcc,
+			FragOffset: offset / 8,
+			Length:     length,
+			Flags:      flags,
+			BaseLayer:  layers.BaseLayer{Payload: make([]byte, payload)},
+		}
+	}
+
+	// The fragment at offset 8 carries fewer payload bytes than its
+	// Length field announces (IP options, or a truncated frame) and
+	// is entirely covered by the fragment at offset 0. Slicing its
+	// payload at the overlap offset used to panic in build().
+	for label, short := range map[string]*layers.IPv4{
+		"IP options":      frag(8, layers.IPv4MoreFragments, 15, 68, 8),
+		"truncated frame": frag(8, layers.IPv4MoreFragments, 5, 68, 8),
+	} {
+		defrag := NewIPv4Defragmenter()
+		for _, in := range []*layers.IPv4{
+			frag(80, 0, 5, 28, 8),
+			short,
+			frag(0, layers.IPv4MoreFragments, 5, 52, 32),
+		} {
+			if out, _ := defrag.DefragIPv4(in); out != nil {
+				t.Fatalf("defrag: incomplete packet was defragmented (%s)", label)
+			}
+		}
+	}
+}
+
+func TestDefragIPOptions(t *testing.T) {
+	defrag := NewIPv4Defragmenter()
+
+	ip1 := layers.IPv4{
+		Version:    4,
+		IHL:        6,
+		TTL:        15,
+		SrcIP:      net.IPv4(1, 1, 1, 1),
+		DstIP:      net.IPv4(2, 2, 2, 2),
+		Id:         0xcc,
+		FragOffset: 0,
+		Length:     32, // header (20) + options (4) + payload (8)
+		Flags:      layers.IPv4MoreFragments,
+		BaseLayer:  layers.BaseLayer{Payload: []byte("AAAAAAAA")},
+	}
+	if out, err := defrag.DefragIPv4(&ip1); out != nil || err != nil {
+		t.Fatalf("defrag: first fragment should be stored, got %v, %v", out, err)
+	}
+
+	ip2 := ip1
+	ip2.FragOffset = 1
+	ip2.Flags = 0
+	ip2.Payload = []byte("BBBBBBBB")
+
+	out, err := defrag.DefragIPv4(&ip2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out == nil || string(out.Payload) != "AAAAAAAABBBBBBBB" {
+		t.Fatalf("defrag: fragments with IP options are not correctly defragmented")
+	}
+}
+
 func gentestDefrag(t *testing.T, defrag *IPv4Defragmenter, buf []byte, expect bool, label string) *layers.IPv4 {
 	p := gopacket.NewPacket(buf, layers.LinkTypeEthernet, gopacket.Default)
 	if p.ErrorLayer() != nil {
