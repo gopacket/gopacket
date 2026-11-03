@@ -33,6 +33,14 @@ type GRERouting struct {
 	Next                 *GRERouting
 }
 
+// maxGRESourceRouteEntries bounds the number of Source Route Entries decoded
+// from one GRE header. Each entry becomes a node of the GRERouting.Next list,
+// which LayerString and friends follow recursively; an entry can be as small
+// as 4 bytes, so a crafted packet could otherwise build a list deep enough to
+// exhaust the stack. One entry already holds a whole list of addresses, and
+// RFC 2784 deprecates the routing field, so real headers carry very few.
+const maxGRESourceRouteEntries = 32
+
 // LayerType returns gopacket.LayerTypeGRE.
 func (g *GRE) LayerType() gopacket.LayerType { return LayerTypeGRE }
 
@@ -95,7 +103,7 @@ func (g *GRE) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	}
 	if g.RoutingPresent {
 		tail := &g.GRERouting
-		for {
+		for count := 0; ; count++ {
 			if err := requireBytes(offset, 4); err != nil {
 				return err
 			}
@@ -111,6 +119,9 @@ func (g *GRE) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 			offset += 4 + int(sre.SRELength)
 			if sre.AddressFamily == 0 && sre.SRELength == 0 {
 				break
+			}
+			if count >= maxGRESourceRouteEntries {
+				return errors.New("GRE packet has too many source route entries")
 			}
 			(*tail) = sre
 			tail = &sre.Next

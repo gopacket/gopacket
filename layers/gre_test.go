@@ -302,6 +302,33 @@ func TestGREDecodeFromBytesTruncatedOptionalFields(t *testing.T) {
 	}
 }
 
+func TestGREDecodeFromBytesSourceRouteEntryLimit(t *testing.T) {
+	const maxGRESourceRouteEntries = 32
+
+	build := func(entries int) []byte {
+		data := []byte{0x40, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00}
+		for i := 0; i < entries; i++ {
+			data = append(data, 0xff, 0xff, 0x00, 0x00)
+		}
+		return append(data, 0x00, 0x00, 0x00, 0x00)
+	}
+
+	var gre GRE
+	if err := gre.DecodeFromBytes(build(maxGRESourceRouteEntries), gopacket.NilDecodeFeedback); err != nil {
+		t.Fatalf("unexpected decode error at the limit: %v", err)
+	}
+	entries := 0
+	for sre := gre.GRERouting; sre != nil; sre = sre.Next {
+		entries++
+	}
+	if entries != maxGRESourceRouteEntries {
+		t.Fatalf("decoded %d source route entries, want %d", entries, maxGRESourceRouteEntries)
+	}
+	if err := gre.DecodeFromBytes(build(maxGRESourceRouteEntries+1), gopacket.NilDecodeFeedback); err == nil {
+		t.Fatal("expected decode error above the limit")
+	}
+}
+
 var testGREChecksum = map[uint16][]gopacket.SerializableLayer{
 	0x77ff: {
 		&Ethernet{
