@@ -5,11 +5,42 @@
 package layers
 
 import (
+	"bytes"
+	"os"
+	"os/exec"
 	"reflect"
+	"runtime/debug"
 	"testing"
 
 	"github.com/gopacket/gopacket"
 )
+
+func TestTLSRecordDepth(t *testing.T) {
+	const records = 10000
+	const childEnv = "GOPACKET_TLS_DEPTH_CHILD"
+
+	if os.Getenv(childEnv) == "1" {
+		debug.SetMaxStack(1 << 20)
+		data := bytes.Repeat([]byte{0x17, 0x03, 0x03, 0, 0}, records)
+		var tls TLS
+		if err := tls.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err != nil {
+			t.Fatal(err)
+		}
+		if len(tls.AppData) != records {
+			t.Fatalf("decoded %d records, want %d", len(tls.AppData), records)
+		}
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=^TestTLSRecordDepth$")
+	cmd.Env = append(os.Environ(), childEnv+"=1")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		if len(out) > 400 {
+			out = out[:400]
+		}
+		t.Fatalf("TLS record decoding exhausted the stack: %v\n%s", err, out)
+	}
+}
 
 // https://github.com/tintinweb/scapy-ssl_tls/blob/master/tests/files/RSA_WITH_AES_128_CBC_SHA.pcap
 // WARNING! Tests are specific for each packet. If you change a packet, please review their tests.

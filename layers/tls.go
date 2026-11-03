@@ -127,70 +127,75 @@ func (t *TLS) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	return t.decodeTLSRecords(data, df)
 }
 
+// decodeTLSRecords decodes every record in data. It iterates rather than
+// recurses: the number of records is only bounded by the input size, and a
+// frame per record would overflow the goroutine stack on a large payload.
 func (t *TLS) decodeTLSRecords(data []byte, df gopacket.DecodeFeedback) error {
-	if len(data) < 5 {
-		df.SetTruncated()
-		return errors.New("TLS record too short")
-	}
-
-	// since there are no further layers, the baselayer's content is
-	// pointing to this layer
-	// TODO: Consider removing this
-	t.BaseLayer = BaseLayer{Contents: data[:len(data)]}
-
-	var h TLSRecordHeader
-	h.ContentType = TLSType(data[0])
-	h.Version = TLSVersion(binary.BigEndian.Uint16(data[1:3]))
-	h.Length = binary.BigEndian.Uint16(data[3:5])
-
-	if h.ContentType.String() == "Unknown" {
-		return errors.New("Unknown TLS record type")
-	}
-
-	hl := 5 // header length
-	tl := hl + int(h.Length)
-	if len(data) < tl {
-		df.SetTruncated()
-		return errors.New("TLS packet length mismatch")
-	}
-
-	switch h.ContentType {
-	default:
-		return errors.New("Unknown TLS record type")
-	case TLSChangeCipherSpec:
-		var r TLSChangeCipherSpecRecord
-		e := r.decodeFromBytes(h, data[hl:tl], df)
-		if e != nil {
-			return e
+	for {
+		if len(data) < 5 {
+			df.SetTruncated()
+			return errors.New("TLS record too short")
 		}
-		t.ChangeCipherSpec = append(t.ChangeCipherSpec, r)
-	case TLSAlert:
-		var r TLSAlertRecord
-		e := r.decodeFromBytes(h, data[hl:tl], df)
-		if e != nil {
-			return e
-		}
-		t.Alert = append(t.Alert, r)
-	case TLSHandshake:
-		var r TLSHandshakeRecord
-		e := r.decodeFromBytes(h, data[hl:tl], df)
-		if e != nil {
-			return e
-		}
-		t.Handshake = append(t.Handshake, r)
-	case TLSApplicationData:
-		var r TLSAppDataRecord
-		e := r.decodeFromBytes(h, data[hl:tl], df)
-		if e != nil {
-			return e
-		}
-		t.AppData = append(t.AppData, r)
-	}
 
-	if len(data) == tl {
-		return nil
+		// since there are no further layers, the baselayer's content is
+		// pointing to this layer
+		// TODO: Consider removing this
+		t.BaseLayer = BaseLayer{Contents: data[:len(data)]}
+
+		var h TLSRecordHeader
+		h.ContentType = TLSType(data[0])
+		h.Version = TLSVersion(binary.BigEndian.Uint16(data[1:3]))
+		h.Length = binary.BigEndian.Uint16(data[3:5])
+
+		if h.ContentType.String() == "Unknown" {
+			return errors.New("Unknown TLS record type")
+		}
+
+		hl := 5 // header length
+		tl := hl + int(h.Length)
+		if len(data) < tl {
+			df.SetTruncated()
+			return errors.New("TLS packet length mismatch")
+		}
+
+		switch h.ContentType {
+		default:
+			return errors.New("Unknown TLS record type")
+		case TLSChangeCipherSpec:
+			var r TLSChangeCipherSpecRecord
+			e := r.decodeFromBytes(h, data[hl:tl], df)
+			if e != nil {
+				return e
+			}
+			t.ChangeCipherSpec = append(t.ChangeCipherSpec, r)
+		case TLSAlert:
+			var r TLSAlertRecord
+			e := r.decodeFromBytes(h, data[hl:tl], df)
+			if e != nil {
+				return e
+			}
+			t.Alert = append(t.Alert, r)
+		case TLSHandshake:
+			var r TLSHandshakeRecord
+			e := r.decodeFromBytes(h, data[hl:tl], df)
+			if e != nil {
+				return e
+			}
+			t.Handshake = append(t.Handshake, r)
+		case TLSApplicationData:
+			var r TLSAppDataRecord
+			e := r.decodeFromBytes(h, data[hl:tl], df)
+			if e != nil {
+				return e
+			}
+			t.AppData = append(t.AppData, r)
+		}
+
+		if len(data) == tl {
+			return nil
+		}
+		data = data[tl:]
 	}
-	return t.decodeTLSRecords(data[tl:len(data)], df)
 }
 
 // CanDecode implements gopacket.DecodingLayer.
