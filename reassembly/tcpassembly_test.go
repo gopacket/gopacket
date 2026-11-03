@@ -681,6 +681,105 @@ func TestOverrun2(t *testing.T) {
 	})
 }
 
+func TestSequenceOverflow(t *testing.T) {
+	if want, got := 20, Sequence((1<<32)-10).Difference(Sequence(10)); want != got {
+		t.Errorf("overflow diff failure: got %d want %d", got, want)
+	}
+	if want, got := -20, Sequence(10).Difference(Sequence((1<<32)-10)); want != got {
+		t.Errorf("overflow diff failure: got %d want %d", got, want)
+	}
+}
+
+// Retransmission straddling the sequence wrap-around
+func TestOverrunRetransmission(t *testing.T) {
+	test(t, []testSequence{
+		{
+			in: layers.TCP{
+				SrcPort:   1,
+				DstPort:   2,
+				SYN:       true,
+				Seq:       0xFFFFFFFD,
+				BaseLayer: layers.BaseLayer{Payload: []byte{1, 2, 3, 4}},
+			},
+			want: []Reassembly{
+				Reassembly{
+					Start: true,
+					Bytes: []byte{1, 2, 3, 4},
+				},
+			},
+		},
+		{
+			in: layers.TCP{
+				SrcPort:   1,
+				DstPort:   2,
+				Seq:       0xFFFFFFFE,
+				BaseLayer: layers.BaseLayer{Payload: []byte{1, 2, 3, 4, 5, 6}},
+			},
+			want: []Reassembly{
+				Reassembly{
+					Bytes: []byte{5, 6},
+				},
+			},
+		},
+		{
+			in: layers.TCP{
+				SrcPort:   1,
+				DstPort:   2,
+				Seq:       4,
+				BaseLayer: layers.BaseLayer{Payload: []byte{7, 8}},
+			},
+			want: []Reassembly{
+				Reassembly{
+					Bytes: []byte{7, 8},
+				},
+			},
+		},
+	})
+}
+
+// Queued full page ending right before the wrap-around, overlapped by a
+// segment ending one byte later
+func TestOverrunBufferedOverlap(t *testing.T) {
+	data := make([]byte, pageBytes)
+	test(t, []testSequence{
+		{
+			in: layers.TCP{
+				SrcPort:   1,
+				DstPort:   2,
+				Seq:       0xFFFFFFFF - pageBytes,
+				BaseLayer: layers.BaseLayer{Payload: data},
+			},
+			want: []Reassembly{},
+		},
+		{
+			in: layers.TCP{
+				SrcPort:   1,
+				DstPort:   2,
+				Seq:       0xFFFFFFFF - pageBytes + 1,
+				BaseLayer: layers.BaseLayer{Payload: data},
+			},
+			want: []Reassembly{},
+		},
+		{
+			in: layers.TCP{
+				SrcPort: 1,
+				DstPort: 2,
+				SYN:     true,
+				Seq:     0xFFFFFFFF - pageBytes - 1,
+			},
+			want: []Reassembly{
+				Reassembly{
+					Start: true,
+					Bytes: data[:1],
+				},
+				Reassembly{
+					Bytes: data,
+				},
+			},
+		},
+	})
+}
+
 func TestCacheLargePacket(t *testing.T) {
 	data := make([]byte, pageBytes*3)
 	test(t, []testSequence{
@@ -1237,6 +1336,57 @@ func TestKeepWithOutOfOrderPacketAndManualFlush(t *testing.T) {
 			flush: true,
 		},
 	})
+}
+
+func TestKeepInLivePacketFollowedByQueuedPage(t *testing.T) {
+	// The live packet fills a gap, so it is followed by the page queued for
+	// the out of order packet. The offset to keep from lies within the live
+	// packet and must not be applied to that page as well: this would either
+	// panic (page shorter than the offset) or drop the kept bytes.
+	for _, queued := range [][]byte{{6, 7}, {6, 7, 8, 9}} {
+		next := byte(6 + len(queued))
+		testKeep(t, []testKeepSequence{
+			{
+				tcp: layers.TCP{
+					SrcPort:   1,
+					DstPort:   2,
+					SYN:       true,
+					Seq:       999,
+					BaseLayer: layers.BaseLayer{Payload: []byte{0}},
+				},
+				keep: 1,
+				want: []byte{0},
+			},
+			{
+				tcp: layers.TCP{
+					SrcPort:   1,
+					DstPort:   2,
+					Seq:       1006,
+					BaseLayer: layers.BaseLayer{Payload: queued},
+				},
+				want: []byte{},
+			},
+			{
+				tcp: layers.TCP{
+					SrcPort:   1,
+					DstPort:   2,
+					Seq:       1001,
+					BaseLayer: layers.BaseLayer{Payload: []byte{1, 2, 3, 4, 5}},
+				},
+				keep: 3,
+				want: append([]byte{1, 2, 3, 4, 5}, queued...),
+			},
+			{
+				tcp: layers.TCP{
+					SrcPort:   1,
+					DstPort:   2,
+					Seq:       1006 + uint32(len(queued)),
+					BaseLayer: layers.BaseLayer{Payload: []byte{next}},
+				},
+				want: append(append([]byte{4, 5}, queued...), next),
+			},
+		})
+	}
 }
 
 /*
@@ -1978,5 +2128,83 @@ func TestReassemblyObjectCaptureInfo(t *testing.T) {
 		if !reflect.DeepEqual(expected, ci) {
 			t.Errorf("test CaptureInfo(%d):\nwant: %v\n got: %v\n", c.offset, expected, ci)
 		}
+	}
+}
+
+/* For context checks: records the context of each chunk and of each call */
+type testContextFactory struct {
+	keep    int
+	chunks  []int
+	calls   []AssemblerContext
+	packets int
+}
+
+func (t *testContextFactory) New(a, b gopacket.Flow, tcp *layers.TCP, ac AssemblerContext) Stream {
+	return t
+}
+func (t *testContextFactory) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir TCPFlowDirection, seq Sequence, start *bool, ac AssemblerContext) bool {
+	return true
+}
+func (t *testContextFactory) ReassembledSG(sg ScatterGather, ac AssemblerContext) {
+	t.chunks = t.chunks[:0]
+	l, _ := sg.Lengths()
+	for offset := 0; offset < l; offset += pageBytes / 2 {
+		t.chunks = append(t.chunks, sg.CaptureInfo(offset).InterfaceIndex)
+	}
+	t.calls = append(t.calls, ac)
+	t.packets = sg.Stats().Packets
+	if t.keep >= 0 {
+		sg.KeepFrom(t.keep)
+	}
+}
+func (t *testContextFactory) ReassemblyComplete(ac AssemblerContext) bool {
+	return true
+}
+
+// Every page of a queued packet shall give access to the packet's context.
+func TestLargePacketContext(t *testing.T) {
+	fact := &testContextFactory{keep: pageBytes * 2}
+	a := NewAssembler(NewStreamPool(fact))
+	for i, tcp := range []layers.TCP{
+		{SrcPort: 1, DstPort: 2, Seq: 1001, BaseLayer: layers.BaseLayer{Payload: make([]byte, pageBytes*3)}},
+		{SrcPort: 1, DstPort: 2, Seq: 1000, SYN: true},
+	} {
+		tcp.SetInternalPortsForTesting()
+		a.AssembleWithContext(netFlow, &tcp, testCustomContext(i+1))
+	}
+	if want := []int{1, 1, 1, 1, 1, 1}; !reflect.DeepEqual(fact.chunks, want) {
+		t.Errorf("queued pages:\nwant: %v\n got: %v\n", want, fact.chunks)
+	}
+	if fact.packets != 2 {
+		t.Errorf("queued pages: want 2 packets, got %d", fact.packets)
+	}
+	// The last page has been kept, and is now the first chunk
+	tcp := layers.TCP{SrcPort: 1, DstPort: 2, Seq: 1001 + pageBytes*3, BaseLayer: layers.BaseLayer{Payload: []byte{1}}}
+	tcp.SetInternalPortsForTesting()
+	a.AssembleWithContext(netFlow, &tcp, testCustomContext(3))
+	if want := []int{1, 1, 3}; !reflect.DeepEqual(fact.chunks, want) {
+		t.Errorf("kept page:\nwant: %v\n got: %v\n", want, fact.chunks)
+	}
+	if fact.packets != 1 {
+		t.Errorf("kept page: want 1 packet, got %d", fact.packets)
+	}
+}
+
+// A page which is not the first of its packet can end up first in the queue.
+func TestLargePacketContextFlush(t *testing.T) {
+	fact := &testContextFactory{keep: -1}
+	a := NewAssembler(NewStreamPool(fact))
+	for i, tcp := range []layers.TCP{
+		{SrcPort: 1, DstPort: 2, Seq: 2000, BaseLayer: layers.BaseLayer{Payload: make([]byte, pageBytes*3)}},
+		{SrcPort: 1, DstPort: 2, Seq: 2099, SYN: true},
+		{SrcPort: 1, DstPort: 2, Seq: 2100, BaseLayer: layers.BaseLayer{Payload: make([]byte, pageBytes*2)}},
+	} {
+		tcp.SetInternalPortsForTesting()
+		a.AssembleWithContext(netFlow, &tcp, testCustomContext(i+1))
+	}
+	a.FlushAll()
+	want := []AssemblerContext{testCustomContext(2), testCustomContext(3), testCustomContext(1), testCustomContext(1)}
+	if !reflect.DeepEqual(fact.calls, want) {
+		t.Errorf("contexts:\nwant: %v\n got: %v\n", want, fact.calls)
 	}
 }

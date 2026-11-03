@@ -64,10 +64,12 @@ type Sequence int64
 // uint32 space to be after any sequence in the last quarter of that space, thus
 // wrapping the uint32 space.
 func (s Sequence) Difference(t Sequence) int {
+	// The wrapped operand is unwrapped by a full turn of the uint32 space
+	// (uint32Max+1 == 1<<32), matching what Add does.
 	if s > uint32Max-uint32Max/4 && t < uint32Max/4 {
-		t += uint32Max
+		t += uint32Max + 1
 	} else if t > uint32Max-uint32Max/4 && s < uint32Max/4 {
-		s += uint32Max
+		s += uint32Max + 1
 	}
 	return int(t - s)
 }
@@ -236,9 +238,10 @@ type page struct {
 	seq        Sequence
 	prev, next *page
 	buf        [pageBytes]byte
-	ac         AssemblerContext // only set for the first page of a packet
+	ac         AssemblerContext // context of the packet this page was cut from
 	seen       time.Time
 	start, end bool
+	first      bool // only set for the first page of a packet
 }
 
 func (p *page) getBytes() []byte {
@@ -275,7 +278,7 @@ func (p *page) getSeq() Sequence {
 	return p.seq
 }
 func (p *page) isPacket() bool {
-	return p.ac != nil
+	return p.first
 }
 func (p *page) String() string {
 	return fmt.Sprintf("page@%p{seq: %v, bytes:%d, -> nextSeq:%v} (prev:%p, next:%p)", p, p.seq, len(p.bytes), p.seq+Sequence(len(p.bytes)), p.prev, p.next)
@@ -323,6 +326,7 @@ func (lp *livePacket) convertToPages(pc *pageCache, skip int, ac AssemblerContex
 	current := first
 	current.prev = nil
 	first.ac = ac
+	first.first = true
 	numPages := 1
 	seq, bytes := lp.seq.Add(skip), lp.bytes[skip:]
 	for {
@@ -340,7 +344,8 @@ func (lp *livePacket) convertToPages(pc *pageCache, skip int, ac AssemblerContex
 		current.next = pc.next(ts)
 		current.next.prev = current
 		current = current.next
-		current.ac = nil
+		current.ac = ac
+		current.first = false
 		numPages++
 	}
 	return first, current, numPages
@@ -1072,15 +1077,10 @@ func (a *Assembler) cleanSG(half *halfconnection, ac AssemblerContext) {
 	half.saved = nil
 	var saved *page
 	for _, r := range a.cacheSG.all[ndx:] {
-		preConvertLen := r.length()
 		first, last, nb := r.convertToPages(a.pc, skip, ac)
 
-		// Update skip count as we move from one container to the next.
-		if delta := preConvertLen - r.length(); delta > skip {
-			skip = 0
-		} else {
-			skip -= delta
-		}
+		// skip is an offset into the first kept container only.
+		skip = 0
 
 		if half.saved == nil {
 			half.saved = first
