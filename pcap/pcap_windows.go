@@ -454,7 +454,7 @@ func (b *BPF) pcapOfflineFilter(ci gopacket.CaptureInfo, data []byte) bool {
 	hdr.Ts.Usec = int32(ci.Timestamp.Nanosecond() / 1000)
 	hdr.Caplen = uint32(len(data)) // Trust actual length over ci.Length.
 	hdr.Len = uint32(ci.Length)
-	e, _, _ := syscall.Syscall(pcapOfflineFilterPtr, 3, uintptr(unsafe.Pointer(&b.bpf.bpf)), uintptr(unsafe.Pointer(&hdr)), uintptr(unsafe.Pointer(&data[0])))
+	e, _, _ := syscall.Syscall(pcapOfflineFilterPtr, 3, uintptr(unsafe.Pointer(&b.bpf.bpf)), uintptr(unsafe.Pointer(&hdr)), uintptr(unsafe.Pointer(unsafe.SliceData(data))))
 	return e != 0
 }
 
@@ -664,7 +664,7 @@ func pcapFindAllDevs() (pcapDevices, error) {
 }
 
 func (p *Handle) pcapSendpacket(data []byte) error {
-	ret, _, _ := syscall.Syscall(pcapSendpacketPtr, 3, uintptr(p.cptr), uintptr(unsafe.Pointer(&data[0])), uintptr(len(data)))
+	ret, _, _ := syscall.Syscall(pcapSendpacketPtr, 3, uintptr(p.cptr), uintptr(unsafe.Pointer(unsafe.SliceData(data))), uintptr(len(data)))
 	if pcapCint(ret) < 0 {
 		return p.pcapGeterr()
 	}

@@ -151,6 +151,43 @@ func TestBPF(t *testing.T) {
 	}
 }
 
+// A capture file may contain a record with a captured length of 0, which
+// ReadPacketData returns as an empty slice. Matches must not panic on it.
+func TestBPFEmptyPacket(t *testing.T) {
+	for _, expected := range []struct {
+		expr   string
+		Result bool
+	}{
+		{"tcp", false},
+		{"less 10", true},
+	} {
+		bpf, err := NewBPF(layers.LinkTypeEthernet, 65535, expected.expr)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, data := range [][]byte{nil, {}} {
+			if matches := bpf.Matches(gopacket.CaptureInfo{}, data); matches != expected.Result {
+				t.Errorf("Filter %q result on %#v was %v but should be %v", expected.expr, data, matches, expected.Result)
+			}
+		}
+	}
+}
+
+func TestWritePacketDataEmptyPacket(t *testing.T) {
+	handle, err := OpenOffline("test_ethernet.pcap")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer handle.Close()
+	for _, data := range [][]byte{nil, {}} {
+		// Savefiles cannot be written to; the point is that libpcap reports
+		// that rather than WritePacketData panicking on the empty slice.
+		if err := handle.WritePacketData(data); err == nil {
+			t.Errorf("expected error writing %#v to a savefile but didn't see one", data)
+		}
+	}
+}
+
 func TestBPFInstruction(t *testing.T) {
 	handle, err := OpenOffline("test_ethernet.pcap")
 	if err != nil {

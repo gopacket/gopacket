@@ -364,7 +364,9 @@ func (b *BPF) pcapOfflineFilter(ci gopacket.CaptureInfo, data []byte) bool {
 	hdr.ts.tv_usec = C.gopacket_time_usecs_t(ci.Timestamp.Nanosecond() / 1000)
 	hdr.caplen = C.bpf_u_int32(len(data)) // Trust actual length over ci.Length.
 	hdr.len = C.bpf_u_int32(ci.Length)
-	dataptr := (*C.u_char)(unsafe.Pointer(&data[0]))
+	// unsafe.SliceData rather than &data[0]: data may be empty (a record with
+	// caplen 0), which libpcap handles but indexing would panic on.
+	dataptr := (*C.u_char)(unsafe.SliceData(data))
 	return C.pcap_offline_filter_escaping((*C.struct_bpf_program)(&b.bpf.bpf),
 		C.uintptr_t(uintptr(unsafe.Pointer(hdr))),
 		C.uintptr_t(uintptr(unsafe.Pointer(dataptr)))) != 0
@@ -537,7 +539,7 @@ func pcapFindAllDevs() (pcapDevices, error) {
 }
 
 func (p *Handle) pcapSendpacket(data []byte) error {
-	if C.pcap_sendpacket(p.cptr, (*C.u_char)(&data[0]), (C.int)(len(data))) < 0 {
+	if C.pcap_sendpacket(p.cptr, (*C.u_char)(unsafe.SliceData(data)), (C.int)(len(data))) < 0 {
 		return p.pcapGeterr()
 	}
 	return nil
