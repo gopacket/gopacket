@@ -1962,6 +1962,67 @@ func TestTruncatedBlockHeader(t *testing.T) {
 	}
 }
 
+// Tests that Resolution does not panic after a file ends in a section header without an interface
+func TestResolutionAfterTrailingSectionHeader(t *testing.T) {
+	buf := getBasicOnePacketPcap(t)
+	buf.Write([]byte{
+		0x0A, 0x0D, 0x0D, 0x0A, // Section Header
+		28, 0, 0, 0, // block total length
+		0x4D, 0x3C, 0x2B, 0x1A, // BOM
+		1, 0, 0, 0, // Version
+		0xFF, 0xFF, 0xFF, 0xFF, // Section length
+		0xFF, 0xFF, 0xFF, 0xFF, // Section length
+		28, 0, 0, 0, // block total length
+	})
+	r, err := NewNgReader(buf, DefaultNgReaderOptions)
+	if err != nil {
+		t.Error("Unexpected error returned:", err)
+		t.FailNow()
+	}
+	if _, _, err = r.ReadPacketData(); err != nil {
+		t.Error("Unexpected error returned:", err)
+		t.FailNow()
+	}
+	if _, _, err = r.ReadPacketData(); err != io.EOF {
+		t.Error("Expected io.EOF, got:", err)
+		t.FailNow()
+	}
+	if res := r.Resolution(); res != (gopacket.TimestampResolution{}) {
+		t.Error("Expected zero resolution without an interface, got:", res)
+		t.FailNow()
+	}
+}
+
+// Tests that an if_tsresol option whose divisor does not fit in 64 bits is rejected instead of dividing by zero
+func TestNgInvalidTimestampResolution(t *testing.T) {
+	for _, test := range []struct {
+		tsresol uint8
+		ok      bool
+	}{
+		{0x80 | 63, true},  // 2^-63: largest representable power of two
+		{0x80 | 64, false}, // 2^-64: 1<<64 wraps to 0
+		{0x80 | 127, false},
+		{19, true}, // 10^-19: largest representable power of ten
+		// 10^-20 to 10^-63 overflow secondMask but never to 0; they read
+		// before the fix, so they must keep reading.
+		{20, true},
+		{63, true},
+		{64, false}, // 10^64 has 2^64 as a factor: wraps to 0
+		{127, false},
+	} {
+		// SHB + IDB with a single if_tsresol option and no packets
+		file := ngMustDecode("0a0d0d0a1c0000004d3c2b1a01000000ffffffffffffffff1c000000" +
+			"010000002000000001000000000000000900010000000000000000000020000000")
+		file[48] = test.tsresol
+		_, err := NewNgReader(bytes.NewReader(file), DefaultNgReaderOptions)
+		if test.ok && err != nil {
+			t.Errorf("tsresol 0x%02x: unexpected error returned: %v", test.tsresol, err)
+		} else if !test.ok && err == nil {
+			t.Errorf("tsresol 0x%02x: expected an error, got none", test.tsresol)
+		}
+	}
+}
+
 type endlessNgPacketReader struct {
 	packet []byte
 }
@@ -2096,6 +2157,69 @@ func TestNgReadPacketDataWithOptions(t *testing.T) {
 	}
 	if !reflect.DeepEqual(opts.Verdicts, wantOpts.Verdicts) {
 		t.Fatalf("verdicts mismatch:\nwant: %+v\ngot:  %+v", wantOpts.Verdicts, opts.Verdicts)
+	}
+}
+
+// Tests that an empty option is returned empty instead of with the value of the option read before it
+func TestNgReadEmptyOption(t *testing.T) {
+	var buf bytes.Buffer
+	w, err := NewNgWriter(&buf, layers.LinkTypeEthernet)
+	if err != nil {
+		t.Fatal("Unexpected error returned:", err)
+	}
+	wantComments := []string{"this is a comment", ""}
+	err = w.WritePacketWithOptions(gopacket.CaptureInfo{CaptureLength: 2, Length: 2}, []byte{1, 2}, NgPacketOptions{Comments: wantComments})
+	if err != nil {
+		t.Fatal("Unexpected error returned:", err)
+	}
+	if err = w.Flush(); err != nil {
+		t.Fatal("Unexpected error returned:", err)
+	}
+
+	r, err := NewNgReader(&buf, DefaultNgReaderOptions)
+	if err != nil {
+		t.Fatal("Unexpected error returned:", err)
+	}
+	_, _, opts, err := r.ReadPacketDataWithOptions()
+	if err != nil {
+		t.Fatal("Unexpected error returned:", err)
+	}
+	if !reflect.DeepEqual(opts.Comments, wantComments) {
+		t.Fatalf("comments mismatch:\nwant: %q\ngot:  %q", wantComments, opts.Comments)
+	}
+}
+
+// Tests that a fixed size option that is too short is skipped instead of read out of bounds
+func TestNgReadShortOption(t *testing.T) {
+	var buf bytes.Buffer
+	w, err := NewNgWriter(&buf, layers.LinkTypeEthernet)
+	if err != nil {
+		t.Fatal("Unexpected error returned:", err)
+	}
+	if err = w.Flush(); err != nil {
+		t.Fatal("Unexpected error returned:", err)
+	}
+	// enhanced packet block with a 2 byte packet and a 2 byte epb_flags option (must be 4 bytes)
+	buf.Write([]byte{
+		0x06, 0x00, 0x00, 0x00, 0x2c, 0x00, 0x00, 0x00, // type, length
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // interface, timestamp
+		0x02, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, // captured length, original length
+		0x01, 0x02, 0x00, 0x00, // packet data + padding
+		0x02, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, // epb_flags, length 2, padded
+		0x00, 0x00, 0x00, 0x00, // end of options
+		0x2c, 0x00, 0x00, 0x00, // length
+	})
+
+	r, err := NewNgReader(&buf, DefaultNgReaderOptions)
+	if err != nil {
+		t.Fatal("Unexpected error returned:", err)
+	}
+	data, _, opts, err := r.ReadPacketDataWithOptions()
+	if err != nil {
+		t.Fatal("Unexpected error returned:", err)
+	}
+	if !bytes.Equal(data, []byte{1, 2}) || opts.Flags != nil {
+		t.Fatalf("got packet %v, flags %v; want [1 2] and the short epb_flags skipped", data, opts.Flags)
 	}
 }
 

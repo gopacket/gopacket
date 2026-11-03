@@ -24,8 +24,8 @@ func (r *NgReader) readDecryptionSecretsBlock() error {
 	var decryptionSecretsBlock = &pcapngDecryptionSecretsBlock{}
 	decryptionSecretsBlock.secretsType = r.getUint32(r.buf[0:4])
 	decryptionSecretsBlock.secretsLength = r.getUint32(r.buf[4:8])
-	var payload = make([]byte, decryptionSecretsBlock.secretsLength)
-	if _, err := r.readBytes(payload); err != nil {
+	payload, err := r.readLarge(int(decryptionSecretsBlock.secretsLength))
+	if err != nil {
 		return fmt.Errorf("could not read %d bytes from DecryptionSecret payload: %v", decryptionSecretsBlock.secretsLength, err)
 	}
 	r.currentBlock.length -= uint32(len(payload))

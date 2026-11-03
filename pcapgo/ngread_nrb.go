@@ -57,7 +57,7 @@ func (r *NgReader) readHWAddr(nr *NgNameRecord, length int) error {
 	if _, err := r.readBytes(r.buf[:length]); err != nil {
 		return fmt.Errorf("could not read EUI address: %v", err)
 	}
-	nr.Addr = newHWAddress(r.buf[:])
+	nr.Addr = newHWAddress(r.buf[:length])
 	return nil
 }
 
@@ -77,6 +77,20 @@ func (r *NgReader) readNameResolutionBlock() error {
 		var nameRecord = NgNameRecord{}
 		length := min(int(nrh.recordLength), int(r.currentBlock.length))
 		padding := paddingBytes32b(length)
+		addressLength := 0
+		switch nrh.recordType {
+		case ngNameRecordIPv4:
+			addressLength = 4
+		case ngNameRecordIPv6:
+			addressLength = 16
+		case ngNameRecordEUI48:
+			addressLength = 6
+		case ngNameRecordEUI64:
+			addressLength = 8
+		}
+		if length < addressLength {
+			return fmt.Errorf("name record of type %d is too short for its address", nrh.recordType)
+		}
 
 		switch nrh.recordType {
 		case ngNameRecordIPv4:
@@ -107,14 +121,15 @@ func (r *NgReader) readNameResolutionBlock() error {
 		r.currentBlock.length -= uint32(length)
 		length -= nameRecord.Addr.Len()
 
-		for length > 0 {
-			bstr, err := r.r.ReadBytes(0)
-			if err != nil {
-				return fmt.Errorf("could not read name: %v", err)
-			}
-			length -= len(bstr)
-			name := string(bytes.Trim(bstr, "\x00"))
-			nameRecord.Names = append(nameRecord.Names, name)
+		// Read only the bytes declared by this record.
+		names := make([]byte, length)
+		if _, err := r.readBytes(names); err != nil {
+			return fmt.Errorf("could not read name: %v", err)
+		}
+		for len(names) > 0 {
+			var name []byte
+			name, names, _ = bytes.Cut(names, []byte{0})
+			nameRecord.Names = append(nameRecord.Names, string(name))
 		}
 		r.nameRecords = append(r.nameRecords, nameRecord)
 

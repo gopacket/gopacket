@@ -125,6 +125,16 @@ func (r *NgReader) readBytes(buffer []byte) (uint, error) {
 	return n, nil
 }
 
+// readLarge reads n bytes from the file into a slice that grows as the bytes
+// arrive. See readFull for why the length isn't trusted.
+func (r *NgReader) readLarge(n int) ([]byte, error) {
+	data, err := readFull(r.r, n)
+	if err == io.EOF {
+		err = io.ErrUnexpectedEOF
+	}
+	return data, err
+}
+
 func (r *NgReader) discard(length int) error {
 	if _, err := r.r.Discard(length); err != nil {
 		if err == io.EOF {
@@ -229,8 +239,19 @@ func (r *NgReader) readOption() error {
 			}
 		}
 		r.currentBlock.length -= uint32(length)
+	} else {
+		// an empty option has an empty value; don't hand out the previous option's bytes again
+		r.currentOption.value = r.currentOption.value[:0]
 	}
 	return nil
+}
+
+// optionTooShort reports whether the value of the current option is shorter
+// than min bytes. Consumers of fixed size options must call this before
+// indexing the value, and skip the option if it is rather than fail the
+// block: a short option used to be read from stale buffer bytes, or panic.
+func (r *NgReader) optionTooShort(min int) bool {
+	return len(r.currentOption.value) < min
 }
 
 // readSectionHeader parses the full section header and implements section skipping in case of version mismatch
@@ -397,13 +418,22 @@ OPTIONS:
 		case ngOptionCodeInterfaceDescription:
 			intf.Description = string(r.currentOption.value)
 		case ngOptionCodeInterfaceFilter:
+			if r.optionTooShort(1) {
+				continue
+			}
 			// ignore filter type (first byte) since it is not specified
 			intf.Filter = string(r.currentOption.value[1:])
 		case ngOptionCodeInterfaceOS:
 			intf.OS = string(r.currentOption.value)
 		case ngOptionCodeInterfaceTimestampOffset:
+			if r.optionTooShort(8) {
+				continue
+			}
 			intf.TimestampOffset = r.getUint64(r.currentOption.value[:8])
 		case ngOptionCodeInterfaceTimestampResolution:
+			if r.optionTooShort(1) {
+				continue
+			}
 			intf.TimestampResolution = NgResolution(r.currentOption.value[0])
 		}
 	}
@@ -417,9 +447,18 @@ OPTIONS:
 	//parse options
 	if intf.TimestampResolution.Binary() {
 		//negative power of 2
+		if intf.TimestampResolution.Exponent() > 63 {
+			// 2^64 and above do not fit in secondMask
+			return fmt.Errorf("Timestamp resolution 2^-%d is too high", intf.TimestampResolution.Exponent())
+		}
 		intf.secondMask = 1 << intf.TimestampResolution.Exponent()
 	} else {
 		//negative power of 10
+		if intf.TimestampResolution.Exponent() > 63 {
+			// 10^64 and above wrap secondMask to 0. 10^20 to 10^63 overflow
+			// it too, but were always accepted, so they still are.
+			return fmt.Errorf("Timestamp resolution 10^-%d is too high", intf.TimestampResolution.Exponent())
+		}
 		intf.secondMask = 1
 		for j := uint8(0); j < intf.TimestampResolution.Exponent(); j++ {
 			intf.secondMask *= 10
@@ -468,14 +507,26 @@ OPTIONS:
 		case ngOptionCodeComment:
 			stats.Comment = string(r.currentOption.value)
 		case ngOptionCodeInterfaceStatisticsStartTime:
+			if r.optionTooShort(8) {
+				continue
+			}
 			ts = uint64(r.getUint32(r.currentOption.value[:4]))<<32 | uint64(r.getUint32(r.currentOption.value[4:8]))
 			stats.StartTime = time.Unix(r.convertTime(ifaceID, ts)).UTC()
 		case ngOptionCodeInterfaceStatisticsEndTime:
+			if r.optionTooShort(8) {
+				continue
+			}
 			ts = uint64(r.getUint32(r.currentOption.value[:4]))<<32 | uint64(r.getUint32(r.currentOption.value[4:8]))
 			stats.EndTime = time.Unix(r.convertTime(ifaceID, ts)).UTC()
 		case ngOptionCodeInterfaceStatisticsInterfaceReceived:
+			if r.optionTooShort(8) {
+				continue
+			}
 			stats.PacketsReceived = r.getUint64(r.currentOption.value[:8])
 		case ngOptionCodeInterfaceStatisticsInterfaceDropped:
+			if r.optionTooShort(8) {
+				continue
+			}
 			stats.PacketsDropped = r.getUint64(r.currentOption.value[:8])
 		}
 	}
@@ -593,10 +644,16 @@ OPTIONS:
 		case ngOptionCodeComment:
 			opts.Comments = append(opts.Comments, string(r.currentOption.value))
 		case ngOptionCodeEpbFlags:
+			if r.optionTooShort(4) {
+				continue
+			}
 			flags := NgEpbFlags{}
 			flags.FromUint32(binary.LittleEndian.Uint32(r.currentOption.value))
 			opts.Flags = &flags
 		case ngOptionCodeEpbHash:
+			if r.optionTooShort(1) {
+				continue
+			}
 			v := make([]byte, len(r.currentOption.value)-1)
 			copy(v, r.currentOption.value[1:])
 			opts.Hashes = append(opts.Hashes, NgEpbHash{
@@ -604,15 +661,27 @@ OPTIONS:
 				Hash:      v,
 			})
 		case ngOptionCodeEpbDropCount:
+			if r.optionTooShort(8) {
+				continue
+			}
 			v := binary.LittleEndian.Uint64(r.currentOption.value)
 			opts.DropCount = &v
 		case ngOptionCodeEpbPacketID:
+			if r.optionTooShort(8) {
+				continue
+			}
 			v := binary.LittleEndian.Uint64(r.currentOption.value)
 			opts.PacketID = &v
 		case ngOptionCodeEpbQueue:
+			if r.optionTooShort(4) {
+				continue
+			}
 			v := binary.LittleEndian.Uint32(r.currentOption.value)
 			opts.Queue = &v
 		case ngOptionCodeEpbVerdict:
+			if r.optionTooShort(1) {
+				continue
+			}
 			v := make([]byte, len(r.currentOption.value)-1)
 			copy(v, r.currentOption.value[1:])
 			opts.Verdicts = append(opts.Verdicts, NgEpbVerdict{
@@ -642,8 +711,13 @@ func (r *NgReader) ReadPacketDataWithOptions() (data []byte, ci gopacket.Capture
 		ci.AncillaryData = make([]interface{}, 1)
 		ci.AncillaryData[0] = r.ancil[0]
 	}
-	data = make([]byte, r.ci.CaptureLength)
-	if _, err = r.readBytes(data); err != nil {
+	if eagerRead(r.ci.CaptureLength) {
+		data = make([]byte, r.ci.CaptureLength)
+		_, err = r.readBytes(data)
+	} else {
+		data, err = r.readLarge(r.ci.CaptureLength)
+	}
+	if err != nil {
 		return
 	}
 	r.currentBlock.length -= uint32(r.ci.CaptureLength)
@@ -688,15 +762,18 @@ func (r *NgReader) ZeroCopyReadPacketDataWithOptions() (data []byte, ci gopacket
 	if r.options.WantMixedLinkType {
 		ci.AncillaryData = r.ancil[:]
 	}
-	if cap(r.packetBuf) < ci.CaptureLength {
-		snaplen := int(r.ifaces[ci.InterfaceIndex].SnapLength)
-		if snaplen < ci.CaptureLength {
-			snaplen = ci.CaptureLength
+	if eagerRead(ci.CaptureLength) {
+		if cap(r.packetBuf) < ci.CaptureLength {
+			snaplen := int(r.ifaces[ci.InterfaceIndex].SnapLength)
+			r.packetBuf = make([]byte, bufferSize(snaplen, ci.CaptureLength))
 		}
-		r.packetBuf = make([]byte, snaplen)
+		data = r.packetBuf[:ci.CaptureLength]
+		_, err = r.readBytes(data)
+	} else {
+		data, err = r.readLarge(ci.CaptureLength)
+		r.packetBuf = data
 	}
-	data = r.packetBuf[:ci.CaptureLength]
-	if _, err = r.readBytes(data); err != nil {
+	if err != nil {
 		return
 	}
 	r.currentBlock.length -= uint32(r.ci.CaptureLength)
@@ -740,8 +817,10 @@ func (r *NgReader) NInterfaces() int {
 }
 
 // Resolution returns the timestamp resolution of acquired timestamps before scaling to NanosecondTimestampResolution.
+// This is only valid, if WantMixedLinkType is false. The zero value is returned if the current section has no interface,
+// which is the case after a section header at the end of the file or after a read error inside a section header.
 func (r *NgReader) Resolution() gopacket.TimestampResolution {
-	if r.options.WantMixedLinkType {
+	if r.options.WantMixedLinkType || len(r.ifaces) == 0 {
 		return gopacket.TimestampResolution{}
 	}
 	return r.ifaces[0].Resolution()

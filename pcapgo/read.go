@@ -131,8 +131,7 @@ func (r *Reader) ReadPacketData() (data []byte, ci gopacket.CaptureInfo, err err
 		err = fmt.Errorf("capture length exceeds original packet length: %d > %d", ci.CaptureLength, ci.Length)
 		return
 	}
-	data = make([]byte, ci.CaptureLength)
-	_, err = io.ReadFull(r.r, data)
+	data, err = readFull(r.r, ci.CaptureLength)
 	return data, ci, err
 }
 
@@ -154,12 +153,14 @@ func (r *Reader) ZeroCopyReadPacketData() (data []byte, ci gopacket.CaptureInfo,
 		return
 	}
 
+	if !eagerRead(ci.CaptureLength) {
+		data, err = readFull(r.r, ci.CaptureLength)
+		r.packetBuf = data
+		return data, ci, err
+	}
+
 	if cap(r.packetBuf) < ci.CaptureLength {
-		snaplen := int(r.snaplen)
-		if snaplen < ci.CaptureLength {
-			snaplen = ci.CaptureLength
-		}
-		r.packetBuf = make([]byte, snaplen)
+		r.packetBuf = make([]byte, bufferSize(int(r.snaplen), ci.CaptureLength))
 	}
 	data = r.packetBuf[:ci.CaptureLength]
 	_, err = io.ReadFull(r.r, data)
