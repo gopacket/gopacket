@@ -27,6 +27,7 @@ const unknownVersion = "Unknown Snoop Format Version"
 const unkownLinkType = "Unknown Link Type"
 const originalLenExceeded = "Capture length exceeds original packet length"
 const captureLenExceeded = "Capture length exceeds max capture length"
+const recordLenInvalid = "Packet record length inconsistent with capture length"
 
 type snoopHeader struct {
 	Version  uint32
@@ -127,15 +128,23 @@ func (r *SnoopReader) readPacketHeader() (ci gopacket.CaptureInfo, err error) {
 	ci.Timestamp = time.Unix(int64(binary.BigEndian.Uint32(r.buf[16:20])), int64(binary.BigEndian.Uint32(r.buf[20:24])*1000)).UTC()
 	ci.Length = int(binary.BigEndian.Uint32(r.buf[0:4]))
 	ci.CaptureLength = int(binary.BigEndian.Uint32(r.buf[4:8]))
-	r.pad = int(binary.BigEndian.Uint32(r.buf[8:12])) - (24 + ci.Length)
 
 	if ci.CaptureLength > ci.Length {
 		err = errors.New(originalLenExceeded)
 		return
 	}
 
-	if ci.CaptureLength > maxCaptureLen {
+	if ci.CaptureLength < 0 || ci.CaptureLength > maxCaptureLen {
 		err = errors.New(captureLenExceeded)
+		return
+	}
+
+	// The record length covers the 24 byte header, the included (captured)
+	// bytes and the pad that aligns the next record, so the pad is derived
+	// from the capture length, not the original length.
+	r.pad = int(binary.BigEndian.Uint32(r.buf[8:12])) - (24 + ci.CaptureLength)
+	if r.pad < 0 || r.pad > maxCaptureLen {
+		err = errors.New(recordLenInvalid)
 	}
 
 	return

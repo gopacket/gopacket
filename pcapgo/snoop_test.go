@@ -140,6 +140,50 @@ func TestBigPacketData(t *testing.T) {
 	buf[18] = 0x00
 }
 
+func TestTruncatedPacketData(t *testing.T) {
+	buf, handle, err := OpenHandlePack()
+	equalNil(t, err)
+	// increase OriginalLen only: the packet was truncated on capture, the
+	// record still holds IncludedLen bytes plus the pad
+	buf[18] = 0x11
+	data, ci, err := handle.ReadPacketData()
+	equalNil(t, err)
+	equal(t, ci.CaptureLength, 42)
+	equal(t, ci.Length, 0x112A)
+	equal(t, len(data), 42)
+	_, _, err = handle.ReadPacketData()
+	equalError(t, err, fmt.Errorf("EOF"))
+	buf[18] = 0x00
+}
+
+func TestBadRecordLength(t *testing.T) {
+	buf, handle, err := OpenHandlePack()
+	equalNil(t, err)
+	// PacketRecordLen smaller than header + IncludedLen
+	buf[27] = 0x2A
+	_, _, err = handle.ReadPacketData()
+	if err == nil {
+		t.Fatal("expected invalid record length")
+	}
+	buf[27] = 0x44
+
+	buf, handle, err = OpenHandlePack()
+	equalNil(t, err)
+	// PacketRecordLen far larger than the data that follows
+	buf[24] = 0xff
+	buf[25] = 0xff
+	buf[26] = 0xff
+	buf[27] = 0xff
+	_, _, err = handle.ZeroCopyReadPacketData()
+	if err == nil {
+		t.Fatal("expected invalid record length")
+	}
+	buf[24] = 0x00
+	buf[25] = 0x00
+	buf[26] = 0x00
+	buf[27] = 0x44
+}
+
 func TestLinkType(t *testing.T) {
 	_, handle, err := OpenHandlePack()
 	equalNil(t, err)
