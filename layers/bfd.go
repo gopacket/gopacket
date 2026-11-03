@@ -403,6 +403,13 @@ func (d *BFD) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 // SerializationBuffer, implementing gopacket.SerializableLayer.
 // See the docs for gopacket.SerializableLayer for more info.
 func (d *BFD) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.SerializeOptions) error {
+	// BFDAuthHeader.Length() is 0 for an authentication type this layer does
+	// not know how to encode. DecodeFromBytes accepts such packets, so refuse
+	// them here before anything is written to the buffer.
+	if d.AuthPresent && (d.AuthHeader != nil) && d.AuthHeader.Length() == 0 {
+		return errors.New("BFD authentication type not supported")
+	}
+
 	data, err := b.PrependBytes(bfdMinimumRecordSizeInBytes)
 	if err != nil {
 		return err

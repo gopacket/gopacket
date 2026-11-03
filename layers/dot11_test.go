@@ -860,3 +860,84 @@ func TestDot11InformationElement(t *testing.T) {
 		})
 	}
 }
+
+// TestDot11SerializeHeaderLength checks that a decoded Dot11 layer with a
+// header of 24 bytes or more serializes back to the header it was decoded from.
+func TestDot11SerializeHeaderLength(t *testing.T) {
+	addr := func(last byte) []byte { return []byte{0x02, 0x00, 0x00, 0x00, 0x00, last} }
+	frame := func(parts ...[]byte) []byte { return bytes.Join(parts, nil) }
+	llc := []byte{0xaa, 0xaa, 0x03, 0x00, 0x00, 0x00, 0x08, 0x06}
+	fcs := []byte{0x00, 0x00, 0x00, 0x00}
+
+	cases := []struct {
+		Name string
+		Data []byte
+	}{
+		{"three address null", frame([]byte{0x48, 0x01, 0x00, 0x00}, addr(1), addr(2), addr(3), []byte{0x10, 0x00}, fcs)},
+		{"three address data", frame([]byte{0x08, 0x01, 0x00, 0x00}, addr(1), addr(2), addr(3), []byte{0x10, 0x00}, llc, fcs)},
+		{"four address null", frame([]byte{0x48, 0x03, 0x00, 0x00}, addr(1), addr(2), addr(3), []byte{0x10, 0x00}, addr(4), fcs)},
+		{"four address data", frame([]byte{0x08, 0x03, 0x00, 0x00}, addr(1), addr(2), addr(3), []byte{0x10, 0x00}, addr(4), llc, fcs)},
+	}
+
+	buf := gopacket.NewSerializeBuffer()
+	for _, test := range cases {
+		t.Run(test.Name, func(t *testing.T) {
+			p := gopacket.NewPacket(test.Data, LayerTypeDot11, gopacket.Default)
+			if p.ErrorLayer() != nil {
+				t.Fatal("Failed to decode packet:", p.ErrorLayer().Error())
+			}
+			dot11 := p.Layer(LayerTypeDot11).(*Dot11)
+
+			// Leave non-zero bytes behind in the buffer that is reused below.
+			if err := gopacket.SerializeLayers(buf, gopacket.SerializeOptions{}, gopacket.Payload(bytes.Repeat([]byte{0xff}, 64))); err != nil {
+				t.Fatal(err)
+			}
+			if err := gopacket.SerializeLayers(buf, gopacket.SerializeOptions{}, dot11, gopacket.Payload(dot11.LayerPayload())); err != nil {
+				t.Fatal(err)
+			}
+			if want := test.Data[:len(test.Data)-len(fcs)]; !bytes.Equal(buf.Bytes(), want) {
+				t.Errorf("Dot11 serialization failed:\ngot  :\n%x\n\nwant :\n%x\n\n", buf.Bytes(), want)
+			}
+		})
+	}
+}
+
+// TestDot11SerializeShortHeader checks that control frames shorter than 24
+// bytes still serialize as they always have: zero padded to 24 bytes, with
+// BlockAck and BlockAckReq leaving Address2 out.
+func TestDot11SerializeShortHeader(t *testing.T) {
+	addr := func(last byte) []byte { return []byte{0x02, 0x00, 0x00, 0x00, 0x00, last} }
+	frame := func(parts ...[]byte) []byte { return bytes.Join(parts, nil) }
+	fcs := []byte{0x00, 0x00, 0x00, 0x00}
+
+	cases := []struct {
+		Name string
+		Data []byte
+		Want []byte
+	}{
+		{"CTS", frame([]byte{0xc4, 0x00, 0x00, 0x00}, addr(1), fcs),
+			frame([]byte{0xc4, 0x00, 0x00, 0x00}, addr(1), make([]byte, 14))},
+		{"RTS", frame([]byte{0xb4, 0x00, 0x00, 0x00}, addr(1), addr(2), fcs),
+			frame([]byte{0xb4, 0x00, 0x00, 0x00}, addr(1), addr(2), make([]byte, 8))},
+		{"BlockAck", frame([]byte{0x94, 0x00, 0x00, 0x00}, addr(1), addr(2), []byte{0x05, 0x00}, fcs),
+			frame([]byte{0x94, 0x00, 0x00, 0x00}, addr(1), make([]byte, 14), []byte{0x05, 0x00})},
+	}
+
+	for _, test := range cases {
+		t.Run(test.Name, func(t *testing.T) {
+			p := gopacket.NewPacket(test.Data, LayerTypeDot11, gopacket.Default)
+			if p.ErrorLayer() != nil {
+				t.Fatal("Failed to decode packet:", p.ErrorLayer().Error())
+			}
+			dot11 := p.Layer(LayerTypeDot11).(*Dot11)
+
+			buf := gopacket.NewSerializeBuffer()
+			if err := gopacket.SerializeLayers(buf, gopacket.SerializeOptions{}, dot11, gopacket.Payload(dot11.LayerPayload())); err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.Equal(buf.Bytes(), test.Want) {
+				t.Errorf("got  %x\nwant %x", buf.Bytes(), test.Want)
+			}
+		})
+	}
+}

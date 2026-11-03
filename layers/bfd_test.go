@@ -288,3 +288,31 @@ func TestBFDAuthTypeMeticulousKeyedSHA1(t *testing.T) {
 
 	checkBFD("TestBFDAuthTypeMeticulousKeyedSHA1", t, testPacketBFD, pExpectedBFD)
 }
+
+//******************************************************************************
+
+// TestBFDSerializeUnknownAuthType checks that a BFD Control packet with the
+// A bit set and an authentication type other than 1-5 decodes, and that
+// serializing the result returns an error instead of panicking.
+func TestBFDSerializeUnknownAuthType(t *testing.T) {
+	for _, authType := range []byte{0, 6, 255} {
+		testPacketBFD := []byte{
+			0x20, 0xc4, 0x03, 0x21, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x0f, 0x42, 0x40,
+			0x00, 0x0f, 0x42, 0x40, 0x00, 0x00, 0x00, 0x00, authType, 0x09, 0x01, 0x73, 0x65, 0x63, 0x72, 0x65,
+			0x74,
+		}
+
+		p := gopacket.NewPacket(testPacketBFD, LayerTypeBFD, gopacket.Default)
+		if p.ErrorLayer() != nil {
+			t.Fatalf("Failed to decode packet with auth type %d: %v", authType, p.ErrorLayer().Error())
+		}
+
+		buf := gopacket.NewSerializeBuffer()
+		if err := gopacket.SerializePacket(buf, gopacket.SerializeOptions{}, p); err == nil {
+			t.Errorf("Serializing auth type %d must return an error", authType)
+		}
+		if len(buf.Bytes()) != 0 {
+			t.Errorf("Serializing auth type %d left %d bytes in the buffer", authType, len(buf.Bytes()))
+		}
+	}
+}

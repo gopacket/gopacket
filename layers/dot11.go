@@ -1226,12 +1226,16 @@ func (m *Dot11) ChecksumValid() bool {
 	return m.Checksum == h.Sum32()
 }
 
-func (m Dot11) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.SerializeOptions) error {
-	buf, err := b.PrependBytes(24)
+// dot11MinSerializedLen is the header length SerializeTo has always written
+// for frames whose header is shorter, such as a 10 byte CTS.
+const dot11MinSerializedLen = 24
 
-	if err != nil {
-		return err
-	}
+func (m Dot11) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.SerializeOptions) error {
+	// A data frame with ToDS and FromDS set has a 30 byte header: build the
+	// header first, then reserve what it takes. Shorter headers keep the 24
+	// bytes, zero padded, that were always written.
+	var header [30]byte
+	buf := header[:]
 
 	buf[0] = (uint8(m.Type) << 2) | m.Proto
 	buf[1] = uint8(m.Flags)
@@ -1263,6 +1267,12 @@ func (m Dot11) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.SerializeOp
 		copy(buf[offset:offset+6], m.Address4)
 		offset += 6
 	}
+
+	out, err := b.PrependBytes(max(offset, dot11MinSerializedLen))
+	if err != nil {
+		return err
+	}
+	copy(out, header[:])
 
 	return nil
 }

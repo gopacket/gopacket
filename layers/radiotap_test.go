@@ -6,6 +6,8 @@
 package layers
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"testing"
 
@@ -267,6 +269,103 @@ func TestSerializeRadioTapRoundTrip(t *testing.T) {
 					rt.RadioTapValues[i].Rate != newRt.RadioTapValues[i].Rate {
 					t.Errorf("RadioTap value mismatch at index %d", i)
 				}
+			}
+		})
+	}
+}
+
+// radiotapHeader builds a RadioTap header from its present words and the
+// fields that follow them.
+func radiotapHeader(present []RadioTapPresent, fields []byte) []byte {
+	data := []byte{0, 0, 0, 0}
+	for _, p := range present {
+		data = binary.LittleEndian.AppendUint32(data, uint32(p))
+	}
+	data = append(data, fields...)
+	binary.LittleEndian.PutUint16(data[2:], uint16(len(data)))
+	return data
+}
+
+// Headers longer than the 1024 bytes SerializeTo starts with must serialize
+// back to the bytes they were decoded from.
+func TestSerializeRadioTapLongHeader(t *testing.T) {
+	const radioTapNamespaceMaxLength = 128
+
+	// 256 present words, the last one holding a Rate past the 1024th byte
+	manyPresent := make([]RadioTapPresent, 256)
+	for i := range manyPresent[:255] {
+		manyPresent[i] = RadioTapPresentEXT
+	}
+	manyPresent[0] |= RadioTapPresentRate
+
+	// two vendor namespaces, the first one ends past 1024 bytes
+	vendor := RadioTapPresentEXT | RadioTapPresentVendorNamespace
+	vendorFields := append([]byte{1, 2, 3, 0, 4, 0, 0x4c, 0x04}, bytes.Repeat([]byte{0xaa}, 1100)...)
+	vendorFields = append(vendorFields, 1, 2, 3, 0, 5, 0, 2, 0, 0xbb, 0xbb)
+
+	// 16 RadioTap namespaces with every field, a Rate in between moves their alignment
+	all := RadioTapPresentHEMU - 1
+	var fullPresent []RadioTapPresent
+	for i := 0; i < 16; i++ {
+		fullPresent = append(fullPresent, all, RadioTapPresentRate)
+	}
+	for i := range fullPresent[:31] {
+		fullPresent[i] |= RadioTapPresentEXT | RadioTapPresentRadioTapNamespace
+	}
+
+	for name, data := range map[string][]byte{
+		"present": radiotapHeader(manyPresent, []byte{2}),
+		"vendor":  radiotapHeader([]RadioTapPresent{vendor, vendor, 0}, vendorFields),
+		"full":    radiotapHeader(fullPresent, make([]byte, 16*(radioTapNamespaceMaxLength+1))),
+	} {
+		t.Run(name, func(t *testing.T) {
+			var rt RadioTap
+			if err := rt.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err != nil {
+				t.Fatal("Failed to decode packet:", err)
+			}
+			// leave something behind in the buffer that must not end up in the header
+			buf := gopacket.NewSerializeBuffer()
+			dirt, _ := buf.PrependBytes(len(data))
+			copy(dirt, bytes.Repeat([]byte{0xff}, len(dirt)))
+			buf.Clear()
+			if err := rt.SerializeTo(buf, gopacket.SerializeOptions{}); err != nil {
+				t.Fatal("Failed to serialize RadioTap layer:", err)
+			}
+			serialized := buf.Bytes()
+			if name == "full" {
+				// the zero fields above are longer than what the namespaces take
+				if len(serialized) <= 1024 {
+					t.Fatalf("Expected a header longer than 1024 bytes, got %d", len(serialized))
+				}
+				data = data[:len(serialized)]
+			}
+			if !bytes.Equal(serialized, data) {
+				t.Errorf("Serialized RadioTap header differs from the decoded one:\ngot  %x\nwant %x", serialized, data)
+			}
+		})
+	}
+}
+
+// A header that does not fit the 16-bit length field is an error, not a panic.
+func TestSerializeRadioTapTooLong(t *testing.T) {
+	vendor := RadioTapPresentEXT | RadioTapPresentVendorNamespace
+	for name, rt := range map[string]RadioTap{
+		"present": {
+			Present:        make([]RadioTapPresent, 16384),
+			RadioTapValues: make([]RadioTapNamespace, 1),
+		},
+		"vendor": {
+			Present:        []RadioTapPresent{vendor, vendor, 0},
+			RadioTapValues: make([]RadioTapNamespace, 1),
+			VendorValues: []VendorNamespace{
+				{OUI: []uint8{1, 2, 3}, SkipLength: 0xffff},
+				{OUI: []uint8{1, 2, 3}, SkipLength: 0xffff},
+			},
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			if err := rt.SerializeTo(gopacket.NewSerializeBuffer(), gopacket.SerializeOptions{FixLengths: true}); err == nil {
+				t.Error("Expected an error for a RadioTap header that does not fit its length field")
 			}
 		})
 	}
