@@ -1365,8 +1365,14 @@ func decodeSVCB(data []byte, offset int, buffer *[]byte) (DNSSVCB, dnsNameLabels
 func (rr *DNSResourceRecord) decodeRData(data []byte, offset int, buffer *[]byte) error {
 	switch rr.Type {
 	case DNSTypeA:
+		if len(rr.Data) != net.IPv4len {
+			return errors.New("A record is not 4 bytes")
+		}
 		rr.IP = rr.Data
 	case DNSTypeAAAA:
+		if len(rr.Data) != net.IPv6len {
+			return errors.New("AAAA record is not 16 bytes")
+		}
 		rr.IP = rr.Data
 	case DNSTypeTXT, DNSTypeHINFO:
 		rr.TXT = rr.Data

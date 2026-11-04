@@ -8,6 +8,7 @@ package layers
 
 import (
 	"bytes"
+	"encoding/binary"
 	"net"
 	"strings"
 	"testing"
@@ -1531,6 +1532,50 @@ func TestDNSPacketWriteAddressLength(t *testing.T) {
 		got := serialize(test.rrType, test.ip)
 		if rdata := got[23:]; !bytes.Equal(rdata, test.want) {
 			t.Errorf("%v with %d byte address, want RDATA %x got %x", test.rrType, len(test.ip), test.want, rdata)
+		}
+	}
+}
+
+// testDNSBadAddressLength is a response to "www.example.com A" whose one answer
+// is an A record with RDLENGTH 16 (the RDATA is ::ffff:93.184.216.34).
+var testDNSBadAddressLength = []byte{
+	0x12, 0x34, 0x81, 0x80, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x03, 0x77, 0x77, 0x77,
+	0x07, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00, 0x00, 0x01, 0x00,
+	0x01, 0xc0, 0x0c, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x01, 0x2c, 0x00, 0x10, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0x5d, 0xb8, 0xd8, 0x22,
+}
+
+func TestDNSBadAddressLength(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		rrType  DNSType
+		rdata   []byte
+		wantErr string
+	}{
+		{"A/16", DNSTypeA, testDNSBadAddressLength[45:], "A record is not 4 bytes"},
+		{"A/3", DNSTypeA, testDNSBadAddressLength[58:], "A record is not 4 bytes"},
+		{"AAAA/4", DNSTypeAAAA, testDNSBadAddressLength[57:], "AAAA record is not 16 bytes"},
+		{"AAAA/20", DNSTypeAAAA, append(append([]byte{}, testDNSBadAddressLength[45:]...), 0, 0, 0, 0), "AAAA record is not 16 bytes"},
+		{"A/4", DNSTypeA, testDNSBadAddressLength[57:], ""},
+		{"AAAA/16", DNSTypeAAAA, testDNSBadAddressLength[45:], ""},
+	} {
+		data := append([]byte{}, testDNSBadAddressLength[:45]...)
+		binary.BigEndian.PutUint16(data[35:], uint16(tc.rrType))
+		binary.BigEndian.PutUint16(data[43:], uint16(len(tc.rdata)))
+		data = append(data, tc.rdata...)
+
+		dns := &DNS{}
+		err := dns.DecodeFromBytes(data, gopacket.NilDecodeFeedback)
+		if tc.wantErr == "" {
+			if err != nil {
+				t.Errorf("%s: unexpected error: %v", tc.name, err)
+			} else if len(dns.Answers) != 1 || !bytes.Equal(dns.Answers[0].IP, tc.rdata) {
+				t.Errorf("%s: bad decode: %v", tc.name, dns.Answers)
+			}
+		} else if err == nil {
+			t.Errorf("%s: no error decoding answer with RDLENGTH %d", tc.name, len(tc.rdata))
+		} else if !strings.Contains(err.Error(), tc.wantErr) {
+			t.Errorf("%s: unexpected error message: %v", tc.name, err)
 		}
 	}
 }
