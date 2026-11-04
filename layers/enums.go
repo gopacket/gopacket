@@ -8,6 +8,7 @@
 package layers
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 
@@ -281,6 +282,10 @@ const (
 
 // Decode a raw v4 or v6 IP packet.
 func decodeIPv4or6(data []byte, p gopacket.PacketBuilder) error {
+	if len(data) < 1 {
+		p.SetTruncated()
+		return errors.New("Raw IP packet too small")
+	}
 	version := data[0] >> 4
 	switch version {
 	case 4:

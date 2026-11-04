@@ -427,3 +427,17 @@ func TestDiameterNestedGroupedAVP(t *testing.T) {
 		t.Fatalf("grouped AVP depth %d exceeds cap %d", depth, maxDiameterGroupedDepth)
 	}
 }
+
+// TestDecodeRawIPEmpty decodes an empty raw IP record. The version nibble
+// used to be read without a length check, which panicked.
+func TestDecodeRawIPEmpty(t *testing.T) {
+	for _, data := range [][]byte{nil, {}} {
+		p := gopacket.NewPacket(data, LinkTypeRaw, gopacket.DecodeOptions{SkipDecodeRecovery: true})
+		if p.ErrorLayer() == nil {
+			t.Fatal("empty raw IP record decoded without an error")
+		}
+		if !p.Metadata().Truncated {
+			t.Error("empty raw IP record not flagged truncated")
+		}
+	}
+}
