@@ -35,7 +35,7 @@ func (d debugging) Printf(format string, args ...interface{}) {
 const (
 	IPv4MinimumFragmentSize    = 8     // Minimum size of a single fragment
 	IPv4MaximumSize            = 65535 // Maximum size of a fragment (2^16)
-	IPv4MaximumFragmentOffset  = 8183  // Maximum offset of a fragment
+	IPv4MaximumFragmentOffset  = 8189  // Maximum offset of a fragment, (65535 - 20) / 8
 	IPv4MaximumFragmentListLen = 8192  // Back out if we get more than this many fragments
 )
 
@@ -184,12 +184,13 @@ func (d *IPv4Defragmenter) securityChecks(ip *layers.IPv4) error {
 		return fmt.Errorf("defrag: fragment offset too big "+
 			"(handcrafted? %d > %d)", ip.FragOffset, IPv4MaximumFragmentOffset)
 	}
-	fragOffset := ip.FragOffset * 8
 
 	// don't allow fragment that would oversize an IP packet
-	if fragOffset+ip.Length > IPv4MaximumSize {
+	// (summed in int: the uint16 sum wrapped and never fired)
+	fragEnd := int(ip.FragOffset)*8 + int(ip.Length)
+	if fragEnd > IPv4MaximumSize {
 		return fmt.Errorf("defrag: fragment will overrun "+
-			"(handcrafted? %d > %d)", fragOffset+ip.Length, IPv4MaximumSize)
+			"(handcrafted? %d > %d)", fragEnd, IPv4MaximumSize)
 	}
 
 	return nil

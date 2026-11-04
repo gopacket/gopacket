@@ -1635,3 +1635,30 @@ func TestDefragProtocolField(t *testing.T) {
 		t.Fatalf("defrag: got protocol %v, want UDP", out.Protocol)
 	}
 }
+
+func TestDefragOverrunCheck(t *testing.T) {
+	// Offset 8183 with 768 data bytes ends at 66232, past the largest
+	// IPv4 datagram; the uint16 sum used to wrap and let it through.
+	defrag := NewIPv4Defragmenter()
+	if _, err := defrag.DefragIPv4(mkFrag(1, 8183*8, false, make([]byte, 768))); err == nil {
+		t.Fatal("defrag: fragment ending past 65535 bytes was accepted")
+	}
+
+	// The same offset ending exactly at 65535 is legal.
+	if _, err := defrag.DefragIPv4(mkFrag(2, 8183*8, false, make([]byte, 51))); err != nil {
+		t.Fatalf("defrag: fragment ending at 65535 bytes was refused: %v", err)
+	}
+}
+
+func TestDefragMaxFragmentOffset(t *testing.T) {
+	// A 65535 byte datagram ends with 3 data bytes at offset 8189;
+	// offsets 8184 to 8189 used to be refused although legal.
+	defrag := NewIPv4Defragmenter()
+	feedFrags(t, defrag, mkFrag(1, 0, true, make([]byte, 65512)))
+	lastFrag(t, defrag, mkFrag(1, 8189*8, false, []byte("end")), append(make([]byte, 65512), "end"...))
+
+	// Offset 8190 cannot fit in a datagram at all.
+	if _, err := defrag.DefragIPv4(mkFrag(2, 8190*8, false, []byte("x"))); err == nil {
+		t.Fatal("defrag: fragment at offset 8190 was accepted")
+	}
+}
