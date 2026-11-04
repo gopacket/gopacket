@@ -7,6 +7,8 @@
 package layers
 
 import (
+	"bytes"
+	"encoding/binary"
 	"net"
 	"reflect"
 	"testing"
@@ -116,5 +118,43 @@ func TestPacketPrism(t *testing.T) {
 func BenchmarkDecodePacketPrism(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		gopacket.NewPacket(testPacketPrism, LinkTypePrismHeader, gopacket.NoCopy)
+	}
+}
+
+// prismWithValue builds a type 1 Prism header holding one value whose
+// Length field is set to length, followed by payload.
+func prismWithValue(length uint16, payload []byte) []byte {
+	const headerLen = 24 + 12
+	data := make([]byte, headerLen)
+	binary.LittleEndian.PutUint32(data[0:4], uint32(PrismType1MessageCode))
+	binary.LittleEndian.PutUint32(data[4:8], headerLen)
+	binary.LittleEndian.PutUint16(data[30:32], length)
+	copy(data[32:36], []byte{1, 2, 3, 4})
+
+	return append(data, payload...)
+}
+
+// TestPrismValueLengthCapped checks that a value Length larger than its
+// 4-byte data slot neither panics nor reads into the next value or the
+// payload.
+func TestPrismValueLengthCapped(t *testing.T) {
+	for _, length := range []uint16{5, 12, 0xfff8, 0xffff} {
+		var m PrismHeader
+		err := m.DecodeFromBytes(prismWithValue(length, []byte{9, 9, 9, 9, 9, 9, 9, 9}), gopacket.NilDecodeFeedback)
+		if err != nil {
+			t.Fatalf("length %d: %v", length, err)
+		}
+		if got := m.Values[0].Data; !bytes.Equal(got, []byte{1, 2, 3, 4}) {
+			t.Errorf("length %d: data %x, want the 4-byte slot", length, got)
+		}
+	}
+
+	// a shorter length still selects a prefix of the slot
+	var m PrismHeader
+	if err := m.DecodeFromBytes(prismWithValue(2, nil), gopacket.NilDecodeFeedback); err != nil {
+		t.Fatal(err)
+	}
+	if got := m.Values[0].Data; !bytes.Equal(got, []byte{1, 2}) {
+		t.Errorf("data %x, want 0102", got)
 	}
 }
