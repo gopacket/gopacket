@@ -102,12 +102,9 @@ type TLSHandshakeRecord struct {
 }
 
 func (t *TLSHandshakeRecordClientHello) decodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
-	// The record framing hands us a slice whose length is the TLS record body
-	// but whose capacity may span the rest of the packet buffer. The original
-	// parser read up to that capacity; re-slice to it so the bounds checks
-	// below reflect the bytes actually available and can never read past the
-	// underlying buffer (which is what caused the panics this guards against).
-	data = data[:cap(data)]
+	// data is exactly the body of one handshake record (see decodeTLSRecords).
+	// Never look past len(data): the backing array may hold the next record,
+	// the rest of the frame, or a previous packet in a reused capture buffer.
 
 	// Fixed prefix: type(1) + length(3) + version(2) + random(32) + sessionIDLen(1).
 	if len(data) < 39 {
