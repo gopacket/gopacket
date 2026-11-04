@@ -6,6 +6,7 @@ package layers
 
 import (
 	"bytes"
+	"encoding/binary"
 	"os"
 	"os/exec"
 	"reflect"
@@ -435,5 +436,33 @@ func TestSerializeTLSAlertEncrypted(t *testing.T) {
 		}
 	} else {
 		t.Error("No TLS layer type found in reconstructed packet")
+	}
+}
+
+// TestParseTLSClientHelloSNILengthOverflow sets the server_name HostName
+// length to values whose 16-bit sum with the field offset wraps. The bound
+// used to be computed in uint16, which produced inverted slice bounds.
+func TestParseTLSClientHelloSNILengthOverflow(t *testing.T) {
+	hostname := []byte("www.google.com")
+	lengthOffset := bytes.Index(testClientHello, hostname) - 2
+	if lengthOffset < 0 {
+		t.Fatal("host name not found in the test packet")
+	}
+
+	for length := 0xfff7; length <= 0xffff; length++ {
+		data := append([]byte{}, testClientHello...)
+		binary.BigEndian.PutUint16(data[lengthOffset:], uint16(length))
+
+		p := gopacket.NewPacket(data, LinkTypeEthernet, testTLSDecodeOptions)
+		if p.ErrorLayer() != nil {
+			t.Fatalf("length %#x: %v", length, p.ErrorLayer().Error())
+		}
+		tls, ok := p.Layer(LayerTypeTLS).(*TLS)
+		if !ok {
+			t.Fatalf("length %#x: no TLS layer", length)
+		}
+		if sni := tls.Handshake[0].ClientHello.SNI; sni != nil {
+			t.Errorf("length %#x: SNI %q, want none", length, sni)
+		}
 	}
 }

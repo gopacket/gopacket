@@ -165,8 +165,8 @@ func (t *TLSHandshakeRecordClientHello) decodeFromBytes(data []byte, df gopacket
 			break
 		}
 		extensionType := binary.BigEndian.Uint16(data[:2])
-		length := binary.BigEndian.Uint16(data[2:4])
-		if len(data) < 4+int(length) {
+		length := int(binary.BigEndian.Uint16(data[2:4]))
+		if len(data) < 4+length {
 			break
 		}
 		switch TLSExtension(extensionType) {
@@ -175,8 +175,8 @@ func (t *TLSHandshakeRecordClientHello) decodeFromBytes(data []byte, df gopacket
 				serverNameExtensionLength := binary.BigEndian.Uint16(data[4:6])
 				entryType := data[6]
 				if serverNameExtensionLength > 0 && entryType == 0 && len(data) > 8 { // 0 = DNS hostname
-					hostnameLength := binary.BigEndian.Uint16(data[7:9])
-					if len(data) > int(8+hostnameLength) {
+					hostnameLength := int(binary.BigEndian.Uint16(data[7:9]))
+					if len(data) >= 9+hostnameLength {
 						t.SNI = data[9 : 9+hostnameLength]
 					}
 				}
