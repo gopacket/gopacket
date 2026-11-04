@@ -814,17 +814,26 @@ func TestDot11InformationElement(t *testing.T) {
 				Length: 2,
 				Info:   []byte{},
 			},
-			errors.New("vendor extension size < 4"),
+			nil,
 		},
 		{
-			"Offset greater than len",
+			"Vendor with OUI only",
 			[]byte{0xdd, 0x03, 0x00, 0x50, 0xf2, 0x01, 0x02, 0x03, 0x04, 0x05},
 			Dot11InformationElement{
 				ID:     221,
 				Length: 3,
 				Info:   []byte{},
 			},
-			errors.New("information element length 5 too short, 6 required"),
+			nil,
+		},
+		{
+			"Truncated vendor",
+			[]byte{0xdd, 0x05, 0x00, 0x50, 0xf2},
+			Dot11InformationElement{
+				ID:     221,
+				Length: 5,
+			},
+			errors.New("Dot11InformationElement length 5 too short, 7 required"),
 		},
 	}
 
@@ -939,5 +948,45 @@ func TestDot11SerializeShortHeader(t *testing.T) {
 				t.Errorf("got  %x\nwant %x", buf.Bytes(), test.Want)
 			}
 		})
+	}
+}
+
+// TestDot11InformationElementAfterShortElement puts vendor and extension
+// elements that are complete but too short for the OUI and type, or the
+// extension ID, in front of an SSID element. Both must decode, and the
+// elements re-encode byte for byte.
+func TestDot11InformationElementAfterShortElement(t *testing.T) {
+	ssid := []byte{0x00, 0x07, 'E', 'v', 'i', 'l', 'A', 'P', '1'}
+	for _, first := range [][]byte{
+		{0xdd, 0x00},
+		{0xdd, 0x01, 0x00},
+		{0xdd, 0x02, 0x00, 0x50},
+		{0xdd, 0x03, 0x00, 0x50, 0xf2},
+		{0xff, 0x00},
+	} {
+		data := append(append([]byte{}, first...), ssid...)
+		p := gopacket.NewPacket(data, LayerTypeDot11InformationElement, gopacket.Default)
+		if p.ErrorLayer() != nil {
+			t.Errorf("%x: %v", first, p.ErrorLayer().Error())
+			continue
+		}
+		if n := len(p.Layers()); n != 2 {
+			t.Errorf("%x: %d layers, want 2", first, n)
+			continue
+		}
+		buf := gopacket.NewSerializeBuffer()
+		if err := gopacket.SerializePacket(buf, gopacket.SerializeOptions{}, p); err != nil {
+			t.Errorf("%x: %v", first, err)
+			continue
+		}
+		if !bytes.Equal(buf.Bytes(), data) {
+			t.Errorf("%x: re-encoded as %x", first, buf.Bytes())
+		}
+	}
+
+	// A vendor element cut short by the frame is still an error.
+	ie := &Dot11InformationElement{}
+	if err := ie.DecodeFromBytes([]byte{0xdd, 0x05, 0x00, 0x50, 0xf2}, gopacket.NilDecodeFeedback); err == nil {
+		t.Error("truncated vendor element decoded without error")
 	}
 }
