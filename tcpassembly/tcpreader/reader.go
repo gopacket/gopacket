@@ -48,18 +48,29 @@ package tcpreader
 import (
 	"errors"
 	"io"
+	"sync"
 
 	"github.com/gopacket/gopacket/tcpassembly"
 )
 
-var discardBuffer = make([]byte, 4096)
+const discardBufferSize = 4096
+
+// Concurrent discards each get their own buffer.
+var discardBuffers = sync.Pool{
+	New: func() interface{} {
+		b := make([]byte, discardBufferSize)
+		return &b
+	},
+}
 
 // DiscardBytesToFirstError will read in all bytes up to the first error
 // reported by the given reader, then return the number of bytes discarded
 // and the error encountered.
 func DiscardBytesToFirstError(r io.Reader) (discarded int, err error) {
+	buf := discardBuffers.Get().(*[]byte)
+	defer discardBuffers.Put(buf)
 	for {
-		n, e := r.Read(discardBuffer)
+		n, e := r.Read(*buf)
 		discarded += n
 		if e != nil {
 			return discarded, e
@@ -68,17 +79,19 @@ func DiscardBytesToFirstError(r io.Reader) (discarded int, err error) {
 }
 
 // DiscardBytesToEOF will read in all bytes from a Reader until it
-// encounters an io.EOF, then return the number of bytes.  Be careful
-// of this... if used on a Reader that returns a non-io.EOF error
-// consistently, this will loop forever discarding that error while
-// it waits for an EOF.
+// encounters an io.EOF, then return the number of bytes.  A Reader that
+// returns a non-io.EOF error twice in a row without delivering any bytes
+// is considered stuck and is given up on.  DataLost does not count: each
+// Read reports it once, so a run of them ends on its own.
 func DiscardBytesToEOF(r io.Reader) (discarded int) {
+	stuck := false
 	for {
 		n, e := DiscardBytesToFirstError(r)
 		discarded += n
-		if e == io.EOF {
+		if e == io.EOF || (stuck && n == 0) {
 			return
 		}
+		stuck = n == 0 && e != DataLost
 	}
 }
 
@@ -153,6 +166,11 @@ func (r *ReaderStream) ReassemblyComplete() {
 // slices.
 func (r *ReaderStream) stripEmpty() {
 	for len(r.current) > 0 && len(r.current[0].Bytes) == 0 {
+		// An empty Reassembly may still carry a Skip the caller wants to hear
+		// about: leave it for Read to report.
+		if r.LossErrors && !r.lossReported && r.current[0].Skip != 0 {
+			return
+		}
 		r.current = r.current[1:]
 		r.lossReported = false
 	}
@@ -202,7 +220,16 @@ func (r *ReaderStream) Read(p []byte) (int, error) {
 // manner that's safe for the assembler (IE: it doesn't block).
 func (r *ReaderStream) Close() error {
 	r.current = nil
+	if r.closed {
+		return nil
+	}
 	r.closed = true
+
+	// After a Read the assembler waits on done for the slice it handed over:
+	// release it, or the drain below waits on it forever.
+	if !r.first {
+		r.done <- true
+	}
 	for {
 		if _, ok := <-r.reassembled; !ok {
 			return nil
