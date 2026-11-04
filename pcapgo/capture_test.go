@@ -12,12 +12,14 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/vishvananda/netlink"
+	"golang.org/x/sys/unix"
 
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
@@ -178,4 +180,108 @@ func setupDummyInterface(tb testing.TB) (ifName string) {
 	}
 
 	return la.Name
+}
+
+// setupVethPair configures a veth pair and returns both names. A frame sent
+// on the first arrives on the second through the receive path, as it would
+// from the wire.
+func setupVethPair(tb testing.TB) (send, recv string) {
+	tb.Helper()
+	idx := atomic.AddInt32(&dummyInterfaceIdx, 1)
+	la := netlink.NewLinkAttrs()
+	la.Name = fmt.Sprintf("vethsend%02d", idx)
+	veth := &netlink.Veth{LinkAttrs: la, PeerName: fmt.Sprintf("vethrecv%02d", idx)}
+	if err := netlink.LinkAdd(veth); err != nil {
+		tb.Fatalf("netlink.LinkAdd() error = %v", err)
+	}
+	tb.Cleanup(func() {
+		if err := netlink.LinkDel(veth); err != nil {
+			tb.Fatalf("netlink.LinkDel() error = %v", err)
+		}
+	})
+
+	for _, name := range []string{la.Name, veth.PeerName} {
+		link, err := netlink.LinkByName(name)
+		if err != nil {
+			tb.Fatalf("netlink.LinkByName() error = %v", err)
+		}
+		if err := netlink.LinkSetUp(link); err != nil {
+			tb.Fatalf("netlink.LinkSetUp() error = %v", err)
+		}
+	}
+
+	return la.Name, veth.PeerName
+}
+
+// sendFrame puts one frame on the wire of the named interface.
+func sendFrame(tb testing.TB, ifname string, frame []byte) {
+	tb.Helper()
+	intf, err := net.InterfaceByName(ifname)
+	if err != nil {
+		tb.Fatal(err)
+	}
+	fd, err := unix.Socket(unix.AF_PACKET, unix.SOCK_RAW, 0)
+	if err != nil {
+		tb.Fatalf("socket: %v", err)
+	}
+	defer unix.Close(fd)
+	if err := unix.Sendto(fd, frame, 0, &unix.SockaddrLinklayer{Ifindex: intf.Index}); err != nil {
+		tb.Fatalf("sendto: %v", err)
+	}
+}
+
+// readFrame returns the next frame from the handle, or fails when none
+// arrives within the test timeout.
+func readFrame(tb testing.TB, handle *pcapgo.EthernetHandle) ([]byte, gopacket.CaptureInfo) {
+	tb.Helper()
+	type result struct {
+		data []byte
+		ci   gopacket.CaptureInfo
+		err  error
+	}
+	done := make(chan result, 1)
+	go func() {
+		data, ci, err := handle.ReadPacketData()
+		done <- result{data, ci, err}
+	}()
+	select {
+	case r := <-done:
+		if r.err != nil {
+			tb.Fatal(r.err)
+		}
+		return r.data, r.ci
+	case <-time.After(timeout):
+		tb.Fatal("no frame within the timeout")
+	}
+	return nil, gopacket.CaptureInfo{}
+}
+
+// A frame that fills the MTU is 14 bytes longer than the MTU, so a handle
+// sized by the MTU cut the tail off every full-size frame.
+func TestEthernetHandleCapturesFullFrame(t *testing.T) {
+	send, recv := setupVethPair(t)
+	handle, err := pcapgo.NewEthernetHandle(recv)
+	if err != nil {
+		t.Fatalf("OpenEthernet: %v", err)
+	}
+	defer handle.Close()
+
+	intf, err := net.InterfaceByName(recv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	frame := make([]byte, intf.MTU+14)
+	frame[12] = 0x08 // ethertype IPv4
+	for i := range frame[14:] {
+		frame[14+i] = byte(i)
+	}
+	sendFrame(t, send, frame)
+
+	data, ci := readFrame(t, handle)
+	if ci.CaptureLength != len(frame) || ci.Length != len(frame) {
+		t.Errorf("got CaptureLength %d, Length %d, want %d", ci.CaptureLength, ci.Length, len(frame))
+	}
+	if !bytes.Equal(data, frame) {
+		t.Errorf("frame differs from the one sent (%d bytes read)", len(data))
+	}
 }

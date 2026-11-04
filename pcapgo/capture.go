@@ -23,6 +23,10 @@ import (
 	"github.com/gopacket/gopacket/endian"
 )
 
+// defaultCaptureLength is the capture length of a new EthernetHandle:
+// libpcap's MAXIMUM_SNAPLEN, the most a packet socket hands over.
+const defaultCaptureLength = 262144
+
 var hdrLen = unix.CmsgSpace(0)
 var auxLen = unix.CmsgSpace(int(unsafe.Sizeof(unix.TpacketAuxdata{})))
 var timensLen = unix.CmsgSpace(int(unsafe.Sizeof(unix.Timespec{})))
@@ -327,9 +331,12 @@ func NewEthernetHandle(ifname string) (*EthernetHandle, error) {
 		ooblen += timensLen
 	}
 
+	// The MTU does not include the link-layer header, so a frame that fills
+	// it does not fit an MTU-sized buffer, and segmentation offload hands
+	// over merged frames many times the MTU. Capture what libpcap would.
 	handle := &EthernetHandle{
 		file:   os.NewFile(uintptr(fd), ""),
-		buffer: make([]byte, intf.MTU),
+		buffer: make([]byte, defaultCaptureLength),
 		oob:    make([]byte, ooblen),
 		ancil:  make([]interface{}, 1),
 		intf:   intf.Index,
