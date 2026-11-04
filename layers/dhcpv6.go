@@ -153,12 +153,16 @@ func (d *DHCPv6) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.Serialize
 
 	offset := 0
 	data[0] = byte(d.MsgType)
+	// PrependBytes does not zero, and the copies below may be shorter than
+	// their fixed-width fields.
 	if d.MsgType == DHCPv6MsgTypeRelayForward || d.MsgType == DHCPv6MsgTypeRelayReply {
 		data[1] = byte(d.HopCount)
+		copy(data[2:34], lotsOfZeros[:])
 		copy(data[2:18], d.LinkAddr.To16())
 		copy(data[18:34], d.PeerAddr.To16())
 		offset = 34
 	} else {
+		copy(data[1:4], lotsOfZeros[:])
 		copy(data[1:4], d.TransactionID)
 		offset = 4
 	}

@@ -222,3 +222,29 @@ func testDHCPOptionEqual(t *testing.T, idx int, d1, d2 DHCPOption) {
 		t.Errorf("expection Options[%d].Data to be = %v, got %v", idx, d1.Data, d2.Data)
 	}
 }
+
+// Fixed-width BOOTP fields shorter than their slot must not keep the bytes
+// a reused SerializeBuffer still holds from the previous packet.
+func TestDHCPv4EncodeReusedBuffer(t *testing.T) {
+	buf := gopacket.NewSerializeBuffer()
+	dirty, _ := buf.PrependBytes(241)
+	for i := range dirty {
+		dirty[i] = 0xff
+	}
+
+	dhcp := &DHCPv4{Operation: DHCPOpRequest, HardwareType: LinkTypeEthernet, Xid: 0x12345678,
+		ClientHWAddr: net.HardwareAddr{0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc},
+		ServerName:   []byte("srv"), File: []byte("boot")}
+	opts := gopacket.SerializeOptions{FixLengths: true}
+	if err := gopacket.SerializeLayers(buf, opts, dhcp); err != nil {
+		t.Fatal(err)
+	}
+
+	want := make([]byte, 224)
+	copy(want[16:], dhcp.ClientHWAddr)
+	copy(want[32:], dhcp.ServerName)
+	copy(want[96:], dhcp.File)
+	if got := buf.Bytes()[12:236]; !bytes.Equal(got, want) {
+		t.Errorf("stale buffer bytes in serialized header:\ngot  %x\nwant %x", got, want)
+	}
+}

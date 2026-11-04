@@ -226,6 +226,9 @@ func (d *DHCPv4) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.Serialize
 	binary.BigEndian.PutUint32(data[4:8], d.Xid)
 	binary.BigEndian.PutUint16(data[8:10], d.Secs)
 	binary.BigEndian.PutUint16(data[10:12], d.Flags)
+	// PrependBytes does not zero, and the copies below may be shorter than
+	// their fixed-width fields.
+	copy(data[12:236], lotsOfZeros[:])
 	copy(data[12:16], d.ClientIP.To4())
 	copy(data[16:20], d.YourClientIP.To4())
 	copy(data[20:24], d.NextServerIP.To4())

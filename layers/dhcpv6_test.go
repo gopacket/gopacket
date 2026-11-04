@@ -170,3 +170,24 @@ func TestDHCPv6DUIDRoundTrip(t *testing.T) {
 		}
 	}
 }
+
+// Fixed-width header fields left unset must not keep the bytes a reused
+// SerializeBuffer still holds from the previous packet.
+func TestDHCPv6EncodeReusedBuffer(t *testing.T) {
+	buf := gopacket.NewSerializeBuffer()
+	dirty, _ := buf.PrependBytes(34)
+	for i := range dirty {
+		dirty[i] = 0xff
+	}
+
+	opts := gopacket.SerializeOptions{FixLengths: true}
+	for _, msgType := range []DHCPv6MsgType{DHCPv6MsgTypeRelayForward, DHCPv6MsgTypeSolicit} {
+		if err := gopacket.SerializeLayers(buf, opts, &DHCPv6{MsgType: msgType}); err != nil {
+			t.Fatal(err)
+		}
+		got := buf.Bytes()
+		if want := make([]byte, len(got)-1); !bytes.Equal(got[1:], want) {
+			t.Errorf("%s: stale buffer bytes in serialized header: %x", msgType, got)
+		}
+	}
+}
