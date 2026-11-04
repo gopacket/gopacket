@@ -1390,6 +1390,61 @@ func TestKeepInLivePacketFollowedByQueuedPage(t *testing.T) {
 	}
 }
 
+// Closing a half-connection must give the pages it kept for the Stream
+// back to the page cache.
+func TestKeepThenCloseReleasesPages(t *testing.T) {
+	fact := &testKeepFactory{t: t, keep: 1}
+	p := NewStreamPool(fact)
+	a := NewAssembler(p)
+	for _, tcp := range []layers.TCP{
+		{SrcPort: 1, DstPort: 2, SYN: true, Seq: 1000, BaseLayer: layers.BaseLayer{Payload: []byte{1, 2, 3}}},
+		{SrcPort: 1, DstPort: 2, FIN: true, Seq: 1004},
+	} {
+		tcp.SetInternalPortsForTesting()
+		a.Assemble(netFlow, &tcp)
+	}
+	if a.pc.used != 0 {
+		t.Errorf("%d pages still in use after close, want 0", a.pc.used)
+	}
+}
+
+// Consuming a kept page must not lower the page count below what is
+// queued, or the per-connection limit stops applying.
+func TestKeepThenConsumeKeepsPageLimit(t *testing.T) {
+	testKeep(t, []testKeepSequence{
+		{
+			tcp:  layers.TCP{SrcPort: 1, DstPort: 2, SYN: true, Seq: 1000, BaseLayer: layers.BaseLayer{Payload: []byte{1, 2, 3}}},
+			keep: 1,
+			want: []byte{1, 2, 3},
+		},
+		{
+			// keeping from the end consumes the kept page
+			tcp:  layers.TCP{SrcPort: 1, DstPort: 2, Seq: 1004, BaseLayer: layers.BaseLayer{Payload: []byte{4}}},
+			keep: 3,
+			want: []byte{2, 3, 4},
+		},
+		// Four out-of-order segments reach the limit of 4 pages: the
+		// first is pushed out with the gap in front of it.
+		{
+			tcp:  layers.TCP{SrcPort: 1, DstPort: 2, Seq: 1010, BaseLayer: layers.BaseLayer{Payload: []byte{10}}},
+			want: []byte{},
+		},
+		{
+			tcp:  layers.TCP{SrcPort: 1, DstPort: 2, Seq: 1012, BaseLayer: layers.BaseLayer{Payload: []byte{12}}},
+			want: []byte{},
+		},
+		{
+			tcp:  layers.TCP{SrcPort: 1, DstPort: 2, Seq: 1014, BaseLayer: layers.BaseLayer{Payload: []byte{14}}},
+			want: []byte{},
+		},
+		{
+			tcp:     layers.TCP{SrcPort: 1, DstPort: 2, Seq: 1016, BaseLayer: layers.BaseLayer{Payload: []byte{16}}},
+			want:    []byte{10},
+			skipped: 5,
+		},
+	})
+}
+
 /*
  * FSM tests
  */

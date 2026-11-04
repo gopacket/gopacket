@@ -1116,6 +1116,12 @@ func (a *Assembler) cleanSG(half *halfconnection, ac AssemblerContext) {
 		// skip is an offset into the first kept container only.
 		skip = 0
 
+		// Pages cut from the live packet are new: count them, as every
+		// release of a saved page is counted.
+		if _, live := r.(*livePacket); live {
+			half.pages += nb
+		}
+
 		if half.saved == nil {
 			half.saved = first
 		} else {
@@ -1168,7 +1174,7 @@ func (a *Assembler) addPending(half *halfconnection, firstSeq Sequence) int {
 		var next *page
 		for p := half.saved; p != nil; p = next {
 			next = p.next
-			p.release(a.pc)
+			half.pages -= p.release(a.pc)
 		}
 		half.saved = nil
 		ret = []byteContainer{}
@@ -1243,6 +1249,13 @@ func (a *Assembler) closeHalfConnection(conn *connection, half *halfconnection) 
 		a.pc.replace(p)
 		half.pages--
 	}
+
+	// Pages kept for the Stream are of no use once the half is closed.
+	for p := half.saved; p != nil; p = next {
+		next = p.next
+		half.pages -= p.release(a.pc)
+	}
+	half.saved = nil
 
 	if conn.s2c.closed && conn.c2s.closed {
 		if half.stream.ReassemblyComplete(nil) { //FIXME: which context to pass ?
