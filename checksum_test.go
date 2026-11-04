@@ -78,3 +78,29 @@ func TestChecksumLargeData(t *testing.T) {
 		t.Errorf("subtracting a word gives %#x, want %#x", got, want)
 	}
 }
+
+// badChecksumLayer is a layer whose checksum never verifies.
+type badChecksumLayer []byte
+
+func (l badChecksumLayer) LayerType() LayerType  { return LayerTypeZero }
+func (l badChecksumLayer) LayerContents() []byte { return l }
+func (l badChecksumLayer) LayerPayload() []byte  { return nil }
+func (l badChecksumLayer) VerifyChecksum() (error, ChecksumVerificationResult) {
+	return nil, ChecksumVerificationResult{Valid: false, Correct: 1, Actual: 2}
+}
+
+// TestVerifyChecksumsLazy expects a lazily decoded packet to verify every
+// layer, not only the ones an earlier accessor happened to decode.
+func TestVerifyChecksumsLazy(t *testing.T) {
+	dec := DecodeFunc(func(data []byte, p PacketBuilder) error {
+		p.AddLayer(badChecksumLayer(data))
+		return nil
+	})
+	for _, opts := range []DecodeOptions{Default, Lazy} {
+		p := NewPacket([]byte{1, 2, 3}, dec, opts)
+		err, mismatches := p.VerifyChecksums()
+		if err != nil || len(mismatches) != 1 {
+			t.Errorf("lazy=%v: err %v, %d mismatches, want 1", opts.Lazy, err, len(mismatches))
+		}
+	}
+}

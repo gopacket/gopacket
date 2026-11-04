@@ -685,6 +685,13 @@ func (p *lazyPacket) LayerClass(lc LayerClass) Layer {
 func (p *lazyPacket) String() string { p.Layers(); return p.packetString() }
 func (p *lazyPacket) Dump() string   { p.Layers(); return p.packetDump() }
 
+// VerifyChecksums decodes the remaining layers first, so every layer with a
+// checksum is covered and not just the ones an earlier accessor decoded.
+func (p *lazyPacket) VerifyChecksums() (error, []ChecksumMismatch) {
+	p.Layers()
+	return p.packet.VerifyChecksums()
+}
+
 // DecodeOptions tells gopacket how to decode a packet.
 type DecodeOptions struct {
 	// Lazy decoding decodes the minimum number of layers needed to return data
