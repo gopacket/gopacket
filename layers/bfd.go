@@ -344,10 +344,18 @@ func (d *BFD) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 		return errors.New("BFD packet too short")
 	}
 
-	pLen := uint8(data[3])
-	if len(data) != int(pLen) {
+	// RFC 5880 section 6.8.6 discards a packet only if the Length field is
+	// below the minimum or greater than the payload of the encapsulating
+	// protocol. Bytes after Length are not part of the BFD packet.
+	pLen := int(data[3])
+	if pLen < bfdMinimumRecordSizeInBytes {
+		return errors.New("BFD packet length too small")
+	}
+	if pLen > len(data) {
+		df.SetTruncated()
 		return errors.New("BFD packet length does not match")
 	}
+	data = data[:pLen]
 
 	// BFD type embeds type BaseLayer which contains two fields:
 	//    Contents is supposed to contain the bytes of the data at this level.

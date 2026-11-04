@@ -337,3 +337,53 @@ func TestBFDKeyedAuthTooShort(t *testing.T) {
 		}
 	}
 }
+
+func TestBFDTrailingBytes(t *testing.T) {
+	// The packet of TestBFDNoAuth with the UDP length raised by one, so the
+	// UDP payload carries one byte more than the BFD Length field covers.
+	// RFC 5880 section 6.8.6 does not discard such a packet; the extra byte
+	// is simply not part of the BFD packet.
+	var testPacketBFD = []byte{
+		0x00, 0x00, 0x01, 0x00, 0x00, 0x01, 0x00, 0x10, 0x94, 0x00, 0x00, 0x02, 0x08, 0x00, 0x45, 0x00,
+		0x00, 0x3d, 0x00, 0x00, 0x00, 0x00, 0x0a, 0x11, 0x2f, 0x58, 0xc0, 0x55, 0x01, 0x02, 0xc0, 0x00,
+		0x00, 0x01, 0xc0, 0x00, 0x0e, 0xc8, 0x00, 0x21, 0x72, 0x31, 0x20, 0x40, 0x05, 0x18, 0x00, 0x00,
+		0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0f, 0x42, 0x40, 0x00, 0x0f, 0x42, 0x40, 0x00, 0x00,
+		0x00, 0x00, 0x01, 0x4e, 0x0a, 0x90, 0x40,
+	}
+
+	pExpectedBFD := &BFD{
+		BaseLayer: BaseLayer{
+			Contents: []byte{
+				0x20, 0x40, 0x05, 0x18, 0x00, 0x00, 0x00, 0x01,
+				0x00, 0x00, 0x00, 0x00, 0x00, 0x0f, 0x42, 0x40,
+				0x00, 0x0f, 0x42, 0x40, 0x00, 0x00, 0x00, 0x00,
+			},
+			Payload: nil,
+		},
+		Version:                   1,
+		Diagnostic:                BFDDiagnosticNone,
+		State:                     BFDStateDown,
+		DetectMultiplier:          5,
+		MyDiscriminator:           1,
+		YourDiscriminator:         0,
+		DesiredMinTxInterval:      1000000,
+		RequiredMinRxInterval:     1000000,
+		RequiredMinEchoRxInterval: 0,
+		AuthHeader:                nil,
+	}
+
+	checkBFD("testTrailingBytes", t, testPacketBFD, pExpectedBFD)
+}
+
+func TestBFDInvalidLength(t *testing.T) {
+	// A Length field below the minimum or beyond the available data is
+	// still rejected.
+	for _, pLen := range []int{0, bfdMinimumRecordSizeInBytes - 1, bfdMinimumRecordSizeInBytes + 2} {
+		data := make([]byte, bfdMinimumRecordSizeInBytes+1)
+		data[0] = 0x20
+		data[3] = byte(pLen)
+		if err := (&BFD{}).DecodeFromBytes(data, gopacket.NilDecodeFeedback); err == nil {
+			t.Errorf("BFD packet with Length %d in %d bytes of data decoded without error", pLen, len(data))
+		}
+	}
+}
