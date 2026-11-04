@@ -297,3 +297,32 @@ func TestIPv4SerializePadding(t *testing.T) {
 		t.Fatalf("Serialization mismatch.\nGot:\n%x\nExpected:\n%x\n", buf.Bytes(), b)
 	}
 }
+
+// IPv6 extension headers don't exist in IPv4, so what follows one in an IPv4
+// packet must not be reported as the packet's transport layer.
+func TestIPv4NoIPv6Extensions(t *testing.T) {
+	for _, proto := range []IPProtocol{IPProtocolIPv6HopByHop, IPProtocolIPv6Routing, IPProtocolIPv6Fragment, IPProtocolIPv6Destination} {
+		b := make([]byte, 48)
+		copy(b, []byte{0x45, 0, 0, 48, 0, 0, 0, 0, 64, byte(proto)})
+		// 8 byte extension header with next header TCP, then a TCP header.
+		copy(b[20:], []byte{byte(IPProtocolTCP), 0, 1, 4, 0, 0, 0, 0})
+		b[28+12] = 0x50
+		p := gopacket.NewPacket(b, LayerTypeIPv4, gopacket.Default)
+		checkLayers(p, []gopacket.LayerType{LayerTypeIPv4, gopacket.LayerTypeDecodeFailure}, t)
+		if p.TransportLayer() != nil {
+			t.Errorf("%v: got transport layer %v, want none", proto, p.TransportLayer().LayerType())
+		}
+
+		var ip4 IPv4
+		var skipper IPv6ExtensionSkipper
+		var tcp TCP
+		var decoded []gopacket.LayerType
+		parser := gopacket.NewDecodingLayerParser(LayerTypeIPv4, &ip4, &skipper, &tcp)
+		if err := parser.DecodeLayers(b, &decoded); err != nil {
+			t.Errorf("%v: unexpected error: %v", proto, err)
+		}
+		if want := []gopacket.LayerType{LayerTypeIPv4}; !reflect.DeepEqual(decoded, want) {
+			t.Errorf("%v: decoded %v, want %v", proto, decoded, want)
+		}
+	}
+}

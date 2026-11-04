@@ -319,7 +319,13 @@ func (i *IPv4) NextLayerType() gopacket.LayerType {
 	if i.Flags&IPv4MoreFragments != 0 || i.FragOffset != 0 {
 		return gopacket.LayerTypeFragment
 	}
-	return i.Protocol.LayerType()
+	next := i.Protocol.LayerType()
+	if LayerClassIPv6Extension.Contains(next) {
+		// IPProtocolMetadata is shared with IPv6. Extension headers don't
+		// exist in IPv4, so hosts drop these like any unknown protocol.
+		return gopacket.LayerTypeZero
+	}
+	return next
 }
 
 func decodeIPv4(data []byte, p gopacket.PacketBuilder) error {
