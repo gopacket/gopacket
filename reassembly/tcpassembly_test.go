@@ -451,6 +451,40 @@ func TestSynOnEstablished(t *testing.T) {
 	})
 }
 
+// A RST ahead of the expected sequence number is dropped by the receiver:
+// it must not be queued and end the stream at the next flush.
+func TestOutOfOrderRST(t *testing.T) {
+	fact := &testFactory{}
+	p := NewStreamPool(fact)
+	a := NewAssembler(p)
+	for i, test := range []testSequence{
+		{
+			in:   layers.TCP{SrcPort: 1, DstPort: 2, SYN: true, Seq: 1000, BaseLayer: layers.BaseLayer{Payload: []byte{1, 2, 3}}},
+			want: []Reassembly{{Start: true, Bytes: []byte{1, 2, 3}}},
+		},
+		{
+			in:   layers.TCP{SrcPort: 1, DstPort: 2, RST: true, Seq: 1010, BaseLayer: layers.BaseLayer{Payload: []byte{7}}},
+			want: []Reassembly{},
+		},
+		{
+			in:   layers.TCP{SrcPort: 1, DstPort: 2, Seq: 1004, BaseLayer: layers.BaseLayer{Payload: []byte{4, 5}}},
+			want: []Reassembly{{Bytes: []byte{4, 5}}},
+		},
+	} {
+		fact.reassembly = []Reassembly{}
+		test.in.SetInternalPortsForTesting()
+		a.Assemble(netFlow, &test.in)
+		if !reflect.DeepEqual(fact.reassembly, test.want) {
+			t.Fatalf("test %v:\nwant: %v\n got: %v\n", i, test.want, fact.reassembly)
+		}
+	}
+	fact.reassembly = []Reassembly{}
+	a.FlushAll()
+	if len(fact.reassembly) != 0 {
+		t.Fatalf("flush delivered the queued RST: %v", fact.reassembly)
+	}
+}
+
 // A FIN with no payload that arrives ahead of the data it ends must still
 // close the stream once that data is in.
 func TestFinAheadOfData(t *testing.T) {
@@ -1066,7 +1100,7 @@ func TestFlush(t *testing.T) {
 			delay:          time.Millisecond * 50,
 			flushOlderThan: time.Millisecond * 99,
 		},
-		// a late RST packet
+		// a late FIN packet
 		{
 			seq: []testSequence{
 				{
@@ -1083,12 +1117,12 @@ func TestFlush(t *testing.T) {
 					in: layers.TCP{
 						SrcPort:   1,
 						DstPort:   2,
-						RST:       true,
+						FIN:       true,
 						Seq:       1001,
 						BaseLayer: layers.BaseLayer{Payload: []byte{1, 2, 3}},
 					},
 					// gets queued just before the first packet
-					// and should close its half-connection (RST) during next flush
+					// and should close its half-connection (FIN) during next flush
 					want: []Reassembly{},
 				},
 				{

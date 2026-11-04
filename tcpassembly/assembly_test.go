@@ -365,6 +365,39 @@ func TestSynOnEstablished(t *testing.T) {
 	})
 }
 
+// A RST ahead of the expected sequence number is dropped by the receiver:
+// it must not be queued and end the stream at the next flush.
+func TestOutOfOrderRST(t *testing.T) {
+	fact := &testFactory{}
+	p := NewStreamPool(fact)
+	a := NewAssembler(p)
+	for i, test := range []testSequence{
+		{
+			in:   layers.TCP{SrcPort: 1, DstPort: 2, SYN: true, Seq: 1000, BaseLayer: layers.BaseLayer{Payload: []byte{1, 2, 3}}},
+			want: []Reassembly{{Start: true, Bytes: []byte{1, 2, 3}}},
+		},
+		{
+			in:   layers.TCP{SrcPort: 1, DstPort: 2, RST: true, Seq: 1010},
+			want: []Reassembly{},
+		},
+		{
+			in:   layers.TCP{SrcPort: 1, DstPort: 2, Seq: 1004, BaseLayer: layers.BaseLayer{Payload: []byte{4, 5}}},
+			want: []Reassembly{{Bytes: []byte{4, 5}}},
+		},
+	} {
+		fact.reassembly = []Reassembly{}
+		a.Assemble(netFlow, &test.in)
+		if !reflect.DeepEqual(fact.reassembly, test.want) {
+			t.Fatalf("test %v:\nwant: %v\n got: %v\n", i, test.want, fact.reassembly)
+		}
+	}
+	fact.reassembly = []Reassembly{}
+	a.FlushAll()
+	if len(fact.reassembly) != 0 {
+		t.Fatalf("flush delivered the queued RST: %v", fact.reassembly)
+	}
+}
+
 func TestBufferedOverlap(t *testing.T) {
 	test(t, []testSequence{
 		{

@@ -773,6 +773,15 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 		}
 	}
 
+	// A RST that is not at nextSeq is dropped by the receiver (RFC 5961):
+	// never queue it as the end of the stream.
+	if t.RST && action.queue {
+		if *debugLog {
+			log.Printf("%v ignoring out-of-order RST", key)
+		}
+		return
+	}
+
 	// A FIN queued ahead of the stream is not stored when it has no payload,
 	// so remember where it ends the stream.
 	if t.FIN && action.queue {

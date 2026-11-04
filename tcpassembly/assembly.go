@@ -741,6 +741,14 @@ func (a *Assembler) insertIntoConn(t *layers.TCP, conn *connection, ts time.Time
 	if conn.first != nil && conn.first.seq == conn.nextSeq {
 		panic("wtf")
 	}
+	// A RST that is not at nextSeq is dropped by the receiver (RFC 5961):
+	// never queue it as the end of the stream.
+	if t.RST {
+		if *debugLog {
+			log.Printf("%v ignoring out-of-order RST", conn.key)
+		}
+		return
+	}
 	p, p2, numPages := a.pagesFromTCP(t, ts)
 	prev, current := conn.traverseConn(Sequence(t.Seq))
 	conn.pushBetween(prev, current, p, p2)
@@ -779,7 +787,7 @@ func (a *Assembler) pagesFromTCP(t *layers.TCP, ts time.Time) (p, p2 *page, numP
 		current = current.next
 		numPages++
 	}
-	current.End = t.RST || t.FIN
+	current.End = t.FIN
 	return first, current, numPages
 }
 
