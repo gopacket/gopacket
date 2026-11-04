@@ -9,6 +9,9 @@ import (
 
 const gtp2MinimumSizeInBytes int = 4
 
+// gtp2Version is the only value of the 3-bit version field this decoder reads.
+const gtp2Version uint8 = 2
+
 // IE represents an Information Element in GTPv2, a key component for message structure
 type IE struct {
 	Type    uint8
@@ -43,6 +46,11 @@ func (g *GTPv2) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 		return fmt.Errorf("GTP packet too small: %d bytes", dLen)
 	}
 	g.Version = (data[0] >> 5) & 0x07
+	// GTPv1-C shares UDP port 2123 with GTPv2 but has a different header
+	// and IE layout, so only version 2 can be read with this decoder.
+	if g.Version != gtp2Version {
+		return fmt.Errorf("GTPv2 packet has version %d", g.Version)
+	}
 	g.PiggybackingFlag = ((data[0] >> 4) & 0x01) == 1
 	g.TEIDflag = ((data[0] >> 3) & 0x01) == 1
 	g.MessagePriority = (data[0] >> 2) & 0x01

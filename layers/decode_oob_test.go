@@ -330,7 +330,7 @@ func TestDecodeOOBRegressionBatch3(t *testing.T) {
 	mdp[28], mdp[29] = MdpTlvDeviceInfo, 0xFF
 
 	gtp2 := make([]byte, 9) // 8-byte header + 1 byte of IE header
-	gtp2[0], gtp2[1] = 0x20, 0x01
+	gtp2[0], gtp2[1] = 0x40, 0x01
 	binary.BigEndian.PutUint16(gtp2[2:4], 4)
 
 	geneveOpt := make([]byte, 11) // 8-byte header, OptLen=4, only 3 option bytes
@@ -347,7 +347,7 @@ func TestDecodeOOBRegressionBatch3(t *testing.T) {
 		{"MDP/tlv-length-overrun", func() gopacket.DecodingLayer { return &MDP{} }, mdp},
 		{"GTPv2/ie-header-truncated", func() gopacket.DecodingLayer { return &GTPv2{} }, gtp2},
 		// Sequence number present, spare byte missing.
-		{"GTPv2/spare-byte-missing", func() gopacket.DecodingLayer { return &GTPv2{} }, []byte{0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}},
+		{"GTPv2/spare-byte-missing", func() gopacket.DecodingLayer { return &GTPv2{} }, []byte{0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}},
 		{"Geneve/7-byte-header", func() gopacket.DecodingLayer { return &Geneve{} }, make([]byte, 7)},
 		{"Geneve/3-byte-option", func() gopacket.DecodingLayer { return &Geneve{} }, geneveOpt},
 	}

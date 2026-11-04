@@ -79,3 +79,24 @@ func TestGTPv2Packet(t *testing.T) {
 		t.Errorf("Expected empty payload, got: %v", got.LayerPayload())
 	}
 }
+
+// TestGTPv2RejectsOtherVersions checks that messages of other GTP versions
+// are not read with the GTPv2 layout. GTPv1-C shares UDP port 2123.
+func TestGTPv2RejectsOtherVersions(t *testing.T) {
+	// GTPv1-C Delete PDP Context Request whose sequence number and N-PDU
+	// number happen to read as the header of an IE that covers the rest
+	// of the message, so it decodes without error with the GTPv2 layout.
+	data := []byte{
+		0x32, 0x14, 0x00, 0x08, 0x0b, 0xad, 0xca, 0xfe,
+		0x77, 0x00, 0x04, 0x00, 0x13, 0xff, 0x14, 0x05,
+	}
+	for version := byte(0); version < 8; version++ {
+		data[0] = version<<5 | data[0]&0x1f
+		err := (&GTPv2{}).DecodeFromBytes(data, gopacket.NilDecodeFeedback)
+		if version == 2 && err != nil {
+			t.Errorf("version %d: %v", version, err)
+		} else if version != 2 && err == nil {
+			t.Errorf("version %d: expected a decoding error", version)
+		}
+	}
+}
