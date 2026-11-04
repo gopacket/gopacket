@@ -370,7 +370,9 @@ func decodeSCTPData(data []byte, p gopacket.PacketBuilder) error {
 	if err != nil {
 		return err
 	}
-	l := chunk.ActualLength
+	// The user data ends at Length; the bytes up to ActualLength are chunk
+	// padding, which the receiver discards (RFC 9260 3.3.1).
+	l := int(chunk.Length)
 	sc := &SCTPData{
 		SCTPChunk:       chunk,
 		Unordered:       data[1]&0x4 != 0,
@@ -420,6 +422,8 @@ func (sc SCTPData) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.Seriali
 	binary.BigEndian.PutUint16(bytes[10:12], sc.StreamSequence)
 	binary.BigEndian.PutUint32(bytes[12:16], uint32(sc.PayloadProtocol))
 	copy(bytes[16:], payload)
+	// Zero the padding rather than leave what the buffer held before.
+	clear(bytes[16+len(payload):])
 	return nil
 }
 

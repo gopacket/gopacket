@@ -1375,6 +1375,61 @@ func TestSCTPChunkBadLength(t *testing.T) {
 	gopacket.NewPacket(data, LinkTypeEthernet, gopacket.Default)
 }
 
+// TestSCTPDataPayloadPadding checks that a DATA chunk's padding, which the
+// sender chooses and the receiver discards, is not reported as user data,
+// and that a re-serialized chunk gets zero padding.
+func TestSCTPDataPayloadPadding(t *testing.T) {
+	data := []byte{
+		0x0b, 0x59, 0x0b, 0x59, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, // common header
+		// DATA, length 17: 1 byte of user data, 3 bytes of padding
+		0x00, 0x03, 0x00, 0x11, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x41, 0xff, 0xee, 0xdd,
+		// DATA, length 18: 2 bytes of user data, 2 bytes of padding
+		0x00, 0x03, 0x00, 0x12, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x42, 0x43, 0xff, 0xee,
+		// DATA, length 16: no user data
+		0x00, 0x03, 0x00, 0x10, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		// DATA, length 20: 4 bytes of user data, no padding
+		0x00, 0x03, 0x00, 0x14, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x44, 0x45, 0x46, 0x47,
+	}
+	p := gopacket.NewPacket(data, LayerTypeSCTP, gopacket.Default)
+	if p.ErrorLayer() != nil {
+		t.Fatal("Failed to decode packet:", p.ErrorLayer().Error())
+	}
+	want := []string{"A", "BC", "", "DEFG"}
+	var got []*SCTPData
+	for _, l := range p.Layers() {
+		if sc, ok := l.(*SCTPData); ok {
+			got = append(got, sc)
+		}
+	}
+	if len(got) != len(want) {
+		t.Fatalf("got %d SCTPData layers, want %d", len(got), len(want))
+	}
+	for i, sc := range got {
+		if string(sc.Payload) != want[i] {
+			t.Errorf("chunk %d: got payload %q, want %q", i, sc.Payload, want[i])
+		}
+		if len(sc.Contents) != roundUpToNearest4(16+len(want[i])) {
+			t.Errorf("chunk %d: got %d bytes of contents, want %d", i, len(sc.Contents), roundUpToNearest4(16+len(want[i])))
+		}
+	}
+
+	// The padding of a re-serialized chunk must be zero, not whatever the
+	// buffer held before.
+	buf := gopacket.NewSerializeBuffer()
+	dirty, _ := buf.PrependBytes(4)
+	copy(dirty, []byte{0xaa, 0xaa, 0xaa, 0xaa})
+	buf.Clear()
+	if err := got[0].SerializeTo(buf, gopacket.SerializeOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(buf.Bytes()[16:], []byte{0x41, 0, 0, 0}) {
+		t.Errorf("got padding %x, want 41000000", buf.Bytes()[16:])
+	}
+}
+
 // TestSCTPUnknownChunkBundled checks that a chunk type without a decoder is
 // skipped over and the chunks bundled after it are still decoded, as a
 // receiver does for types 0x80-0xFF (RFC 9260 3.2).
