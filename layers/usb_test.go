@@ -7,7 +7,8 @@
 package layers
 
 import (
-	_ "fmt"
+	"bytes"
+	"encoding/binary"
 	"reflect"
 	"testing"
 
@@ -97,5 +98,43 @@ func TestUSBRequestBlockSetupTruncated(t *testing.T) {
 	u := &USBRequestBlockSetup{}
 	if err := u.DecodeFromBytes(make([]byte, 8), gopacket.NilDecodeFeedback); err != nil {
 		t.Fatalf("8-byte input should decode, got %v", err)
+	}
+}
+
+// TestUSBDataLengthExceedsPacket decodes a data record whose UrbDataLength
+// claims more payload than the record carries. The payload offset used to be
+// computed in uint32 and wrapped, which panicked with inverted slice bounds.
+func TestUSBDataLengthExceedsPacket(t *testing.T) {
+	const payloadOffset = 40
+
+	for _, n := range []uint32{66, 1000, 0xffffffff} {
+		data := append([]byte{}, testPacketUSB0...)
+		binary.LittleEndian.PutUint32(data[36:40], n)
+
+		var u USB
+		df := &testDecodeFeedback{}
+		if err := u.DecodeFromBytes(data, df); err != nil {
+			t.Fatalf("length %d: %v", n, err)
+		}
+		if !df.truncated {
+			t.Errorf("length %d: packet not flagged truncated", n)
+		}
+		if !bytes.Equal(u.Payload, data[payloadOffset:]) {
+			t.Errorf("length %d: payload %x, want everything after the header", n, u.Payload)
+		}
+	}
+
+	// a length that fits keeps selecting the tail of the record
+	for _, n := range []int{5, 40, 65} {
+		data := append([]byte{}, testPacketUSB0...)
+		binary.LittleEndian.PutUint32(data[36:40], uint32(n))
+
+		var u USB
+		if err := u.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err != nil {
+			t.Fatalf("length %d: %v", n, err)
+		}
+		if !bytes.Equal(u.Payload, data[len(data)-n:]) {
+			t.Errorf("length %d: payload %x, want the last %d bytes", n, u.Payload, n)
+		}
 	}
 }
