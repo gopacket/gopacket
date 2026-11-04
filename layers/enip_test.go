@@ -401,3 +401,46 @@ func TestENIPShortConnectedDataItem(t *testing.T) {
 		t.Errorf("payload has %d bytes, want none", len(enip.Payload))
 	}
 }
+
+// TestENIPLength bounds the message by the encapsulation header's Length:
+// bytes past it belong to the next message, and a message cut short is
+// marked truncated.
+func TestENIPLength(t *testing.T) {
+	msg := testPacketENIPSendRRDataCIP[len(testPacketENIPSendRRDataCIP)-90:]
+	withLength := func(length uint16) []byte {
+		m := append([]byte{}, msg...)
+		binary.LittleEndian.PutUint16(m[2:4], length)
+		return m
+	}
+
+	p := gopacket.NewPacket(withLength(0), LayerTypeENIP, gopacket.Default)
+	if p.ErrorLayer() == nil {
+		t.Error("Length 0: SendRRData decoded although the header says it has no data")
+	}
+
+	for _, length := range []uint16{67, 0xffff} {
+		p = gopacket.NewPacket(withLength(length), LayerTypeENIP, gopacket.Default)
+		if p.ErrorLayer() != nil {
+			t.Errorf("Length %d: %v", length, p.ErrorLayer().Error())
+		}
+		if !p.Metadata().Truncated {
+			t.Errorf("Length %d: message cut short not marked truncated", length)
+		}
+	}
+
+	two := append(append([]byte{}, msg...), msg...)
+	p = gopacket.NewPacket(two, LayerTypeENIP, gopacket.Default)
+	if p.ErrorLayer() != nil {
+		t.Fatal(p.ErrorLayer().Error())
+	}
+	if p.Metadata().Truncated {
+		t.Error("two complete messages marked truncated")
+	}
+	cip, ok := p.Layer(LayerTypeCIP).(*CIP)
+	if !ok {
+		t.Fatal("no CIP layer")
+	}
+	if got := len(cip.Data); got != 44 {
+		t.Errorf("CIP data of the first message has %d bytes, want 44", got)
+	}
+}

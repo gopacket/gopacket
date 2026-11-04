@@ -158,7 +158,16 @@ func (enip *ENIP) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error
 	enip.Status = binary.LittleEndian.Uint32(data[8:12])
 	enip.SenderContext = data[12:20]
 	enip.Options = binary.LittleEndian.Uint32(data[20:24])
-	return enip.getPayload(data, df)
+
+	// Length counts the bytes behind the header; anything past it belongs
+	// to the next message. A message cut short is decoded as far as it goes
+	// and marked truncated.
+	end := enipMinPacketLen + int(enip.Length)
+	if len(data) < end {
+		df.SetTruncated()
+		end = len(data)
+	}
+	return enip.getPayload(data[:end], df)
 }
 
 func (enip *ENIP) getPayload(data []byte, df gopacket.DecodeFeedback) (err error) {
