@@ -1448,8 +1448,35 @@ func TestKeepThenCloseReleasesPages(t *testing.T) {
 		tcp.SetInternalPortsForTesting()
 		a.Assemble(netFlow, &tcp)
 	}
-	if a.pc.used != 0 {
-		t.Errorf("%d pages still in use after close, want 0", a.pc.used)
+	if a.pc.used.Load() != 0 {
+		t.Errorf("%d pages still in use after close, want 0", a.pc.used.Load())
+	}
+}
+
+// Pages buffered by one Assembler and flushed by another one sharing its
+// StreamPool must no longer count against the first one's limit.
+func TestSharedPoolFlush(t *testing.T) {
+	fact := &testFactory{}
+	p := NewStreamPool(fact)
+	a := NewAssembler(p)
+	a.MaxBufferedPagesTotal = 4
+	flusher := NewAssembler(p)
+	for i := 0; i < 3; i++ {
+		tcp := layers.TCP{
+			SrcPort:   1,
+			DstPort:   2,
+			Seq:       uint32(1000 + 10*i),
+			BaseLayer: layers.BaseLayer{Payload: []byte{1, 2, 3}},
+		}
+		tcp.SetInternalPortsForTesting()
+		a.Assemble(netFlow, &tcp)
+	}
+	flusher.FlushAll()
+	if got := a.pc.used.Load(); got != 0 {
+		t.Errorf("assembler has %d pages in use after flush, want 0", got)
+	}
+	if got := flusher.pc.used.Load(); got != 0 {
+		t.Errorf("flusher has %d pages in use after flush, want 0", got)
 	}
 }
 

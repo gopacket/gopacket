@@ -10,6 +10,7 @@ import (
 	"flag"
 	"log"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gopacket/gopacket/layers"
@@ -21,10 +22,12 @@ var memLog = flag.Bool("assembly_memuse_log", defaultDebug, "If true, the github
  * pageCache
  */
 // pageCache is a concurrency-unsafe store of page objects we use to avoid
-// memory allocation as much as we can.
+// memory allocation as much as we can.  Assemblers sharing a StreamPool pop
+// each other's pages off a connection, so used is charged to the owning
+// cache and may be updated by other Assemblers.
 type pageCache struct {
 	pagePool     *sync.Pool
-	used         int
+	used         atomic.Int64
 	pageRequests int64
 }
 
@@ -41,13 +44,14 @@ func (c *pageCache) next(ts time.Time) (p *page) {
 	if *memLog {
 		c.pageRequests++
 		if c.pageRequests&0xFFFF == 0 {
-			log.Println("PageCache:", c.pageRequests, "requested,", c.used, "used,")
+			log.Println("PageCache:", c.pageRequests, "requested,", c.used.Load(), "used,")
 		}
 	}
 	p = c.pagePool.Get().(*page)
 	p.seen = ts
 	p.bytes = p.buf[:0]
-	c.used++
+	p.owner = c
+	c.used.Add(1)
 	if *memLog {
 		log.Printf("allocator returns %s\n", p)
 	}
@@ -57,7 +61,7 @@ func (c *pageCache) next(ts time.Time) (p *page) {
 
 // replace replaces a page into the pageCache.
 func (c *pageCache) replace(p *page) {
-	c.used--
+	p.owner.used.Add(-1)
 	if *memLog {
 		log.Printf("replacing %s\n", p)
 	}

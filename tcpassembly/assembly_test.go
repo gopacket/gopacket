@@ -600,6 +600,79 @@ func TestConnectionAddedWhileCreatingStream(t *testing.T) {
 	}
 }
 
+// Pages buffered by one Assembler and flushed by another one sharing its
+// StreamPool must no longer count against the first one's limit.
+func TestSharedPoolFlush(t *testing.T) {
+	fact := &testFactory{}
+	p := NewStreamPool(fact)
+	a := NewAssembler(p)
+	a.MaxBufferedPagesTotal = 4
+	flusher := NewAssembler(p)
+	for i := 0; i < 3; i++ {
+		a.Assemble(netFlow, &layers.TCP{
+			SrcPort:   1,
+			DstPort:   2,
+			Seq:       uint32(1000 + 10*i),
+			BaseLayer: layers.BaseLayer{Payload: []byte{1, 2, 3}},
+		})
+	}
+	flusher.FlushAll()
+	if got := a.pc.used.Load(); got != 0 {
+		t.Errorf("assembler has %d pages in use after flush, want 0", got)
+	}
+	if got := flusher.pc.used.Load(); got != 0 {
+		t.Errorf("flusher has %d pages in use after flush, want 0", got)
+	}
+	for i, test := range []testSequence{
+		{
+			in: layers.TCP{
+				SrcPort:   1,
+				DstPort:   2,
+				Seq:       1000,
+				SYN:       true,
+				BaseLayer: layers.BaseLayer{Payload: []byte{}},
+			},
+			want: []Reassembly{
+				Reassembly{
+					Start: true,
+					Bytes: []byte{},
+				},
+			},
+		},
+		{
+			in: layers.TCP{
+				SrcPort:   1,
+				DstPort:   2,
+				Seq:       1004,
+				BaseLayer: layers.BaseLayer{Payload: []byte{2, 2, 3}},
+			},
+			want: []Reassembly{},
+		},
+		{
+			in: layers.TCP{
+				SrcPort:   1,
+				DstPort:   2,
+				Seq:       1001,
+				BaseLayer: layers.BaseLayer{Payload: []byte{1, 2, 3}},
+			},
+			want: []Reassembly{
+				Reassembly{
+					Bytes: []byte{1, 2, 3},
+				},
+				Reassembly{
+					Bytes: []byte{2, 2, 3},
+				},
+			},
+		},
+	} {
+		fact.reassembly = []Reassembly{}
+		a.Assemble(netFlow, &test.in)
+		if !reflect.DeepEqual(fact.reassembly, test.want) {
+			t.Fatalf("test %v:\nwant: %v\n got: %v\n", i, test.want, fact.reassembly)
+		}
+	}
+}
+
 // testReuseFactory records every stream it creates and runs onComplete from
 // ReassemblyComplete, while the Assembler still holds the connection lock.
 type testReuseStream struct {

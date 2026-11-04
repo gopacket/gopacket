@@ -237,6 +237,7 @@ type page struct {
 	bytes      []byte
 	seq        Sequence
 	prev, next *page
+	owner      *pageCache // the pageCache whose used count includes this page
 	buf        [pageBytes]byte
 	ac         AssemblerContext // context of the packet this page was cut from
 	seen       time.Time
@@ -614,7 +615,7 @@ func NewAssembler(pool *StreamPool) *Assembler {
 // Dump returns a short string describing the page usage of the Assembler
 func (a *Assembler) Dump() string {
 	s := ""
-	s += fmt.Sprintf("pageCache: used: %d:", a.pc.used)
+	s += fmt.Sprintf("pageCache: used: %d:", a.pc.used.Load())
 	return s
 }
 
@@ -1013,9 +1014,9 @@ func (a *Assembler) handleBytes(bytes []byte, seq Sequence, half *halfconnection
 	if action.queue {
 		a.checkOverlap(half, true, ac)
 		if (a.MaxBufferedPagesPerConnection > 0 && half.pages >= a.MaxBufferedPagesPerConnection) ||
-			(a.MaxBufferedPagesTotal > 0 && a.pc.used >= a.MaxBufferedPagesTotal) {
+			(a.MaxBufferedPagesTotal > 0 && int(a.pc.used.Load()) >= a.MaxBufferedPagesTotal) {
 			if *debugLog {
-				log.Printf("hit max buffer size: %+v, %v, %v", a.AssemblerOptions, half.pages, a.pc.used)
+				log.Printf("hit max buffer size: %+v, %v, %v", a.AssemblerOptions, half.pages, a.pc.used.Load())
 			}
 			action.queue = false
 			a.addNextFromConn(half)

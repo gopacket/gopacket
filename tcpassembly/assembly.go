@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gopacket/gopacket"
@@ -98,15 +99,20 @@ type page struct {
 	seq        Sequence
 	index      int
 	prev, next *page
+	owner      *pageCache // the pageCache whose used count includes this page
 	buf        [pageBytes]byte
 }
 
 // pageCache is a concurrency-unsafe store of page objects we use to avoid
 // memory allocation as much as we can.  It grows but never shrinks.
+// Assemblers sharing a StreamPool pop each other's pages off a connection,
+// so used is charged to the owning cache and may be updated by other
+// Assemblers.
 type pageCache struct {
 	free         []*page
 	pcSize       int
-	size, used   int
+	size         int
+	used         atomic.Int64
 	pages        [][]page
 	pageRequests int64
 }
@@ -141,7 +147,7 @@ func (c *pageCache) next(ts time.Time) (p *page) {
 	if *memLog {
 		c.pageRequests++
 		if c.pageRequests&0xFFFF == 0 {
-			log.Println("PageCache:", c.pageRequests, "requested,", c.used, "used,", len(c.free), "free")
+			log.Println("PageCache:", c.pageRequests, "requested,", c.used.Load(), "used,", len(c.free), "free")
 		}
 	}
 	if len(c.free) == 0 {
@@ -152,13 +158,14 @@ func (c *pageCache) next(ts time.Time) (p *page) {
 	p.prev = nil
 	p.next = nil
 	p.Reassembly = Reassembly{Bytes: p.buf[:0], Seen: ts}
-	c.used++
+	p.owner = c
+	c.used.Add(1)
 	return p
 }
 
 // replace replaces a page into the pageCache.
 func (c *pageCache) replace(p *page) {
-	c.used--
+	p.owner.used.Add(-1)
 	c.free = append(c.free, p)
 }
 
@@ -730,9 +737,9 @@ func (a *Assembler) insertIntoConn(t *layers.TCP, conn *connection, ts time.Time
 	conn.pushBetween(prev, current, p, p2)
 	conn.pages += numPages
 	if (a.MaxBufferedPagesPerConnection > 0 && conn.pages >= a.MaxBufferedPagesPerConnection) ||
-		(a.MaxBufferedPagesTotal > 0 && a.pc.used >= a.MaxBufferedPagesTotal) {
+		(a.MaxBufferedPagesTotal > 0 && int(a.pc.used.Load()) >= a.MaxBufferedPagesTotal) {
 		if *debugLog {
-			log.Printf("%v hit max buffer size: %+v, %v, %v", conn.key, a.AssemblerOptions, conn.pages, a.pc.used)
+			log.Printf("%v hit max buffer size: %+v, %v, %v", conn.key, a.AssemblerOptions, conn.pages, a.pc.used.Load())
 		}
 		a.addNextFromConn(conn)
 	}
