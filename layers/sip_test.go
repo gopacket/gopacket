@@ -314,6 +314,40 @@ var testPacketContentLengthMaxInt32 = []byte(
 		"body",
 )
 
+// HTAB instead of SP after the colon of the headers, at the end of the
+// values and between the CSeq number and method (RFC 3261 HCOLON and LWS)
+var testPacketSIPOnlyInviteTabAfterColon = []byte(
+	"INVITE sip:sip.provider.com SIP/2.0\r\n" +
+		"From:\t\"Bob\" <sip:bob@sip.provider.com>\r\n" +
+		"To:\t\"Alice\" <sip:alice@sip.provider.com>\t\r\n" +
+		"Call-Id:\t306366781@172_16_254_66\r\n" +
+		"CSeq:\t101\tINVITE\r\n" +
+		"Content-Length:\t3\t\r\n" +
+		"\r\n" +
+		"v=0\r\n",
+)
+
+// HTAB before the colon of the headers
+var testPacketSIPOnlyInviteTabBeforeColon = []byte(
+	"INVITE sip:sip.provider.com SIP/2.0\r\n" +
+		"From\t: \"Bob\" <sip:bob@sip.provider.com>\r\n" +
+		"To \t: \"Alice\" <sip:alice@sip.provider.com>\r\n" +
+		"Call-Id\t: 306366781@172_16_254_66\r\n" +
+		"CSeq\t: 101 INVITE\r\n" +
+		"Content-Length\t: 3\r\n" +
+		"\r\n" +
+		"v=0\r\n",
+)
+
+// Response with more than one SP between the CSeq number and method
+var testPacketSIPOnlyResponseCSeqSpaces = []byte(
+	"SIP/2.0 200 OK\r\n" +
+		"Call-Id: 306366781@172_16_254_66\r\n" +
+		"CSeq: 101  INVITE\r\n" +
+		"Content-Length: 0\r\n" +
+		"\r\n",
+)
+
 func TestSIPDecode(t *testing.T) {
 	type args struct {
 		firstLayerDecoder gopacket.Decoder
@@ -360,6 +394,36 @@ func TestSIPDecode(t *testing.T) {
 			"", true, false, SIPMethodInvite, 101, 2147483647,
 			map[string][]string{"content-length": {`2147483647`}},
 			"sip:sip.provider.com", []byte("body"),
+		},
+		{"inviteTabAfterColon", args{LayerTypeSIP, testPacketSIPOnlyInviteTabAfterColon},
+			"", false, false, SIPMethodInvite, 101, 3,
+			map[string][]string{
+				"call-id":        {`306366781@172_16_254_66`},
+				"from":           {`"Bob" <sip:bob@sip.provider.com>`},
+				"to":             {`"Alice" <sip:alice@sip.provider.com>`},
+				"content-length": {`3`},
+			},
+			"sip:sip.provider.com",
+			[]byte("v=0"),
+		},
+		{"inviteTabBeforeColon", args{LayerTypeSIP, testPacketSIPOnlyInviteTabBeforeColon},
+			"", false, false, SIPMethodInvite, 101, 3,
+			map[string][]string{
+				"call-id":        {`306366781@172_16_254_66`},
+				"from":           {`"Bob" <sip:bob@sip.provider.com>`},
+				"to":             {`"Alice" <sip:alice@sip.provider.com>`},
+				"content-length": {`3`},
+			},
+			"sip:sip.provider.com",
+			[]byte("v=0"),
+		},
+		{"responseCSeqSpaces", args{LayerTypeSIP, testPacketSIPOnlyResponseCSeqSpaces},
+			"", false, true, SIPMethodInvite, 101, 0,
+			map[string][]string{
+				"call-id": {`306366781@172_16_254_66`},
+			},
+			"",
+			[]byte{},
 		},
 		{"single empty line", args{LayerTypeSIP, []byte("\r\n")},
 			`invalid first SIP line, empty`,

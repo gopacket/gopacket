@@ -463,8 +463,9 @@ func (s *SIP) ParseHeader(header []byte) (err error) {
 	index := bytes.Index(header, []byte(":"))
 	if index >= 0 {
 
-		headerName := strings.ToLower(string(bytes.Trim(header[:index], " ")))
-		headerValue := string(bytes.Trim(header[index+1:], " "))
+		// RFC 3261 - 25.1 - HCOLON allows SP and HTAB on both sides of the colon
+		headerName := strings.ToLower(string(bytes.Trim(header[:index], " \t")))
+		headerValue := string(bytes.Trim(header[index+1:], " \t"))
 
 		// Add header to object
 		s.Headers[headerName] = append(s.Headers[headerName], headerValue)
@@ -489,7 +490,8 @@ func (s *SIP) ParseSpecificHeaders(headerName string, headerValue string) (err e
 		// CSeq header value is formatted like that :
 		// CSeq: 123 INVITE
 		// We split the value to parse Cseq integer value, and method
-		splits := strings.Split(headerValue, " ")
+		// (separated by LWS: any number of SP or HTAB)
+		splits := strings.Fields(headerValue)
 		if len(splits) > 1 {
 			// parse CSEQ
 			s.cseq, err = parseUint32(splits[0])
