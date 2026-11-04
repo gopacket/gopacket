@@ -248,6 +248,12 @@ func (g *GRE) CanDecode() gopacket.LayerClass {
 
 // NextLayerType returns the layer type contained by this DecodingLayer.
 func (g *GRE) NextLayerType() gopacket.LayerType {
+	// ERSPAN Type I and Type II share a protocol type. Type I has no ERSPAN
+	// header: the mirrored frame directly follows a GRE header without
+	// optional fields, whereas Type II always carries a sequence number.
+	if g.Protocol == EthernetTypeERSPAN && len(g.Contents) == 4 {
+		return LayerTypeEthernet
+	}
 	return g.Protocol.LayerType()
 }
 

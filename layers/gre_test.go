@@ -541,3 +541,56 @@ func TestGRERoutingAndAckEncode(t *testing.T) {
 		t.Errorf("Encode mismatch, \nwant: %v\ngot %v\n", want, got)
 	}
 }
+
+// testERSPANInnerFrame is the mirrored frame of the ERSPAN over GRE tests:
+// Ethernet, IPv4 192.168.1.2 > 192.168.1.1, UDP 1111 > 5555.
+var testERSPANInnerFrame = []byte{
+	0x02, 0x00, 0x00, 0x00, 0x00, 0x01, 0x02, 0x00, 0x00, 0x00, 0x00, 0xaa, 0x08, 0x00,
+	0x45, 0x00, 0x00, 0x20, 0x00, 0x01, 0x00, 0x00, 0x40, 0x11, 0xf7, 0x78, 0xc0, 0xa8, 0x01, 0x02, 0xc0, 0xa8, 0x01, 0x01,
+	0x04, 0x57, 0x15, 0xb3, 0x00, 0x0c, 0x00, 0x00, 0x68, 0x69, 0x0a, 0x00,
+}
+
+func TestERSPANOverGRE(t *testing.T) {
+	inner := []gopacket.LayerType{LayerTypeEthernet, LayerTypeIPv4, LayerTypeUDP, gopacket.LayerTypePayload}
+	erspan2Header := []byte{0x10, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00}
+	for _, test := range []struct {
+		name   string
+		header []byte
+		want   []gopacket.LayerType
+	}{
+		{
+			name:   "type I",
+			header: []byte{0x00, 0x00, 0x88, 0xbe},
+			want:   append([]gopacket.LayerType{LayerTypeGRE}, inner...),
+		},
+		{
+			name:   "type II",
+			header: append([]byte{0x10, 0x00, 0x88, 0xbe, 0x00, 0x00, 0x00, 0x01}, erspan2Header...),
+			want:   append([]gopacket.LayerType{LayerTypeGRE, LayerTypeERSPANII}, inner...),
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			data := append(test.header, testERSPANInnerFrame...)
+			p := gopacket.NewPacket(data, LayerTypeGRE, gopacket.Default)
+			if p.ErrorLayer() != nil {
+				t.Error("Failed to decode packet:", p.ErrorLayer().Error())
+			}
+			checkLayers(p, test.want, t)
+
+			var gre GRE
+			var erspan2 ERSPANII
+			var eth Ethernet
+			var ip4 IPv4
+			var udp UDP
+			var payload gopacket.Payload
+			parser := gopacket.NewDecodingLayerParser(LayerTypeGRE, &gre, &erspan2, &eth, &ip4, &udp, &payload)
+			var got []gopacket.LayerType
+			if err := parser.DecodeLayers(data, &got); err != nil {
+				t.Error("Failed to decode layers:", err)
+			}
+			if !reflect.DeepEqual(got, test.want) {
+				t.Errorf("DecodingLayerParser layers mismatch, \nwant %v\ngot  %v\n", test.want, got)
+			}
+		})
+	}
+}
