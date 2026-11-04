@@ -294,63 +294,65 @@ func (cip *CIP) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 			return ErrCIPDataTooSmall
 		}
 
-		// read the class segment
-		if offset >= len(data) {
-			df.SetTruncated()
-			return ErrCIPDataTooSmall
-		}
-		classInfo := data[offset]
-		offset++
+		// The class and instance segments are optional, and are only ever read
+		// from the path: whatever follows it is request data.
+		pathEnd := cipBasePacketLen + pathBytes
+		cip.ClassID, cip.InstanceID = 0, 0
 
-		switch classInfo {
-		case 0x20:
-			// 8-bit ID
-			if offset >= len(data) {
-				df.SetTruncated()
-				return ErrCIPDataTooSmall
-			}
-			cip.ClassID = uint16(data[offset])
+		// read the class segment
+		if offset < pathEnd {
+			classInfo := data[offset]
 			offset++
-		case 0x21:
-			// 16-bit ID: a pad byte sits between the segment type and the
-			// value in a padded EPATH.
-			if offset+3 > len(data) {
-				df.SetTruncated()
-				return ErrCIPDataTooSmall
+
+			switch classInfo {
+			case 0x20:
+				// 8-bit ID
+				if offset >= pathEnd {
+					df.SetTruncated()
+					return ErrCIPDataTooSmall
+				}
+				cip.ClassID = uint16(data[offset])
+				offset++
+			case 0x21:
+				// 16-bit ID: a pad byte sits between the segment type and
+				// the value in a padded EPATH.
+				if offset+3 > pathEnd {
+					df.SetTruncated()
+					return ErrCIPDataTooSmall
+				}
+				cip.ClassID = binary.LittleEndian.Uint16(data[offset+1 : offset+3])
+				offset += 3
 			}
-			cip.ClassID = binary.LittleEndian.Uint16(data[offset+1 : offset+3])
-			offset += 3
 		}
 
 		// read the instance segment
-		if offset >= len(data) {
-			df.SetTruncated()
-			return ErrCIPDataTooSmall
-		}
-		instanceInfo := data[offset]
-		offset++
-
-		switch instanceInfo {
-		case 0x24:
-			// 8-bit ID
-			if offset >= len(data) {
-				df.SetTruncated()
-				return ErrCIPDataTooSmall
-			}
-			cip.InstanceID = uint16(data[offset])
+		if offset < pathEnd {
+			instanceInfo := data[offset]
 			offset++
-		case 0x25:
-			// 16-bit ID, pad byte first as for the class
-			if offset+3 > len(data) {
-				df.SetTruncated()
-				return ErrCIPDataTooSmall
+
+			switch instanceInfo {
+			case 0x24:
+				// 8-bit ID
+				if offset >= pathEnd {
+					df.SetTruncated()
+					return ErrCIPDataTooSmall
+				}
+				cip.InstanceID = uint16(data[offset])
+				offset++
+			case 0x25:
+				// 16-bit ID: a pad byte sits between the segment type and
+				// the value in a padded EPATH.
+				if offset+3 > pathEnd {
+					df.SetTruncated()
+					return ErrCIPDataTooSmall
+				}
+				cip.InstanceID = binary.LittleEndian.Uint16(data[offset+1 : offset+3])
+				offset += 3
 			}
-			cip.InstanceID = binary.LittleEndian.Uint16(data[offset+1 : offset+3])
-			offset += 3
 		}
 
-		if offset < len(data) {
-			cip.Data = data[offset:]
+		if pathEnd < len(data) {
+			cip.Data = data[pathEnd:]
 		}
 	} else { // response
 		if len(data) < cipBasePacketLen+2 {

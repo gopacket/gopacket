@@ -262,3 +262,63 @@ func TestCIP16BitLogicalSegments(t *testing.T) {
 		}
 	}
 }
+
+// TestCIPRequestPath checks that the class and instance are only read from the
+// request path, and that the request data starts where the path ends.
+func TestCIPRequestPath(t *testing.T) {
+	tests := []struct {
+		name string
+		data []byte
+		want *CIP
+	}{
+		{
+			name: "class and instance",
+			data: []byte{0x02, 0x02, 0x20, 0xf5, 0x24, 0x01, 0xaa, 0xbb},
+			want: &CIP{ServiceID: 0x02, ClassID: 0xf5, InstanceID: 0x01, Data: []byte{0xaa, 0xbb}},
+		},
+		{
+			name: "class, instance and attribute",
+			data: []byte{0x10, 0x03, 0x20, 0xf5, 0x24, 0x01, 0x30, 0x05, 0xaa, 0xbb},
+			want: &CIP{ServiceID: 0x10, ClassID: 0xf5, InstanceID: 0x01, Data: []byte{0xaa, 0xbb}},
+		},
+		{
+			name: "class only",
+			data: []byte{0x08, 0x01, 0x20, 0xf5, 0x24, 0x07, 0xaa, 0xbb},
+			want: &CIP{ServiceID: 0x08, ClassID: 0xf5, Data: []byte{0x24, 0x07, 0xaa, 0xbb}},
+		},
+		{
+			name: "class only, no data",
+			data: []byte{0x08, 0x01, 0x20, 0xf5},
+			want: &CIP{ServiceID: 0x08, ClassID: 0xf5},
+		},
+		{
+			name: "empty path",
+			data: []byte{0x01, 0x00, 0x20, 0xf5, 0x24, 0x07},
+			want: &CIP{ServiceID: 0x01, Data: []byte{0x20, 0xf5, 0x24, 0x07}},
+		},
+	}
+	for _, test := range tests {
+		got := &CIP{}
+		if err := got.DecodeFromBytes(test.data, gopacket.NilDecodeFeedback); err != nil {
+			t.Errorf("%s: failed to decode CIP packet: %v", test.name, err)
+		} else if !reflect.DeepEqual(got, test.want) {
+			t.Errorf("%s: CIP packet does not match:\ngot  %+v\nwant %+v", test.name, got, test.want)
+		}
+	}
+
+	// A reused layer must not keep the instance of the previous request.
+	reused := &CIP{}
+	for _, test := range tests[:3] {
+		if err := reused.DecodeFromBytes(test.data, gopacket.NilDecodeFeedback); err != nil {
+			t.Errorf("%s: failed to decode CIP packet: %v", test.name, err)
+		} else if !reflect.DeepEqual(reused, test.want) {
+			t.Errorf("%s: reused CIP packet does not match:\ngot  %+v\nwant %+v", test.name, reused, test.want)
+		}
+	}
+
+	// A segment that does not fit in the path must not borrow from the data.
+	overrun := []byte{0x08, 0x01, 0x21, 0x00, 0xf5, 0x00, 0xaa, 0xbb}
+	if err := (&CIP{}).DecodeFromBytes(overrun, gopacket.NilDecodeFeedback); err != ErrCIPDataTooSmall {
+		t.Errorf("segment past the end of the path: got error %v, want %v", err, ErrCIPDataTooSmall)
+	}
+}
