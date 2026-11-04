@@ -542,3 +542,103 @@ func TestPacketIPv6RoutingDecode(t *testing.T) {
 		}
 	}
 }
+
+// TestIPv6TunnelledHopByHopSerialize serializes an outer IPv6 header with
+// its own hop-by-hop header in front of a decoded inner packet that also
+// has one. The outer header must not take the inner one for its own.
+func TestIPv6TunnelledHopByHopSerialize(t *testing.T) {
+	pad := &IPv6HopByHopOption{OptionType: 1, OptionLength: 4, OptionData: make([]byte, 4)}
+	outer := &IPv6{Version: 6, HopLimit: 64, NextHeader: IPProtocolIPv6HopByHop,
+		SrcIP: net.ParseIP("2001:db8::1"), DstIP: net.ParseIP("2001:db8::2")}
+	outer.HopByHop = &IPv6HopByHop{Options: []*IPv6HopByHopOption{pad}}
+	outer.HopByHop.NextHeader = IPProtocolIPv6
+	inner := &IPv6{Version: 6, HopLimit: 64, NextHeader: IPProtocolIPv6HopByHop,
+		SrcIP: net.ParseIP("2001:db8::3"), DstIP: net.ParseIP("2001:db8::4")}
+	innerHbh := &IPv6HopByHop{Options: []*IPv6HopByHopOption{pad}}
+	innerHbh.NextHeader = IPProtocolNoNextHeader
+	inner.HopByHop = innerHbh
+
+	buf := gopacket.NewSerializeBuffer()
+	if err := gopacket.SerializeLayers(buf, gopacket.SerializeOptions{FixLengths: true}, outer, inner, innerHbh); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := len(buf.Bytes()), 2*(40+8); got != want {
+		t.Errorf("serialized %d bytes, want %d", got, want)
+	}
+}
+
+// TestIPv6Pad1RoundTrip writes a decoded Pad1 option back as the single
+// byte it is, so a decoded extension header serializes to its wire bytes.
+func TestIPv6Pad1RoundTrip(t *testing.T) {
+	udp := []byte{0x11, 0x5c, 0x27, 0x0f, 0x00, 0x0d, 0x28, 0x22, 'h', 'e', 'l', 'l', 'o'}
+	for _, c := range []struct {
+		name   string
+		nh     byte
+		header []byte
+	}{
+		{"destination PadN then 8 Pad1", 60, []byte{0x11, 0x01, 0x01, 0x04, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+		{"hop-by-hop 6 Pad1", 0, []byte{0x11, 0x00, 0, 0, 0, 0, 0, 0}},
+		{"hop-by-hop router alert then 2 Pad1", 0, []byte{0x11, 0x00, 0x05, 0x02, 0x00, 0x00, 0x00, 0x00}},
+	} {
+		frame := []byte{0x60, 0, 0, 0, 0, byte(len(c.header) + len(udp)), c.nh, 64}
+		frame = append(frame, net.ParseIP("2001:db8::1").To16()...)
+		frame = append(frame, net.ParseIP("2001:db8::2").To16()...)
+		frame = append(frame, c.header...)
+		frame = append(frame, udp...)
+
+		p := gopacket.NewPacket(frame, LayerTypeIPv6, gopacket.Default)
+		if p.ErrorLayer() != nil {
+			t.Errorf("%s: %v", c.name, p.ErrorLayer().Error())
+			continue
+		}
+		for _, opts := range []gopacket.SerializeOptions{{}, {FixLengths: true}} {
+			buf := gopacket.NewSerializeBuffer()
+			if err := gopacket.SerializePacket(buf, opts, p); err != nil {
+				t.Errorf("%s %+v: %v", c.name, opts, err)
+				continue
+			}
+			if !bytes.Equal(buf.Bytes(), frame) {
+				t.Errorf("%s %+v: serialized\n%x\nwant\n%x", c.name, opts, buf.Bytes(), frame)
+			}
+		}
+	}
+}
+
+// TestIPv6TrailingPad1 decodes a Pad1 that is the last byte of the packet.
+func TestIPv6TrailingPad1(t *testing.T) {
+	frame := []byte{0x60, 0, 0, 0, 0, 8, 0, 64}
+	frame = append(frame, net.ParseIP("2001:db8::1").To16()...)
+	frame = append(frame, net.ParseIP("2001:db8::2").To16()...)
+	frame = append(frame, 0x3b, 0x00, 0x01, 0x03, 0, 0, 0, 0)
+	p := gopacket.NewPacket(frame, LayerTypeIPv6, gopacket.Default)
+	if p.ErrorLayer() != nil {
+		t.Fatal(p.ErrorLayer().Error())
+	}
+}
+
+// TestIPv6ExtensionTooLongToSerialize refuses an options header that Hdr Ext
+// Len cannot describe instead of writing it with a wrapped length.
+func TestIPv6ExtensionTooLongToSerialize(t *testing.T) {
+	var opts []*IPv6DestinationOption
+	for i := 0; i < 8; i++ {
+		opts = append(opts, &IPv6DestinationOption{OptionType: 0x1e, OptionLength: 254, OptionData: make([]byte, 254)})
+	}
+	opts = append(opts, &IPv6DestinationOption{OptionType: 0x1e, OptionLength: 4, OptionData: make([]byte, 4)})
+	dst := &IPv6Destination{Options: opts}
+	dst.NextHeader = IPProtocolUDP
+	for _, o := range []gopacket.SerializeOptions{{}, {FixLengths: true}} {
+		buf := gopacket.NewSerializeBuffer()
+		if err := dst.SerializeTo(buf, o); err == nil {
+			t.Errorf("%+v: 2056-byte header serialized without error, Hdr Ext Len %d", o, buf.Bytes()[1])
+		}
+	}
+
+	routing := &IPv6Routing{SourceRoutingIPs: make([]net.IP, 128)}
+	for i := range routing.SourceRoutingIPs {
+		routing.SourceRoutingIPs[i] = net.ParseIP("2001:db8::1")
+	}
+	buf := gopacket.NewSerializeBuffer()
+	if err := routing.SerializeTo(buf, gopacket.SerializeOptions{}); err == nil {
+		t.Errorf("routing header with 128 addresses serialized without error, Hdr Ext Len %d", buf.Bytes()[1])
+	}
+}

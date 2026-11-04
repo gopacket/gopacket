@@ -23,6 +23,9 @@ const (
 
 const (
 	ipv6MaxPayloadLength = 65535
+	// ipv6MaxExtensionLength is the longest extension header the 8-bit
+	// Hdr Ext Len field can describe: (255 + 1) * 8 bytes.
+	ipv6MaxExtensionLength = 2048
 )
 
 // IPv6 is the layer for the IPv6 header.
@@ -163,12 +166,11 @@ func (ipv6 *IPv6) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.Serializ
 
 	hbhAlreadySerialized := false
 	if ipv6.HopByHop != nil {
-		for _, l := range b.Layers() {
-			if l == LayerTypeIPv6HopByHop {
-				hbhAlreadySerialized = true
-				break
-			}
-		}
+		// The hop-by-hop header directly follows the IPv6 header, so only
+		// the layer serialized last can be the one that belongs to this
+		// header; an inner packet's header further down must not count.
+		serialized := b.Layers()
+		hbhAlreadySerialized = len(serialized) > 0 && serialized[len(serialized)-1] == LayerTypeIPv6HopByHop
 	}
 	if ipv6.HopByHop != nil && !hbhAlreadySerialized {
 		if ipv6.NextHeader != IPProtocolIPv6HopByHop {
@@ -319,6 +321,13 @@ type ipv6HeaderTLVOption struct {
 }
 
 func (h *ipv6HeaderTLVOption) serializeTo(data []byte, fixLengths bool, dryrun bool) int {
+	// Pad1 is a single zero byte with no length and no data (RFC 8200 4.2)
+	if h.OptionType == 0 {
+		if !dryrun {
+			data[0] = 0
+		}
+		return 1
+	}
 	if fixLengths {
 		h.OptionLength = uint8(len(h.OptionData))
 	}
@@ -332,14 +341,19 @@ func (h *ipv6HeaderTLVOption) serializeTo(data []byte, fixLengths bool, dryrun b
 }
 
 func decodeIPv6HeaderTLVOption(data []byte, df gopacket.DecodeFeedback) (h *ipv6HeaderTLVOption, _ error) {
-	if len(data) < 2 {
+	if len(data) < 1 {
 		df.SetTruncated()
 		return nil, errors.New("IPv6 header option too small")
 	}
 	h = &ipv6HeaderTLVOption{}
+	// a Pad1 may be the last byte of the header
 	if data[0] == 0 {
 		h.ActualLength = 1
 		return
+	}
+	if len(data) < 2 {
+		df.SetTruncated()
+		return nil, errors.New("IPv6 header option too small")
 	}
 	h.OptionType = data[0]
 	h.OptionLength = data[1]
@@ -500,6 +514,9 @@ func (i *IPv6HopByHop) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.Ser
 	if length%8 != 0 {
 		return errors.New("IPv6HopByHop actual length must be multiple of 8")
 	}
+	if length > ipv6MaxExtensionLength {
+		return fmt.Errorf("IPv6HopByHop actual length %d exceeds maximum of %d", length, ipv6MaxExtensionLength)
+	}
 	bytes, err = b.PrependBytes(2)
 	if err != nil {
 		return err
@@ -581,6 +598,9 @@ func (i *IPv6Routing) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.Seri
 		return errors.New("IPv6Routing actual length must be multiple of 8")
 	}
 	hdrExtLen := (totalLen - ipv6HeaderBaseLen) / ipv6HeaderBaseLen
+	if totalLen > ipv6MaxExtensionLength {
+		return fmt.Errorf("IPv6Routing actual length %d exceeds maximum of %d", totalLen, ipv6MaxExtensionLength)
+	}
 
 	bytes, err := b.PrependBytes(totalLen)
 	if err != nil {
@@ -743,6 +763,9 @@ func (i *IPv6Destination) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.
 	length := len(bytes) + 2
 	if length%8 != 0 {
 		return errors.New("IPv6Destination actual length must be multiple of 8")
+	}
+	if length > ipv6MaxExtensionLength {
+		return fmt.Errorf("IPv6Destination actual length %d exceeds maximum of %d", length, ipv6MaxExtensionLength)
 	}
 	bytes, err = b.PrependBytes(2)
 	if err != nil {
