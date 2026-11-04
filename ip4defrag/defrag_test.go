@@ -163,6 +163,7 @@ func TestDefragTooSmall(t *testing.T) {
 		FragOffset: 0,
 		Length:     27, // Minimum fragment size -1 + header (20)
 		Flags:      layers.IPv4MoreFragments,
+		BaseLayer:  layers.BaseLayer{Payload: make([]byte, 8)},
 	}
 	if _, err := defrag.DefragIPv4(&ip1); err == nil {
 		t.Fatal("defrag: Minimum fragment size is supposed to be 8, except for the final fragment")
@@ -206,6 +207,7 @@ func TestDefragFragmentOffset(t *testing.T) {
 		FragOffset: 0,
 		Length:     512,
 		Flags:      layers.IPv4MoreFragments,
+		BaseLayer:  layers.BaseLayer{Payload: make([]byte, 492)},
 	}
 	if _, err := defrag.DefragIPv4(&ip1); err != nil {
 		t.Fatal(err)
@@ -245,6 +247,7 @@ func TestDefragMaxSize(t *testing.T) {
 		FragOffset: 0,
 		Length:     65535,
 		Flags:      layers.IPv4MoreFragments,
+		BaseLayer:  layers.BaseLayer{Payload: make([]byte, 65515)},
 	}
 	if _, err := defrag.DefragIPv4(&ip1); err != nil {
 		t.Fatal(err)
@@ -1833,4 +1836,24 @@ func TestDefragRejectedFragmentDropsList(t *testing.T) {
 	}
 	feedFrags(t, defrag, mkFrag(1, 0, true, real))
 	lastFrag(t, defrag, mkFrag(1, 24, false, tail), append(append([]byte{}, real...), tail...))
+}
+
+func TestDefragTruncatedFragment(t *testing.T) {
+	// A frame that ends before its IP Length announces is discarded
+	// by receivers. Stored, it took the place of the real fragment at
+	// that offset and the datagram came out with those bytes missing.
+	a := bytes.Repeat([]byte("a"), 8)
+	b := bytes.Repeat([]byte("b"), 8)
+	c := bytes.Repeat([]byte("c"), 8)
+	defrag := NewIPv4Defragmenter()
+
+	short := mkFrag(1, 8, true, b)
+	short.Payload = nil
+	if _, err := defrag.DefragIPv4(short); err == nil {
+		t.Fatal("defrag: fragment shorter than its Length was accepted")
+	}
+
+	feedFrags(t, defrag, mkFrag(1, 0, true, a), mkFrag(1, 8, true, b))
+	want := append(append(append([]byte{}, a...), b...), c...)
+	lastFrag(t, defrag, mkFrag(1, 16, false, c), want)
 }

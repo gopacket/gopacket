@@ -193,6 +193,14 @@ func (d *IPv4Defragmenter) securityChecks(ip *layers.IPv4) error {
 			"(handcrafted? %d < %d)", fragSize, IPv4MinimumFragmentSize)
 	}
 
+	// don't allow fragments carrying less data than their header
+	// announces (truncated capture or handcrafted): a receiver
+	// discards them, and stored they would shadow the real fragment
+	if len(ip.Payload) < int(fragSize) {
+		return fmt.Errorf("defrag: fragment truncated "+
+			"(%d < %d)", len(ip.Payload), fragSize)
+	}
+
 	// don't allow too big fragment offset
 	if ip.FragOffset > IPv4MaximumFragmentOffset {
 		return fmt.Errorf("defrag: fragment offset too big "+
