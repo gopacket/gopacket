@@ -455,8 +455,10 @@ func decodeCiscoDiscoveryInfo(data []byte, p gopacket.PacketBuilder) error {
 					return fmt.Errorf("Too many TLV's - wanted %d, saw %d", tlvNum, numSeen)
 				}
 				tType := CDPEnergyWiseSubtype(binary.BigEndian.Uint32(data[0:4]))
-				tLen := int(binary.BigEndian.Uint32(data[4:8]))
-				if tLen > len(data)-8 {
+				// keep the 32-bit length unsigned so it cannot go
+				// negative where int is 32 bits
+				tLen := binary.BigEndian.Uint32(data[4:8])
+				if tLen > uint32(len(data)-8) {
 					return fmt.Errorf("Invalid TLV length %d vs %d", tLen, len(data)-8)
 				}
 				data = data[8:]

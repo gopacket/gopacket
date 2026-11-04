@@ -483,3 +483,36 @@ func TestDecodeRawIPEmpty(t *testing.T) {
 		}
 	}
 }
+
+// The EnergyWise sub-TLV length and the address count are 32-bit wire
+// fields. Where int is 32 bits the length went negative and count*8 wrapped
+// to zero, so both passed their bound check and the decoder panicked.
+func TestCDPLengthFieldsOn32Bit(t *testing.T) {
+	energyWise := make([]byte, 4+72+16)
+	binary.BigEndian.PutUint16(energyWise[0:2], uint16(CDPTLVEnergyWise))
+	binary.BigEndian.PutUint16(energyWise[2:4], uint16(len(energyWise)))
+	binary.BigEndian.PutUint16(energyWise[72:74], 16) // sub-TLV bytes
+	binary.BigEndian.PutUint16(energyWise[74:76], 1)  // sub-TLV count
+	binary.BigEndian.PutUint32(energyWise[76:80], uint32(CDPEnergyWiseRole))
+	binary.BigEndian.PutUint32(energyWise[80:84], 0xffffffff)
+
+	addresses := make([]byte, 4+4)
+	binary.BigEndian.PutUint16(addresses[0:2], uint16(CDPTLVAddress))
+	binary.BigEndian.PutUint16(addresses[2:4], uint16(len(addresses)))
+	binary.BigEndian.PutUint32(addresses[4:8], 0x20000000)
+
+	for name, tlv := range map[string][]byte{"energywise-length": energyWise, "address-count": addresses} {
+		t.Run(name, func(t *testing.T) {
+			defer func() {
+				if r := recover(); r != nil {
+					t.Fatalf("decoder panicked on crafted input: %v", r)
+				}
+			}()
+			data := append([]byte{0x02, 0xb4, 0x00, 0x00}, tlv...)
+			p := gopacket.NewPacket(data, LayerTypeCiscoDiscovery, gopacket.DecodeOptions{SkipDecodeRecovery: true})
+			if p.ErrorLayer() == nil {
+				t.Fatal("crafted TLV decoded without error")
+			}
+		})
+	}
+}
