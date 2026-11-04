@@ -349,6 +349,11 @@ var testPacketSIPOnlyResponseCSeqSpaces = []byte(
 		"\r\n",
 )
 
+// The fifth packet and the under-sized packet with Content-Length given in
+// its compact form 'l'.
+var testOverSizedPacketSIPOnlyInviteWithPayloadCompactLength = bytes.Replace(testOverSizedPacketSIPOnlyInviteWithPayload, []byte("Content-Length: 100\r\n"), []byte("l: 100\r\n"), 1)
+var testUnderSizedPacketSIPOnlyInviteWithPayloadCompactLength = bytes.Replace(testUnderSizedPacketSIPOnlyInviteWithPayload, []byte("Content-Length: 100\r\n"), []byte("l: 100\r\n"), 1)
+
 func TestSIPDecode(t *testing.T) {
 	type args struct {
 		firstLayerDecoder gopacket.Decoder
@@ -425,6 +430,24 @@ func TestSIPDecode(t *testing.T) {
 			},
 			"",
 			[]byte{},
+		},
+		{"overSizedInviteWithPayloadCompactLength", args{LayerTypeSIP, testOverSizedPacketSIPOnlyInviteWithPayloadCompactLength},
+			"", false, false, SIPMethodInvite, 1, 100,
+			map[string][]string{
+				"call-id": {`306366781@172_16_254_66`},
+				"l":       {`100`},
+			},
+			"sip:sip.provider.com",
+			[]byte("v=0\r\no=bob 4096 1976 IN IP4 172.16.254.66\r\ns=Talk\r\nc=IN 172.16.254.66\r\nt=0 0\r\nm=audio 6000 RTP/AVP 0"),
+		},
+		{"underSizedInviteWithPayloadCompactLength", args{LayerTypeSIP, testUnderSizedPacketSIPOnlyInviteWithPayloadCompactLength},
+			"", true, false, SIPMethodInvite, 1, 100,
+			map[string][]string{
+				"call-id": {`306366781@172_16_254_66`},
+				"l":       {`100`},
+			},
+			"sip:sip.provider.com",
+			[]byte("v=0\r\no=bob 4096 1976 IN IP4 172.16.254.66\r\ns=Talk\r\nc=IN 172.16.254.66\r\nt=0 0\r\nm=audio 6000"),
 		},
 		{"single empty line", args{LayerTypeSIP, []byte("\r\n")},
 			`invalid first SIP line, empty`,

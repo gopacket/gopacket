@@ -510,8 +510,8 @@ func (s *SIP) ParseSpecificHeaders(headerName string, headerValue string) (err e
 			}
 		}
 
-	case "content-length":
-		// Parse Content-Length
+	case "content-length", "l":
+		// Parse Content-Length, "l" being its compact form
 		s.contentLength, err = parsePositiveInt32(headerValue)
 		if err != nil {
 			return fmt.Errorf("invalid Content-Length: %w", err)
