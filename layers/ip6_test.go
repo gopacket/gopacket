@@ -430,3 +430,64 @@ func TestIPv6JumbogramDecode(t *testing.T) {
 		t.Error("No Payload layer type found in packet")
 	}
 }
+
+// A routing header of any type is followed by its Next Header. A receiver
+// skips a type it does not know when Segments Left is 0 (RFC 8200 4.4), so
+// the decoder must not stop there.
+func TestPacketIPv6RoutingDecode(t *testing.T) {
+	addr := net.ParseIP("2001:db8::3")
+	for _, test := range []struct {
+		name    string
+		routing []byte
+		ips     []net.IP
+		data    []byte
+	}{
+		{
+			name:    "type 0",
+			routing: append([]byte{0x11, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, addr...),
+			ips:     []net.IP{addr},
+		},
+		{
+			name:    "type 0 with half an address",
+			routing: append([]byte{0x11, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, addr[:8]...),
+			data:    addr[:8],
+		},
+		{
+			name:    "type 4",
+			routing: append([]byte{0x11, 0x02, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00}, addr...),
+			data:    addr,
+		},
+		{
+			name:    "type 253",
+			routing: []byte{0x11, 0x00, 0xfd, 0x00, 0x00, 0x00, 0x00, 0x00},
+			data:    []byte{},
+		},
+	} {
+		udp := []byte{0x11, 0x5c, 0x27, 0x0f, 0x00, 0x0a, 0x12, 0x34, 0x68, 0x69}
+		data := append([]byte{}, testPacketIPv6Destination0[:40]...)
+		data[5] = uint8(len(test.routing) + len(udp))
+		data[6] = uint8(IPProtocolIPv6Routing)
+		data = append(append(data, test.routing...), udp...)
+
+		p := gopacket.NewPacket(data, LinkTypeRaw, gopacket.Default)
+		if p.ErrorLayer() != nil {
+			t.Errorf("%s: failed to decode packet: %v", test.name, p.ErrorLayer().Error())
+		}
+		checkLayers(p, []gopacket.LayerType{LayerTypeIPv6, LayerTypeIPv6Routing, LayerTypeUDP, gopacket.LayerTypePayload}, t)
+		got, ok := p.Layer(LayerTypeIPv6Routing).(*IPv6Routing)
+		if !ok {
+			t.Errorf("%s: no IPv6Routing layer type found in packet", test.name)
+			continue
+		}
+		if got.RoutingType != test.routing[2] || !reflect.DeepEqual(got.SourceRoutingIPs, test.ips) || !bytes.Equal(got.Data, test.data) {
+			t.Errorf("%s: IPv6Routing packet processing failed:\ngot:\n%#v\n\n", test.name, got)
+		}
+
+		buf := gopacket.NewSerializeBuffer()
+		if err := gopacket.SerializePacket(buf, gopacket.SerializeOptions{}, p); err != nil {
+			t.Errorf("%s: %v", test.name, err)
+		} else if !bytes.Equal(buf.Bytes(), data) {
+			t.Errorf("%s: IPv6Routing serialize failed:\ngot:\n%#v\n\nwant:\n%#v\n\n", test.name, buf.Bytes(), data)
+		}
+	}
+}

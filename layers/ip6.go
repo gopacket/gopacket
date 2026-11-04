@@ -558,6 +558,9 @@ type IPv6Routing struct {
 	// SourceRoutingIPs is the set of IPv6 addresses requested for source routing,
 	// set only if RoutingType == 0.
 	SourceRoutingIPs []net.IP
+	// Data is the type-specific data after the first 8 bytes of the header,
+	// set only when it was not decoded into SourceRoutingIPs.
+	Data []byte
 }
 
 // LayerType returns LayerTypeIPv6Routing.
@@ -566,7 +569,10 @@ func (i *IPv6Routing) LayerType() gopacket.LayerType { return LayerTypeIPv6Routi
 // SerializeTo implementation according to gopacket.SerializableLayer
 func (i *IPv6Routing) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.SerializeOptions) error {
 	const ipv6HeaderBaseLen = 8
-	totalLen := ipv6HeaderBaseLen + len(i.SourceRoutingIPs)*net.IPv6len
+	totalLen := ipv6HeaderBaseLen + len(i.SourceRoutingIPs)*net.IPv6len + len(i.Data)
+	if totalLen%ipv6HeaderBaseLen != 0 {
+		return errors.New("IPv6Routing actual length must be multiple of 8")
+	}
 	hdrExtLen := (totalLen - ipv6HeaderBaseLen) / ipv6HeaderBaseLen
 
 	bytes, err := b.PrependBytes(totalLen)
@@ -582,6 +588,7 @@ func (i *IPv6Routing) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.Seri
 		offset := 8 + i*16
 		copy(bytes[offset:offset+16], ip.To16())
 	}
+	copy(bytes[totalLen-len(i.Data):], i.Data)
 	return nil
 }
 
@@ -596,16 +603,16 @@ func decodeIPv6Routing(data []byte, p gopacket.PacketBuilder) error {
 		SegmentsLeft:      data[3],
 		Reserved:          data[4:8],
 	}
-	switch i.RoutingType {
-	case 0: // Source routing
-		if (i.ActualLength-8)%16 != 0 {
-			return fmt.Errorf("Invalid IPv6 source routing, length of type 0 packet %d", i.ActualLength)
-		}
+	// Where the next header starts does not depend on the routing type, and
+	// a receiver skips a routing header it cannot process when SegmentsLeft
+	// is 0 (RFC 8200 4.4), so type-specific data we cannot decode must not
+	// stop the rest of the packet from being decoded.
+	if i.RoutingType == 0 && (i.ActualLength-8)%16 == 0 { // Source routing
 		for d := i.Contents[8:]; len(d) >= 16; d = d[16:] {
 			i.SourceRoutingIPs = append(i.SourceRoutingIPs, net.IP(d[:16]))
 		}
-	default:
-		return fmt.Errorf("Unknown IPv6 routing header type %d", i.RoutingType)
+	} else {
+		i.Data = i.Contents[8:]
 	}
 	p.AddLayer(i)
 	return p.NextDecoder(i.NextHeader)
