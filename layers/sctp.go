@@ -611,7 +611,11 @@ func decodeSCTPHeartbeat(data []byte, p gopacket.PacketBuilder) error {
 	for len(paramData) > 0 {
 		param, err := decodeSCTPParameter(paramData)
 		if err != nil {
-			return err
+			// The chunk length is valid, so the chunks bundled behind this
+			// one can still be found. Receivers echo the heartbeat body
+			// without parsing it, so a malformed parameter must not hide
+			// them.
+			break
 		}
 		paramData = nextSCTPParameter(paramData, param)
 		sc.Parameters = append(sc.Parameters, SCTPHeartbeatParameter(param))

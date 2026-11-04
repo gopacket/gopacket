@@ -264,6 +264,48 @@ func TestDecodeSCTPParameterPadding(t *testing.T) {
 	}
 }
 
+// TestDecodeSCTPMalformedHeartbeatParameter checks that a heartbeat chunk
+// whose body does not parse as a parameter list still ends at its chunk
+// length, so the chunks bundled behind it are decoded. Receivers echo the
+// heartbeat information without parsing it and deliver the DATA behind it.
+func TestDecodeSCTPMalformedHeartbeatParameter(t *testing.T) {
+	// DATA chunk, length 20: TSN 1, stream 0, four bytes of user data.
+	dataChunk := []byte{0, 3, 0, 20, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 'd', 'a', 't', 'a'}
+
+	cases := []struct {
+		name   string
+		chunk  []byte
+		params int // parameters that parse before the malformed one
+	}{
+		{"Heartbeat/param-len-zero", []byte{4, 0, 0, 12, 0, 1, 0, 0, 'a', 'b', 'c', 'd'}, 0},
+		{"Heartbeat/param-len-short", []byte{4, 0, 0, 12, 0, 1, 0, 3, 'a', 'b', 'c', 'd'}, 0},
+		{"Heartbeat/param-len-overrun", []byte{4, 0, 0, 12, 0, 1, 0, 9, 'a', 'b', 'c', 'd'}, 0},
+		{"Heartbeat/trailing-bytes", []byte{4, 0, 0, 14, 0, 1, 0, 8, 'a', 'b', 'c', 'd', 0, 0, 0, 0}, 1},
+		{"HeartbeatAck/param-len-zero", []byte{5, 0, 0, 12, 0, 1, 0, 0, 'a', 'b', 'c', 'd'}, 0},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			data := append(append(make([]byte, 12), c.chunk...), dataChunk...)
+			p := gopacket.NewPacket(data, LayerTypeSCTP, gopacket.DecodeOptions{SkipDecodeRecovery: true})
+			if p.ErrorLayer() != nil {
+				t.Fatalf("unexpected decode error: %v", p.ErrorLayer().Error())
+			}
+			if len(p.Layers()) != 3 {
+				t.Fatalf("expected SCTP, chunk and data layers, got %v", p.Layers())
+			}
+			hb, ok := p.Layers()[1].(*SCTPHeartbeat)
+			if !ok || len(hb.Parameters) != c.params {
+				t.Errorf("got %v, want a heartbeat with %d parameters", p.Layers()[1], c.params)
+			}
+			sd, ok := p.Layer(LayerTypeSCTPData).(*SCTPData)
+			if !ok || string(sd.Payload) != "data" {
+				t.Fatalf("bundled data chunk not decoded: %v", p.Layers())
+			}
+		})
+	}
+}
+
 // TestDecodeOOBRegressionBatch3 covers the 2026-09 batch of decoder panics
 // (sFlow sample loop, OSPFv2/v3 LSA headers, MDP TLVs, GTPv2 IE header,
 // Geneve header and option, CDP header). Each input declares more structure
