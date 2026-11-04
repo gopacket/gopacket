@@ -8,6 +8,7 @@ package layers
 
 import (
 	"bytes"
+	"runtime"
 	"testing"
 
 	"github.com/gopacket/gopacket"
@@ -53,6 +54,61 @@ func TestDHCPv6EncodeReply(t *testing.T) {
 	p2 := gopacket.NewPacket(buf.Bytes(), LayerTypeDHCPv6, testDecodeOptions)
 	dhcpv62 := p2.Layer(LayerTypeDHCPv6).(*DHCPv6)
 	testDHCPv6Equal(t, dhcpv6, dhcpv62)
+}
+
+// TestDHCPv6DecodeMaxLengthOption: 4+Length used to be computed in uint16, so
+// an option of 0xfffc..0xffff bytes (reachable in an IPv6 jumbogram) sliced
+// data[4:0]..data[4:3] and panicked.
+func TestDHCPv6DecodeMaxLengthOption(t *testing.T) {
+	for _, length := range []int{0xfffb, 0xfffc, 0xffff} {
+		msg := make([]byte, 8+length)
+		msg[0] = byte(DHCPv6MsgTypeSolicit)
+		msg[5] = byte(DHCPv6OptVendorClass)
+		msg[6], msg[7] = byte(length>>8), byte(length)
+
+		dhcpv6 := &DHCPv6{}
+		if err := dhcpv6.DecodeFromBytes(msg, gopacket.NilDecodeFeedback); err != nil {
+			t.Fatalf("length %#x: %v", length, err)
+		}
+		if len(dhcpv6.Options) != 1 || len(dhcpv6.Options[0].Data) != length {
+			t.Errorf("length %#x: got options %d, want one with %d bytes of data", length, len(dhcpv6.Options), length)
+		}
+
+		if err := dhcpv6.DecodeFromBytes(msg[:len(msg)-1], gopacket.NilDecodeFeedback); err == nil {
+			t.Errorf("length %#x: expected an error for a truncated option", length)
+		}
+	}
+}
+
+// TestDHCPv6OptionOroString pins the ORO rendering and checks that it is
+// linear: the list used to be built with string concatenation, which copied
+// everything so far for each of the up to 32767 codes in the option.
+func TestDHCPv6OptionOroString(t *testing.T) {
+	for _, test := range []struct {
+		data []byte
+		want string
+	}{
+		{nil, "Option(Oro:[])"},
+		{[]byte{0}, "Option(Oro:[])"},
+		{[]byte{0, 3}, "Option(Oro:[IA_NA])"},
+		{[]byte{0, 3, 0, 23, 0xff, 0xff, 0}, "Option(Oro:[IA_NA,DNSRecursiveNameServer,Unknown(65535)])"},
+	} {
+		got := NewDHCPv6Option(DHCPv6OptOro, test.data).String()
+		if got != test.want {
+			t.Errorf("ORO %v: expected %q, got %q", test.data, test.want, got)
+		}
+	}
+
+	oro := NewDHCPv6Option(DHCPv6OptOro, bytes.Repeat([]byte{0xff, 0xff}, 4000))
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+	s := oro.String()
+	runtime.ReadMemStats(&after)
+
+	grew := after.TotalAlloc - before.TotalAlloc
+	if limit := uint64(len(s)) * 8; grew > limit {
+		t.Fatalf("rendering %d bytes allocated %d bytes, limit %d", len(s), grew, limit)
+	}
 }
 
 func testDHCPv6Equal(t *testing.T, d1, d2 *DHCPv6) {

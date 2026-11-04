@@ -8,6 +8,7 @@ package layers
 
 import (
 	"bytes"
+	"encoding/binary"
 	"net"
 	"testing"
 
@@ -83,6 +84,30 @@ func TestDHCPv4EncodeResponse(t *testing.T) {
 	p2 := gopacket.NewPacket(buf.Bytes(), LayerTypeDHCPv4, testDecodeOptions)
 	dhcp2 := p2.Layer(LayerTypeDHCPv4).(*DHCPv4)
 	testDHCPEqual(t, dhcp, dhcp2)
+}
+
+// TestDHCPv4SerializeOversized: a message carried by a UDP jumbogram can be
+// longer than the uint16 Len() counts; SerializeTo used to size its buffer
+// with the wrapped value and index past it.
+func TestDHCPv4SerializeOversized(t *testing.T) {
+	for _, optlen := range []int{65294, 65295, 65600} {
+		data := make([]byte, 240+optlen)
+		data[0] = byte(DHCPOpRequest)
+		binary.BigEndian.PutUint32(data[236:240], DHCPMagic)
+
+		var dhcp DHCPv4
+		if err := dhcp.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err != nil {
+			t.Fatalf("[%d] %v", optlen, err)
+		}
+
+		buf := gopacket.NewSerializeBuffer()
+		if err := dhcp.SerializeTo(buf, gopacket.SerializeOptions{}); err != nil {
+			t.Fatalf("[%d] %v", optlen, err)
+		}
+		if want := append(data, byte(DHCPOptEnd)); !bytes.Equal(want, buf.Bytes()) {
+			t.Errorf("[%d] serialized %d bytes differ from the %d expected", optlen, len(buf.Bytes()), len(want))
+		}
+	}
 }
 
 func TestDHCPv4DecodeOption(t *testing.T) {

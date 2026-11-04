@@ -184,14 +184,21 @@ func (d *DHCPv4) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error 
 	return nil
 }
 
-// Len returns the length of a DHCPv4 packet.
+// Len returns the length of a DHCPv4 packet. The result wraps for a packet
+// longer than 65535 bytes, which only a UDP jumbogram can carry.
 func (d *DHCPv4) Len() uint16 {
-	n := uint16(240)
+	return uint16(d.serializedLen())
+}
+
+// serializedLen counts the bytes SerializeTo writes, in int so that a
+// jumbogram-sized message does not wrap.
+func (d *DHCPv4) serializedLen() int {
+	n := 240
 	for _, o := range d.Options {
 		if o.Type == DHCPOptPad {
 			n++
 		} else {
-			n += uint16(o.Length) + 2
+			n += int(o.Length) + 2
 		}
 	}
 	n++ // for opt end
@@ -202,7 +209,7 @@ func (d *DHCPv4) Len() uint16 {
 // SerializationBuffer, implementing gopacket.SerializableLayer.
 // See the docs for gopacket.SerializableLayer for more info.
 func (d *DHCPv4) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.SerializeOptions) error {
-	plen := int(d.Len())
+	plen := d.serializedLen()
 
 	data, err := b.PrependBytes(plen)
 	if err != nil {
