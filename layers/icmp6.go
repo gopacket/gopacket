@@ -244,7 +244,10 @@ func (i *ICMPv6) NextLayerType() gopacket.LayerType {
 	case ICMPv6TypeRedirect:
 		return LayerTypeICMPv6Redirect
 	case ICMPv6TypeMLDv1MulticastListenerQueryMessage: // Same Code for MLDv1 Query and MLDv2 Query
-		if len(i.Payload) > 20 { // Only payload size differs
+		// Only payload size differs. An MLDv2 Query is at least 24 bytes
+		// (RFC 3810 8.1); anything shorter is an MLDv1 Query, possibly with
+		// trailing bytes that MLDv1 listeners ignore (RFC 2710 3.7).
+		if len(i.Payload) >= 24 {
 			return LayerTypeMLDv2MulticastListenerQuery
 		} else {
 			return LayerTypeMLDv1MulticastListenerQuery

@@ -147,3 +147,27 @@ func TestPacketMulticastListenerDoneMessageV1(t *testing.T) {
 	// See https://github.com/google/gopacket/issues/517
 	// checkSerialization(p, t)
 }
+
+// TestMLDQueryTrailingBytes sends an MLD Query of 25 to 27 octets to the
+// MLDv1 decoder, which keeps the extra octets as payload, instead of the
+// MLDv2 decoder, which needs 28 octets.
+func TestMLDQueryTrailingBytes(t *testing.T) {
+	for extra := 1; extra <= 3; extra++ {
+		data := append([]byte{}, testPacketMulticastListenerQueryMessageV1...)
+		data = append(data, make([]byte, extra)...)
+		data[14+5] += byte(extra) // IPv6 payload length
+		p := gopacket.NewPacket(data, LinkTypeEthernet, gopacket.Default)
+		if p.ErrorLayer() != nil {
+			t.Errorf("%d extra octets: %v", extra, p.ErrorLayer().Error())
+			continue
+		}
+		q, ok := p.Layer(LayerTypeMLDv1MulticastListenerQuery).(*MLDv1MulticastListenerQueryMessage)
+		if !ok {
+			t.Errorf("%d extra octets: no MLDv1 query layer", extra)
+			continue
+		}
+		if len(q.Payload) != extra {
+			t.Errorf("%d extra octets: payload has %d bytes", extra, len(q.Payload))
+		}
+	}
+}

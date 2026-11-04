@@ -566,3 +566,41 @@ func BenchmarkDiameterDecoding(b *testing.B) {
 		gopacket.NewPacket(data, LayerTypeDiameter, gopacket.NoCopy)
 	}
 }
+
+// TestDiameterUnpaddedLastAVP keeps an AVP whose padding is absent because
+// it is the last thing in its container: RFC 6733 does not count the padding
+// in AVP Length.
+func TestDiameterUnpaddedLastAVP(t *testing.T) {
+	proxyInfo := []byte{
+		0x00, 0x00, 0x01, 0x1c, 0x40, 0x00, 0x00, 0x21, // Proxy-Info, length 33
+		0x00, 0x00, 0x01, 0x18, 0x40, 0x00, 0x00, 0x0b, 0x61, 0x2e, 0x62, 0x00, // Proxy-Host "a.b"
+		0x00, 0x00, 0x00, 0x21, 0x40, 0x00, 0x00, 0x0d, 0x68, 0x6f, 0x70, 0x2d, 0x37, // Proxy-State "hop-7"
+		0x00, 0x00, 0x00, // padding of Proxy-Info
+	}
+	userName := []byte{0x00, 0x00, 0x00, 0x01, 0x40, 0x00, 0x00, 0x0d, 0x61, 0x6c, 0x69, 0x63, 0x65}
+	header := []byte{0x01, 0x00, 0x00, 0x45, 0x80, 0x00, 0x01, 0x3e, 0x01, 0x00, 0x00, 0x23, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02}
+	data := append(append(header, proxyInfo...), userName...)
+
+	p := gopacket.NewPacket(data, LayerTypeDiameter, gopacket.Default)
+	if p.ErrorLayer() != nil {
+		t.Fatal(p.ErrorLayer().Error())
+	}
+	if p.Metadata().Truncated {
+		t.Error("packet marked truncated")
+	}
+	d, ok := p.Layer(LayerTypeDiameter).(*Diameter)
+	if !ok {
+		t.Fatal("no Diameter layer")
+	}
+	if len(d.AVPs) != 2 {
+		t.Fatalf("got %d AVPs, want 2 (Proxy-Info, User-Name)", len(d.AVPs))
+	}
+	if got := len(d.AVPs[0].GroupedAVPs); got != 2 {
+		t.Errorf("Proxy-Info has %d members, want 2", got)
+	}
+
+	// An AVP that really lacks bytes counted by its length is still an error.
+	if _, err := ParseDiameterAVPs(userName[:12]); err == nil {
+		t.Error("short AVP decoded without error")
+	}
+}

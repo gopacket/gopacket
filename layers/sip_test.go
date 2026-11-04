@@ -722,3 +722,19 @@ func fail(t *testing.T, failureMessage string, msgAndArgs ...interface{}) bool {
 	t.Errorf("%s %s", failureMessage, msg)
 	return false
 }
+
+// TestSIPLowerCaseVersion accepts a status line whose SIP-Version is not
+// upper case, which RFC 3261 7.1 makes case-insensitive.
+func TestSIPLowerCaseVersion(t *testing.T) {
+	for _, line := range []string{"sip/2.0 200 OK", "Sip/2.0 180 Ringing"} {
+		s := &SIP{}
+		err := s.DecodeFromBytes([]byte(line+"\r\nCSeq: 1 INVITE\r\n\r\n"), gopacket.NilDecodeFeedback)
+		if err != nil {
+			t.Errorf("%q: %v", line, err)
+			continue
+		}
+		if !s.IsResponse || s.Version != SIPVersion2 {
+			t.Errorf("%q: IsResponse=%v Version=%v", line, s.IsResponse, s.Version)
+		}
+	}
+}

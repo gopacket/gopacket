@@ -378,7 +378,8 @@ func (s *SIP) ParseFirstLine(firstLine []byte) error {
 	}
 
 	// Determine the SIP packet type
-	if strings.HasPrefix(splits[0], "SIP") {
+	// RFC 3261 7.1: the SIP-Version string is case-insensitive
+	if strings.HasPrefix(strings.ToUpper(splits[0]), "SIP") {
 
 		// --> Response
 		s.IsResponse = true
