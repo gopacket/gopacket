@@ -57,3 +57,19 @@ func TestDecodeAndEncode(t *testing.T) {
 		t.Fatalf("Got %+v, expected %+v\n", erspan2.Reserved, erspan.Reserved)
 	}
 }
+
+// TestERSPANIIVersion rejects headers whose version selects another
+// layout: Type III (version 2) is 12 bytes or more, not 8.
+func TestERSPANIIVersion(t *testing.T) {
+	for version := uint8(0); version < 16; version++ {
+		data := []byte{version << 4, 0x00, 0x00, 0x64, 0, 0, 0, 0, 0, 0, 0, 0}
+		err := (&ERSPANII{}).DecodeFromBytes(data, gopacket.NilDecodeFeedback)
+		known := version == ERSPANIIVersionObsolete || version == ERSPANIIVersion
+		if known && err != nil {
+			t.Errorf("version %d: %v", version, err)
+		}
+		if !known && err == nil {
+			t.Errorf("version %d decoded as an 8-byte Type II header", version)
+		}
+	}
+}
