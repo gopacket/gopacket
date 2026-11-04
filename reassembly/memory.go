@@ -120,13 +120,25 @@ func (p *StreamPool) Dump() {
 	}
 }
 
+// remove takes conn out of the pool and parks it on the free list.  The
+// caller must hold conn.mu.
 func (p *StreamPool) remove(conn *connection) {
+	if conn.removed {
+		return
+	}
 	p.mu.Lock()
 	if _, ok := p.conns[conn.key]; ok {
 		delete(p.conns, conn.key)
 		p.free = append(p.free, conn)
 	}
 	p.mu.Unlock()
+
+	// A parked connection must keep neither its Stream nor its pages alive,
+	// and an Assembler still waiting for its lock must see it is gone.
+	conn.removed = true
+	for _, half := range []*halfconnection{&conn.c2s, &conn.s2c} {
+		half.stream, half.saved, half.first, half.last = nil, nil, nil, nil
+	}
 }
 
 // NewStreamPool creates a new connection pool.  Streams will
@@ -162,7 +174,11 @@ func (p *StreamPool) newConnection(k key, s Stream, ts time.Time) (c *connection
 	}
 	index := len(p.free) - 1
 	c, p.free = p.free[index], p.free[:index]
+	// An Assembler that looked c up before it was removed may still hold its
+	// lock.  It never waits for p.mu once c is removed, so this can't deadlock.
+	c.mu.Lock()
 	c.reset(k, s, ts)
+	c.mu.Unlock()
 	return c, &c.c2s, &c.s2c
 }
 

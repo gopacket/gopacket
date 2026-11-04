@@ -454,11 +454,13 @@ func (half *halfconnection) Dump() string {
 type connection struct {
 	key      key // client->server
 	c2s, s2c halfconnection
+	removed  bool // no longer in the StreamPool, waiting to be reused
 	mu       sync.Mutex
 }
 
 func (c *connection) reset(k key, s Stream, ts time.Time) {
 	c.key = k
+	c.removed = false
 	base := halfconnection{
 		nextSeq:  invalidSequence,
 		ackSeq:   invalidSequence,
@@ -468,6 +470,15 @@ func (c *connection) reset(k key, s Stream, ts time.Time) {
 	}
 	c.c2s, c.s2c = base, base
 	c.c2s.dir, c.s2c.dir = TCPDirClientToServer, TCPDirServerToClient
+}
+
+// halves returns the half-connections of c oriented for k, which must be
+// c.key or its reverse.
+func (c *connection) halves(k key) (*halfconnection, *halfconnection) {
+	if c.key == k {
+		return &c.c2s, &c.s2c
+	}
+	return &c.s2c, &c.c2s
 }
 
 func (c *connection) lastSeen() time.Time {
@@ -652,15 +663,38 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 	ci := ac.GetCaptureInfo()
 	timestamp := ci.Timestamp
 
-	conn, half, rev = a.connPool.getConnection(key, false, timestamp, t, ac)
-	if conn == nil {
-		if *debugLog {
-			log.Printf("%v got empty packet on otherwise empty connection", key)
+	// Loop until we hold the lock of a connection that is still in the pool
+	// under our key: another Assembler may remove the one we were handed,
+	// and the pool may reuse it for a different flow, between the lookup and
+	// the lock.  A SYN on a connection closed in both directions but kept in
+	// the pool (ReassemblyComplete returned false) starts a new connection
+	// on that 4-tuple.  This should loop 0-1 times for the VAST majority of
+	// cases.
+	for {
+		conn, half, rev = a.connPool.getConnection(key, false, timestamp, t, ac)
+		if conn == nil {
+			if *debugLog {
+				log.Printf("%v got empty packet on otherwise empty connection", key)
+			}
+			return
 		}
-		return
+		conn.mu.Lock()
+		if conn.removed || (conn.key != key && conn.key != key.Reverse()) {
+			conn.mu.Unlock()
+			continue
+		}
+		if t.SYN && conn.c2s.closed && conn.s2c.closed {
+			if *debugLog {
+				log.Printf("%v got SYN on closed connection, replacing it", key)
+			}
+			a.connPool.remove(conn)
+			conn.mu.Unlock()
+			continue
+		}
+		break
 	}
-	conn.mu.Lock()
 	defer conn.mu.Unlock()
+	half, rev = conn.halves(key)
 	if half.lastSeen.Before(timestamp) {
 		half.lastSeen = timestamp
 	}
@@ -1267,8 +1301,12 @@ func (a *Assembler) FlushWithOptions(opt FlushOptions) (flushed, closed int) {
 	closes := 0
 	flushes := 0
 	for _, conn := range conns {
-		remove := false
 		conn.mu.Lock()
+		// Another Assembler may have removed it since the snapshot.
+		if conn.removed {
+			conn.mu.Unlock()
+			continue
+		}
 		for _, half := range []*halfconnection{&conn.s2c, &conn.c2s} {
 			flushed, closed := a.flushClose(conn, half, opt.T, opt.TC)
 			if flushed {
@@ -1279,12 +1317,9 @@ func (a *Assembler) FlushWithOptions(opt FlushOptions) (flushed, closed int) {
 			}
 		}
 		if conn.s2c.closed && conn.c2s.closed && conn.s2c.lastSeen.Before(opt.TC) && conn.c2s.lastSeen.Before(opt.TC) {
-			remove = true
-		}
-		conn.mu.Unlock()
-		if remove {
 			a.connPool.remove(conn)
 		}
+		conn.mu.Unlock()
 	}
 	return flushes, closes
 }
@@ -1323,6 +1358,11 @@ func (a *Assembler) FlushAll() (closed int) {
 	closed = len(conns)
 	for _, conn := range conns {
 		conn.mu.Lock()
+		// Another Assembler may have removed it since the snapshot.
+		if conn.removed {
+			conn.mu.Unlock()
+			continue
+		}
 		for _, half := range []*halfconnection{&conn.s2c, &conn.c2s} {
 			for !half.closed {
 				a.skipFlush(conn, half)

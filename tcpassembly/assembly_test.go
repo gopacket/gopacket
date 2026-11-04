@@ -9,6 +9,8 @@ package tcpassembly
 import (
 	"net"
 	"reflect"
+	"runtime"
+	"sync"
 	"testing"
 	"time"
 
@@ -595,5 +597,109 @@ func TestConnectionAddedWhileCreatingStream(t *testing.T) {
 	}
 	if n := len(pool.free); n != initialAllocSize-1 {
 		t.Errorf("%d free connections left, want %d", n, initialAllocSize-1)
+	}
+}
+
+// testReuseFactory records every stream it creates and runs onComplete from
+// ReassemblyComplete, while the Assembler still holds the connection lock.
+type testReuseStream struct {
+	fact  *testReuseFactory
+	flow  gopacket.Flow
+	bytes []byte
+}
+
+func (s *testReuseStream) Reassembled(rs []Reassembly) {
+	for _, r := range rs {
+		s.bytes = append(s.bytes, r.Bytes...)
+	}
+}
+func (s *testReuseStream) ReassemblyComplete() {
+	if s.fact.onComplete != nil {
+		s.fact.onComplete()
+	}
+}
+
+type testReuseFactory struct {
+	streams    []*testReuseStream
+	onComplete func()
+}
+
+func (f *testReuseFactory) New(a, b gopacket.Flow) Stream {
+	s := &testReuseStream{fact: f, flow: b}
+	f.streams = append(f.streams, s)
+	return s
+}
+
+func (f *testReuseFactory) bytesFor(flow gopacket.Flow) [][]byte {
+	var got [][]byte
+	for _, s := range f.streams {
+		if s.flow == flow {
+			got = append(got, s.bytes)
+		}
+	}
+	return got
+}
+
+// An Assembler that looked a connection up and then waited for its lock must
+// not use it once another Assembler has removed it and the pool has handed
+// it out again for a different flow.
+func TestConnectionReusedWhileWaitingForLock(t *testing.T) {
+	defer runtime.GOMAXPROCS(runtime.GOMAXPROCS(1))
+	fact := &testReuseFactory{}
+	pool := NewStreamPool(fact)
+	closer, waiter, third := NewAssembler(pool), NewAssembler(pool), NewAssembler(pool)
+	first := layers.TCP{SrcPort: 1, DstPort: 2, SYN: true, Seq: 1000, BaseLayer: layers.BaseLayer{Payload: []byte{1, 2, 3}}}
+	again := layers.TCP{SrcPort: 1, DstPort: 2, SYN: true, Seq: 5000, BaseLayer: layers.BaseLayer{Payload: []byte{4, 5, 6}}}
+	other := layers.TCP{SrcPort: 3, DstPort: 4, SYN: true, Seq: 7000, BaseLayer: layers.BaseLayer{Payload: []byte{7, 8, 9}}}
+	for _, tcp := range []*layers.TCP{&first, &again, &other} {
+		tcp.SetInternalPortsForTesting()
+	}
+	closer.Assemble(netFlow, &first)
+
+	var wg sync.WaitGroup
+	fact.onComplete = func() {
+		fact.onComplete = nil
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			waiter.Assemble(netFlow, &again)
+		}()
+		// Let waiter look the connection up and block on its lock before
+		// closer removes it.
+		time.Sleep(20 * time.Millisecond)
+	}
+	closer.FlushAll()
+	// Recycle the freed connection object for another flow before waiter
+	// gets the lock.
+	third.Assemble(netFlow, &other)
+	wg.Wait()
+
+	want := [][]byte{{1, 2, 3}, {4, 5, 6}}
+	if got := fact.bytesFor(first.TransportFlow()); !reflect.DeepEqual(got, want) {
+		t.Errorf("first flow: got %v, want %v", got, want)
+	}
+	want = [][]byte{{7, 8, 9}}
+	if got := fact.bytesFor(other.TransportFlow()); !reflect.DeepEqual(got, want) {
+		t.Errorf("other flow: got %v, want %v", got, want)
+	}
+}
+
+// A connection parked on the free list must not keep its Stream alive.
+func TestRemoveDropsStream(t *testing.T) {
+	fact := &testFactory{}
+	p := NewStreamPool(fact)
+	a := NewAssembler(p)
+	a.Assemble(netFlow, &layers.TCP{SrcPort: 1, DstPort: 2, SYN: true, Seq: 1000, BaseLayer: layers.BaseLayer{Payload: []byte{1, 2, 3}}})
+	var conn *connection
+	for _, c := range p.conns {
+		conn = c
+	}
+	a.Assemble(netFlow, &layers.TCP{SrcPort: 1, DstPort: 2, FIN: true, Seq: 1004})
+
+	if n := len(p.conns); n != 0 {
+		t.Fatalf("%d connections still in the pool, want 0", n)
+	}
+	if conn.stream != nil {
+		t.Errorf("removed connection still references its Stream")
 	}
 }

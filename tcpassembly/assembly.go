@@ -488,7 +488,11 @@ func (p *StreamPool) newConnection(k key, s Stream, ts time.Time) (c *connection
 	}
 	index := len(p.free) - 1
 	c, p.free = p.free[index], p.free[:index]
+	// An Assembler that looked c up before it was closed may still hold its
+	// lock.  It never waits for p.mu once c is closed, so this can't deadlock.
+	c.mu.Lock()
 	c.reset(k, s, ts)
+	c.mu.Unlock()
 	return c
 }
 
@@ -549,8 +553,9 @@ func (a *Assembler) AssembleWithTimestamp(netFlow gopacket.Flow, t *layers.TCP, 
 	var conn *connection
 	// This for loop handles a race condition where a connection will close, lock
 	// the connection pool, and remove itself, but before it locked the connection
-	// pool it's returned to another Assemble statement.  This should loop 0-1
-	// times for the VAST majority of cases.
+	// pool it's returned to another Assemble statement.  By the time that one
+	// gets the lock, the pool may even have reused it for a different key.  This
+	// should loop 0-1 times for the VAST majority of cases.
 	for {
 		conn = a.connPool.getConnection(
 			key, !t.SYN && len(t.LayerPayload()) == 0, timestamp)
@@ -561,7 +566,7 @@ func (a *Assembler) AssembleWithTimestamp(netFlow gopacket.Flow, t *layers.TCP, 
 			return
 		}
 		conn.mu.Lock()
-		if !conn.closed {
+		if !conn.closed && conn.key == key {
 			break
 		}
 		conn.mu.Unlock()
@@ -666,6 +671,8 @@ func (p *StreamPool) remove(conn *connection) {
 	delete(p.conns, conn.key)
 	p.free = append(p.free, conn)
 	p.mu.Unlock()
+	// A parked connection must not keep its Stream alive.
+	conn.stream = nil
 }
 
 func (a *Assembler) closeConnection(conn *connection) {

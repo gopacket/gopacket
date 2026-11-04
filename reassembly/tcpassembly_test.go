@@ -14,6 +14,7 @@ import (
 	"net"
 	"reflect"
 	"runtime"
+	"sync"
 	"testing"
 	"time"
 
@@ -2258,5 +2259,191 @@ func TestConnectionAddedWhileCreatingStream(t *testing.T) {
 		if n := len(pool.free); n != initialAllocSize-1 {
 			t.Errorf("%s: %d free connections left, want %d", test.name, n, initialAllocSize-1)
 		}
+	}
+}
+
+// testReuseFactory records every stream it creates and runs onComplete from
+// ReassemblyComplete, while the Assembler still holds the connection lock.
+type testReuseStream struct {
+	fact  *testReuseFactory
+	flow  gopacket.Flow
+	bytes []byte
+}
+
+func (s *testReuseStream) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir TCPFlowDirection, seq Sequence, start *bool, ac AssemblerContext) bool {
+	return true
+}
+func (s *testReuseStream) ReassembledSG(sg ScatterGather, ac AssemblerContext) {
+	l, _ := sg.Lengths()
+	s.bytes = append(s.bytes, sg.Fetch(l)...)
+}
+func (s *testReuseStream) ReassemblyComplete(ac AssemblerContext) bool {
+	if s.fact.onComplete != nil {
+		s.fact.onComplete()
+	}
+	return true
+}
+
+type testReuseFactory struct {
+	streams    []*testReuseStream
+	onComplete func()
+}
+
+func (f *testReuseFactory) New(a, b gopacket.Flow, tcp *layers.TCP, ac AssemblerContext) Stream {
+	s := &testReuseStream{fact: f, flow: b}
+	f.streams = append(f.streams, s)
+	return s
+}
+
+func (f *testReuseFactory) bytesFor(flow gopacket.Flow) [][]byte {
+	var got [][]byte
+	for _, s := range f.streams {
+		if s.flow == flow {
+			got = append(got, s.bytes)
+		}
+	}
+	return got
+}
+
+// An Assembler that looked a connection up and then waited for its lock must
+// not use it once another Assembler has removed it and the pool has handed
+// it out again for a different flow.
+func TestConnectionReusedWhileWaitingForLock(t *testing.T) {
+	defer runtime.GOMAXPROCS(runtime.GOMAXPROCS(1))
+	fact := &testReuseFactory{}
+	pool := NewStreamPool(fact)
+	closer, waiter, third := NewAssembler(pool), NewAssembler(pool), NewAssembler(pool)
+	first := layers.TCP{SrcPort: 1, DstPort: 2, SYN: true, Seq: 1000, BaseLayer: layers.BaseLayer{Payload: []byte{1, 2, 3}}}
+	again := layers.TCP{SrcPort: 1, DstPort: 2, SYN: true, Seq: 5000, BaseLayer: layers.BaseLayer{Payload: []byte{4, 5, 6}}}
+	other := layers.TCP{SrcPort: 3, DstPort: 4, SYN: true, Seq: 7000, BaseLayer: layers.BaseLayer{Payload: []byte{7, 8, 9}}}
+	for _, tcp := range []*layers.TCP{&first, &again, &other} {
+		tcp.SetInternalPortsForTesting()
+	}
+	closer.Assemble(netFlow, &first)
+
+	var wg sync.WaitGroup
+	fact.onComplete = func() {
+		fact.onComplete = nil
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			waiter.Assemble(netFlow, &again)
+		}()
+		// Let waiter look the connection up and block on its lock before
+		// closer removes it.
+		time.Sleep(20 * time.Millisecond)
+	}
+	closer.FlushAll()
+	// Recycle the freed connection object for another flow before waiter
+	// gets the lock.
+	third.Assemble(netFlow, &other)
+	wg.Wait()
+
+	want := [][]byte{{1, 2, 3}, {4, 5, 6}}
+	if got := fact.bytesFor(first.TransportFlow()); !reflect.DeepEqual(got, want) {
+		t.Errorf("first flow: got %v, want %v", got, want)
+	}
+	want = [][]byte{{7, 8, 9}}
+	if got := fact.bytesFor(other.TransportFlow()); !reflect.DeepEqual(got, want) {
+		t.Errorf("other flow: got %v, want %v", got, want)
+	}
+}
+
+// A connection parked on the free list must not keep its Stream alive.
+func TestRemoveDropsReferences(t *testing.T) {
+	fact := &testFactory{}
+	p := NewStreamPool(fact)
+	a := NewAssembler(p)
+	c2s := []layers.TCP{
+		{SrcPort: 1, DstPort: 2, SYN: true, Seq: 1000, BaseLayer: layers.BaseLayer{Payload: []byte{1, 2, 3}}},
+		{SrcPort: 1, DstPort: 2, FIN: true, Seq: 1004},
+	}
+	s2c := []layers.TCP{
+		{SrcPort: 2, DstPort: 1, SYN: true, ACK: true, Seq: 2000, Ack: 1001},
+		{SrcPort: 2, DstPort: 1, FIN: true, Seq: 2001},
+	}
+	c2s[0].SetInternalPortsForTesting()
+	a.Assemble(netFlow, &c2s[0])
+	var conn *connection
+	for _, c := range p.conns {
+		conn = c
+	}
+	for i := range s2c {
+		s2c[i].SetInternalPortsForTesting()
+		a.Assemble(netFlow.Reverse(), &s2c[i])
+	}
+	c2s[1].SetInternalPortsForTesting()
+	a.Assemble(netFlow, &c2s[1])
+
+	if n := len(p.conns); n != 0 {
+		t.Fatalf("%d connections still in the pool, want 0", n)
+	}
+	if conn.c2s.stream != nil || conn.s2c.stream != nil {
+		t.Errorf("removed connection still references its Stream")
+	}
+	if len(p.free) == 0 || p.free[len(p.free)-1] != conn {
+		t.Errorf("removed connection is not on top of the free list")
+	}
+}
+
+/* Keeps closed connections (ReassemblyComplete returns false), counts streams and bytes */
+type testPortReuseFactory struct {
+	streams int
+	bytes   []byte
+}
+
+func (t *testPortReuseFactory) New(a, b gopacket.Flow, tcp *layers.TCP, ac AssemblerContext) Stream {
+	t.streams++
+	return t
+}
+func (t *testPortReuseFactory) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir TCPFlowDirection, seq Sequence, start *bool, ac AssemblerContext) bool {
+	return true
+}
+func (t *testPortReuseFactory) ReassembledSG(sg ScatterGather, ac AssemblerContext) {
+	l, _ := sg.Lengths()
+	t.bytes = append(t.bytes, sg.Fetch(l)...)
+}
+func (t *testPortReuseFactory) ReassemblyComplete(ac AssemblerContext) bool {
+	return false
+}
+
+// A connection kept in the pool after both FINs must not swallow a new
+// connection on the same 4-tuple: its SYN starts a new stream.
+func TestPortReuseAfterKeptClose(t *testing.T) {
+	fact := &testPortReuseFactory{}
+	p := NewStreamPool(fact)
+	a := NewAssembler(p)
+	ts := time.Unix(1432538521, 566690000)
+	send := func(dir TCPFlowDirection, tcp layers.TCP) {
+		flow := netFlow
+		tcp.SrcPort, tcp.DstPort = 54842, 53
+		if dir == TCPDirServerToClient {
+			flow = flow.Reverse()
+			tcp.SrcPort, tcp.DstPort = 53, 54842
+		}
+		tcp.SetInternalPortsForTesting()
+		ts = ts.Add(time.Millisecond)
+		ctx := assemblerSimpleContext(gopacket.CaptureInfo{Timestamp: ts})
+		a.AssembleWithContext(flow, &tcp, &ctx)
+	}
+	connection := func(seq, ack uint32, payload []byte) {
+		send(TCPDirClientToServer, layers.TCP{SYN: true, Seq: seq})
+		send(TCPDirServerToClient, layers.TCP{SYN: true, ACK: true, Seq: ack, Ack: seq + 1})
+		send(TCPDirClientToServer, layers.TCP{ACK: true, Seq: seq + 1, Ack: ack + 1, BaseLayer: layers.BaseLayer{Payload: payload}})
+		send(TCPDirClientToServer, layers.TCP{FIN: true, ACK: true, Seq: seq + 1 + uint32(len(payload)), Ack: ack + 1})
+		send(TCPDirServerToClient, layers.TCP{FIN: true, ACK: true, Seq: ack + 1, Ack: seq + 2 + uint32(len(payload))})
+		send(TCPDirClientToServer, layers.TCP{ACK: true, Seq: seq + 2 + uint32(len(payload)), Ack: ack + 2})
+	}
+	connection(1000, 5000, []byte("first"))
+	if fact.streams != 1 || string(fact.bytes) != "first" {
+		t.Fatalf("first connection: got %d streams, bytes %q", fact.streams, fact.bytes)
+	}
+	// same 4-tuple, new ISNs
+	connection(2000000, 6000000, []byte("second"))
+	if fact.streams != 2 {
+		t.Fatalf("second connection on the same 4-tuple: got %d streams, expected 2", fact.streams)
+	}
+	if string(fact.bytes) != "firstsecond" {
+		t.Fatalf("second connection on the same 4-tuple: got bytes %q, expected %q", fact.bytes, "firstsecond")
 	}
 }
