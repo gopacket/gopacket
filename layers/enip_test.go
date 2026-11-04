@@ -1,6 +1,7 @@
 package layers
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -344,4 +345,59 @@ func (r *enipPcapReader) readPacketData() ([]byte, error) {
 	}
 
 	return data, nil
+}
+
+// TestENIPSendRRDataSockaddrInfo decodes a Forward_Open whose item list
+// carries a Sockaddr Info item after, and then before, the data item.
+func TestENIPSendRRDataSockaddrInfo(t *testing.T) {
+	header := []byte{0x6f, 0x00, 0x56, 0x00, 0x00, 0x11, 0x02, 0x0a, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0x03, 0x00}
+	null := []byte{0x00, 0x00, 0x00, 0x00}
+	cip := testPacketENIPSendRRDataCIP[len(testPacketENIPSendRRDataCIP)-50:]
+	dataItem := append([]byte{0xb2, 0x00, 0x32, 0x00}, cip...)
+	sockaddr := []byte{0x00, 0x80, 0x10, 0x00, 0x00, 0x02, 0x08, 0xae, 0xc0, 0xa8, 0x00, 0x2e, 0, 0, 0, 0, 0, 0, 0, 0}
+	for _, c := range []struct {
+		name  string
+		items [][]byte
+	}{
+		{"sockaddr after data item", [][]byte{null, dataItem, sockaddr}},
+		{"sockaddr before data item", [][]byte{null, sockaddr, dataItem}},
+	} {
+		msg := append([]byte{}, header...)
+		for _, item := range c.items {
+			msg = append(msg, item...)
+		}
+		p := gopacket.NewPacket(msg, LayerTypeENIP, gopacket.Default)
+		if p.ErrorLayer() != nil {
+			t.Errorf("%s: %v", c.name, p.ErrorLayer().Error())
+			continue
+		}
+		checkLayers(p, []gopacket.LayerType{LayerTypeENIP, LayerTypeCIP}, t)
+		enip, ok := p.Layer(LayerTypeENIP).(*ENIP)
+		if !ok {
+			continue
+		}
+		if !bytes.Equal(enip.Payload, cip) {
+			t.Errorf("%s: payload %x, want the CIP message", c.name, enip.Payload)
+		}
+	}
+}
+
+// TestENIPShortConnectedDataItem has a Connected Data item whose length is
+// shorter than its own sequence count, so the message ends before the item
+// header does. The payload must come out empty, not as a reversed slice.
+func TestENIPShortConnectedDataItem(t *testing.T) {
+	data := make([]byte, 40)
+	data[0] = 0x70 // SendUnitData
+	data[2] = 16   // Length
+	data[30] = 1   // item count
+	data[32] = 0xb1
+	data[34] = 1 // item length: one byte, no room for the sequence count
+	enip := &ENIP{}
+	if err := enip.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err != nil {
+		t.Fatal(err)
+	}
+	if len(enip.Payload) != 0 {
+		t.Errorf("payload has %d bytes, want none", len(enip.Payload))
+	}
 }
