@@ -378,3 +378,18 @@ func TestIsomorphicPacketGeneveFixLengths(t *testing.T) {
 func TestGeneveAsDecodingLayer(t *testing.T) {
 	_ = gopacket.NewDecodingLayerParser(LayerTypeGeneve, &Geneve{})
 }
+
+// TestGeneveVersion decodes an 8-byte header with each of the four Ver values
+// and expects Version to come back unchanged.
+func TestGeneveVersion(t *testing.T) {
+	for want := uint8(0); want < 4; want++ {
+		data := []byte{want << 6, 0x00, 0x65, 0x58, 0x00, 0x12, 0x34, 0x00}
+		gn := &Geneve{}
+		if err := gn.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err != nil {
+			t.Fatalf("version %d: %v", want, err)
+		}
+		if gn.Version != want {
+			t.Errorf("version %d decoded as %d", want, gn.Version)
+		}
+	}
+}

@@ -312,13 +312,14 @@ func (cip *CIP) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 			cip.ClassID = uint16(data[offset])
 			offset++
 		case 0x21:
-			// 16-bit ID
-			if offset+2 > len(data) {
+			// 16-bit ID: a pad byte sits between the segment type and the
+			// value in a padded EPATH.
+			if offset+3 > len(data) {
 				df.SetTruncated()
 				return ErrCIPDataTooSmall
 			}
-			cip.ClassID = binary.LittleEndian.Uint16(data[offset : offset+2])
-			offset += 2
+			cip.ClassID = binary.LittleEndian.Uint16(data[offset+1 : offset+3])
+			offset += 3
 		}
 
 		// read the instance segment
@@ -339,13 +340,13 @@ func (cip *CIP) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 			cip.InstanceID = uint16(data[offset])
 			offset++
 		case 0x25:
-			// 16-bit ID
-			if offset+2 > len(data) {
+			// 16-bit ID, pad byte first as for the class
+			if offset+3 > len(data) {
 				df.SetTruncated()
 				return ErrCIPDataTooSmall
 			}
-			cip.InstanceID = binary.LittleEndian.Uint16(data[offset : offset+2])
-			offset += 2
+			cip.InstanceID = binary.LittleEndian.Uint16(data[offset+1 : offset+3])
+			offset += 3
 		}
 
 		if offset < len(data) {

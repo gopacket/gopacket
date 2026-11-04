@@ -219,3 +219,27 @@ func BenchmarkDecodeigmpv3MembershipReport2Records(b *testing.B) {
 		gopacket.NewPacket(igmpv3MembershipReport2Records, LinkTypeEthernet, gopacket.NoCopy)
 	}
 }
+
+// TestIGMPv3MembershipReportAuxData steps over the auxiliary data of a group
+// record (RFC 3376 4.2.6) instead of decoding it as the next record.
+func TestIGMPv3MembershipReportAuxData(t *testing.T) {
+	data := []byte{
+		0x22, 0x00, 0xbf, 0x6e, 0x00, 0x00, 0x00, 0x02, // report, 2 records
+		0x04, 0x02, 0x00, 0x00, 0xef, 0x01, 0x01, 0x01, // record 1, aux data len 2
+		0x04, 0x00, 0x00, 0x00, 0xef, 0x02, 0x02, 0x02, // 8 bytes of aux data
+		0x04, 0x00, 0x00, 0x00, 0xef, 0x42, 0x42, 0x42, // record 2
+	}
+	igmp := &IGMP{}
+	if err := igmp.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"239.1.1.1", "239.66.66.66"}
+	if len(igmp.GroupRecords) != len(want) {
+		t.Fatalf("got %d group records, want %d", len(igmp.GroupRecords), len(want))
+	}
+	for i, w := range want {
+		if got := igmp.GroupRecords[i].MulticastAddress.String(); got != w {
+			t.Errorf("record %d: got %s, want %s", i, got, w)
+		}
+	}
+}

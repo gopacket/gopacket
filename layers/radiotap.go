@@ -1416,16 +1416,20 @@ func (m *RadioTap) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) erro
 	payload := data[m.Length:]
 
 	// Remove non standard padding used by some Wi-Fi drivers
-	if m.RadioTapValues[0].Flags.Datapad() &&
-		len(payload) >= 2 &&
+	if m.RadioTapValues[0].Flags.Datapad() && len(payload) >= 2 &&
 		payload[0]&0xC == 0x8 { //&& // Data frame
 		headlen := 24
 		if payload[0]&0x8C == 0x88 { // QoS
 			headlen += 2
+			if payload[1]&0x80 == 0x80 { // HT Control
+				headlen += 4
+			}
 		}
 		if payload[1]&0x3 == 0x3 { // 4 addresses
-			headlen += 2
+			headlen += 6
 		}
+		// the padding sits right after the header; a frame shorter than that
+		// is left for Dot11 to report as truncated
 		if headlen%4 == 2 && len(payload) >= headlen+2 {
 			payload = append(payload[:headlen], payload[headlen+2:len(payload)]...)
 		}

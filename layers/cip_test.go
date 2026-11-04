@@ -235,3 +235,30 @@ func (r *cipPcapReader) readPacketData() ([]byte, error) {
 
 	return data, nil
 }
+
+// TestCIP16BitLogicalSegments reads 16-bit class and instance segments of a
+// padded EPATH, which carry a pad byte between the type and the value.
+func TestCIP16BitLogicalSegments(t *testing.T) {
+	cases := []struct {
+		name     string
+		data     []byte
+		class    uint16
+		instance uint16
+		payload  []byte
+	}{
+		{"16-bit class", []byte{0x05, 0x03, 0x21, 0x00, 0x01, 0x00, 0x24, 0x01}, 1, 1, nil},
+		{"16-bit instance", []byte{0x0e, 0x03, 0x20, 0x01, 0x25, 0x00, 0x34, 0x12, 0xaa}, 1, 0x1234, []byte{0xaa}},
+	}
+	for _, c := range cases {
+		cip := &CIP{}
+		if err := cip.DecodeFromBytes(c.data, gopacket.NilDecodeFeedback); err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		if cip.ClassID != c.class || cip.InstanceID != c.instance {
+			t.Errorf("%s: got class 0x%x instance 0x%x, want 0x%x 0x%x", c.name, cip.ClassID, cip.InstanceID, c.class, c.instance)
+		}
+		if !reflect.DeepEqual(cip.Data, c.payload) {
+			t.Errorf("%s: got data %x, want %x", c.name, cip.Data, c.payload)
+		}
+	}
+}
