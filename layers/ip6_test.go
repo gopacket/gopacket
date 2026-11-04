@@ -672,3 +672,37 @@ func TestIPv6JumbogramDecodingLayerParser(t *testing.T) {
 	short = append(short, make([]byte, 16)...)
 	ip6.DecodeFromBytes(short, gopacket.NilDecodeFeedback)
 }
+
+// TestIPv6HeaderTLVOptionBounds checks that an option is bounded by the
+// extension header it sits in, and that a header may end in a Pad1 option.
+func TestIPv6HeaderTLVOptionBounds(t *testing.T) {
+	ip6Header := func(nextHeader IPProtocol) []byte {
+		return []byte{
+			0x60, 0x00, 0x00, 0x00, 0x00, 0x0c, byte(nextHeader), 0x40, 0x20, 0x01, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x20, 0x01, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02,
+		}
+	}
+	// Extension header with Hdr Ext Len 0: PadN with 2 data bytes, then option
+	// 0x1e whose Opt Data Len (2) reaches past the 8-byte header into the
+	// 4 bytes of payload that follow.
+	overrun := []byte{0x3b, 0x00, 0x01, 0x02, 0x00, 0x00, 0x1e, 0x02, 0xaa, 0xbb, 0xcc, 0xdd}
+	// Extension header whose last byte is a Pad1 option.
+	endsInPad1 := []byte{0x3b, 0x00, 0x1e, 0x03, 0xaa, 0xbb, 0xcc, 0x00, 0xaa, 0xbb, 0xcc, 0xdd}
+
+	for _, test := range []struct {
+		name      string
+		packet    []byte
+		wantError bool
+	}{
+		{"DestinationOverrun", append(ip6Header(IPProtocolIPv6Destination), overrun...), true},
+		{"HopByHopOverrun", append(ip6Header(IPProtocolIPv6HopByHop), overrun...), true},
+		{"DestinationEndsInPad1", append(ip6Header(IPProtocolIPv6Destination), endsInPad1...), false},
+		{"HopByHopEndsInPad1", append(ip6Header(IPProtocolIPv6HopByHop), endsInPad1...), false},
+	} {
+		p := gopacket.NewPacket(test.packet, LinkTypeRaw, gopacket.Default)
+		if gotError := p.ErrorLayer() != nil; gotError != test.wantError {
+			t.Errorf("%s: error layer present = %v, want %v: %v", test.name, gotError, test.wantError, p)
+		}
+	}
+}
