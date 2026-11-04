@@ -370,10 +370,7 @@ func TestIPv6JumbogramDecode(t *testing.T) {
 		DstIP: net.IP{0x20, 0x01, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02},
 	}
-	buf := new(bytes.Buffer)
-	buf.Write([]byte{0x3b, 0x00, 0xc2, 0x04, 0x00, 0x01, 0x00, 0x08})
-	buf.Write(payload)
-	ip6.Payload = buf.Bytes()
+	ip6.Payload = payload
 
 	hop := &ip6.hbh
 	hop.Contents = []byte{0x3b, 0x00, 0xc2, 0x04, 0x00, 0x01, 0x00, 0x08}
@@ -641,4 +638,37 @@ func TestIPv6ExtensionTooLongToSerialize(t *testing.T) {
 	if err := routing.SerializeTo(buf, gopacket.SerializeOptions{}); err == nil {
 		t.Errorf("routing header with 128 addresses serialized without error, Hdr Ext Len %d", buf.Bytes()[1])
 	}
+}
+
+// TestIPv6JumbogramDecodingLayerParser checks that a jumbogram's
+// LayerPayload starts after the Hop-by-Hop header, as NextLayerType names
+// the header behind it: a DecodingLayerParser continues from there.
+func TestIPv6JumbogramDecodingLayerParser(t *testing.T) {
+	payload := make([]byte, ipv6MaxPayloadLength+1)
+	for i := range payload {
+		payload[i] = 0xfe
+	}
+	pkt := append(append([]byte{}, testPacketIPv6JumbogramHeader...), payload...)
+
+	var (
+		ip6     IPv6
+		pl      gopacket.Payload
+		decoded []gopacket.LayerType
+	)
+	parser := gopacket.NewDecodingLayerParser(LayerTypeIPv6, &ip6, &pl)
+	if err := parser.DecodeLayers(pkt, &decoded); err != nil {
+		t.Fatal(err)
+	}
+	if want := []gopacket.LayerType{LayerTypeIPv6, gopacket.LayerTypePayload}; !reflect.DeepEqual(decoded, want) {
+		t.Errorf("decoded %v, want %v", decoded, want)
+	}
+	if !bytes.Equal(pl, payload) {
+		t.Errorf("payload has %d bytes starting %x, want %d bytes of fe", len(pl), pl[:8], len(payload))
+	}
+
+	// A jumbo length of 2^31 or more must not panic where int is 32 bits.
+	short := append([]byte{}, testPacketIPv6JumbogramHeader...)
+	short[44], short[45], short[46], short[47] = 0x80, 0, 0, 0
+	short = append(short, make([]byte, 16)...)
+	ip6.DecodeFromBytes(short, gopacket.NilDecodeFeedback)
 }

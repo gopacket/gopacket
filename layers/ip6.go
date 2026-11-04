@@ -268,7 +268,14 @@ func (ipv6 *IPv6) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error
 				df.SetTruncated()
 				pEnd = len(ipv6.Payload)
 			}
-			ipv6.Payload = ipv6.Payload[:pEnd]
+			// The jumbo length counts the HopByHop header, which belongs to
+			// this layer: strip it as the non-jumbo branch does, so that
+			// LayerPayload starts at the header NextLayerType names. The
+			// check also catches a length that went negative in a 32-bit int.
+			if pEnd < ipv6.hbh.ActualLength {
+				return errors.New("IPv6 jumbo length shorter than the HopByHop header")
+			}
+			ipv6.Payload = ipv6.Payload[ipv6.hbh.ActualLength:pEnd]
 			return nil
 		} else if jumbo && ipv6.Length != 0 {
 			return errors.New("IPv6 has jumbo length and IPv6 length is not 0")
