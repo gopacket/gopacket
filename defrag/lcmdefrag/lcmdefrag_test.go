@@ -265,3 +265,53 @@ func TestTimedOutMessageIsNotCompletedLCMDefrag(t *testing.T) {
 		t.Fatalf("got %v, %v for the fragment of a timed out message, want nothing", lcm, err)
 	}
 }
+
+// The fragments held for incomplete messages are capped in bytes: the least
+// recently updated messages go first, and a message that alone exceeds the
+// cap is dropped with an error.
+func TestHeldBytesCappedLCMDefrag(t *testing.T) {
+	advance := fakeClock(t)
+	defragmenter := NewLCMDefragmenter()
+
+	// A small message, waiting for its second fragment.
+	if _, err := defragmenter.Defrag(newFragment(t, 1, 0, 2, 4)); err != nil {
+		t.Fatal(err)
+	}
+	advance(time.Millisecond)
+
+	// A message that never completes, growing past the cap.
+	const fragSize = 1 << 16
+	var dropped error
+	for i := uint16(0); i <= maxFragBufTotalSize/fragSize && dropped == nil; i++ {
+		_, dropped = defragmenter.Defrag(newFragment(t, 2, i, 65535, fragSize))
+	}
+	if dropped == nil {
+		t.Fatal("A message larger than the cap was kept.")
+	}
+	if got := len(defragmenter.packets); got != 0 {
+		t.Fatalf("%d messages still held, want none", got)
+	}
+
+	// The small message was evicted to make room, so it cannot complete.
+	lcm, err := defragmenter.Defrag(newFragment(t, 1, 1, 2, 4))
+	if lcm != nil || err != nil {
+		t.Fatalf("got %v, %v for the evicted message, want nothing", lcm, err)
+	}
+}
+
+// Tiny fragments are not held for free: each costs an overhead, so a flood
+// of header-only fragments on fresh sequence numbers also hits the cap.
+func TestHeldFragmentOverheadLCMDefrag(t *testing.T) {
+	defragmenter := NewLCMDefragmenter()
+	for i := uint32(0); i < 2*maxNumFragBufs; i++ {
+		if _, err := defragmenter.Defrag(newFragment(t, i, 0, 2, 0)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if got := len(defragmenter.packets); got > maxNumFragBufs {
+		t.Fatalf("%d messages held, want at most %d", got, maxNumFragBufs)
+	}
+	if defragmenter.held > maxFragBufTotalSize || defragmenter.held < maxNumFragBufs*fragOverhead {
+		t.Fatalf("%d bytes accounted for %d header-only fragments", defragmenter.held, len(defragmenter.packets))
+	}
+}

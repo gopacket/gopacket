@@ -19,6 +19,17 @@ const (
 	// Packages are cleaned up/removed after no input was received for this
 	// amount of seconds.
 	timeout time.Duration = 3 * time.Second
+
+	// Limits on the fragments held for incomplete packages, the same as
+	// MAX_FRAG_BUF_TOTAL_SIZE and MAX_NUM_FRAG_BUFS of the LCM reference
+	// implementation. The timeout alone bounds nothing, as every further
+	// fragment of a package renews it.
+	maxFragBufTotalSize = 1 << 24
+	maxNumFragBufs      = 1000
+
+	// What a held fragment roughly costs on top of its bytes (the
+	// layers.LCM and the map entry), so tiny fragments are not held for free.
+	fragOverhead = 128
 )
 
 // timeNow is time.Now, replaced by tests that move the clock.
@@ -29,10 +40,15 @@ type lcmPacket struct {
 	done       bool
 	recFrags   uint16
 	totalFrags uint16
+	size       int
 	frags      map[uint16]*layers.LCM
 }
 
 // LCMDefragmenter supports defragmentation of LCM messages.
+//
+// The fragments of at most 1000 incomplete messages and 16 MB in total are
+// held at a time. Beyond that the least recently updated messages are
+// dropped.
 //
 // References
 //
@@ -41,6 +57,7 @@ type lcmPacket struct {
 type LCMDefragmenter struct {
 	packets     map[uint32]*lcmPacket
 	lastCleanUp time.Time
+	held        int // bytes of fragments in packets, as fragSize counts them
 }
 
 func newLCMPacket(totalFrags uint16) *lcmPacket {
@@ -59,13 +76,26 @@ func NewLCMDefragmenter() *LCMDefragmenter {
 	}
 }
 
-func (lp *lcmPacket) append(in *layers.LCM, now time.Time) {
-	// A retransmitted fragment must not count towards completion twice.
-	if _, ok := lp.frags[in.FragmentNumber]; !ok {
+func fragSize(frag *layers.LCM) int {
+	return fragOverhead + len(frag.LayerContents()) + len(frag.Payload())
+}
+
+// append stores a fragment and returns by how many bytes the held fragments
+// grew.
+func (lp *lcmPacket) append(in *layers.LCM, now time.Time) int {
+	grown := fragSize(in)
+
+	// A retransmitted fragment replaces the one it repeats and must not
+	// count towards completion twice.
+	if old, ok := lp.frags[in.FragmentNumber]; ok {
+		grown -= fragSize(old)
+	} else {
 		lp.recFrags++
 	}
 	lp.frags[in.FragmentNumber] = in
+	lp.size += grown
 	lp.lastPacket = now
+	return grown
 }
 
 func (lp *lcmPacket) assemble() (out *layers.LCM, err error) {
@@ -107,8 +137,40 @@ func (ld *LCMDefragmenter) cleanUp() {
 	ld.lastCleanUp = now
 	for key, packet := range ld.packets {
 		if packet.done || now.Sub(packet.lastPacket) > timeout {
-			delete(ld.packets, key)
+			ld.drop(key)
 		}
+	}
+}
+
+// drop forgets a pending package and the bytes it held.
+func (ld *LCMDefragmenter) drop(key uint32) {
+	ld.held -= ld.packets[key].size
+	delete(ld.packets, key)
+}
+
+// enforceLimits drops the least recently updated packages until the held
+// fragments are within maxFragBufTotalSize and maxNumFragBufs. The package
+// current, which just received a fragment, is only dropped if it exceeds
+// the size limit on its own.
+func (ld *LCMDefragmenter) enforceLimits(current uint32) {
+	for ld.held > maxFragBufTotalSize || len(ld.packets) > maxNumFragBufs {
+		var oldestKey uint32
+		var oldest *lcmPacket
+		for key, packet := range ld.packets {
+			if key == current {
+				continue
+			}
+			if oldest == nil || packet.lastPacket.Before(oldest.lastPacket) {
+				oldestKey, oldest = key, packet
+			}
+		}
+
+		// Nothing else left to drop: the current package is too big.
+		if oldest == nil {
+			ld.drop(current)
+			return
+		}
+		ld.drop(oldestKey)
 	}
 }
 
@@ -156,7 +218,7 @@ func (ld *LCMDefragmenter) Defrag(in *layers.LCM) (out *layers.LCM, err error) {
 	// was not swept yet belongs to an earlier message with this number.
 	packet, ok := ld.packets[in.SequenceNumber]
 	if ok && now.Sub(packet.lastPacket) > timeout {
-		delete(ld.packets, in.SequenceNumber)
+		ld.drop(in.SequenceNumber)
 		ok = false
 	}
 	if !ok {
@@ -174,14 +236,23 @@ func (ld *LCMDefragmenter) Defrag(in *layers.LCM) (out *layers.LCM, err error) {
 	}
 
 	// Append the packet
-	packet.append(in, now)
+	ld.held += packet.append(in, now)
+
+	// Make room for it, which is not possible if the package itself is too
+	// big.
+	ld.enforceLimits(in.SequenceNumber)
+	if _, ok := ld.packets[in.SequenceNumber]; !ok {
+		err = fmt.Errorf("Fragments of packet %d exceed the limit of %d bytes. "+
+			"Erasing/dropping packet.", in.SequenceNumber, maxFragBufTotalSize)
+		return
+	}
 
 	// Check if this is the last package of that series
 	if packet.recFrags != packet.totalFrags {
 		return
 	}
 	out, err = packet.assemble()
-	delete(ld.packets, in.SequenceNumber)
+	ld.drop(in.SequenceNumber)
 
 	return
 }
