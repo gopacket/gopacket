@@ -460,13 +460,14 @@ func decodeCiscoDiscoveryInfo(data []byte, p gopacket.PacketBuilder) error {
 					return fmt.Errorf("Invalid TLV length %d vs %d", tLen, len(data)-8)
 				}
 				data = data[8:]
+				// copy the sub-TLV's own value, not the rest of the TLV
 				switch tType {
 				case CDPEnergyWiseRole:
-					info.EnergyWise.Role = string(data[:])
+					info.EnergyWise.Role = string(data[:tLen])
 				case CDPEnergyWiseDomain:
-					info.EnergyWise.Domain = string(data[:])
+					info.EnergyWise.Domain = string(data[:tLen])
 				case CDPEnergyWiseName:
-					info.EnergyWise.Name = string(data[:])
+					info.EnergyWise.Name = string(data[:tLen])
 				case CDPEnergyWiseReplyTo:
 					if len(data) >= 18 {
 						info.EnergyWise.ReplyUnknown1 = data[0:2]

@@ -7,6 +7,9 @@
 package layers
 
 import (
+	"bytes"
+	"encoding/binary"
+	"runtime"
 	"testing"
 
 	"github.com/gopacket/gopacket"
@@ -101,5 +104,61 @@ func TestCDPAddressEntryLengths(t *testing.T) {
 	info := p.Layer(LayerTypeCiscoDiscoveryInfo).(*CiscoDiscoveryInfo)
 	if p.ErrorLayer() != nil || len(info.Addresses) != 1 || info.Addresses[0].String() != "192.168.0.253" {
 		t.Fatalf("valid address not decoded: %v", info.Addresses)
+	}
+}
+
+// cdpEnergyWise builds a CDP payload holding one EnergyWise TLV: 72 fixed
+// bytes, then num sub-TLVs.
+func cdpEnergyWise(num int, subTLVs []byte) []byte {
+	value := make([]byte, 72, 72+len(subTLVs))
+	binary.BigEndian.PutUint16(value[68:], uint16(len(subTLVs)))
+	binary.BigEndian.PutUint16(value[70:], uint16(num))
+	value = append(value, subTLVs...)
+
+	b := []byte{0x02, 0xb4, 0x00, 0x00, 0x00, byte(CDPTLVEnergyWise), 0x00, 0x00}
+	binary.BigEndian.PutUint16(b[6:], uint16(4+len(value)))
+	return append(b, value...)
+}
+
+// cdpEnergyWiseSubTLV is one sub-TLV: 32-bit type, 32-bit length, value.
+func cdpEnergyWiseSubTLV(typ CDPEnergyWiseSubtype, value string) []byte {
+	b := make([]byte, 8, 8+len(value))
+	binary.BigEndian.PutUint32(b[0:], uint32(typ))
+	binary.BigEndian.PutUint32(b[4:], uint32(len(value)))
+	return append(b, value...)
+}
+
+// TestCDPEnergyWiseSubTLVLength: the Role, Domain and Name sub-TLVs copied
+// everything up to the end of the EnergyWise TLV instead of their own value,
+// so they swallowed the sub-TLVs behind them and a TLV packed with empty
+// sub-TLVs allocated the square of the input.
+func TestCDPEnergyWiseSubTLVLength(t *testing.T) {
+	var sub []byte
+	sub = append(sub, cdpEnergyWiseSubTLV(CDPEnergyWiseRole, "admin")...)
+	sub = append(sub, cdpEnergyWiseSubTLV(CDPEnergyWiseDomain, "lab")...)
+	sub = append(sub, cdpEnergyWiseSubTLV(CDPEnergyWiseName, "sw1")...)
+	p := decodeCDP(t, cdpEnergyWise(3, sub))
+	if p.ErrorLayer() != nil {
+		t.Fatalf("decode failed: %v", p.ErrorLayer().Error())
+	}
+	ew := p.Layer(LayerTypeCiscoDiscoveryInfo).(*CiscoDiscoveryInfo).EnergyWise
+	if ew.Role != "admin" || ew.Domain != "lab" || ew.Name != "sw1" {
+		t.Errorf("got Role %q Domain %q Name %q, want admin, lab, sw1", ew.Role, ew.Domain, ew.Name)
+	}
+
+	const num = 8182 // fills the largest CDP TLV
+	msg := cdpEnergyWise(num, bytes.Repeat(cdpEnergyWiseSubTLV(CDPEnergyWiseRole, ""), num))
+
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+	p = decodeCDP(t, msg)
+	runtime.ReadMemStats(&after)
+	if p.ErrorLayer() != nil {
+		t.Fatalf("decode failed: %v", p.ErrorLayer().Error())
+	}
+
+	grew := after.TotalAlloc - before.TotalAlloc
+	if limit := uint64(len(msg)) * 64; grew > limit {
+		t.Fatalf("decoding %d bytes allocated %d bytes, limit %d", len(msg), grew, limit)
 	}
 }
