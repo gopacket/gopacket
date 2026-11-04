@@ -9,6 +9,7 @@ package pcapgo
 import (
 	"bufio"
 	"bytes"
+	"compress/gzip"
 	"encoding/hex"
 	"io"
 	"log"
@@ -1910,6 +1911,37 @@ func TestNgFileReadTruncatedGzipPacket(t *testing.T) {
 		if err != test.expectErr {
 			t.Errorf("Test '%s' failed: expected error %v, got %v", test.description, test.expectErr, err)
 		}
+	}
+}
+
+// A gzip stream that fails must fail once and then end in io.EOF, as a
+// damaged plain file does, or read loops that stop on io.EOF never stop.
+func TestNgGzipErrorThenEOF(t *testing.T) {
+	var file bytes.Buffer
+	zw := gzip.NewWriter(&file)
+	if _, err := zw.Write(getBasicOnePacketPcap(t).Bytes()); err != nil {
+		t.Fatal(err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	// Damage the CRC of the gzip trailer (the 4 bytes before the size).
+	badCRC := file.Bytes()
+	badCRC[len(badCRC)-8]++
+
+	r, err := NewNgReader(bytes.NewReader(badCRC), DefaultNgReaderOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := r.ReadPacketData(); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := r.ReadPacketData(); err != gzip.ErrChecksum {
+		t.Errorf("got %v after the last packet, want %v", err, gzip.ErrChecksum)
+	}
+	if _, _, err := r.ReadPacketData(); err != io.EOF {
+		t.Errorf("got %v after the error, want io.EOF", err)
 	}
 }
 

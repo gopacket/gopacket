@@ -14,6 +14,36 @@ import (
 
 var errLengthOverflow = errors.New("length from file does not fit in int")
 
+// eofAfterError ends a stream after its first error. A gzip.Reader that
+// failed returns the same error on every later Read, where a damaged plain
+// file returns it once and then io.EOF. The read loops in the gopacket
+// documentation stop on io.EOF only, so a gzip stream must end the same way.
+type eofAfterError struct {
+	r   io.Reader
+	err error // the error to return next, io.EOF once the stream failed
+}
+
+func (e *eofAfterError) Read(p []byte) (int, error) {
+	if e.err != nil {
+		err := e.err
+		e.err = io.EOF
+		return 0, err
+	}
+
+	// Bytes and an error are never returned together: io.ReadFull drops an
+	// error that arrives with the last bytes it needed, and a bad checksum
+	// comes with the last bytes of the stream.
+	n, err := e.r.Read(p)
+	if err != nil && n > 0 {
+		e.err = err
+		return n, nil
+	}
+	if err != nil {
+		e.err = io.EOF
+	}
+	return n, err
+}
+
 // eagerReadMax is the largest buffer allocated before its bytes are read.
 // It is libpcap's MAXIMUM_SNAPLEN, so real packets keep the fast path.
 const eagerReadMax = 262144

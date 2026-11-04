@@ -78,9 +78,11 @@ func (r *Reader) readHeader() error {
 	}
 
 	if gzipMagic[0] == magicGzip1 && gzipMagic[1] == magicGzip2 {
-		if r.r, err = gzip.NewReader(br); err != nil {
+		gzipReader, err := gzip.NewReader(br)
+		if err != nil {
 			return err
 		}
+		r.r = &eofAfterError{r: gzipReader}
 	} else {
 		r.r = br
 	}

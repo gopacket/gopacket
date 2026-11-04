@@ -87,7 +87,7 @@ func NewNgReader(r io.Reader, options NgReaderOptions) (*NgReader, error) {
 			return nil, err
 		}
 
-		reader.r = bufio.NewReader(gzipReader)
+		reader.r = bufio.NewReader(&eofAfterError{r: gzipReader})
 	}
 
 	// pcapng _must_ start with a section header
