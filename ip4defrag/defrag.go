@@ -326,16 +326,20 @@ func (f *fragmentList) build(in *layers.IPv4) (*layers.IPv4, error) {
 }
 
 // ipv4 is a struct to be used as a key.
+// RFC 791 section 2.3: fragments belong to one datagram only when
+// source, destination, protocol and Id all match.
 type ipv4 struct {
-	ip4 gopacket.Flow
-	id  uint16
+	ip4      gopacket.Flow
+	id       uint16
+	protocol layers.IPProtocol
 }
 
 // newIPv4 returns a new initialized IPv4 Flow
 func newIPv4(ip *layers.IPv4) ipv4 {
 	return ipv4{
-		ip4: ip.NetworkFlow(),
-		id:  ip.Id,
+		ip4:      ip.NetworkFlow(),
+		id:       ip.Id,
+		protocol: ip.Protocol,
 	}
 }
 

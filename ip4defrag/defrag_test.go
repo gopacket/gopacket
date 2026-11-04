@@ -1567,3 +1567,71 @@ var testPing2Frag4 = []byte{
 	0x86, 0x87, 0x88, 0x89, 0x8a, 0x8b, 0x8c, 0x8d, /* ........ */
 	0x8e, 0x8f, 0x90, 0x91, 0x92, 0x93, /* ...... */
 }
+
+// mkFrag builds one IPv4 fragment with a plain 20 byte header, covering
+// payload bytes [offset, offset+len(payload)) of datagram id.
+func mkFrag(id uint16, offset int, more bool, payload []byte) *layers.IPv4 {
+	ip := &layers.IPv4{
+		Version:    4,
+		IHL:        5,
+		TTL:        64,
+		Id:         id,
+		Protocol:   layers.IPProtocolUDP,
+		SrcIP:      net.IPv4(10, 0, 0, 1),
+		DstIP:      net.IPv4(10, 0, 0, 2),
+		FragOffset: uint16(offset / 8),
+		Length:     uint16(20 + len(payload)),
+	}
+	if more {
+		ip.Flags = layers.IPv4MoreFragments
+	}
+	ip.Payload = payload
+	return ip
+}
+
+// feedFrags passes fragments in and expects none of them to complete
+// a datagram or to fail.
+func feedFrags(t *testing.T, defrag *IPv4Defragmenter, frags ...*layers.IPv4) {
+	t.Helper()
+	for i, in := range frags {
+		if out, err := defrag.DefragIPv4(in); out != nil || err != nil {
+			t.Fatalf("defrag: fragment %d: got %v, %v, want nil, nil", i, out, err)
+		}
+	}
+}
+
+// lastFrag passes the fragment that should complete the datagram and
+// checks the payload that comes back.
+func lastFrag(t *testing.T, defrag *IPv4Defragmenter, in *layers.IPv4, want []byte) *layers.IPv4 {
+	t.Helper()
+	out, err := defrag.DefragIPv4(in)
+	if err != nil || out == nil {
+		t.Fatalf("defrag: got %v, %v, want the datagram", out, err)
+	}
+	if !bytes.Equal(out.Payload, want) {
+		t.Fatalf("defrag: got payload %q, want %q", out.Payload, want)
+	}
+	return out
+}
+
+func TestDefragProtocolField(t *testing.T) {
+	defrag := NewIPv4Defragmenter()
+
+	// Same addresses and Id as the UDP datagram, another protocol:
+	// a different datagram (RFC 791 section 2.3).
+	decoy1 := mkFrag(7, 8, true, []byte("nothing "))
+	decoy1.Protocol = 253
+	decoy2 := mkFrag(7, 16, false, []byte("to see.."))
+	decoy2.Protocol = 253
+
+	udpHeader := []byte{0x11, 0x5c, 0x15, 0xb3, 0x00, 0x18, 0x00, 0x00}
+	feedFrags(t, defrag, decoy1, decoy2,
+		mkFrag(7, 0, true, udpHeader),
+		mkFrag(7, 8, true, []byte("/bin/sh ")))
+
+	want := append(udpHeader, "/bin/sh -c evil!"...)
+	out := lastFrag(t, defrag, mkFrag(7, 16, false, []byte("-c evil!")), want)
+	if out.Protocol != layers.IPProtocolUDP {
+		t.Fatalf("defrag: got protocol %v, want UDP", out.Protocol)
+	}
+}
