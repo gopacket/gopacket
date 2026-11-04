@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 )
 
@@ -27,8 +28,16 @@ const fragmentUnit = 8
 
 // IPv6Defragmenter is a struct which embedded a map of all fragment/packet.
 type IPv6Defragmenter struct {
-	container map[uint32]*fragmentList
+	container map[ipv6Key]*fragmentList
 	lock      *sync.Mutex
+}
+
+// ipv6Key identifies a packet under reassembly. RFC 8200 section 4.5:
+// fragments belong to one packet only when source, destination and
+// Identification all match.
+type ipv6Key struct {
+	ip6 gopacket.Flow
+	id  uint32
 }
 
 // fragment is one stored IPv6 fragment and the payload byte range
@@ -67,7 +76,7 @@ const (
 // NewIPv6Defragmenter returns a new IPv6Defragmenter with an initialized map.
 func NewIPv6Defragmenter() *IPv6Defragmenter {
 	return &IPv6Defragmenter{
-		container: make(map[uint32]*fragmentList),
+		container: make(map[ipv6Key]*fragmentList),
 		lock:      &sync.Mutex{},
 	}
 }
@@ -134,7 +143,8 @@ func (d *IPv6Defragmenter) DefragIPv6(ipv6 *layers.IPv6, fg *layers.IPv6Fragment
 	d.lock.Lock()
 	defer d.lock.Unlock()
 
-	f, ok := d.container[fg.Identification]
+	key := ipv6Key{ip6: ipv6.NetworkFlow(), id: fg.Identification}
+	f, ok := d.container[key]
 	if !ok {
 		// remember the first coming. The packet is as old as it
 		// (RFC 8200 section 4.5), later fragments do not make it younger
@@ -145,17 +155,17 @@ func (d *IPv6Defragmenter) DefragIPv6(ipv6 *layers.IPv6, fg *layers.IPv6Fragment
 	case ignored:
 		return nil
 	case dropPacket:
-		delete(d.container, fg.Identification)
+		delete(d.container, key)
 		return nil
 	}
 	if !f.complete() {
-		d.container[fg.Identification] = f
+		d.container[key] = f
 		return nil
 	}
 
 	// the packet is complete, forget its fragments: the next one with
 	// this Identification is a new packet
-	delete(d.container, fg.Identification)
+	delete(d.container, key)
 	return f.build()
 }
 

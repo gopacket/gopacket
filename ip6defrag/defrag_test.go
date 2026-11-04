@@ -254,3 +254,29 @@ func TestAtomicFrag(t *testing.T) {
 		t.Fatalf("defrag: %d lists left behind", n)
 	}
 }
+
+func TestFragDifferentFlowsSameID(t *testing.T) {
+	// RFC 8200 section 4.5: fragments belong to one packet only when
+	// source, destination and Identification all match. A first
+	// fragment between other addresses used to take the place of the
+	// real one.
+	d := NewIPv6Defragmenter()
+	other := &layers.IPv6{
+		Version:    6,
+		NextHeader: layers.IPProtocolIPv6Fragment,
+		HopLimit:   64,
+		SrcIP:      net.ParseIP("2001:db8::bad"),
+		DstIP:      net.ParseIP("2001:db8::bae"),
+	}
+	head := bytes.Repeat([]byte("h"), 16)
+	tail := bytes.Repeat([]byte("t"), 11)
+
+	if out := d.DefragIPv6(other, mkFrag6(1, 0, true, bytes.Repeat([]byte("x"), 16))); out != nil {
+		t.Fatal("defrag: a lone first fragment completed a packet")
+	}
+	feedFrags(t, d, mkFrag6(1, 0, true, head))
+	out := lastFrag(t, d, mkFrag6(1, 16, false, tail), cat(head, tail))
+	if !out.SrcIP.Equal(testIPv6.SrcIP) || !out.DstIP.Equal(testIPv6.DstIP) {
+		t.Fatalf("defrag: packet carries %v -> %v", out.SrcIP, out.DstIP)
+	}
+}
