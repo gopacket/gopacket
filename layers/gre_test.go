@@ -510,3 +510,34 @@ func setNetworkLayer(layers []gopacket.SerializableLayer) error {
 	}
 	return nil
 }
+
+// With routing and ack both present every header byte must be written.
+func TestGRERoutingAndAckEncode(t *testing.T) {
+	want := []byte{
+		0x40, 0x81, 0x08, 0x00, // flags, version, protocol
+		0x00, 0x00, 0x00, 0x00, // checksum, offset
+		0x08, 0x00, 0x00, 0x04, 0x0a, 0x00, 0x00, 0x09, // SRE
+		0x00, 0x00, 0x00, 0x00, // NULL SRE
+		0xa1, 0xa2, 0xa3, 0xa4, // ack
+	}
+	var gre GRE
+	if err := gre.DecodeFromBytes(want, gopacket.NilDecodeFeedback); err != nil {
+		t.Fatal(err)
+	}
+	// Dirty the buffer's memory, every header byte must be written.
+	buf := gopacket.NewSerializeBuffer()
+	dirty, err := buf.PrependBytes(len(want))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := range dirty {
+		dirty[i] = 0xff
+	}
+	buf.Clear()
+	if err := gre.SerializeTo(buf, gopacket.SerializeOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	if got := buf.Bytes(); !reflect.DeepEqual(want, got) {
+		t.Errorf("Encode mismatch, \nwant: %v\ngot %v\n", want, got)
+	}
+}

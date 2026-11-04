@@ -224,6 +224,7 @@ func (g *GRE) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.SerializeOpt
 		}
 		// Terminate routing field with a "NULL" SRE.
 		binary.BigEndian.PutUint32(buf[offset:offset+4], 0)
+		offset += 4
 	}
 	if g.AckPresent {
 		binary.BigEndian.PutUint32(buf[offset:offset+4], g.Ack)
