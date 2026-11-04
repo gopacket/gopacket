@@ -10,33 +10,64 @@
 package ip6defrag
 
 import (
+	"slices"
+	"sort"
 	"sync"
 	"time"
 
 	"github.com/gopacket/gopacket/layers"
 )
 
+// maxPayload is the largest payload a fragmented packet can
+// reassemble to, see RFC 8200 section 4.5.
+const maxPayload = 65535
+
+// fragmentUnit is the granularity of the fragment offset field.
+const fragmentUnit = 8
+
 // IPv6Defragmenter is a struct which embedded a map of all fragment/packet.
 type IPv6Defragmenter struct {
-	container map[uint32]*fragment
+	container map[uint32]*fragmentList
 	lock      *sync.Mutex
 }
 
-// fragment is a IPv6 fragment list struct.
+// fragment is one stored IPv6 fragment and the payload byte range
+// [start, end) it covers in the packet.
 type fragment struct {
 	ipv6       *layers.IPv6
-	offset     uint16
+	start      int
+	end        int
 	payload    []byte
 	more       bool
 	nextheader layers.IPProtocol
-	next       *fragment
-	time       time.Time
 }
+
+// fragmentList holds the fragments of one packet, sorted by offset
+// and never overlapping. end is the highest byte seen, and the end
+// of the packet once the last fragment is in.
+type fragmentList struct {
+	frags    []fragment
+	end      int
+	current  int
+	lastSeen bool
+	time     time.Time
+}
+
+// insertResult says what insert did with a fragment.
+type insertResult int
+
+const (
+	stored insertResult = iota
+	// a repeat of bytes already held
+	ignored
+	// the fragment contradicts the packet, drop it all
+	dropPacket
+)
 
 // NewIPv6Defragmenter returns a new IPv6Defragmenter with an initialized map.
 func NewIPv6Defragmenter() *IPv6Defragmenter {
 	return &IPv6Defragmenter{
-		container: make(map[uint32]*fragment),
+		container: make(map[uint32]*fragmentList),
 		lock:      &sync.Mutex{},
 	}
 }
@@ -80,105 +111,144 @@ func NewIPv6Defragmenter() *IPv6Defragmenter {
 //		// You got the ipv6 layer
 //	}
 func (d *IPv6Defragmenter) DefragIPv6(ipv6 *layers.IPv6, fg *layers.IPv6Fragment) *layers.IPv6 {
-	d.lock.Lock()
-	defer func() {
-		d.container[fg.Identification].time = time.Now()
-		d.lock.Unlock()
-	}()
-	in := &fragment{
-		offset:     fg.FragmentOffset,
+	in := fragment{
+		start:      int(fg.FragmentOffset) * fragmentUnit,
 		payload:    fg.LayerPayload(),
 		more:       fg.MoreFragments,
 		nextheader: fg.NextHeader,
 	}
+	in.end = in.start + len(in.payload)
 	// first
-	if in.offset == 0 {
+	if in.start == 0 {
 		in.ipv6 = ipv6
 	}
+
+	// a receiver discards a fragment that would make the packet
+	// exceed 65535 bytes, and a non-final one that is not a whole
+	// number of 8 byte units (RFC 8200 section 4.5). Stored, it would
+	// take the place of the real fragment at that offset
+	if in.end > maxPayload || (in.more && len(in.payload)%fragmentUnit != 0) {
+		return nil
+	}
+
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
 	f, ok := d.container[fg.Identification]
 	if !ok {
-		// remeber the first coming
-		d.container[fg.Identification] = in
+		// remember the first coming. The packet is as old as it
+		// (RFC 8200 section 4.5), later fragments do not make it younger
+		f = &fragmentList{time: time.Now()}
+	}
+
+	switch f.insert(in) {
+	case ignored:
+		return nil
+	case dropPacket:
+		delete(d.container, fg.Identification)
+		return nil
+	}
+	if !f.complete() {
+		d.container[fg.Identification] = f
 		return nil
 	}
 
-	// insert into list and make the id map to the first one
-	var prev *fragment
-	for {
-		if in.offset == f.offset {
-			break
+	// the packet is complete, forget its fragments: the next one with
+	// this Identification is a new packet
+	delete(d.container, fg.Identification)
+	return f.build()
+}
+
+// insert files in into the list. It applies the rules of RFC 8200
+// section 4.5 as Linux does: the last fragment fixes the end of the
+// packet and nothing may reach beyond it, an empty fragment or an
+// overlap ends reassembly of the whole packet, and a repeat of bytes
+// already held is ignored.
+//
+//	held:   [0,16)      [24,32) last
+//	[8,16)  repeat, ignored
+//	[8,24)  overlap, packet dropped
+//	[32,40) beyond the last fragment, packet dropped
+//	[16,24) stored, packet complete
+func (f *fragmentList) insert(in fragment) insertResult {
+	switch {
+	case !in.more:
+		if in.end < f.end || (f.lastSeen && in.end != f.end) {
+			return dropPacket
 		}
-		if in.offset < f.offset {
-			if prev == nil {
-				d.container[fg.Identification] = in
-				in.next = f
-				break
-			}
-			if prev != nil {
-				prev.next = in
-				in.next = f
-				break
-			}
+		f.lastSeen = true
+		f.end = in.end
+	case in.end > f.end:
+		if f.lastSeen {
+			return dropPacket
 		}
-		if f.next == nil {
-			f.next = in
-			break
-		}
-		prev = f
-		f = f.next
+		f.end = in.end
+	}
+	if in.start == in.end {
+		return dropPacket
 	}
 
-	f = d.container[fg.Identification]
-	// first one is not the first, return and continue
-	if f.offset != 0 {
-		return nil
+	// the stored fragments [i, j) share bytes with the new one
+	i := sort.Search(len(f.frags), func(k int) bool { return f.frags[k].end > in.start })
+	j := i
+	for j < len(f.frags) && f.frags[j].start < in.end {
+		j++
 	}
-	ok = false
-	for {
-		if !f.more {
-			// no more
-			ok = true
-			break
+	if i < j {
+		if f.covered(i, j, in.start, in.end) {
+			return ignored
 		}
-		// need more, but no next one or next one is not the next
-		if f.next == nil || f.offset+uint16(len(f.payload)/8) != f.next.offset {
-			break
-		}
-		// continue
-		f = f.next
-	}
-	if !ok {
-		return nil
+		return dropPacket
 	}
 
-	// make the payload
-	f = d.container[fg.Identification]
-	var b []byte
-	for {
-		b = append(b, f.payload...)
-		if !f.more {
-			break
-		}
-		f = f.next
-	}
-	nh := f.nextheader
+	f.frags = slices.Insert(f.frags, i, in)
+	f.current += in.end - in.start
+	return stored
+}
 
-	f = d.container[fg.Identification]
+// covered tells whether the stored fragments [i, j), which all touch
+// [start, end), hold every byte of it without a gap.
+func (f *fragmentList) covered(i, j, start, end int) bool {
+	if f.frags[i].start > start || f.frags[j-1].end < end {
+		return false
+	}
+	for k := i; k < j-1; k++ {
+		if f.frags[k].end != f.frags[k+1].start {
+			return false
+		}
+	}
+	return true
+}
+
+// complete tells whether the fragments held tile the whole packet.
+func (f *fragmentList) complete() bool {
+	return f.lastSeen && f.current == f.end
+}
+
+// build makes the packet out of the fragments, which tile [0, end).
+func (f *fragmentList) build() *layers.IPv6 {
+	b := make([]byte, 0, f.end)
+	for _, frag := range f.frags {
+		b = append(b, frag.payload...)
+	}
+
+	first := f.frags[0]
+	last := f.frags[len(f.frags)-1]
 	l := &layers.IPv6{
 		Version:      6,
-		TrafficClass: f.ipv6.TrafficClass,
-		FlowLabel:    f.ipv6.FlowLabel,
-		NextHeader:   nh,
-		HopLimit:     f.ipv6.HopLimit,
-		SrcIP:        f.ipv6.SrcIP,
-		DstIP:        f.ipv6.DstIP,
+		TrafficClass: first.ipv6.TrafficClass,
+		FlowLabel:    first.ipv6.FlowLabel,
+		NextHeader:   last.nextheader,
+		HopLimit:     first.ipv6.HopLimit,
+		SrcIP:        first.ipv6.SrcIP,
+		DstIP:        first.ipv6.DstIP,
 	}
 	l.Payload = b
 	return l
 }
 
-// DiscardOlderThan forgets all packets without any activity since
-// time t. It returns the number of FragmentList aka number of
+// DiscardOlderThan forgets all packets whose first fragment arrived
+// before time t. It returns the number of FragmentList aka number of
 // fragment packets it has discarded.
 func (d *IPv6Defragmenter) DiscardOlderThan(t time.Time) int {
 	var n int
