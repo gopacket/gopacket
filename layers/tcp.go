@@ -676,7 +676,8 @@ func (t *TCP) VerifyChecksum() (error, gopacket.ChecksumVerificationResult) {
 	}
 	correct := gopacket.FoldChecksum(verification - uint32(existing))
 	return nil, gopacket.ChecksumVerificationResult{
-		Valid:   correct == existing,
+		// RFC 1071 receiver test: 0xffff is as valid as 0x0000
+		Valid:   gopacket.FoldChecksum(verification) == 0,
 		Correct: uint32(correct),
 		Actual:  uint32(existing),
 	}

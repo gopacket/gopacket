@@ -48,3 +48,33 @@ func TestChecksum(t *testing.T) {
 		}
 	}
 }
+
+// TestChecksumLargeData sums more than 128 KiB, where the 16-bit words add
+// up to more than 32 bits and the carry out of bit 31 must be kept.
+func TestChecksumLargeData(t *testing.T) {
+	data := make([]byte, 131200)
+	for i := range data {
+		data[i] = 0xff
+	}
+	// 65600 words of 0xffff are zero in one's complement arithmetic.
+	if got := FoldChecksum(ComputeChecksum(data, 0)); got != 0 {
+		t.Errorf("checksum of all-ones data is %#x, want 0", got)
+	}
+
+	// Summing in two calls must give the same answer as one.
+	split := ComputeChecksum(data[70000:], ComputeChecksum(data[:70000], 0))
+	if got, want := FoldChecksum(split), FoldChecksum(ComputeChecksum(data, 0)); got != want {
+		t.Errorf("split sum folds to %#x, whole sum to %#x", got, want)
+	}
+
+	// The layers subtract the checksum found in the data from the sum
+	// before folding; the sum must not drop below it.
+	data[0], data[1] = 0x12, 0x34
+	sum := ComputeChecksum(data, 0)
+	if sum < 0x1234 {
+		t.Errorf("sum %#x is smaller than a word it contains", sum)
+	}
+	if got, want := FoldChecksum(sum-0x1234), FoldChecksum(ComputeChecksum(data[2:], 0)); got != want {
+		t.Errorf("subtracting a word gives %#x, want %#x", got, want)
+	}
+}

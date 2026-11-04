@@ -25,6 +25,12 @@ const (
 	IPv4MoreFragments IPv4Flag = 1 << 0
 )
 
+// source route option types (RFC 791)
+const (
+	ipv4OptionLSRR uint8 = 131
+	ipv4OptionSSRR uint8 = 137
+)
+
 func (f IPv4Flag) String() string {
 	var s []string
 	if f&IPv4EvilBit != 0 {
@@ -96,6 +102,26 @@ func (ip *IPv4) getIPv4OptionSize() uint8 {
 		optionSize += 4 - (optionSize % 4)
 	}
 	return optionSize
+}
+
+// finalDstIP returns the address the packet is finally delivered to, which
+// the TCP/UDP pseudo-header uses. While a source route option has addresses
+// left to visit, DstIP is only the next hop and the final destination is the
+// last address of the option (RFC 791).
+func (ip *IPv4) finalDstIP() net.IP {
+	for _, opt := range ip.Options {
+		if opt.OptionType != ipv4OptionLSRR && opt.OptionType != ipv4OptionSSRR {
+			continue
+		}
+		// OptionData is the pointer, then the addresses. The pointer counts
+		// from the option type, 2 bytes before OptionData, and exceeds the
+		// option length once the route is used up.
+		n := len(opt.OptionData)
+		if n >= 5 && int(opt.OptionData[0]) <= n+2 {
+			return net.IP(opt.OptionData[n-4:])
+		}
+	}
+	return ip.DstIP
 }
 
 // SerializeTo writes the serialized form of this layer into the
@@ -328,7 +354,10 @@ func (ip *IPv4) VerifyChecksum() (error, gopacket.ChecksumVerificationResult) {
 	verification := gopacket.ComputeChecksum(ip.Contents, 0)
 	correct := gopacket.FoldChecksum(verification - uint32(existing))
 	return nil, gopacket.ChecksumVerificationResult{
-		Valid:   correct == existing,
+		// RFC 1071: the sum over the data including its checksum is all
+		// ones. Comparing with correct would reject 0xffff, which equals 0
+		// in one's complement arithmetic.
+		Valid:   gopacket.FoldChecksum(verification) == 0,
 		Correct: uint32(correct),
 		Actual:  uint32(existing),
 	}

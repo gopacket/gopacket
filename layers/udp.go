@@ -156,8 +156,14 @@ func (u *UDP) VerifyChecksum() (error, gopacket.ChecksumVerificationResult) {
 		return err, gopacket.ChecksumVerificationResult{}
 	}
 	correct := gopacket.FoldChecksum(verification - uint32(existing))
+	// RFC 768: a computed checksum of zero is transmitted as all ones, as
+	// SerializeTo does
+	if correct == 0 {
+		correct = 0xffff
+	}
 	return nil, gopacket.ChecksumVerificationResult{
-		Valid:   existing == 0 || correct == existing,
+		// RFC 1071 receiver test: 0xffff is as valid as 0x0000
+		Valid:   existing == 0 || gopacket.FoldChecksum(verification) == 0,
 		Correct: uint32(correct),
 		Actual:  uint32(existing),
 	}

@@ -257,7 +257,8 @@ func (g *GRE) VerifyChecksum() (error, gopacket.ChecksumVerificationResult) {
 	verification := gopacket.ComputeChecksum(bytes, 0)
 	correct := gopacket.FoldChecksum(verification - uint32(existing))
 	return nil, gopacket.ChecksumVerificationResult{
-		Valid:   !g.ChecksumPresent || correct == existing,
+		// RFC 1071 receiver test: 0xffff is as valid as 0x0000
+		Valid:   !g.ChecksumPresent || gopacket.FoldChecksum(verification) == 0,
 		Correct: uint32(correct),
 		Actual:  uint32(existing),
 	}

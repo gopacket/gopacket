@@ -645,6 +645,49 @@ func decodeIPv6Routing(data []byte, p gopacket.PacketBuilder) error {
 	return p.NextDecoder(i.NextHeader)
 }
 
+// finalDstIP returns the address the packet is finally delivered to, which
+// the transport pseudo-header uses (RFC 8200 8.1). While a Routing header
+// has segments left, DstIP is only the next waypoint and the final
+// destination is in the header: the last address for types 0 and 2, the
+// first segment for type 4. The walk reads the decoded Payload, so a
+// hand-built IPv6 layer without one sums DstIP.
+func (ipv6 *IPv6) finalDstIP() net.IP {
+	const (
+		routingTypeSource   = 0
+		routingTypeMobile   = 2
+		routingTypeSegment  = 4
+		routingHeaderMinLen = 8
+	)
+	nh := ipv6.NextHeader
+	if ipv6.HopByHop != nil {
+		nh = ipv6.HopByHop.NextHeader
+	}
+	data := ipv6.Payload
+	for nh == IPProtocolIPv6HopByHop || nh == IPProtocolIPv6Destination || nh == IPProtocolIPv6Routing {
+		base, err := decodeIPv6ExtensionBase(data, gopacket.NilDecodeFeedback)
+		if err != nil {
+			break
+		}
+		if nh == IPProtocolIPv6Routing && data[3] > 0 {
+			addresses := (base.ActualLength - routingHeaderMinLen) / net.IPv6len
+			if addresses == 0 {
+				break
+			}
+			switch data[2] {
+			case routingTypeSource, routingTypeMobile:
+				last := routingHeaderMinLen + (addresses-1)*net.IPv6len
+				return net.IP(data[last : last+net.IPv6len])
+			case routingTypeSegment:
+				return net.IP(data[routingHeaderMinLen : routingHeaderMinLen+net.IPv6len])
+			}
+			break
+		}
+		nh = base.NextHeader
+		data = base.Payload
+	}
+	return ipv6.DstIP
+}
+
 // IPv6Fragment is the IPv6 fragment header, used for packet
 // fragmentation/defragmentation.
 type IPv6Fragment struct {
