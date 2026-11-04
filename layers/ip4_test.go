@@ -267,3 +267,33 @@ func TestIPv4ZeroLengthUsesDataLength(t *testing.T) {
 		}
 	}
 }
+
+// TestIPv4SerializePadding checks that the header bytes behind End of
+// Option List come back out, so the written header is IHL*4 bytes long.
+func TestIPv4SerializePadding(t *testing.T) {
+	b, err := hex.DecodeString("4700001c000140004011000a0a0900020a090001" + "01010100" + "ec771388")
+	if err != nil {
+		t.Fatalf("Failed to Decode header: %v", err)
+	}
+	var ip4 IPv4
+	if err := ip4.DecodeFromBytes(b, gopacket.NilDecodeFeedback); err != nil {
+		t.Fatal("Unexpected error during decoding:", err)
+	}
+	if !bytes.Equal(ip4.Padding, []byte{0xec, 0x77, 0x13, 0x88}) {
+		t.Fatalf("Padding mismatch: %x", ip4.Padding)
+	}
+
+	// Dirty the buffer first: every header byte must be written.
+	buf := gopacket.NewSerializeBuffer()
+	dirty, _ := buf.PrependBytes(len(b))
+	for i := range dirty {
+		dirty[i] = 0xff
+	}
+	buf.Clear()
+	if err := ip4.SerializeTo(buf, gopacket.SerializeOptions{}); err != nil {
+		t.Fatal("Unexpected error during serialization:", err)
+	}
+	if !bytes.Equal(buf.Bytes(), b) {
+		t.Fatalf("Serialization mismatch.\nGot:\n%x\nExpected:\n%x\n", buf.Bytes(), b)
+	}
+}

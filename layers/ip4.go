@@ -98,6 +98,8 @@ func (ip *IPv4) getIPv4OptionSize() uint8 {
 
 		}
 	}
+	// the header bytes behind End of Option List count towards IHL too
+	optionSize += uint8(len(ip.Padding))
 	// make sure the options are aligned to 32 bit boundary
 	if (optionSize % 4) != 0 {
 		optionSize += 4 - (optionSize % 4)
@@ -151,6 +153,9 @@ func (ip *IPv4) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.SerializeO
 	copy(bytes[16:20], ip.DstIP)
 
 	curLocation := 20
+	// PrependBytes does not zero: clear the option area so alignment bytes
+	// never carry what the buffer held before.
+	copy(bytes[curLocation:], lotsOfZeros[:])
 	// Now, we will encode the options
 	for _, opt := range ip.Options {
 		switch opt.OptionType {
@@ -182,6 +187,8 @@ func (ip *IPv4) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.SerializeO
 			curLocation += int(opt.OptionLength)
 		}
 	}
+	// the decoder keeps the bytes behind End of Option List in Padding
+	copy(bytes[curLocation:], ip.Padding)
 
 	if opts.ComputeChecksums {
 		// Clear checksum bytes
