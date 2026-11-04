@@ -131,3 +131,64 @@ func TestLLDPOrgSpecificShortInfo(t *testing.T) {
 		})
 	}
 }
+
+// lldpMgmtAddress returns an LLDPDU whose Management Address TLV holds value.
+func lldpMgmtAddress(value []byte) []byte {
+	data := []byte{
+		0x02, 0x07, 0x04, 0x00, 0x01, 0x30, 0xf9, 0xad, 0xa0, // Chassis ID
+		0x04, 0x04, 0x05, 0x31, 0x2f, 0x31, // Port ID
+		0x06, 0x02, 0x00, 0x78, // TTL
+		byte(LLDPTLVMgmtAddress)<<1 | byte(len(value)>>8), byte(len(value)),
+	}
+	data = append(data, value...)
+	return append(data, 0x00, 0x00) // End
+}
+
+// TestLLDPMgmtAddressLengths: the address and OID string lengths of the
+// Management Address TLV were added in uint8, so sums of 256 or more wrapped
+// past the length check, and a zero address length sliced [2:1].
+func TestLLDPMgmtAddressLengths(t *testing.T) {
+	for _, test := range []struct {
+		mlen, olen byte
+		wantErr    bool
+	}{
+		{5, 0, false},
+		{0, 0, true}, // the address string length counts the subtype byte
+		{248, 0, true},
+		{249, 0, true}, // mlen+7 does not fit in a byte
+		{255, 0, true},
+		{5, 243, true},
+		{5, 244, true}, // mlen+7+olen does not fit in a byte
+		{5, 255, true},
+	} {
+		value := []byte{test.mlen, 0x01, 0x0a, 0x00, 0x00, 0x01, 0x02, 0x00, 0x00, 0x00, 0x07, test.olen}
+		p := gopacket.NewPacket(lldpMgmtAddress(value), LayerTypeLinkLayerDiscovery, gopacket.DecodeOptions{SkipDecodeRecovery: true})
+		if gotErr := p.ErrorLayer() != nil; gotErr != test.wantErr {
+			t.Errorf("lengths %d, %d: got error %v, want error %v", test.mlen, test.olen, p.ErrorLayer(), test.wantErr)
+		}
+	}
+
+	// The offsets behind a long address do not fit in a byte either.
+	value := make([]byte, 511)
+	value[0] = 254
+	value[1] = byte(IANAAddressFamilyDNS)
+	copy(value[255:], []byte{0x02, 0x00, 0x00, 0x00, 0x07, 250})
+	for i := 261; i < len(value); i++ {
+		value[i] = 'o'
+	}
+	p := gopacket.NewPacket(lldpMgmtAddress(value), LayerTypeLinkLayerDiscovery, gopacket.DecodeOptions{SkipDecodeRecovery: true})
+	if p.ErrorLayer() != nil {
+		t.Fatal("Failed to decode packet:", p.ErrorLayer().Error())
+	}
+	got := p.Layer(LayerTypeLinkLayerDiscoveryInfo).(*LinkLayerDiscoveryInfo).MgmtAddress
+	want := LLDPMgmtAddress{
+		Subtype:          IANAAddressFamilyDNS,
+		Address:          value[2:255],
+		InterfaceSubtype: LLDPInterfaceSubtypeifIndex,
+		InterfaceNumber:  7,
+		OID:              string(value[261:]),
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("LLDP management address processing failed:\ngot  :\n%#v\n\nwant :\n%#v\n\n", got, want)
+	}
+}

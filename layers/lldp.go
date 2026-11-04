@@ -881,16 +881,21 @@ func decodeLinkLayerDiscovery(data []byte, p gopacket.PacketBuilder) error {
 			if err := checkLLDPTLVLen(v, 9); err != nil {
 				return err
 			}
-			mlen := v.Value[0]
-			if err := checkLLDPTLVLen(v, int(mlen+7)); err != nil {
+			// The address string length counts the subtype byte, so it is at
+			// least 1. Keep both lengths as int so the sums below cannot wrap.
+			mlen := int(v.Value[0])
+			if mlen < 1 {
+				return errors.New("Malformed LinkLayerDiscovery Management Address TLV")
+			}
+			if err := checkLLDPTLVLen(v, mlen+7); err != nil {
 				return err
 			}
 			info.MgmtAddress.Subtype = IANAAddressFamily(v.Value[1])
 			info.MgmtAddress.Address = v.Value[2 : mlen+1]
 			info.MgmtAddress.InterfaceSubtype = LLDPInterfaceSubtype(v.Value[mlen+1])
 			info.MgmtAddress.InterfaceNumber = binary.BigEndian.Uint32(v.Value[mlen+2 : mlen+6])
-			olen := v.Value[mlen+6]
-			if err := checkLLDPTLVLen(v, int(mlen+7+olen)); err != nil {
+			olen := int(v.Value[mlen+6])
+			if err := checkLLDPTLVLen(v, mlen+7+olen); err != nil {
 				return err
 			}
 			info.MgmtAddress.OID = string(v.Value[mlen+7 : mlen+7+olen])
