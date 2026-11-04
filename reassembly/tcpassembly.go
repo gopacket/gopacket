@@ -416,6 +416,7 @@ type halfconnection struct {
 	first, last       *page    // Doubly-linked list of out-of-order pages (seq > nextSeq)
 	nextSeq           Sequence // sequence number of in-order received bytes
 	ackSeq            Sequence
+	finSeq            Sequence // position of a FIN seen ahead of nextSeq, invalidSequence if none
 	created, lastSeen time.Time
 	stream            Stream
 	closed            bool
@@ -464,6 +465,7 @@ func (c *connection) reset(k key, s Stream, ts time.Time) {
 	base := halfconnection{
 		nextSeq:  invalidSequence,
 		ackSeq:   invalidSequence,
+		finSeq:   invalidSequence,
 		created:  ts,
 		lastSeen: ts,
 		stream:   s,
@@ -762,6 +764,12 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 		}
 	}
 
+	// A FIN queued ahead of the stream is not stored when it has no payload,
+	// so remember where it ends the stream.
+	if t.FIN && action.queue {
+		half.finSeq = seq.Add(len(bytes))
+	}
+
 	action = a.handleBytes(bytes, seq, half, t.SYN, t.RST || t.FIN, action, ac)
 	if len(a.ret) > 0 {
 		action.nextSeq = a.sendToConnection(conn, half, ac)
@@ -1048,6 +1056,12 @@ func (a *Assembler) buildSG(half *halfconnection) (bool, Sequence) {
 	saved := a.addPending(half, a.ret[0].getSeq())
 	// Append continuous bytes
 	nextSeq := a.addContiguous(half, last)
+
+	// The data reached a FIN that arrived ahead of it: this chunk is the end.
+	if half.finSeq != invalidSequence && nextSeq == half.finSeq {
+		markEnd(a.ret[len(a.ret)-1])
+		half.finSeq = invalidSequence
+	}
 	a.cacheSG.all = a.ret
 	a.cacheSG.Direction = half.dir
 	a.cacheSG.Skip = skip
@@ -1056,6 +1070,16 @@ func (a *Assembler) buildSG(half *halfconnection) (bool, Sequence) {
 	a.setStatsToSG(half)
 	a.dump("after buildSG", half)
 	return a.ret[len(a.ret)-1].isEnd(), nextSeq
+}
+
+// markEnd flags a byteContainer as the last one of its stream.
+func markEnd(bc byteContainer) {
+	switch c := bc.(type) {
+	case *page:
+		c.end = true
+	case *livePacket:
+		c.end = true
+	}
 }
 
 func (a *Assembler) cleanSG(half *halfconnection, ac AssemblerContext) {
