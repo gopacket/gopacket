@@ -27,6 +27,9 @@ import (
 // libpcap's MAXIMUM_SNAPLEN, the most a packet socket hands over.
 const defaultCaptureLength = 262144
 
+// vlanIDMask selects the VLAN id from an 802.1Q tag control field.
+const vlanIDMask = 0xfff
+
 var hdrLen = unix.CmsgSpace(0)
 var auxLen = unix.CmsgSpace(int(unsafe.Sizeof(unix.TpacketAuxdata{})))
 var timensLen = unix.CmsgSpace(int(unsafe.Sizeof(unix.Timespec{})))
@@ -116,7 +119,8 @@ func (h *EthernetHandle) readOne() (ci gopacket.CaptureInfo, vlan int, haveVlan 
 			aux := (*unix.TpacketAuxdata)(unsafe.Pointer(&oob[hdrLen]))
 			ci.CaptureLength = int(n)
 			ci.Length = int(aux.Len)
-			vlan = int(aux.Vlan_tci)
+			// The tag control field also carries priority and DEI bits.
+			vlan = int(aux.Vlan_tci & vlanIDMask)
 			haveVlan = (aux.Status & unix.TP_STATUS_VLAN_VALID) != 0
 			gotAux = true
 		case hdr.Level == unix.SOL_SOCKET && hdr.Type == unix.SO_TIMESTAMPNS && len(oob) >= timensLen:

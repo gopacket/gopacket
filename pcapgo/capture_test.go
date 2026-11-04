@@ -285,3 +285,27 @@ func TestEthernetHandleCapturesFullFrame(t *testing.T) {
 		t.Errorf("frame differs from the one sent (%d bytes read)", len(data))
 	}
 }
+
+// The kernel hands the whole 802.1Q tag control field over; only its low
+// 12 bits are the VLAN id. A frame on VLAN 100 with priority 7 and the DEI
+// bit set must still be reported as VLAN 100.
+func TestEthernetHandleVlanId(t *testing.T) {
+	send, recv := setupVethPair(t)
+	handle, err := pcapgo.NewEthernetHandle(recv)
+	if err != nil {
+		t.Fatalf("OpenEthernet: %v", err)
+	}
+	defer handle.Close()
+
+	frame := []byte{
+		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 2, 0, 0, 0, 0, 1,
+		0x81, 0x00, 0xf0, 0x64, // 802.1Q, PCP 7, DEI 1, VLAN 100
+		0x08, 0x00, 0x45, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	}
+	sendFrame(t, send, frame)
+
+	_, ci := readFrame(t, handle)
+	if len(ci.AncillaryData) != 1 || ci.AncillaryData[0] != 100 {
+		t.Errorf("got AncillaryData %v, want [100]", ci.AncillaryData)
+	}
+}
