@@ -1466,3 +1466,37 @@ func TestSTP(t *testing.T) {
 	p := gopacket.NewPacket(testSTPpacket, LinkTypeEthernet, testDecodeOptions)
 	checkLayers(p, []gopacket.LayerType{LayerTypeEthernet, LayerTypeLLC, LayerTypeSTP}, t)
 }
+
+func TestDecodeCiscoDiscoveryIPv6Address(t *testing.T) {
+	// 10.0.0.1 as an NLPID entry, then 2001:db8::1 as an 802.2 entry whose
+	// protocol is the LLC/SNAP header with the given EtherType.
+	addrs := func(ethertype ...byte) []byte {
+		v := []byte{0, 0, 0, 2, 0x01, 0x01, 0xcc, 0x00, 0x04, 10, 0, 0, 1}
+		v = append(v, 0x02, 0x08, 0xaa, 0xaa, 0x03, 0x00, 0x00, 0x00)
+		v = append(v, ethertype...)
+		v = append(v, 0x00, 0x10)
+		return append(v, net.ParseIP("2001:db8::1")...)
+	}
+	for _, test := range []struct {
+		value []byte
+		want  []net.IP
+	}{
+		{addrs(0x86, 0xdd), []net.IP{net.IPv4(10, 0, 0, 1), net.ParseIP("2001:db8::1")}},
+		{addrs(0x08, 0x00), []net.IP{net.IPv4(10, 0, 0, 1)}},
+	} {
+		data := []byte{0x02, 0xb4, 0x00, 0x00}
+		for _, typ := range []CDPTLVType{CDPTLVAddress, CDPTLVMgmtAddresses} {
+			data = append(data, 0x00, byte(typ), 0x00, byte(4+len(test.value)))
+			data = append(data, test.value...)
+		}
+		p := gopacket.NewPacket(data, LayerTypeCiscoDiscovery, testDecodeOptions)
+		checkLayers(p, []gopacket.LayerType{LayerTypeCiscoDiscovery, LayerTypeCiscoDiscoveryInfo}, t)
+		info := p.Layer(LayerTypeCiscoDiscoveryInfo).(*CiscoDiscoveryInfo)
+		if !reflect.DeepEqual(info.Addresses, test.want) {
+			t.Errorf("Addresses mismatch, got %v want %v", info.Addresses, test.want)
+		}
+		if !reflect.DeepEqual(info.MgmtAddresses, test.want) {
+			t.Errorf("MgmtAddresses mismatch, got %v want %v", info.MgmtAddresses, test.want)
+		}
+	}
+}

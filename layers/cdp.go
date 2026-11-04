@@ -510,7 +510,7 @@ type CDPAddressType uint64
 const (
 	CDPAddressTypeCLNP      CDPAddressType = 0x81
 	CDPAddressTypeIPV4      CDPAddressType = 0xcc
-	CDPAddressTypeIPV6      CDPAddressType = 0xaaaa030000000800
+	CDPAddressTypeIPV6      CDPAddressType = 0xaaaa0300000086dd
 	CDPAddressTypeDECNET    CDPAddressType = 0xaaaa030000006003
 	CDPAddressTypeAPPLETALK CDPAddressType = 0xaaaa03000000809b
 	CDPAddressTypeIPX       CDPAddressType = 0xaaaa030000008137
