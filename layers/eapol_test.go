@@ -121,3 +121,49 @@ func BenchmarkDecodePacketEAPOLKey(b *testing.B) {
 		gopacket.NewPacket(testPacketEAPOLKey, nil, gopacket.NoCopy)
 	}
 }
+
+func TestPacketEAPOLBodyBoundedByLength(t *testing.T) {
+	// Bytes after the packet body are not part of it, so they must not be
+	// handed to the next decoder.
+	for _, length := range []byte{0, 4} {
+		data := append([]byte{}, testPacketEAPOLKey...)
+		data[2], data[3] = 0, length
+		p := gopacket.NewPacket(data, LayerTypeEAPOL, gopacket.Default)
+		if p.Layer(LayerTypeEAPOLKey) != nil {
+			t.Errorf("body length %d: decoded an EAPOLKey layer from outside the body", length)
+		}
+		eapol, ok := p.Layer(LayerTypeEAPOL).(*EAPOL)
+		if !ok {
+			t.Fatalf("body length %d: no EAPOL layer", length)
+		}
+		if len(eapol.Payload) != int(length) {
+			t.Errorf("body length %d: got %d payload bytes", length, len(eapol.Payload))
+		}
+	}
+
+	// A body that does not fit in the data is marked truncated; the bytes
+	// present are still decoded.
+	data := append([]byte{}, testPacketEAPOLKey...)
+	data[3]++
+	p := gopacket.NewPacket(data, LayerTypeEAPOL, gopacket.Default)
+	if p.ErrorLayer() != nil {
+		t.Errorf("body length beyond the data: unexpected decode error %v", p.ErrorLayer().Error())
+	}
+	if !p.Metadata().Truncated {
+		t.Error("body length beyond the data: packet not marked truncated")
+	}
+	if p.Layer(LayerTypeEAPOLKey) == nil {
+		t.Error("body length beyond the data: EAPOLKey layer not decoded")
+	}
+
+	// Trailing bytes after a complete body (Ethernet padding) are left out
+	// of the payload.
+	data = append(append([]byte{}, testPacketEAPOLKey...), 0, 0, 0, 0)
+	p = gopacket.NewPacket(data, LayerTypeEAPOL, gopacket.Default)
+	if p.ErrorLayer() != nil {
+		t.Errorf("trailing bytes: unexpected decode error %v", p.ErrorLayer().Error())
+	}
+	if got := len(p.Layers()); got != 3 {
+		t.Errorf("trailing bytes: got %d layers, want 3", got)
+	}
+}

@@ -33,7 +33,16 @@ func (e *EAPOL) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	e.Version = data[0]
 	e.Type = EAPOLType(data[1])
 	e.Length = binary.BigEndian.Uint16(data[2:4])
-	e.BaseLayer = BaseLayer{data[:4], data[4:]}
+	// The packet body is e.Length bytes; anything after it (Ethernet
+	// padding, say) is not part of the EAPOL PDU. Mark a body that does not
+	// fit in the data as truncated and hand on what is there.
+	body := data[4:]
+	if len(body) > int(e.Length) {
+		body = body[:e.Length]
+	} else if len(body) < int(e.Length) {
+		df.SetTruncated()
+	}
+	e.BaseLayer = BaseLayer{data[:4], body}
 	return nil
 }
 
