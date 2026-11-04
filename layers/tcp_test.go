@@ -7,6 +7,7 @@
 package layers
 
 import (
+	"bytes"
 	"reflect"
 	"strings"
 	"testing"
@@ -186,6 +187,7 @@ func TestPacketMPTCPOptionDecode(t *testing.T) {
 		{
 			OptionType:   TCPOptionKindMultipathTCP,
 			OptionLength: 4,
+			OptionData:   []byte{0x01, 0x00},
 			OptionMPTCPMpCapable: &MPCapable{
 				Version: 1,
 			},
@@ -228,4 +230,35 @@ func TestMPTCPInvalidLengthAndSubtype(t *testing.T) {
 	// unset; stringifying the packet runs outside decode recovery and must
 	// not panic on it.
 	p.Dump()
+}
+
+// TestMPTCPOptionSerialize checks that a decoded segment with an MPTCP option
+// serializes back to the bytes it was decoded from, both as is and with
+// FixLengths, so that the sender's padding never ends up behind DataOffset.
+func TestMPTCPOptionSerialize(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		options []byte
+	}{
+		{"MP_CAPABLE", []byte{30, 12, 0x00, 0x81, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88}},
+		{"MP_PRIO, nop, eol and padding", []byte{30, 3, 0x50, 1, 0, 0, 0, 0}},
+		{"unknown subtype", []byte{30, 4, 0xf0, 0xaa}},
+	} {
+		seg := make([]byte, 20)
+		seg[12] = byte((20+len(tc.options))/4) << 4
+		seg = append(append(seg, tc.options...), "Test"...)
+		for _, opts := range []gopacket.SerializeOptions{{}, {FixLengths: true}} {
+			p := gopacket.NewPacket(seg, LayerTypeTCP, gopacket.Default)
+			if p.ErrorLayer() != nil {
+				t.Fatalf("%s: failed to decode packet: %v", tc.name, p.ErrorLayer().Error())
+			}
+			buf := gopacket.NewSerializeBuffer()
+			if err := gopacket.SerializePacket(buf, opts, p); err != nil {
+				t.Fatalf("%s: %v", tc.name, err)
+			}
+			if !bytes.Equal(buf.Bytes(), seg) {
+				t.Errorf("%s: %+v: expected %x, but got %x", tc.name, opts, seg, buf.Bytes())
+			}
+		}
+	}
 }

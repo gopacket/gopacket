@@ -387,6 +387,9 @@ OPTIONS:
 				df.SetTruncated()
 				return fmt.Errorf("Invalid MPTCP option length %d exceeds remaining %d bytes", opt.OptionLength, len(data))
 			}
+			// SerializeTo sizes and writes every option from OptionData, so
+			// keep the raw value next to the decoded subtype struct.
+			opt.OptionData = data[2:opt.OptionLength]
 			opt.OptionMultipath = MPTCPSubtype(data[2] >> 4)
 			switch opt.OptionMultipath {
 			case MPTCPSubtypeMPCAPABLE:
