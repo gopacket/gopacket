@@ -10,6 +10,7 @@
 package layers
 
 import (
+	"bytes"
 	"encoding/hex"
 	"net"
 	"testing"
@@ -109,4 +110,45 @@ func TestIPv4OverAGUEVar0Encode(t *testing.T) {
 	// if got, want := b.Bytes(), testPacketAGUEVar0``; !reflect.DeepEqual(want, got) {
 	// 	t.Errorf("Encoding mismatch, \nwant: %v\ngot %v\n", want, got)
 	// }
+}
+
+// Hlen counts 32-bit words, both when decoding and when serializing.
+func TestAGUEVar0HlenCountsWords(t *testing.T) {
+	// Header as sent by a Linux tunnel with "encap gue encap-remcsum": Hlen 2,
+	// private flags followed by the remote checksum offload start and offset.
+	ext := []byte{0x80, 0x00, 0x00, 0x00, 0x00, 0x14, 0x00, 0x24}
+	inner := []byte{0x45, 0x00, 0x00, 0x14}
+	data := append(append([]byte{0x02, 0x04, 0x00, 0x01}, ext...), inner...)
+
+	var gue AGUEVar0
+	if err := gue.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err != nil {
+		t.Fatalf("Failed to decode: %v", err)
+	}
+	if !bytes.Equal(gue.Extensions, ext) {
+		t.Errorf("Extensions mismatch, \nwant: %v\ngot %v\n", ext, gue.Extensions)
+	}
+	if !bytes.Equal(gue.LayerPayload(), inner) {
+		t.Errorf("Payload mismatch, \nwant: %v\ngot %v\n", inner, gue.LayerPayload())
+	}
+
+	b := gopacket.NewSerializeBuffer()
+	if err := gopacket.SerializeLayers(b, gopacket.SerializeOptions{}, &gue, gopacket.Payload(inner)); err != nil {
+		t.Fatalf("Unable to serialize: %v", err)
+	}
+	if !bytes.Equal(b.Bytes(), data) {
+		t.Errorf("Encoding mismatch, \nwant: %v\ngot %v\n", data, b.Bytes())
+	}
+
+	// One byte short of the header length that Hlen announces.
+	if err := gue.DecodeFromBytes(data[:len(data)-len(inner)-1], gopacket.NilDecodeFeedback); err == nil {
+		t.Error("Decoding a header shorter than Hlen should fail")
+	}
+
+	// Extensions that do not fit the 5-bit word count cannot be serialized.
+	for _, n := range []int{2, 128} {
+		gue.Extensions = make([]byte, n)
+		if err := gue.SerializeTo(gopacket.NewSerializeBuffer(), gopacket.SerializeOptions{}); err == nil {
+			t.Errorf("Serializing %d bytes of extensions should fail", n)
+		}
+	}
 }
