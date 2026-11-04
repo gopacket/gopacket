@@ -1,9 +1,10 @@
 package layers
 
 import (
-	"encoding/hex"
+	"bytes"
 	"testing"
 
+	"encoding/hex"
 	"github.com/gopacket/gopacket"
 )
 
@@ -602,5 +603,53 @@ func TestDiameterUnpaddedLastAVP(t *testing.T) {
 	// An AVP that really lacks bytes counted by its length is still an error.
 	if _, err := ParseDiameterAVPs(userName[:12]); err == nil {
 		t.Error("short AVP decoded without error")
+	}
+}
+
+// TestDiameterTrailingMessage checks that the bytes following the first message
+// in a buffer (the next message, when several share one TCP segment) are handed
+// on as the layer's payload instead of being dropped.
+func TestDiameterTrailingMessage(t *testing.T) {
+	data := []byte{
+		// Device-Watchdog-Request
+		0x01, 0x00, 0x00, 0x14, // Version, Length (20)
+		0x80, 0x00, 0x01, 0x18, // Flags: Request, Command Code (280)
+		0x00, 0x00, 0x00, 0x00, // Application ID
+		0x00, 0x00, 0x00, 0x01, // Hop-by-Hop ID
+		0x00, 0x00, 0x00, 0x01, // End-to-End ID
+		// Cancel-Location-Request
+		0x01, 0x00, 0x00, 0x14, // Version, Length (20)
+		0xc0, 0x00, 0x01, 0x3d, // Flags: Request, Proxiable, Command Code (317)
+		0x01, 0x00, 0x00, 0x23, // Application ID (S6a)
+		0x00, 0x00, 0x00, 0x02, // Hop-by-Hop ID
+		0x00, 0x00, 0x00, 0x02, // End-to-End ID
+	}
+
+	p := gopacket.NewPacket(data, LayerTypeDiameter, gopacket.Default)
+	if p.ErrorLayer() != nil {
+		t.Fatal("Failed to decode Diameter:", p.ErrorLayer().Error())
+	}
+	checkLayers(p, []gopacket.LayerType{LayerTypeDiameter, gopacket.LayerTypePayload}, t)
+
+	first := p.Layer(LayerTypeDiameter).(*Diameter)
+	if first.CommandCode != 280 {
+		t.Errorf("Expected command code 280, got %d", first.CommandCode)
+	}
+	if !bytes.Equal(first.LayerContents(), data[:20]) {
+		t.Errorf("Expected contents %x, got %x", data[:20], first.LayerContents())
+	}
+	if !bytes.Equal(first.LayerPayload(), data[20:]) {
+		t.Errorf("Expected payload %x, got %x", data[20:], first.LayerPayload())
+	}
+
+	second := &Diameter{}
+	if err := second.DecodeFromBytes(first.LayerPayload(), gopacket.NilDecodeFeedback); err != nil {
+		t.Fatal("Failed to decode trailing Diameter message:", err)
+	}
+	if second.CommandCode != 317 {
+		t.Errorf("Expected command code 317, got %d", second.CommandCode)
+	}
+	if len(second.LayerPayload()) != 0 {
+		t.Errorf("Expected no payload after the last message, got %x", second.LayerPayload())
 	}
 }
