@@ -443,6 +443,51 @@ func TestCheckOptionsOddLength(t *testing.T) {
 	}
 }
 
+// A SYN on an established direction must not replace the MSS learnt from
+// the real handshake.
+func TestCheckOptionsSynOnEstablished(t *testing.T) {
+	testCheckOptions(t, "SYN after handshake", []testCheckOptionsSequence{
+		{
+			dir:     TCPDirClientToServer,
+			nextSeq: -1,
+			tcp: layers.TCP{
+				SYN:     true,
+				SrcPort: 35721,
+				DstPort: 80,
+				Seq:     1000,
+				Options: []layers.TCPOption{{OptionType: layers.TCPOptionKindMSS, OptionLength: 4, OptionData: []byte{0x05, 0xb4}}},
+			},
+			expected: true,
+		},
+		{
+			// a second SYN advertising a tiny MSS
+			dir:     TCPDirClientToServer,
+			nextSeq: 1001,
+			tcp: layers.TCP{
+				SYN:     true,
+				SrcPort: 35721,
+				DstPort: 80,
+				Seq:     1001,
+				Options: []layers.TCPOption{{OptionType: layers.TCPOptionKindMSS, OptionLength: 4, OptionData: []byte{0x00, 0x02}}},
+			},
+			expected: true,
+		},
+		{
+			// the server's data must still fit the real MSS
+			dir:     TCPDirServerToClient,
+			nextSeq: 5000,
+			tcp: layers.TCP{
+				ACK:       true,
+				SrcPort:   80,
+				DstPort:   35721,
+				Seq:       5000,
+				BaseLayer: layers.BaseLayer{Payload: []byte{1, 2, 3, 4, 5}},
+			},
+			expected: true,
+		},
+	})
+}
+
 // A retransmission that starts before nextSeq but carries new bytes past
 // it is not a re-emitted packet.
 func TestCheckOptionsStraddling(t *testing.T) {

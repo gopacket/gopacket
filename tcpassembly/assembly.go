@@ -581,6 +581,15 @@ func (a *Assembler) AssembleWithTimestamp(netFlow gopacket.Flow, t *layers.TCP, 
 	if conn.lastSeen.Before(timestamp) {
 		conn.lastSeen = timestamp
 	}
+	// A SYN on a synchronized connection is answered with a challenge ACK
+	// and dropped by the receiver (RFC 5961): its payload is not stream data.
+	if t.SYN && conn.nextSeq != invalidSequence {
+		if *debugLog {
+			log.Printf("%v got SYN on established connection", key)
+		}
+		conn.mu.Unlock()
+		return
+	}
 	seq, bytes := Sequence(t.Seq), t.Payload
 	if conn.nextSeq == invalidSequence {
 		if t.SYN {

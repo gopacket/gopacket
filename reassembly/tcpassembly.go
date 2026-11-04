@@ -721,6 +721,14 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 		}
 		return
 	}
+	// A SYN on a synchronized half is answered with a challenge ACK and
+	// dropped by the receiver (RFC 5961): its payload is not stream data.
+	if t.SYN && half.nextSeq != invalidSequence {
+		if *debugLog {
+			log.Printf("%v got SYN on established half", key)
+		}
+		return
+	}
 
 	seq, ack, bytes := Sequence(t.Seq), Sequence(t.Ack), t.Payload
 	if t.ACK {

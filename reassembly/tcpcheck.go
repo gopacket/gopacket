@@ -56,6 +56,11 @@ func NewTCPOptionCheck() TCPOptionCheck {
 // Accept checks whether the packet should be accepted by checking TCP options
 func (t *TCPOptionCheck) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir TCPFlowDirection, nextSeq Sequence, start *bool) error {
 	options := t.getOptions(dir)
+	if tcp.SYN && nextSeq != invalidSequence {
+		// The handshake already happened: the receiver drops this SYN, so
+		// its options must not replace the ones learnt.
+		return nil
+	}
 	if tcp.SYN {
 		mss := -1
 		scale := -1

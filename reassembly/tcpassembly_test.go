@@ -406,6 +406,51 @@ func TestOverlap(t *testing.T) {
 	})
 }
 
+// A SYN on a half-connection that already saw its SYN is dropped by the
+// receiver (RFC 5961): its payload must not be assembled as data.
+func TestSynOnEstablished(t *testing.T) {
+	test(t, []testSequence{
+		{
+			in: layers.TCP{
+				SrcPort:   1,
+				DstPort:   2,
+				SYN:       true,
+				Seq:       1000,
+				BaseLayer: layers.BaseLayer{Payload: []byte{1, 2, 3}},
+			},
+			want: []Reassembly{
+				Reassembly{
+					Start: true,
+					Bytes: []byte{1, 2, 3},
+				},
+			},
+		},
+		{
+			in: layers.TCP{
+				SrcPort:   1,
+				DstPort:   2,
+				SYN:       true,
+				Seq:       1004,
+				BaseLayer: layers.BaseLayer{Payload: []byte{9, 9, 9}},
+			},
+			want: []Reassembly{},
+		},
+		{
+			in: layers.TCP{
+				SrcPort:   1,
+				DstPort:   2,
+				Seq:       1004,
+				BaseLayer: layers.BaseLayer{Payload: []byte{4, 5}},
+			},
+			want: []Reassembly{
+				Reassembly{
+					Bytes: []byte{4, 5},
+				},
+			},
+		},
+	})
+}
+
 // A FIN with no payload that arrives ahead of the data it ends must still
 // close the stream once that data is in.
 func TestFinAheadOfData(t *testing.T) {
