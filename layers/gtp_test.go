@@ -170,6 +170,40 @@ func TestGTPPacketWithEH(t *testing.T) {
 
 }
 
+// The E flag only says that the next extension header type field is to be
+// read: with a type of 0 the payload directly follows the 12 byte header.
+func TestGTPPacketWithEFlagAndNoEH(t *testing.T) {
+	buf := gopacket.NewSerializeBuffer()
+	gtpLayer := &GTPv1U{Version: 1, ProtocolType: 1, ExtensionHeaderFlag: true, MessageType: 255, TEID: 1}
+	opts := gopacket.SerializeOptions{FixLengths: true}
+	if err := gopacket.SerializeLayers(buf, opts, gtpLayer, gopacket.Payload(testICMPPacket)); err != nil {
+		t.Fatal(err)
+	}
+	data := buf.Bytes()
+
+	p := gopacket.NewPacket(data, LayerTypeGTPv1U, gopacket.Default)
+	if p.ErrorLayer() != nil {
+		t.Error("Failed to decode packet:", p.ErrorLayer().Error())
+	}
+	checkLayers(p, []gopacket.LayerType{LayerTypeGTPv1U, LayerTypeIPv4, LayerTypeICMPv4, gopacket.LayerTypePayload}, t)
+	got, ok := p.Layer(LayerTypeGTPv1U).(*GTPv1U)
+	if !ok {
+		t.Fatal("Invalid GTP packet")
+	}
+	want := &GTPv1U{
+		Version:             1,
+		ProtocolType:        1,
+		ExtensionHeaderFlag: true,
+		MessageType:         255,
+		MessageLength:       uint16(4 + len(testICMPPacket)),
+		TEID:                1,
+	}
+	want.BaseLayer = BaseLayer{data[:12], data[12:]}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("GTP packet mismatch:\ngot  :\n%#v\n\nwant :\n%#v\n\n", got, want)
+	}
+}
+
 //  ip / tcp / syn
 //0000  45 00 00 3c 6b 53 40 00  40 06 9a bd c0 a8 c8 01   E..<kS@.@.......
 //0010  ac 00 00 01 c1 06 14 51  69 db 0d d1 00 00 00 00   .......Qi.......

@@ -81,7 +81,10 @@ func (g *GTPv1U) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error 
 			g.NPDU = data[10]
 		}
 		if g.ExtensionHeaderFlag {
-			extensionFlag := true
+			// E only says the Next Extension Header Type field is present; a
+			// value of 0 there means no extension header follows (TS 29.281
+			// 5.2.1), so the T-PDU starts right after the 12-byte header.
+			extensionFlag := data[cIndex-1] != 0
 			for extensionFlag {
 				if int(cIndex) >= dLen {
 					return fmt.Errorf("GTP packet too small: %d bytes", dLen)
