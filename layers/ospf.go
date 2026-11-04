@@ -562,6 +562,19 @@ func getLSAs(num uint32, data []byte) ([]LSA, error) {
 	return lsas, nil
 }
 
+// ospfBodyLen bounds the per-type loops of OSPFv2/v3.DecodeFromBytes.
+// PacketLength comes from the packet and may exceed the bytes captured, so
+// it is clamped to the data and the layer marked truncated. The result is an
+// int so that a loop bound i+n cannot wrap the way it did in uint16.
+func ospfBodyLen(packetLength uint16, data []byte, df gopacket.DecodeFeedback) int {
+	n := int(packetLength)
+	if n > len(data) {
+		df.SetTruncated()
+		n = len(data)
+	}
+	return n
+}
+
 // DecodeFromBytes decodes the given bytes into the OSPF layer.
 func (ospf *OSPFv2) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	// start from a clean layer: DecodingLayerParser reuses one per packet
@@ -580,10 +593,14 @@ func (ospf *OSPFv2) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) err
 	ospf.AuType = binary.BigEndian.Uint16(data[14:16])
 	ospf.Authentication = binary.BigEndian.Uint64(data[16:24])
 
+	packetLength := ospfBodyLen(ospf.PacketLength, data, df)
 	switch ospf.Type {
 	case OSPFHello:
+		if len(data) < 44 {
+			return fmt.Errorf("Packet too small for OSPFv2 Hello")
+		}
 		var neighbors []uint32
-		for i := 44; uint16(i+4) <= ospf.PacketLength; i += 4 {
+		for i := 44; i+4 <= packetLength; i += 4 {
 			neighbors = append(neighbors, binary.BigEndian.Uint32(data[i:i+4]))
 		}
 		ospf.Content = HelloPkgV2{
@@ -599,8 +616,11 @@ func (ospf *OSPFv2) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) err
 			},
 		}
 	case OSPFDatabaseDescription:
+		if len(data) < 32 {
+			return fmt.Errorf("Packet too small for OSPFv2 Database Description")
+		}
 		var lsas []LSAheader
-		for i := 32; uint16(i+20) <= ospf.PacketLength; i += 20 {
+		for i := 32; i+20 <= packetLength; i += 20 {
 			lsa := LSAheader{
 				LSAge:       binary.BigEndian.Uint16(data[i : i+2]),
 				LSOptions:   data[i+2],
@@ -622,7 +642,7 @@ func (ospf *OSPFv2) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) err
 		}
 	case OSPFLinkStateRequest:
 		var lsrs []LSReq
-		for i := 24; uint16(i+12) <= ospf.PacketLength; i += 12 {
+		for i := 24; i+12 <= packetLength; i += 12 {
 			lsr := LSReq{
 				LSType:    binary.BigEndian.Uint16(data[i+2 : i+4]),
 				LSID:      binary.BigEndian.Uint32(data[i+4 : i+8]),
@@ -632,6 +652,9 @@ func (ospf *OSPFv2) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) err
 		}
 		ospf.Content = lsrs
 	case OSPFLinkStateUpdate:
+		if len(data) < 28 {
+			return fmt.Errorf("Packet too small for OSPFv2 Link State Update")
+		}
 		num := binary.BigEndian.Uint32(data[24:28])
 
 		lsas, err := getLSAsv2(num, data[28:])
@@ -644,7 +667,7 @@ func (ospf *OSPFv2) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) err
 		}
 	case OSPFLinkStateAcknowledgment:
 		var lsas []LSAheader
-		for i := 24; uint16(i+20) <= ospf.PacketLength; i += 20 {
+		for i := 24; i+20 <= packetLength; i += 20 {
 			lsa := LSAheader{
 				LSAge:       binary.BigEndian.Uint16(data[i : i+2]),
 				LSOptions:   data[i+2],
@@ -680,10 +703,14 @@ func (ospf *OSPFv3) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) err
 	ospf.Instance = uint8(data[14])
 	ospf.Reserved = uint8(data[15])
 
+	packetLength := ospfBodyLen(ospf.PacketLength, data, df)
 	switch ospf.Type {
 	case OSPFHello:
+		if len(data) < 36 {
+			return fmt.Errorf("Packet too small for OSPFv3 Hello")
+		}
 		var neighbors []uint32
-		for i := 36; uint16(i+4) <= ospf.PacketLength; i += 4 {
+		for i := 36; i+4 <= packetLength; i += 4 {
 			neighbors = append(neighbors, binary.BigEndian.Uint32(data[i:i+4]))
 		}
 		ospf.Content = HelloPkg{
@@ -697,8 +724,11 @@ func (ospf *OSPFv3) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) err
 			NeighborID:               neighbors,
 		}
 	case OSPFDatabaseDescription:
+		if len(data) < 28 {
+			return fmt.Errorf("Packet too small for OSPFv3 Database Description")
+		}
 		var lsas []LSAheader
-		for i := 28; uint16(i+20) <= ospf.PacketLength; i += 20 {
+		for i := 28; i+20 <= packetLength; i += 20 {
 			lsa := LSAheader{
 				LSAge:       binary.BigEndian.Uint16(data[i : i+2]),
 				LSType:      binary.BigEndian.Uint16(data[i+2 : i+4]),
@@ -719,7 +749,7 @@ func (ospf *OSPFv3) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) err
 		}
 	case OSPFLinkStateRequest:
 		var lsrs []LSReq
-		for i := 16; uint16(i+12) <= ospf.PacketLength; i += 12 {
+		for i := 16; i+12 <= packetLength; i += 12 {
 			lsr := LSReq{
 				LSType:    binary.BigEndian.Uint16(data[i+2 : i+4]),
 				LSID:      binary.BigEndian.Uint32(data[i+4 : i+8]),
@@ -729,6 +759,9 @@ func (ospf *OSPFv3) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) err
 		}
 		ospf.Content = lsrs
 	case OSPFLinkStateUpdate:
+		if len(data) < 20 {
+			return fmt.Errorf("Packet too small for OSPFv3 Link State Update")
+		}
 		num := binary.BigEndian.Uint32(data[16:20])
 		lsas, err := getLSAs(num, data[20:])
 		if err != nil {
@@ -741,7 +774,7 @@ func (ospf *OSPFv3) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) err
 
 	case OSPFLinkStateAcknowledgment:
 		var lsas []LSAheader
-		for i := 16; uint16(i+20) <= ospf.PacketLength; i += 20 {
+		for i := 16; i+20 <= packetLength; i += 20 {
 			lsa := LSAheader{
 				LSAge:       binary.BigEndian.Uint16(data[i : i+2]),
 				LSType:      binary.BigEndian.Uint16(data[i+2 : i+4]),

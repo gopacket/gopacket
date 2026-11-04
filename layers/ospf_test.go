@@ -1474,3 +1474,70 @@ func TestOSPFRouterLSAV2TOSMetrics(t *testing.T) {
 		t.Errorf("links decoded wrong: %+v", routers)
 	}
 }
+
+// TestOSPFPacketLengthPastData: OSPFv2/v3 bounded their neighbour, LSA header
+// and LS request loops with the wire PacketLength field without comparing it
+// to the buffer, compared it in uint16 so 0xFFFF never ended the loop, and
+// read the per-type fixed fields behind only the common header check.
+func TestOSPFPacketLengthPastData(t *testing.T) {
+	// version, type, PacketLength over a buffer of size bytes
+	mk := func(version, typ uint8, pktLen uint16, size int) []byte {
+		b := make([]byte, size)
+		b[0], b[1] = version, typ
+		binary.BigEndian.PutUint16(b[2:4], pktLen)
+		return b
+	}
+
+	cases := []struct {
+		name string
+		data []byte
+	}{
+		// Complete Hello with no neighbours whose PacketLength claims one.
+		{"OSPFv2/hello-length-past-data", mk(2, uint8(OSPFHello), 48, 44)},
+		// 24-byte header only, PacketLength honest, fixed fields missing.
+		{"OSPFv2/hello-header-only", mk(2, uint8(OSPFHello), 24, 24)},
+		{"OSPFv2/dbdesc-header-only", mk(2, uint8(OSPFDatabaseDescription), 24, 24)},
+		{"OSPFv2/lsu-header-only", mk(2, uint8(OSPFLinkStateUpdate), 24, 24)},
+		// PacketLength 0xFFFF wraps the uint16 loop comparison.
+		{"OSPFv2/lsr-length-wrap", mk(2, uint8(OSPFLinkStateRequest), 0xFFFF, 24)},
+		{"OSPFv2/lsack-length-wrap", mk(2, uint8(OSPFLinkStateAcknowledgment), 0xFFFF, 0xFFFF)},
+		{"OSPFv3/hello-length-past-data", mk(3, uint8(OSPFHello), 40, 36)},
+		{"OSPFv3/hello-header-only", mk(3, uint8(OSPFHello), 16, 16)},
+		{"OSPFv3/dbdesc-header-only", mk(3, uint8(OSPFDatabaseDescription), 16, 16)},
+		{"OSPFv3/lsu-header-only", mk(3, uint8(OSPFLinkStateUpdate), 16, 16)},
+		{"OSPFv3/lsr-length-wrap", mk(3, uint8(OSPFLinkStateRequest), 0xFFFF, 16)},
+		{"OSPFv3/lsack-length-wrap", mk(3, uint8(OSPFLinkStateAcknowledgment), 0xFFFF, 0xFFFF)},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			defer func() {
+				if r := recover(); r != nil {
+					t.Fatalf("decoder panicked on crafted input: %v", r)
+				}
+			}()
+			var l gopacket.DecodingLayer = &OSPFv2{}
+			if c.data[0] == 3 {
+				l = &OSPFv3{}
+			}
+			_ = l.DecodeFromBytes(c.data, gopacket.NilDecodeFeedback)
+		})
+	}
+
+	// A Hello cut short by the snap length decodes what is there and is
+	// marked truncated.
+	hello := mk(2, uint8(OSPFHello), 52, 48)
+	var ospf OSPFv2
+	df := &testDecodeFeedback{}
+	if err := ospf.DecodeFromBytes(hello, df); err != nil {
+		t.Fatalf("truncated Hello: %v", err)
+	}
+	if n := len(ospf.Content.(HelloPkgV2).NeighborID); n != 1 || !df.truncated {
+		t.Errorf("truncated Hello: got %d neighbours, truncated %v; want 1, true", n, df.truncated)
+	}
+}
+
+// testDecodeFeedback records whether SetTruncated was called.
+type testDecodeFeedback struct{ truncated bool }
+
+func (d *testDecodeFeedback) SetTruncated() { d.truncated = true }
