@@ -750,6 +750,57 @@ func TestConnectionAddedWhileCreatingStream(t *testing.T) {
 	}
 }
 
+type testFlushFactory struct {
+	got [][]byte
+}
+
+func (t *testFlushFactory) New(a, b gopacket.Flow) Stream {
+	return t
+}
+func (t *testFlushFactory) Reassembled(rs []Reassembly) {
+	bytes := []byte{}
+	for _, r := range rs {
+		bytes = append(bytes, r.Bytes...)
+	}
+	t.got = append(t.got, bytes)
+}
+func (t *testFlushFactory) ReassemblyComplete() {
+}
+
+// Pages are queued by sequence number, not by age: whatever is queued in front
+// of a page must not keep it from being flushed.
+func TestFlushOldPageBehindNewer(t *testing.T) {
+	for i, test := range []struct {
+		seqs   []uint32 // one packet per second, its index as payload
+		older  int      // flush what is older than packet #older
+		want   [][]byte
+		queued int64
+	}{
+		// newer page in front of the old one
+		{seqs: []uint32{1010, 1005, 1020}, older: 1, want: [][]byte{{1}, {0}}, queued: 1},
+		// newer page contiguous to the old one
+		{seqs: []uint32{1010, 1011, 1020}, older: 1, want: [][]byte{{0, 1}}, queued: 1},
+		// nothing is old enough
+		{seqs: []uint32{1010, 1005, 1020}, older: 0, want: [][]byte{}, queued: 3},
+		// Sequence.Difference() does not tell the order in the queue
+		{seqs: []uint32{0x10000000, 0x80000000, 0xd0000000, 0x0ffffff0}, older: 4, want: [][]byte{{0}, {1}, {2}, {3}}},
+	} {
+		fact := &testFlushFactory{got: [][]byte{}}
+		a := NewAssembler(NewStreamPool(fact))
+		for j, seq := range test.seqs {
+			tcp := layers.TCP{SrcPort: 1, DstPort: 2, Seq: seq, BaseLayer: layers.BaseLayer{Payload: []byte{byte(j)}}}
+			a.AssembleWithTimestamp(netFlow, &tcp, time.Unix(int64(j), 0))
+		}
+		a.FlushWithOptions(FlushOptions{T: time.Unix(int64(test.older), 0)})
+		if !reflect.DeepEqual(fact.got, test.want) {
+			t.Errorf("test %v:\nwant: %v\n got: %v\n", i, test.want, fact.got)
+		}
+		if a.pc.used.Load() != test.queued {
+			t.Errorf("test %v: %d pages still queued, want %d", i, a.pc.used.Load(), test.queued)
+		}
+	}
+}
+
 // Pages buffered by one Assembler and flushed by another one sharing its
 // StreamPool must no longer count against the first one's limit.
 func TestSharedPoolFlush(t *testing.T) {

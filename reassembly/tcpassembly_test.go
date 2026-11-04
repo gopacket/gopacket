@@ -1193,18 +1193,8 @@ func TestFlush(t *testing.T) {
 						Seq:       1001,
 						BaseLayer: layers.BaseLayer{Payload: []byte{1, 2, 3}},
 					},
-					// gets queued just before the first packet
-					// and should close its half-connection (FIN) during next flush
-					want: []Reassembly{},
-				},
-				{
-					// triggers flush/close
-					in: layers.TCP{
-						SrcPort:   1,
-						DstPort:   2,
-						Seq:       1010,
-						BaseLayer: layers.BaseLayer{Payload: []byte{10, 11, 12}},
-					},
+					// gets queued just before the first packet, which is old enough
+					// to be flushed: goes with it and closes its half-connection (FIN)
 					want: []Reassembly{
 						Reassembly{
 							Skip:  -1,
@@ -1213,12 +1203,62 @@ func TestFlush(t *testing.T) {
 						},
 					},
 				},
+				{
+					// half-connection is closed
+					in: layers.TCP{
+						SrcPort:   1,
+						DstPort:   2,
+						Seq:       1010,
+						BaseLayer: layers.BaseLayer{Payload: []byte{10, 11, 12}},
+					},
+					want: []Reassembly{},
+				},
 			},
 			delay:          time.Millisecond * 40,
 			flushOlderThan: time.Millisecond * 50,
 		},
 	} {
 		testFlush(t, test.seq, test.delay, test.flushOlderThan)
+	}
+}
+
+// Pages are queued by sequence number, not by age: whatever is queued in front
+// of a page must not keep it from being flushed.
+func TestFlushOldPageBehindNewer(t *testing.T) {
+	for i, test := range []struct {
+		seqs   []uint32 // one packet per second, its index as payload
+		older  int      // flush what is older than packet #older
+		want   [][]byte
+		queued int64
+	}{
+		// newer page in front of the old one
+		{seqs: []uint32{1010, 1005, 1020}, older: 1, want: [][]byte{{1}, {0}}, queued: 1},
+		// newer page contiguous to the old one
+		{seqs: []uint32{1010, 1011, 1020}, older: 1, want: [][]byte{{0, 1}}, queued: 1},
+		// nothing is old enough
+		{seqs: []uint32{1010, 1005, 1020}, older: 0, want: [][]byte{}, queued: 3},
+		// Sequence.Difference() does not tell the order in the queue
+		{seqs: []uint32{0x10000000, 0x80000000, 0xd0000000, 0x0ffffff0}, older: 4, want: [][]byte{{0}, {1}, {2}, {3}}},
+	} {
+		fact := &testFactory{}
+		a := NewAssembler(NewStreamPool(fact))
+		for j, seq := range test.seqs {
+			tcp := layers.TCP{SrcPort: 1, DstPort: 2, Seq: seq, BaseLayer: layers.BaseLayer{Payload: []byte{byte(j)}}}
+			tcp.SetInternalPortsForTesting()
+			ctx := assemblerSimpleContext(gopacket.CaptureInfo{Timestamp: time.Unix(int64(j), 0)})
+			a.AssembleWithContext(netFlow, &tcp, &ctx)
+		}
+		a.FlushWithOptions(FlushOptions{T: time.Unix(int64(test.older), 0)})
+		got := [][]byte{}
+		for _, r := range fact.reassembly {
+			got = append(got, r.Bytes)
+		}
+		if !reflect.DeepEqual(got, test.want) {
+			t.Errorf("test %v:\nwant: %v\n got: %v\n", i, test.want, got)
+		}
+		if a.pc.used.Load() != test.queued {
+			t.Errorf("test %v: %d pages still queued, want %d", i, a.pc.used.Load(), test.queued)
+		}
 	}
 }
 

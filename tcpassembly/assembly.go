@@ -232,6 +232,11 @@ type FlushOptions struct {
 // otherwise it will wait until the next FlushOlderThan to see if bytes [25-30)
 // come in.
 //
+// Bytes are always pushed in sequence order, so a set of bytes is considered at
+// least as old as the sets that follow it: if the timestamp of [30-50) is older
+// than the passed-in time, [15-20) and [20-25) are pushed along with it, however
+// recently they were received.
+//
 // If it pushes all bytes (or there were no sets of bytes to begin with)
 // AND the connection has not received any bytes since the passed-in time,
 // the connection will be closed.
@@ -254,7 +259,14 @@ func (a *Assembler) FlushWithOptions(opt FlushOptions) (flushed, closed int) {
 			conn.mu.Unlock()
 			continue
 		}
-		for conn.first != nil && conn.first.Seen.Before(opt.T) {
+		// Pages are sorted by sequence number, not by age, and can only be
+		// pushed in that order: keep only the pages queued behind the last
+		// one that is too old.
+		keep := 0
+		for p := conn.last; p != nil && !p.Seen.Before(opt.T); p = p.prev {
+			keep++
+		}
+		for conn.first != nil && conn.pages > keep {
 			a.skipFlush(conn)
 			flushed = true
 			if conn.closed {

@@ -1356,6 +1356,11 @@ type FlushOptions struct {
 // otherwise it will wait until the next FlushCloseOlderThan to see if bytes
 // [25-30) come in.
 //
+// Bytes are always pushed in sequence order, so a set of bytes is considered at
+// least as old as the sets that follow it: if the timestamp of [30-50) is older
+// than the passed-in time, [15-20) and [20-25) are pushed along with it, however
+// recently they were received.
+//
 // Returns the number of connections flushed, and of those, the number closed
 // because of the flush.
 func (a *Assembler) FlushWithOptions(opt FlushOptions) (flushed, closed int) {
@@ -1395,6 +1400,13 @@ func (a *Assembler) flushClose(conn *connection, half *halfconnection, t time.Ti
 	flushed, closed := false, false
 	if half.closed {
 		return flushed, closed
+	}
+	// Pages are sorted by sequence number, not by age, and can only be pushed
+	// in that order: a page must not wait longer than the ones queued behind it.
+	for p := half.last; p != nil && p.prev != nil; p = p.prev {
+		if p.seen.Before(p.prev.seen) {
+			p.prev.seen = p.seen
+		}
 	}
 	for half.first != nil && half.first.seen.Before(t) {
 		flushed = true
