@@ -639,9 +639,15 @@ func dnsNameSize(name []byte, m *dnsNameMeta) (int, error) {
 func recSize(rr *DNSResourceRecord) (int, error) {
 	switch rr.Type {
 	case DNSTypeA:
-		return 4, nil
+		if len(rr.IP) == 0 {
+			return 0, nil // empty RDATA, as in RFC 2136 updates
+		}
+		return net.IPv4len, nil
 	case DNSTypeAAAA:
-		return 16, nil
+		if len(rr.IP) == 0 {
+			return 0, nil // empty RDATA, as in RFC 2136 updates
+		}
+		return net.IPv6len, nil
 	case DNSTypeNS:
 		return dnsNameSize(rr.NS, rr.rdataMeta())
 	case DNSTypeCNAME:
@@ -1125,11 +1131,22 @@ func (rr *DNSResourceRecord) encode(data []byte, offset int, opts gopacket.Seria
 	binary.BigEndian.PutUint16(data[noff+2:], uint16(rr.Class))
 	binary.BigEndian.PutUint32(data[noff+4:], uint32(rr.TTL))
 
+	// PrependBytes does not zero, and an address of the wrong length would
+	// leave part of the reserved RDATA unwritten; clear it first. An empty
+	// address reserves nothing (RDLENGTH 0).
 	switch rr.Type {
 	case DNSTypeA:
-		copy(data[noff+10:], rr.IP.To4())
+		if len(rr.IP) > 0 {
+			rdata := data[noff+10 : noff+10+net.IPv4len]
+			copy(rdata, lotsOfZeros[:])
+			copy(rdata, rr.IP.To4())
+		}
 	case DNSTypeAAAA:
-		copy(data[noff+10:], rr.IP)
+		if len(rr.IP) > 0 {
+			rdata := data[noff+10 : noff+10+net.IPv6len]
+			copy(rdata, lotsOfZeros[:])
+			copy(rdata, rr.IP)
+		}
 	case DNSTypeNS:
 		if _, err = encodeDNSName(rr.NS, rr.rdataMeta(), data, noff+10); err != nil {
 			return 0, err

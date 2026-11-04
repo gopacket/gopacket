@@ -1487,3 +1487,50 @@ func TestDNSPacketWriteAnswer(t *testing.T) {
 		t.Fatalf("Encoded size, want %d got %d", want, got)
 	}
 }
+
+// A and AAAA records must only write what they reserve: the bytes a reused
+// SerializeBuffer hands out still hold the previously serialized packet.
+func TestDNSPacketWriteAddressLength(t *testing.T) {
+	buf := gopacket.NewSerializeBuffer()
+	opts := gopacket.SerializeOptions{FixLengths: true}
+	serialize := func(rrType DNSType, ip net.IP) []byte {
+		if err := gopacket.SerializeLayers(buf, opts, gopacket.Payload(bytes.Repeat([]byte{0xff}, 64))); err != nil {
+			t.Fatal(err)
+		}
+		if err := gopacket.SerializeLayers(buf, opts, &DNS{Answers: []DNSResourceRecord{
+			{Type: rrType, Class: DNSClassAny, IP: ip},
+		}}); err != nil {
+			t.Fatalf("%v with %d byte address: %v", rrType, len(ip), err)
+		}
+		return buf.Bytes()
+	}
+
+	// An empty address is RDLENGTH 0, as decoded from an RFC 2136 update.
+	for _, rrType := range []DNSType{DNSTypeA, DNSTypeAAAA} {
+		want := []byte{
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, byte(rrType), 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		}
+		if got := serialize(rrType, nil); !bytes.Equal(got, want) {
+			t.Errorf("%v with empty RDATA, want %x got %x", rrType, want, got)
+		}
+	}
+
+	// A wrong-length address still gets the record's size, with no stale bytes.
+	for _, test := range []struct {
+		rrType DNSType
+		ip     net.IP
+		want   []byte
+	}{
+		{DNSTypeA, net.IP{1, 2, 3}, []byte{0, 0, 0, 0}},
+		{DNSTypeA, net.IP{1, 2, 3, 4, 5}, []byte{0, 0, 0, 0}},
+		{DNSTypeA, net.IP{15: 1}, []byte{0, 0, 0, 0}},
+		{DNSTypeAAAA, net.IP{1, 2, 3, 4}, []byte{1, 2, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+		{DNSTypeAAAA, net.IP{16: 1}, make([]byte, 16)},
+	} {
+		got := serialize(test.rrType, test.ip)
+		if rdata := got[23:]; !bytes.Equal(rdata, test.want) {
+			t.Errorf("%v with %d byte address, want RDATA %x got %x", test.rrType, len(test.ip), test.want, rdata)
+		}
+	}
+}
