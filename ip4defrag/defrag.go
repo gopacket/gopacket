@@ -94,6 +94,10 @@ func (d *IPv4Defragmenter) DefragIPv4WithTimestamp(in *layers.IPv4, t time.Time)
 	// perfom security checks
 	if err := d.securityChecks(in); err != nil {
 		debug.Printf("defrag: alert security check")
+		// a receiver (Linux at least) drops the fragments it held
+		// before such a fragment. Drop them too, or they take the
+		// place of the ones sent again with the same Id
+		d.flush(newIPv4(in))
 		return nil, err
 	}
 

@@ -1816,3 +1816,21 @@ func TestDefragDontFragmentFlag(t *testing.T) {
 	last.Flags |= layers.IPv4DontFragment
 	lastFrag(t, defrag, last, append(append([]byte{}, a...), b...))
 }
+
+func TestDefragRejectedFragmentDropsList(t *testing.T) {
+	// Linux drops its whole queue on a fragment it refuses (here a
+	// non-final fragment with 4 data bytes). The decoy stored before
+	// it must go too, or it shadows the real first fragment that
+	// follows and the monitor reports the decoy.
+	decoy := bytes.Repeat([]byte("d"), 24)
+	real := bytes.Repeat([]byte("r"), 24)
+	tail := bytes.Repeat([]byte("t"), 13)
+	defrag := NewIPv4Defragmenter()
+
+	feedFrags(t, defrag, mkFrag(1, 0, true, decoy))
+	if _, err := defrag.DefragIPv4(mkFrag(1, 24, true, []byte("xxxx"))); err == nil {
+		t.Fatal("defrag: 4 byte non-final fragment was accepted")
+	}
+	feedFrags(t, defrag, mkFrag(1, 0, true, real))
+	lastFrag(t, defrag, mkFrag(1, 24, false, tail), append(append([]byte{}, real...), tail...))
+}
