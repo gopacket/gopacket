@@ -1662,3 +1662,140 @@ func TestDefragMaxFragmentOffset(t *testing.T) {
 		t.Fatal("defrag: fragment at offset 8190 was accepted")
 	}
 }
+
+func TestDefragRepeatedBytes(t *testing.T) {
+	a := bytes.Repeat([]byte("a"), 16)
+	b := bytes.Repeat([]byte("b"), 8)
+	c := bytes.Repeat([]byte("c"), 8)
+
+	// A fragment that repeats bytes already held is ignored, as a
+	// receiver does. It used to be counted and the datagram then
+	// never completed.
+	defrag := NewIPv4Defragmenter()
+	feedFrags(t, defrag, mkFrag(1, 0, true, a), mkFrag(1, 8, true, a[8:]))
+	lastFrag(t, defrag, mkFrag(1, 16, false, b), append(append([]byte{}, a...), b...))
+
+	// Repeated bytes must not stand in for the missing [16,24).
+	feedFrags(t, defrag, mkFrag(2, 0, true, a), mkFrag(2, 24, false, c), mkFrag(2, 8, true, a[8:]))
+	want := append(append(append([]byte{}, a...), b...), c...)
+	lastFrag(t, defrag, mkFrag(2, 16, true, b), want)
+}
+
+func TestDefragFinalFragmentEnd(t *testing.T) {
+	a := bytes.Repeat([]byte("a"), 24)
+	b := bytes.Repeat([]byte("b"), 28)
+
+	// A fragment lying beyond the end announced by the final fragment
+	// contradicts it. A receiver drops the whole queue, so the next
+	// datagram with that Id must still get through.
+	defrag := NewIPv4Defragmenter()
+	feedFrags(t, defrag, mkFrag(1, 64000, false, make([]byte, 8)))
+	if _, err := defrag.DefragIPv4(mkFrag(1, 64800, true, make([]byte, 8))); err == nil {
+		t.Fatal("defrag: fragment beyond the final fragment was accepted")
+	}
+	feedFrags(t, defrag, mkFrag(1, 0, true, a))
+	lastFrag(t, defrag, mkFrag(1, 24, false, b), append(append([]byte{}, a...), b...))
+
+	// Fragments disagreeing about where the datagram ends, and an
+	// empty final fragment, never make a datagram.
+	x := make([]byte, 16)
+	for i, seq := range [][]*layers.IPv4{
+		{mkFrag(2, 0, true, x), mkFrag(2, 32, true, x), mkFrag(2, 16, false, x)},
+		{mkFrag(3, 0, true, x), mkFrag(3, 16, false, nil)},
+		{mkFrag(4, 0, true, x[:8]), mkFrag(4, 16, false, x[:8]), mkFrag(4, 8, false, x[:8])},
+	} {
+		for _, in := range seq {
+			if out, _ := defrag.DefragIPv4(in); out != nil {
+				t.Fatalf("defrag: sequence %d returned a datagram of %d bytes", i, len(out.Payload))
+			}
+		}
+	}
+}
+
+func TestDefragUnalignedFragment(t *testing.T) {
+	head := bytes.Repeat([]byte("h"), 24)
+	tail := bytes.Repeat([]byte("t"), 15)
+	want := append(append([]byte{}, head...), tail...)
+
+	// Linux keeps only whole 8 byte units of a fragment with MF set
+	// and reassembles. The extra bytes used to be counted, and the
+	// datagram never completed.
+	for extra := 1; extra <= 7; extra++ {
+		padded := append(append([]byte{}, head...), bytes.Repeat([]byte("x"), extra)...)
+
+		defrag := NewIPv4Defragmenter()
+		feedFrags(t, defrag, mkFrag(1, 24, false, tail))
+		in := mkFrag(1, 0, true, padded)
+		lastFrag(t, defrag, in, want)
+		if int(in.Length) != 20+len(padded) || len(in.Payload) != len(padded) {
+			t.Fatal("defrag: the passed-in fragment was modified")
+		}
+
+		defrag = NewIPv4Defragmenter()
+		feedFrags(t, defrag, mkFrag(1, 0, true, padded))
+		lastFrag(t, defrag, mkFrag(1, 24, false, tail), want)
+	}
+}
+
+func TestDefragLength(t *testing.T) {
+	// Length is the total length, header included, like everywhere
+	// else in gopacket. It used to hold the payload size.
+	defrag := NewIPv4Defragmenter()
+	feedFrags(t, defrag, mkFrag(1, 0, true, make([]byte, 24)))
+	out := lastFrag(t, defrag, mkFrag(1, 24, false, make([]byte, 16)), make([]byte, 40))
+	if out.Length != 60 {
+		t.Fatalf("defrag: got Length %d, want 60", out.Length)
+	}
+}
+
+func TestDefragListWalk(t *testing.T) {
+	// Placing a fragment used to walk the whole list. A sender that
+	// fills a list so that every fragment lands at its end, then
+	// repeats a fragment it already holds, made each packet cost
+	// thousands of node visits. Compare with the same number of
+	// fragments arriving in order.
+	const fill, repeats = 8182, 10000
+	eight := make([]byte, 8)
+	now := time.Now()
+
+	attack := func() {
+		defrag := NewIPv4Defragmenter()
+		defrag.DefragIPv4WithTimestamp(mkFrag(1, fill*8, true, make([]byte, 16)), now)
+		for off := 0; off < fill; off++ {
+			defrag.DefragIPv4WithTimestamp(mkFrag(1, off*8, true, eight), now)
+		}
+		for i := 0; i < repeats; i++ {
+			defrag.DefragIPv4WithTimestamp(mkFrag(1, (fill+1)*8, true, eight), now)
+		}
+	}
+	inOrder := func() {
+		defrag := NewIPv4Defragmenter()
+		for i := 0; i < fill+1+repeats; i++ {
+			off := i % (fill + 1)
+			defrag.DefragIPv4WithTimestamp(mkFrag(1, off*8, off != fill, eight), now)
+		}
+	}
+
+	start := time.Now()
+	inOrder()
+	base := time.Since(start)
+	start = time.Now()
+	attack()
+	slow := time.Since(start)
+
+	if slow > 10*base {
+		t.Fatalf("defrag: out-of-order fragments cost %v, in-order %v", slow, base)
+	}
+}
+
+func TestDefragRepeatedFinalFragment(t *testing.T) {
+	a := bytes.Repeat([]byte("a"), 16)
+	b := bytes.Repeat([]byte("b"), 8)
+
+	// A final fragment that only repeats bytes already held is ignored
+	// and must leave no trace: the datagram still completes when the
+	// missing bytes arrive.
+	defrag := NewIPv4Defragmenter()
+	feedFrags(t, defrag, mkFrag(1, 0, true, a), mkFrag(1, 8, false, a[8:]))
+	lastFrag(t, defrag, mkFrag(1, 16, false, b), append(append([]byte{}, a...), b...))
+}
