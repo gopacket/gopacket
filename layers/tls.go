@@ -119,6 +119,12 @@ func (t *TLS) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	t.BaseLayer.Contents = data
 	t.BaseLayer.Payload = nil
 
+	// Truncating alone would leave the previous packet's records in the
+	// backing arrays, where they keep that packet's buffer alive.
+	clear(t.ChangeCipherSpec)
+	clear(t.Handshake)
+	clear(t.AppData)
+	clear(t.Alert)
 	t.ChangeCipherSpec = t.ChangeCipherSpec[:0]
 	t.Handshake = t.Handshake[:0]
 	t.AppData = t.AppData[:0]

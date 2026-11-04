@@ -524,3 +524,23 @@ func TestParseTLSClientHelloSNILengthOverflow(t *testing.T) {
 		}
 	}
 }
+
+// TestTLSDecodeFromBytesReuse checks that a reused TLS layer does not keep
+// records of an earlier packet, and with them that packet's buffer, in the
+// unused capacity of its record slices.
+func TestTLSDecodeFromBytesReuse(t *testing.T) {
+	record := []byte{0x17, 0x03, 0x03, 0x00, 0x01, 0x41}
+	three := append(append(append([]byte{}, record...), record...), record...)
+	tls := &TLS{}
+	if err := tls.DecodeFromBytes(three, gopacket.NilDecodeFeedback); err != nil {
+		t.Fatal(err)
+	}
+	if err := tls.DecodeFromBytes(record, gopacket.NilDecodeFeedback); err != nil {
+		t.Fatal(err)
+	}
+	for i, rec := range tls.AppData[len(tls.AppData):cap(tls.AppData)] {
+		if rec.Payload != nil || rec.Length != 0 {
+			t.Errorf("stale record in unused slot %d: %+v", i, rec)
+		}
+	}
+}
