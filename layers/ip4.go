@@ -11,6 +11,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"math"
 	"net"
 	"strings"
 
@@ -212,22 +213,26 @@ func (ip *IPv4) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 
 	// This code is added for the following enviroment:
 	// * Windows 10 with TSO option activated. ( tested on Hyper-V, RealTek ethernet driver )
-	if ip.Length == 0 {
+	length := int(ip.Length)
+	if length == 0 {
 		// If using TSO(TCP Segmentation Offload), length is zero.
-		// The actual packet length is the length of data.
-		ip.Length = uint16(len(data))
+		// The actual packet length is the length of data, which may be
+		// more than the 16-bit field can hold: keep the real value in an
+		// int and only clamp what is stored in the field.
+		length = len(data)
+		ip.Length = uint16(min(length, math.MaxUint16))
 	}
 
-	if ip.Length < 20 {
-		return fmt.Errorf("Invalid (too small) IP length (%d < 20)", ip.Length)
+	if length < 20 {
+		return fmt.Errorf("Invalid (too small) IP length (%d < 20)", length)
 	} else if ip.IHL < 5 {
 		return fmt.Errorf("Invalid (too small) IP header length (%d < 5)", ip.IHL)
-	} else if int(ip.IHL*4) > int(ip.Length) {
-		return fmt.Errorf("Invalid IP header length > IP length (%d > %d)", ip.IHL, ip.Length)
+	} else if int(ip.IHL*4) > length {
+		return fmt.Errorf("Invalid IP header length > IP length (%d > %d)", ip.IHL, length)
 	}
 
-	if cmp := len(data) - int(ip.Length); cmp > 0 {
-		data = data[:ip.Length]
+	if cmp := len(data) - length; cmp > 0 {
+		data = data[:length]
 	} else if cmp < 0 {
 		df.SetTruncated()
 		if int(ip.IHL)*4 > len(data) {

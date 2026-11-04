@@ -238,3 +238,32 @@ func TestIPv4Options(t *testing.T) {
 		})
 	}
 }
+
+// TestIPv4ZeroLengthUsesDataLength decodes a TSO packet (total length 0)
+// whose IP part is longer than the 16-bit Length field can hold.
+func TestIPv4ZeroLengthUsesDataLength(t *testing.T) {
+	for _, payloadLen := range []int{65495, 65496, 65536, 65541, 131077} {
+		data := []byte{0x45, 0, 0, 0, 0, 1, 0, 0, 64, 6, 0, 0, 10, 0, 0, 1, 10, 0, 0, 2,
+			0x9c, 0x40, 0x9c, 0x41, 0, 0, 0, 1, 0, 0, 0, 0, 0x50, 0x10, 0xff, 0xff, 0, 0, 0, 0}
+		data = append(data, make([]byte, payloadLen)...)
+		p := gopacket.NewPacket(data, LayerTypeIPv4, gopacket.Default)
+		if p.ErrorLayer() != nil {
+			t.Errorf("%d payload bytes: %v", payloadLen, p.ErrorLayer().Error())
+			continue
+		}
+		if p.Metadata().Truncated {
+			t.Errorf("%d payload bytes: marked truncated", payloadLen)
+		}
+		tcp, ok := p.Layer(LayerTypeTCP).(*TCP)
+		if !ok {
+			t.Errorf("%d payload bytes: no TCP layer", payloadLen)
+			continue
+		}
+		if len(tcp.Payload) != payloadLen {
+			t.Errorf("%d payload bytes: TCP payload has %d", payloadLen, len(tcp.Payload))
+		}
+		if ip := p.Layer(LayerTypeIPv4).(*IPv4); int(ip.Length) != min(len(data), 65535) {
+			t.Errorf("%d payload bytes: Length %d", payloadLen, ip.Length)
+		}
+	}
+}
