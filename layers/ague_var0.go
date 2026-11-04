@@ -11,6 +11,7 @@ package layers
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/gopacket/gopacket"
 )
@@ -87,6 +88,11 @@ func (l *AGUEVar0) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) erro
 		return errors.New("AGUE var0 packet too small")
 	}
 	l.Version = data[0] >> 6
+	if l.Version != 0 {
+		// Variant 1 carries no GUE header at all (see AGUEVar1), so the bytes
+		// here are an IP header, not ours; variants 2 and 3 are undefined.
+		return fmt.Errorf("AGUE var0 packet has variant %d", l.Version)
+	}
 	l.C = data[0]&0x20 != 0
 	l.Protocol = IPProtocol(data[1])
 	l.Flags = (uint16(data[2]) << 8) | uint16(data[3])

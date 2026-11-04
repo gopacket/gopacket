@@ -112,6 +112,18 @@ func TestIPv4OverAGUEVar0Encode(t *testing.T) {
 	// }
 }
 
+// Variant 1 has no GUE header: the UDP payload is the IP packet itself, so a
+// variant 0 decoder must not read its first bytes as Hlen and protocol.
+// Variants 2 and 3 are not defined.
+func TestAGUEVar0RejectsOtherVariants(t *testing.T) {
+	for variant := byte(1); variant < 4; variant++ {
+		data := []byte{variant << 6, byte(IPProtocolIPv4), 0x00, 0x00, 0x45, 0x00}
+		if err := (&AGUEVar0{}).DecodeFromBytes(data, gopacket.NilDecodeFeedback); err == nil {
+			t.Errorf("variant %d decoded as AGUEVar0", variant)
+		}
+	}
+}
+
 // Hlen counts 32-bit words, both when decoding and when serializing.
 func TestAGUEVar0HlenCountsWords(t *testing.T) {
 	// Header as sent by a Linux tunnel with "encap gue encap-remcsum": Hlen 2,
