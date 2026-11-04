@@ -87,6 +87,11 @@ import (
 //	From https://tools.ietf.org/rfc/rfc5880.txt
 const bfdMinimumRecordSizeInBytes int = 24
 
+// bfdKeyedAuthSeqEnd is the offset behind the sequence number of a keyed
+// MD5/SHA1 authentication section, counted from the reserved byte that
+// follows the key id: 1 reserved + 4 sequence number.
+const bfdKeyedAuthSeqEnd = 5
+
 // BFDVersion represents the version as decoded from the BFD control message
 type BFDVersion uint8
 
@@ -387,13 +392,15 @@ func (d *BFD) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 		switch d.AuthHeader.AuthType {
 		case BFDAuthTypePassword:
 			d.AuthHeader.Data = BFDAuthData(data)
-		case BFDAuthTypeKeyedMD5, BFDAuthTypeMeticulousKeyedMD5:
+		case BFDAuthTypeKeyedMD5, BFDAuthTypeMeticulousKeyedMD5,
+			BFDAuthTypeKeyedSHA1, BFDAuthTypeMeticulousKeyedSHA1:
+			// the length guard above only covers the type, length and key id
+			if len(data) < bfdKeyedAuthSeqEnd {
+				df.SetTruncated()
+				return errors.New("BFD authentication section too short")
+			}
 			// Skipped reserved byte
-			data, d.AuthHeader.SequenceNumber = data[5:], BFDAuthSequenceNumber(binary.BigEndian.Uint32(data[1:5]))
-			d.AuthHeader.Data = BFDAuthData(data)
-		case BFDAuthTypeKeyedSHA1, BFDAuthTypeMeticulousKeyedSHA1:
-			// Skipped reserved byte
-			data, d.AuthHeader.SequenceNumber = data[5:], BFDAuthSequenceNumber(binary.BigEndian.Uint32(data[1:5]))
+			data, d.AuthHeader.SequenceNumber = data[bfdKeyedAuthSeqEnd:], BFDAuthSequenceNumber(binary.BigEndian.Uint32(data[1:bfdKeyedAuthSeqEnd]))
 			d.AuthHeader.Data = BFDAuthData(data)
 		}
 	}

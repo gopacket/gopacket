@@ -316,3 +316,24 @@ func TestBFDSerializeUnknownAuthType(t *testing.T) {
 		}
 	}
 }
+
+//******************************************************************************
+
+// TestBFDKeyedAuthTooShort: a keyed MD5/SHA1 authentication section that ends
+// before the end of its sequence number must yield an error, not a panic.
+func TestBFDKeyedAuthTooShort(t *testing.T) {
+	for authType := BFDAuthTypeKeyedMD5; authType <= BFDAuthTypeMeticulousKeyedSHA1; authType++ {
+		for authLen := 3; authLen < 8; authLen++ {
+			data := make([]byte, bfdMinimumRecordSizeInBytes+authLen)
+			data[0] = 0x20 // Version 1
+			data[1] = 0x04 // AuthPresent
+			data[3] = byte(len(data))
+			data[bfdMinimumRecordSizeInBytes] = byte(authType)
+			data[bfdMinimumRecordSizeInBytes+1] = byte(authLen)
+
+			if err := (&BFD{}).DecodeFromBytes(data, gopacket.NilDecodeFeedback); err == nil {
+				t.Errorf("%v with a %d byte authentication section decoded without error", authType, authLen)
+			}
+		}
+	}
+}
