@@ -107,3 +107,41 @@ func TestIsomorphicPacketVXLAN(t *testing.T) {
 		t.Errorf("VXLAN isomorph mismatch, \nwant %#v\ngot %#v\n", vx, vxTranslated)
 	}
 }
+
+// TestVXLANGBPFlagBits pins the D and A flags to bits 0x40 and 0x08 of byte 1.
+func TestVXLANGBPFlagBits(t *testing.T) {
+	for _, test := range []struct {
+		header             []byte
+		dontLearn, applied bool
+	}{
+		{[]byte{0x88, 0x00, 0x12, 0x34, 0x00, 0x00, 0x64, 0x00}, false, false},
+		{[]byte{0x88, 0x40, 0x12, 0x34, 0x00, 0x00, 0x64, 0x00}, true, false},
+		{[]byte{0x88, 0x08, 0x12, 0x34, 0x00, 0x00, 0x64, 0x00}, false, true},
+		{[]byte{0x88, 0x48, 0x12, 0x34, 0x00, 0x00, 0x64, 0x00}, true, true},
+	} {
+		var vx VXLAN
+		if err := vx.DecodeFromBytes(test.header, gopacket.NilDecodeFeedback); err != nil {
+			t.Fatal(err)
+		}
+		if vx.GBPDontLearn != test.dontLearn || vx.GBPApplied != test.applied {
+			t.Errorf("header %x: got GBPDontLearn %v GBPApplied %v, want %v %v",
+				test.header, vx.GBPDontLearn, vx.GBPApplied, test.dontLearn, test.applied)
+		}
+		b := gopacket.NewSerializeBuffer()
+		if err := vx.SerializeTo(b, gopacket.SerializeOptions{}); err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(b.Bytes(), test.header) {
+			t.Errorf("header %x serialized as %x", test.header, b.Bytes())
+		}
+	}
+
+	// The reserved bit next to D is not the A flag.
+	var vx VXLAN
+	if err := vx.DecodeFromBytes([]byte{0x88, 0x80, 0x12, 0x34, 0x00, 0x00, 0x64, 0x00}, gopacket.NilDecodeFeedback); err != nil {
+		t.Fatal(err)
+	}
+	if vx.GBPApplied {
+		t.Error("header 8880...: reserved bit decoded as GBPApplied")
+	}
+}
