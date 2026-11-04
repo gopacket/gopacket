@@ -765,6 +765,13 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 			if *debugLog {
 				log.Printf("%v gap in sequence numbers (%v, %v) diff %v, storing into connection", key, half.nextSeq, seq, diff)
 			}
+		} else if (t.RST && diff < 0) || (t.FIN && half.nextSeq.Difference(seq.Add(len(bytes))) < 0) {
+			// The RST/FIN lies before nextSeq: the receiver drops such a
+			// segment as out of window, so it must not end the stream.
+			if *debugLog {
+				log.Printf("%v ignoring RST/FIN before nextSeq (%v, %v)", key, seq, half.nextSeq)
+			}
+			return
 		} else {
 			if *debugLog {
 				log.Printf("%v found contiguous data (%v, %v), returning immediately: len:%d", key, seq, half.nextSeq, len(bytes))

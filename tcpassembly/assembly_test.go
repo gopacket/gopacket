@@ -365,6 +365,78 @@ func TestSynOnEstablished(t *testing.T) {
 	})
 }
 
+// A RST or FIN whose position lies before nextSeq is dropped by the receiver
+// as out of window: it must not end the stream.
+func TestEndBeforeNextSeq(t *testing.T) {
+	test(t, []testSequence{
+		{
+			in: layers.TCP{
+				SrcPort:   1,
+				DstPort:   2,
+				SYN:       true,
+				Seq:       1000,
+				BaseLayer: layers.BaseLayer{Payload: []byte{1, 2, 3}},
+			},
+			want: []Reassembly{
+				Reassembly{
+					Start: true,
+					Bytes: []byte{1, 2, 3},
+				},
+			},
+		},
+		{
+			// a RST before nextSeq
+			in: layers.TCP{
+				SrcPort: 1,
+				DstPort: 2,
+				RST:     true,
+				Seq:     0,
+			},
+			want: []Reassembly{},
+		},
+		{
+			// a retransmitted FIN that ends before nextSeq
+			in: layers.TCP{
+				SrcPort:   1,
+				DstPort:   2,
+				FIN:       true,
+				Seq:       1001,
+				BaseLayer: layers.BaseLayer{Payload: []byte{1, 2}},
+			},
+			want: []Reassembly{},
+		},
+		{
+			in: layers.TCP{
+				SrcPort:   1,
+				DstPort:   2,
+				Seq:       1004,
+				BaseLayer: layers.BaseLayer{Payload: []byte{4, 5}},
+			},
+			want: []Reassembly{
+				Reassembly{
+					Bytes: []byte{4, 5},
+				},
+			},
+		},
+		{
+			// a FIN that reaches nextSeq still ends the stream
+			in: layers.TCP{
+				SrcPort:   1,
+				DstPort:   2,
+				FIN:       true,
+				Seq:       1004,
+				BaseLayer: layers.BaseLayer{Payload: []byte{4, 5, 6}},
+			},
+			want: []Reassembly{
+				Reassembly{
+					End:   true,
+					Bytes: []byte{6},
+				},
+			},
+		},
+	})
+}
+
 // A RST ahead of the expected sequence number is dropped by the receiver:
 // it must not be queued and end the stream at the next flush.
 func TestOutOfOrderRST(t *testing.T) {
