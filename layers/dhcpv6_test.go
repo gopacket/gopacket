@@ -105,8 +105,10 @@ func TestDHCPv6OptionOroString(t *testing.T) {
 	s := oro.String()
 	runtime.ReadMemStats(&after)
 
+	// the quadratic version allocated thousands of bytes per output byte;
+	// the bound leaves room for the race detector's own allocations
 	grew := after.TotalAlloc - before.TotalAlloc
-	if limit := uint64(len(s)) * 8; grew > limit {
+	if limit := uint64(len(s)) * 64; grew > limit {
 		t.Fatalf("rendering %d bytes allocated %d bytes, limit %d", len(s), grew, limit)
 	}
 }
