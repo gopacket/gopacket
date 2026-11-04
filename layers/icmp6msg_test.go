@@ -8,6 +8,7 @@
 package layers
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/gopacket/gopacket"
@@ -73,4 +74,47 @@ func TestPacketICMPv6NeighborSolicitation(t *testing.T) {
 		t.Error("Failed to decode packet:", p.ErrorLayer().Error())
 	}
 	checkLayers(p, []gopacket.LayerType{LayerTypeEthernet, LayerTypeIPv6, LayerTypeICMPv6, LayerTypeICMPv6NeighborSolicitation}, t)
+}
+
+// testPacketICMPv6EchoRequest is the packet:
+// 00:00:00.000000 IP6 (hlim 64, next-header ICMPv6 (58) payload length: 16) 2001:db8::1 > 2001:db8::2: [icmp6 sum ok] ICMP6, echo request, id 4660, seq 1
+//
+//	0x0000:  0200 0000 0002 0200 0000 0001 86dd 6000  ..............`.
+//	0x0010:  0000 0010 3a40 2001 0db8 0000 0000 0000  ....:@..........
+//	0x0020:  0000 0000 0001 2001 0db8 0000 0000 0000  ................
+//	0x0030:  0000 0000 0002 8000 8075 1234 0001 6162  .........u.4..ab
+//	0x0040:  6364 6566 6768                           cdefgh
+var testPacketICMPv6EchoRequest = []byte{
+	0x02, 0x00, 0x00, 0x00, 0x00, 0x02, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01, 0x86, 0xdd, 0x60, 0x00,
+	0x00, 0x00, 0x00, 0x10, 0x3a, 0x40, 0x20, 0x01, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x20, 0x01, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x80, 0x00, 0x80, 0x75, 0x12, 0x34, 0x00, 0x01, 0x61, 0x62,
+	0x63, 0x64, 0x65, 0x66, 0x67, 0x68,
+}
+
+func TestPacketICMPv6EchoRequest(t *testing.T) {
+	p := gopacket.NewPacket(testPacketICMPv6EchoRequest, LinkTypeEthernet, gopacket.Default)
+	if p.ErrorLayer() != nil {
+		t.Error("Failed to decode packet:", p.ErrorLayer().Error())
+	}
+	checkLayers(p, []gopacket.LayerType{LayerTypeEthernet, LayerTypeIPv6, LayerTypeICMPv6, LayerTypeICMPv6Echo, gopacket.LayerTypePayload}, t)
+	if got, ok := p.Layer(LayerTypeICMPv6Echo).(*ICMPv6Echo); ok {
+		want := &ICMPv6Echo{
+			BaseLayer: BaseLayer{
+				Contents: []byte{0x12, 0x34, 0x00, 0x01},
+				Payload:  []byte("abcdefgh"),
+			},
+			Identifier: 0x1234,
+			SeqNumber:  1,
+		}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("ICMPv6Echo layer mismatch, \nwant  %#v\ngot %#v\n", want, got)
+		}
+	} else {
+		t.Error("No ICMPv6Echo layer type found in packet")
+	}
+	if app := p.ApplicationLayer(); app == nil || string(app.Payload()) != "abcdefgh" {
+		t.Errorf("Echo data not decoded as application layer, got %v", app)
+	}
+	testSerialization(t, p, testPacketICMPv6EchoRequest)
 }
