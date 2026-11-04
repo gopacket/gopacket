@@ -300,6 +300,7 @@ var testPacketInvalidFoldedContentLength = []byte(
 		"Content-Length:\r\n" +
 		" -129\r\n" +
 		"\r\n",
+)
 
 // Largest Content-Length value that is accepted; the body is shorter, so
 // the packet must come back truncated, also where int is 32 bits.
@@ -818,4 +819,45 @@ func TestSIPLowerCaseVersion(t *testing.T) {
 			t.Errorf("%q: IsResponse=%v Version=%v", line, s.IsResponse, s.Version)
 		}
 	}
+}
+
+// TestSIPGetHeaderMixedForms checks that the long and the compact form of a
+// header name are handled as the same header when a message uses both.
+func TestSIPGetHeaderMixedForms(t *testing.T) {
+	data := []byte("REGISTER sip:example.com SIP/2.0\r\n" +
+		"Via: SIP/2.0/UDP proxy.example.com\r\n" +
+		"v: SIP/2.0/UDP 192.0.2.1\r\n" +
+		"Via: SIP/2.0/UDP 192.0.2.2\r\n" +
+		"f: <sip:first@example.com>\r\n" +
+		"From: <sip:second@example.com>\r\n" +
+		"Contact: <sip:alice@192.0.2.1>\r\n" +
+		"m: <sip:alice@203.0.113.66>;\r\n" +
+		" expires=60\r\n" +
+		": nameless\r\n" +
+		"CSeq: 1 REGISTER\r\n" +
+		"Content-Length: 4\r\n" +
+		"\r\n" +
+		"bodytrailer")
+
+	// The order must be the one of the last decoded message
+	previous := []byte("REGISTER sip:example.com SIP/2.0\r\nv: a\r\nFrom: b\r\nm: c\r\n\r\n")
+
+	s := NewSIP()
+	for _, d := range [][]byte{previous, data} {
+		s.Headers = make(map[string][]string)
+		if err := s.DecodeFromBytes(d, gopacket.NilDecodeFeedback); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	assertEqual(t, []string{"SIP/2.0/UDP proxy.example.com", "SIP/2.0/UDP 192.0.2.1", "SIP/2.0/UDP 192.0.2.2"}, s.GetHeader("Via"))
+	assertEqual(t, []string{"<sip:alice@192.0.2.1>", "<sip:alice@203.0.113.66>; expires=60"}, s.GetHeader("Contact"))
+	assertEqual(t, "<sip:first@example.com>", s.GetFrom())
+	assertEqual(t, "", s.GetUserAgent())
+	assertEqual(t, []string{}, s.GetHeader("Subject"))
+	assertEqual(t, []byte("body"), s.Payload())
+
+	// Headers set by hand have no order, but none of them may be left out
+	s = &SIP{Headers: map[string][]string{"contact": {"joe"}, "m": {"frank"}}}
+	assertEqual(t, []string{"joe", "frank"}, s.GetHeader("Contact"))
 }

@@ -200,6 +200,7 @@ type SIP struct {
 	cseq             uint32
 	contentLength    int
 	lastHeaderParsed string
+	headerOrder      []string
 }
 
 // decodeSIP decodes the byte slice into a SIP type. It also
@@ -260,6 +261,7 @@ func (s *SIP) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	// and stop when we reach the SDP (aka when the new line
 	// is at index 0 of the remaining packet)
 	buffer := bytes.NewBuffer(data)
+	s.headerOrder = s.headerOrder[:0]
 
 	for {
 
@@ -470,6 +472,7 @@ func (s *SIP) ParseHeader(header []byte) (err error) {
 		// Add header to object
 		s.Headers[headerName] = append(s.Headers[headerName], headerValue)
 		s.lastHeaderParsed = headerName
+		s.headerOrder = append(s.headerOrder, headerName)
 
 		// Compute specific headers
 		err = s.ParseSpecificHeaders(headerName, headerValue)
@@ -547,17 +550,30 @@ func (s *SIP) GetAllHeaders() map[string][]string {
 }
 
 // GetHeader will return all the headers with
-// the specified name.
+// the specified name, whether they use its long or its compact form.
 func (s *SIP) GetHeader(headerName string) []string {
 	headerName = strings.ToLower(headerName)
 	h := make([]string, 0)
-	if _, ok := s.Headers[headerName]; ok {
-		return s.Headers[headerName]
+	long := s.Headers[headerName]
+	compactHeader, ok := compactSipHeadersCorrespondance[headerName]
+	if !ok {
+		return append(h, long...)
 	}
-	compactHeader := compactSipHeadersCorrespondance[headerName]
-	if _, ok := s.Headers[compactHeader]; ok {
-		return s.Headers[compactHeader]
+	compact := s.Headers[compactHeader]
+
+	// RFC 3261 - 7.3.3 - Compact Form allows a message to use both forms
+	// of a header name, so merge them in the order they had in the message
+	for _, name := range s.headerOrder {
+		if name == headerName && len(long) > 0 {
+			h, long = append(h, long[0]), long[1:]
+		} else if name == compactHeader && len(compact) > 0 {
+			h, compact = append(h, compact[0]), compact[1:]
+		}
 	}
+
+	// Headers which did not go through ParseHeader have no known order
+	h = append(h, long...)
+	h = append(h, compact...)
 	return h
 }
 
