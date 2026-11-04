@@ -300,6 +300,18 @@ var testPacketInvalidFoldedContentLength = []byte(
 		"Content-Length:\r\n" +
 		" -129\r\n" +
 		"\r\n",
+
+// Largest Content-Length value that is accepted; the body is shorter, so
+// the packet must come back truncated, also where int is 32 bits.
+var testPacketContentLengthMaxInt32 = []byte(
+	"INVITE sip:sip.provider.com SIP/2.0\r\n" +
+		"From: \"Bob\" <sip:bob@sip.provider.com>\r\n" +
+		"To: \"Alice\" <sip:alice@sip.provider.com>\r\n" +
+		"Call-Id: 306366781@172_16_254_66\r\n" +
+		"CSeq: 101 INVITE\r\n" +
+		"Content-Length: 2147483647\r\n" +
+		"\r\n" +
+		"body",
 )
 
 func TestSIPDecode(t *testing.T) {
@@ -343,6 +355,11 @@ func TestSIPDecode(t *testing.T) {
 		{"continuation line without header", args{LayerTypeSIP, []byte("SIP/2.0 200 OK\r\n foo\r\n bar\r\n\r\n")},
 			"SIP header continuation line with no preceding header",
 			false, false, SIPMethodInfo, 1, 0, map[string][]string{}, "", []byte{},
+		},
+		{"Content-Length max int32", args{LayerTypeSIP, testPacketContentLengthMaxInt32},
+			"", true, false, SIPMethodInvite, 101, 2147483647,
+			map[string][]string{"content-length": {`2147483647`}},
+			"sip:sip.provider.com", []byte("body"),
 		},
 		{"single empty line", args{LayerTypeSIP, []byte("\r\n")},
 			`invalid first SIP line, empty`,

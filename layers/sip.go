@@ -344,7 +344,9 @@ func (s *SIP) setBaseLayer(data []byte, offset int, df gopacket.DecodeFeedback) 
 	} else if s.contentLength == 0 {
 		// We have a zero Content-Length, no payload
 		s.BaseLayer = BaseLayer{Contents: data[:offset], Payload: []byte{}} // no payload
-	} else if len(data) < offset+s.contentLength {
+	} else if len(data)-offset < s.contentLength {
+		// subtract rather than add: offset+contentLength wraps where int
+		// is 32 bits
 		// Not enough data to fulfill the Content-Length. We set the packet as truncated
 		// and return what we have. The receiver of the packet will be able to determine this
 		// by comparing the SIP.ContentLength with the length of the SIP.Payload.
