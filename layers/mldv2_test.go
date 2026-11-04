@@ -8,6 +8,7 @@ package layers
 
 import (
 	"testing"
+	"time"
 
 	"github.com/gopacket/gopacket"
 )
@@ -140,4 +141,64 @@ func TestPacketMulticastListenerReportMessageV2(t *testing.T) {
 		LayerTypeMLDv2MulticastListenerReport}, t)
 	// See https://github.com/google/gopacket/issues/517
 	// checkSerialization(p, t)
+}
+
+// QQIC and Maximum Response Code switch to an exponent/mantissa format once
+// their top bit is set, see RFC 3810 sections 5.1.3 and 5.1.9.
+func TestMLDv2QQI(t *testing.T) {
+	for _, tc := range []struct {
+		code uint8
+		want time.Duration
+	}{
+		{0x00, 0},
+		{0x3c, 60 * time.Second},
+		{0x7f, 127 * time.Second},
+		{0x80, 128 * time.Second},
+		{0x8f, 248 * time.Second},
+		{0x90, 256 * time.Second},
+		{0xff, 31744 * time.Second},
+	} {
+		m := MLDv2MulticastListenerQueryMessage{QueriersQueryIntervalCode: tc.code}
+		if got := m.QQI(); got != tc.want {
+			t.Errorf("QQIC %#x: QQI() = %v, want %v", tc.code, got, tc.want)
+		}
+	}
+
+	for code := 0; code <= 0xff; code++ {
+		m := MLDv2MulticastListenerQueryMessage{QueriersQueryIntervalCode: uint8(code)}
+		if err := m.SetQQI(m.QQI()); err != nil {
+			t.Errorf("QQIC %#x: SetQQI(%v) failed: %v", code, m.QQI(), err)
+		} else if m.QueriersQueryIntervalCode != uint8(code) {
+			t.Errorf("QQIC %#x: SetQQI(QQI()) = %#x", code, m.QueriersQueryIntervalCode)
+		}
+	}
+}
+
+func TestMLDv2MaximumResponseDelay(t *testing.T) {
+	for _, tc := range []struct {
+		code uint16
+		want time.Duration
+	}{
+		{0x0000, 0},
+		{0x2710, 10000 * time.Millisecond},
+		{0x7fff, 32767 * time.Millisecond},
+		{0x8000, 32768 * time.Millisecond},
+		{0x8fff, 65528 * time.Millisecond},
+		{0x9000, 65536 * time.Millisecond},
+		{0xffff, 8387584 * time.Millisecond},
+	} {
+		m := MLDv2MulticastListenerQueryMessage{MaximumResponseCode: tc.code}
+		if got := m.MaximumResponseDelay(); got != tc.want {
+			t.Errorf("Maximum Response Code %#x: MaximumResponseDelay() = %v, want %v", tc.code, got, tc.want)
+		}
+	}
+
+	for code := 0; code <= 0xffff; code++ {
+		m := MLDv2MulticastListenerQueryMessage{MaximumResponseCode: uint16(code)}
+		if err := m.SetMLDv2MaximumResponseDelay(m.MaximumResponseDelay()); err != nil {
+			t.Errorf("Maximum Response Code %#x: SetMLDv2MaximumResponseDelay(%v) failed: %v", code, m.MaximumResponseDelay(), err)
+		} else if m.MaximumResponseCode != uint16(code) {
+			t.Errorf("Maximum Response Code %#x: round trip = %#x", code, m.MaximumResponseCode)
+		}
+	}
 }
