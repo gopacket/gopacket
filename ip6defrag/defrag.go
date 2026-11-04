@@ -107,15 +107,15 @@ func NewIPv6Defragmenter() *IPv6Defragmenter {
 //			return
 //		}
 //		if fg, ok := p.Layer(layers.LayerTypeIPv6Fragment).(*layers.IPv6Fragment); ok {
-//			if fg.NextHeader != layers.IPProtocolUDP && fg.NextHeader != layers.IPProtocolTCP {
-//				// ignore: !TCP and !UDP fragment
-//				return
-//			}
 //			ipv6 = d.DefragIPv6(ipv6, fg)
 //			if ipv6 == nil {
 //				// ignore: do nothing, wait next fragment
 //				return
 //			}
+//		}
+//		if ipv6.NextHeader != layers.IPProtocolUDP && ipv6.NextHeader != layers.IPProtocolTCP {
+//			// ignore: !TCP and !UDP packet
+//			return
 //		}
 //		// You got the ipv6 layer
 //	}
@@ -242,13 +242,14 @@ func (f *fragmentList) build() *layers.IPv6 {
 		b = append(b, frag.payload...)
 	}
 
+	// the header fields, Next Header included, come from the first
+	// (offset 0) fragment, see RFC 8200 section 4.5
 	first := f.frags[0]
-	last := f.frags[len(f.frags)-1]
 	l := &layers.IPv6{
 		Version:      6,
 		TrafficClass: first.ipv6.TrafficClass,
 		FlowLabel:    first.ipv6.FlowLabel,
-		NextHeader:   last.nextheader,
+		NextHeader:   first.nextheader,
 		HopLimit:     first.ipv6.HopLimit,
 		SrcIP:        first.ipv6.SrcIP,
 		DstIP:        first.ipv6.DstIP,

@@ -280,3 +280,19 @@ func TestFragDifferentFlowsSameID(t *testing.T) {
 		t.Fatalf("defrag: packet carries %v -> %v", out.SrcIP, out.DstIP)
 	}
 }
+
+func TestFragNextHeader(t *testing.T) {
+	// RFC 8200 section 4.5: the Next Header of the reassembled packet
+	// is the one in the first fragment. It used to come from the last.
+	d := NewIPv6Defragmenter()
+	head := bytes.Repeat([]byte("h"), 16)
+	tail := bytes.Repeat([]byte("t"), 16)
+	feedFrags(t, d, mkFrag6(1, 0, true, head))
+
+	last := mkFrag6(1, 16, false, tail)
+	last.NextHeader = layers.IPProtocolTCP
+	out := lastFrag(t, d, last, cat(head, tail))
+	if out.NextHeader != layers.IPProtocolUDP {
+		t.Fatalf("defrag: got next header %v, want UDP", out.NextHeader)
+	}
+}
