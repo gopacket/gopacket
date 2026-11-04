@@ -745,7 +745,10 @@ func NewPacket(data []byte, firstLayerDecoder Decoder, options DecodeOptions) (p
 		)
 		if options.Pool && len(data) <= maximumMTU {
 			poolMemory = poolPackedPool.Get().(*[]byte)
-			dataCopy = (*poolMemory)[:len(data)]
+			// cap at the packet length so a decoder that reslices past the
+			// end panics like it does on a fresh buffer, instead of reading
+			// what the previous packet left in the pool
+			dataCopy = (*poolMemory)[:len(data):len(data)]
 			copy(dataCopy, data)
 			data = dataCopy
 			defer func() {

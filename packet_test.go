@@ -141,3 +141,24 @@ func TestEagerDecodeDepth(t *testing.T) {
 	}
 	check(p, 501)
 }
+
+// TestNewPacketPoolCapsData checks that a pooled packet hands its decoders a
+// slice capped at the packet length. A two-index reslice used to leave the
+// capacity at the pool buffer size, so a decoder that resliced past the end
+// read what the previous packet left behind instead of panicking.
+func TestNewPacketPoolCapsData(t *testing.T) {
+	const size = 100
+	gotCap := -1
+	record := DecodeFunc(func(data []byte, p PacketBuilder) error {
+		gotCap = cap(data)
+		return nil
+	})
+
+	p := NewPacket(make([]byte, size), record, DecodeOptions{Pool: true})
+	if pooled, ok := p.(PooledPacket); ok {
+		defer pooled.Dispose()
+	}
+	if gotCap != size {
+		t.Fatalf("decoder input has capacity %d, want %d", gotCap, size)
+	}
+}
