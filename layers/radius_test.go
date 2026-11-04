@@ -403,3 +403,44 @@ func TestRADIUSAccessAccept(t *testing.T) {
 
 	checkRADIUS("AccessAccept", t, testPacketRADIUS, pExpectedRADIUS)
 }
+
+// The maximum record size limits the Length field, octets after it are padding.
+func TestRADIUSPadding(t *testing.T) {
+	tests := []struct {
+		name string
+		size int
+	}{
+		{name: "Maximum", size: radiusMaximumRecordSizeInBytes},
+		{name: "Maximum+1", size: radiusMaximumRecordSizeInBytes + 1},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			want := []RADIUSAttribute{
+				{
+					Type:   RADIUSAttributeTypeUserName,
+					Length: 7,
+					Value:  []byte("Admin"),
+				},
+			}
+			buf := gopacket.NewSerializeBuffer()
+			opts := gopacket.SerializeOptions{}
+			if err := (&RADIUS{Code: RADIUSCodeAccessRequest, Length: 27, Attributes: want}).SerializeTo(buf, opts); err != nil {
+				t.Fatal(err)
+			}
+
+			var testPacketRADIUS = make([]byte, tt.size)
+			copy(testPacketRADIUS, buf.Bytes())
+			p := gopacket.NewPacket(testPacketRADIUS, LayerTypeRADIUS, gopacket.Default)
+			if p.ErrorLayer() != nil {
+				t.Fatalf("Failed to decode packet %s: %v", tt.name, p.ErrorLayer().Error())
+			}
+			radius, ok := p.ApplicationLayer().(*RADIUS)
+			if !ok {
+				t.Fatalf("No RADIUS layer type found in packet in %s.\n", tt.name)
+			}
+			if !reflect.DeepEqual(radius.Attributes, want) {
+				t.Errorf("RADIUS attributes in %s:\ngot  :\n%#v\n\nwant :\n%#v\n\n", tt.name, radius.Attributes, want)
+			}
+		})
+	}
+}

@@ -388,11 +388,6 @@ func (radius *RADIUS) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) e
 	// start from a clean layer: DecodingLayerParser reuses one per packet
 	*radius = RADIUS{}
 
-	if len(data) > radiusMaximumRecordSizeInBytes {
-		df.SetTruncated()
-		return fmt.Errorf("RADIUS length %d too big", len(data))
-	}
-
 	if len(data) < radiusMinimumRecordSizeInBytes {
 		df.SetTruncated()
 		return fmt.Errorf("RADIUS length %d too short", len(data))
