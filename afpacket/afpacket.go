@@ -345,8 +345,10 @@ retry:
 			h.mu.Unlock()
 			return
 		}
-		// We received an empty block
+		// We received an empty block, or a block whose first packet is empty.
+		// Let next() tell them apart, so the latter isn't released unread.
 		if h.current.getLength() == 0 {
+			h.headerNextNeeded = true
 			goto retry
 		}
 	}
@@ -354,6 +356,13 @@ retry:
 	ci.Timestamp = h.current.getTime()
 	ci.CaptureLength = len(data)
 	ci.Length = h.current.getLength()
+
+	// getData put back the VLAN tag the kernel stripped. tp_len does not
+	// count it, so the packet on the wire was longer by the same amount.
+	if inserted := len(data) - h.current.getSnaplen(); inserted > 0 {
+		ci.Length += inserted
+	}
+
 	ci.InterfaceIndex = h.current.getIfaceIndex()
 	vlan := h.current.getVLAN()
 	if vlan >= 0 {

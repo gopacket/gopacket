@@ -38,6 +38,9 @@ type header interface {
 	getData(opts *options) []byte
 	// getLength returns the total length of the packet.
 	getLength() int
+	// getSnaplen returns the number of bytes of the packet the kernel
+	// placed in the ring.
+	getSnaplen() int
 	// getIfaceIndex returns the index of the network interface
 	// where the packet was seen. The index can later be translated to a name.
 	getIfaceIndex() int
@@ -144,13 +147,22 @@ func makeSlice(start uintptr, length int) (data []byte) {
 	return
 }
 
-func insertVlanHeader(data []byte, vlanTCI int, opts *options) []byte {
-	if vlanTCI == 0 || !opts.addVLANHeader {
+// insertVlanHeader puts the tag the kernel stripped back behind the two MAC
+// addresses, with the TPID the kernel reported (802.1Q or 802.1ad; kernels
+// before 3.14 report none, then 802.1Q is assumed).
+func insertVlanHeader(data []byte, vlanTCI, vlanTPID int, opts *options) []byte {
+	// Packets captured without an Ethernet header (SocketDgram, layer-3
+	// devices) can be shorter than the two MAC addresses the tag goes behind.
+	if vlanTCI == 0 || !opts.addVLANHeader || len(data) < ETH_ALEN*2 {
 		return data
 	}
+	if vlanTPID == 0 {
+		vlanTPID = unix.ETH_P_8021Q
+	}
+
 	eth := make([]byte, 0, len(data)+VLAN_HLEN)
 	eth = append(eth, data[0:ETH_ALEN*2]...)
-	eth = append(eth, []byte{0x81, 0, byte((vlanTCI >> 8) & 0xff), byte(vlanTCI & 0xff)}...)
+	eth = append(eth, byte(vlanTPID>>8), byte(vlanTPID), byte((vlanTCI>>8)&0xff), byte(vlanTCI&0xff))
 	return append(eth, data[ETH_ALEN*2:]...)
 }
 
@@ -171,6 +183,9 @@ func (h *v1header) getData(opts *options) []byte {
 }
 func (h *v1header) getLength() int {
 	return int(h.tp_len)
+}
+func (h *v1header) getSnaplen() int {
+	return int(h.tp_snaplen)
 }
 func (h *v1header) getIfaceIndex() int {
 	ll := (*sockAddrLL)(unsafe.Pointer(uintptr(unsafe.Pointer(h)) + uintptr(tpAlign(int(sizeof_struct_tpacket_hdr)))))
@@ -194,10 +209,13 @@ func (h *v2header) getTime() time.Time {
 }
 func (h *v2header) getData(opts *options) []byte {
 	data := makeSlice(uintptr(unsafe.Pointer(h))+uintptr(h.tp_mac), int(h.tp_snaplen))
-	return insertVlanHeader(data, int(h.tp_vlan_tci), opts)
+	return insertVlanHeader(data, int(h.tp_vlan_tci), int(h.tp_vlan_tpid), opts)
 }
 func (h *v2header) getLength() int {
 	return int(h.tp_len)
+}
+func (h *v2header) getSnaplen() int {
+	return int(h.tp_snaplen)
 }
 func (h *v2header) getIfaceIndex() int {
 	ll := (*sockAddrLL)(unsafe.Pointer(uintptr(unsafe.Pointer(h)) + uintptr(tpAlign(int(sizeof_struct_tpacket2_hdr)))))
@@ -242,10 +260,18 @@ func (w *v3wrapper) getData(opts *options) []byte {
 	data := makeSlice(uintptr(unsafe.Pointer(w.packet))+uintptr(w.packet.tp_mac), int(w.packet.tp_snaplen))
 
 	hv1 := (*tpacketHdrVarient1)(unsafe.Pointer(&w.packet.anon0[0]))
-	return insertVlanHeader(data, int(hv1.vlanTCI), opts)
+	return insertVlanHeader(data, int(hv1.vlanTCI), int(hv1.vlanTPID), opts)
 }
 func (w *v3wrapper) getLength() int {
+	// The kernel does not clear the packet area of a block it hands over
+	// empty, so w.packet is whatever the last pass over the ring left there.
+	if w.blockhdr.num_pkts == 0 {
+		return 0
+	}
 	return int(w.packet.tp_len)
+}
+func (w *v3wrapper) getSnaplen() int {
+	return int(w.packet.tp_snaplen)
 }
 func (w *v3wrapper) getIfaceIndex() int {
 	ll := (*sockAddrLL)(unsafe.Pointer(uintptr(unsafe.Pointer(w.packet)) + uintptr(tpAlign(int(sizeof_struct_tpacket3_hdr)))))
