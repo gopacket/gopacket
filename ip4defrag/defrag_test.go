@@ -1799,3 +1799,20 @@ func TestDefragRepeatedFinalFragment(t *testing.T) {
 	feedFrags(t, defrag, mkFrag(1, 0, true, a), mkFrag(1, 8, false, a[8:]))
 	lastFrag(t, defrag, mkFrag(1, 16, false, b), append(append([]byte{}, a...), b...))
 }
+
+func TestDefragDontFragmentFlag(t *testing.T) {
+	// DF only forbids further fragmentation on the path. A sender can
+	// fragment its own datagram and set DF on the pieces; receivers
+	// reassemble them. They used to be returned as whole packets.
+	a := bytes.Repeat([]byte("a"), 16)
+	b := bytes.Repeat([]byte("b"), 8)
+	defrag := NewIPv4Defragmenter()
+
+	first := mkFrag(1, 0, true, a)
+	first.Flags |= layers.IPv4DontFragment
+	feedFrags(t, defrag, first)
+
+	last := mkFrag(1, 16, false, b)
+	last.Flags |= layers.IPv4DontFragment
+	lastFrag(t, defrag, last, append(append([]byte{}, a...), b...))
+}

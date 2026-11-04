@@ -170,11 +170,9 @@ func (d *IPv4Defragmenter) flush(ipf ipv4) {
 // dontDefrag returns true if the IPv4 packet do not need
 // any defragmentation
 func (d *IPv4Defragmenter) dontDefrag(ip *layers.IPv4) bool {
-	// don't defrag packet with DF flag
-	if ip.Flags&layers.IPv4DontFragment != 0 {
-		return true
-	}
-	// don't defrag not fragmented ones
+	// don't defrag not fragmented ones. The DF flag is not looked
+	// at: it only forbids further fragmentation on the path, and
+	// receivers reassemble fragments that carry it
 	if ip.Flags&layers.IPv4MoreFragments == 0 && ip.FragOffset == 0 {
 		return true
 	}
