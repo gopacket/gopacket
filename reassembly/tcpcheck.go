@@ -59,19 +59,14 @@ func (t *TCPOptionCheck) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir TC
 	if tcp.SYN {
 		mss := -1
 		scale := -1
+		// A malformed option is ignored, as a TCP stack does, not the SYN.
 		for _, o := range tcp.Options {
 			// MSS
-			if o.OptionType == 2 {
-				if len(o.OptionData) != 2 {
-					return fmt.Errorf("MSS option data length expected 2, got %d", len(o.OptionData))
-				}
+			if o.OptionType == 2 && len(o.OptionData) == 2 {
 				mss = int(binary.BigEndian.Uint16(o.OptionData[:2]))
 			}
 			// Window scaling
-			if o.OptionType == 3 {
-				if len(o.OptionData) != 1 {
-					return fmt.Errorf("Window scaling length expected: 1, got %d", len(o.OptionData))
-				}
+			if o.OptionType == 3 && len(o.OptionData) == 1 {
 				scale = int(o.OptionData[0])
 			}
 		}
@@ -87,7 +82,9 @@ func (t *TCPOptionCheck) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir TC
 			if diff == -1 && (length == 1 || length == 0) {
 				// This is probably a Keep-alive
 				// TODO: check byte is ok
-			} else if diff < 0 {
+			} else if diff < 0 && diff+length <= 0 {
+				// Only a packet that ends at or before nextSeq is a pure
+				// re-emission; one that straddles it carries new bytes.
 				return fmt.Errorf("Re-emitted packet (diff:%d,seq:%d,rev-ack:%d)", diff,
 					tcp.Seq, nextSeq)
 			} else if revOptions.mss > 0 && length > revOptions.mss {

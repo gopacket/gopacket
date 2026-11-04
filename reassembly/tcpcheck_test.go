@@ -415,3 +415,61 @@ func TestCheckOptions(t *testing.T) {
 		testCheckOptions(t, test.title, test.sequence)
 	}
 }
+
+// A SYN whose MSS or window scale option has an odd length is still a SYN:
+// the option is ignored instead of the packet.
+func TestCheckOptionsOddLength(t *testing.T) {
+	for _, test := range []struct {
+		title   string
+		options []layers.TCPOption
+	}{
+		{"MSS of unexpected length", []layers.TCPOption{{OptionType: layers.TCPOptionKindMSS, OptionLength: 3, OptionData: []byte{5}}}},
+		{"window scale of unexpected length", []layers.TCPOption{{OptionType: layers.TCPOptionKindWindowScale, OptionLength: 4, OptionData: []byte{7, 7}}}},
+	} {
+		testCheckOptions(t, test.title, []testCheckOptionsSequence{
+			{
+				dir:     TCPDirClientToServer,
+				nextSeq: -1,
+				tcp: layers.TCP{
+					SYN:     true,
+					SrcPort: 35721,
+					DstPort: 80,
+					Seq:     1000,
+					Options: test.options,
+				},
+				expected: true,
+			},
+		})
+	}
+}
+
+// A retransmission that starts before nextSeq but carries new bytes past
+// it is not a re-emitted packet.
+func TestCheckOptionsStraddling(t *testing.T) {
+	testCheckOptions(t, "retransmission carrying new data", []testCheckOptionsSequence{
+		{
+			dir:     TCPDirClientToServer,
+			nextSeq: 1010,
+			tcp: layers.TCP{
+				ACK:       true,
+				SrcPort:   35721,
+				DstPort:   80,
+				Seq:       1005,
+				BaseLayer: layers.BaseLayer{Payload: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}},
+			},
+			expected: true,
+		},
+		{
+			dir:     TCPDirClientToServer,
+			nextSeq: 1010,
+			tcp: layers.TCP{
+				ACK:       true,
+				SrcPort:   35721,
+				DstPort:   80,
+				Seq:       1005,
+				BaseLayer: layers.BaseLayer{Payload: []byte{1, 2, 3, 4, 5}},
+			},
+			expected: false,
+		},
+	})
+}
