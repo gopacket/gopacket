@@ -504,11 +504,13 @@ func (p *StreamPool) getConnection(k key, end bool, ts time.Time) *connection {
 	}
 	s := p.factory.New(k[0], k[1])
 	p.mu.Lock()
-	conn = p.newConnection(k, s, ts)
+	// Look again before taking a connection off the free list: another
+	// Assembler may have added it while New ran.
 	if conn2 := p.conns[k]; conn2 != nil {
 		p.mu.Unlock()
 		return conn2
 	}
+	conn = p.newConnection(k, s, ts)
 	p.conns[k] = conn
 	p.mu.Unlock()
 	return conn

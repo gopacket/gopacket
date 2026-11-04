@@ -2208,3 +2208,55 @@ func TestLargePacketContextFlush(t *testing.T) {
 		t.Errorf("contexts:\nwant: %v\n got: %v\n", want, fact.calls)
 	}
 }
+
+// testRaceFactory runs race from its first call to New, which is where another
+// Assembler sharing the StreamPool can get to add the same connection first.
+type testRaceFactory struct {
+	testFactoryBench
+	race func()
+	dirs []TCPFlowDirection
+}
+
+func (t *testRaceFactory) New(a, b gopacket.Flow, tcp *layers.TCP, ac AssemblerContext) Stream {
+	if race := t.race; race != nil {
+		t.race = nil
+		race()
+	}
+	return t
+}
+func (t *testRaceFactory) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir TCPFlowDirection, seq Sequence, start *bool, ac AssemblerContext) bool {
+	t.dirs = append(t.dirs, dir)
+	return true
+}
+
+// Two Assemblers racing to add the same connection, from either direction,
+// must end up sharing one pool entry.
+func TestConnectionAddedWhileCreatingStream(t *testing.T) {
+	c2s := layers.TCP{SrcPort: 1, DstPort: 2, SYN: true}
+	s2c := layers.TCP{SrcPort: 2, DstPort: 1, SYN: true, ACK: true, Ack: 1}
+	c2s.SetInternalPortsForTesting()
+	s2c.SetInternalPortsForTesting()
+	for _, test := range []struct {
+		name     string
+		otherNet gopacket.Flow
+		otherTCP *layers.TCP
+		want     []TCPFlowDirection
+	}{
+		{"same direction", netFlow, &c2s, []TCPFlowDirection{TCPDirClientToServer, TCPDirClientToServer}},
+		{"other direction", netFlow.Reverse(), &s2c, []TCPFlowDirection{TCPDirClientToServer, TCPDirServerToClient}},
+	} {
+		tf := &testRaceFactory{}
+		pool := NewStreamPool(tf)
+		tf.race = func() { NewAssembler(pool).Assemble(test.otherNet, test.otherTCP) }
+		NewAssembler(pool).Assemble(netFlow, &c2s)
+		if !reflect.DeepEqual(tf.dirs, test.want) {
+			t.Errorf("%s: packets accepted as %v, want %v", test.name, tf.dirs, test.want)
+		}
+		if n := len(pool.conns); n != 1 {
+			t.Errorf("%s: %d connections in the pool, want 1", test.name, n)
+		}
+		if n := len(pool.free); n != initialAllocSize-1 {
+			t.Errorf("%s: %d free connections left, want %d", test.name, n, initialAllocSize-1)
+		}
+	}
+}

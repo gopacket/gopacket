@@ -195,15 +195,15 @@ func (p *StreamPool) getConnection(k key, end bool, ts time.Time, tcp *layers.TC
 	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	conn, half, rev = p.newConnection(k, s, ts)
-	conn2, half2, rev2 := p.getHalf(k)
-	if conn2 != nil {
-		if conn2.key != k {
-			panic("FIXME: other dir added in the meantime...")
-		}
+
+	// Another Assembler may have added the connection in the meantime, from
+	// either direction: getHalf orders the halves for k in both cases.
+	conn, half, rev = p.getHalf(k)
+	if conn != nil {
 		// FIXME: delete s ?
-		return conn2, half2, rev2
+		return conn, half, rev
 	}
+	conn, half, rev = p.newConnection(k, s, ts)
 	p.conns[k] = conn
 	return conn, half, rev
 }

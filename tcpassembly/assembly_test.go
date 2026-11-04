@@ -567,3 +567,33 @@ func BenchmarkMultiStreamConn(b *testing.B) {
 		}
 	}
 }
+
+// testRaceFactory runs race from its first call to New, which is where another
+// Assembler sharing the StreamPool can get to add the same connection first.
+type testRaceFactory struct {
+	testFactory
+	race func()
+}
+
+func (t *testRaceFactory) New(a, b gopacket.Flow) Stream {
+	if race := t.race; race != nil {
+		t.race = nil
+		race()
+	}
+	return t
+}
+
+// Losing the race to add a connection must not cost a pooled connection.
+func TestConnectionAddedWhileCreatingStream(t *testing.T) {
+	tcp := layers.TCP{SrcPort: 1, DstPort: 2, SYN: true}
+	tf := &testRaceFactory{}
+	pool := NewStreamPool(tf)
+	tf.race = func() { NewAssembler(pool).Assemble(netFlow, &tcp) }
+	NewAssembler(pool).Assemble(netFlow, &tcp)
+	if n := len(pool.conns); n != 1 {
+		t.Errorf("%d connections in the pool, want 1", n)
+	}
+	if n := len(pool.free); n != initialAllocSize-1 {
+		t.Errorf("%d free connections left, want %d", n, initialAllocSize-1)
+	}
+}
