@@ -8,9 +8,12 @@ package pcapgo
 import (
 	"bytes"
 	"compress/gzip"
+	"encoding/binary"
 	"io"
 	"testing"
 	"time"
+
+	"github.com/gopacket/gopacket/layers"
 )
 
 // test header read
@@ -222,6 +225,49 @@ func TestGzipErrorThenEOF(t *testing.T) {
 		if _, _, err := r.ReadPacketData(); err != io.EOF {
 			t.Errorf("%s: got %v after the error, want io.EOF", test.name, err)
 		}
+	}
+}
+
+// Writers that do not truncate to the snap length they declare (dpkt, older
+// versions of this package) produce records longer than it. tcpdump and
+// Wireshark read those up to their own maximum snap length, and so must
+// this reader, or the rest of the file is lost: the header of the record
+// was consumed, its data is parsed as record headers.
+func TestReadRecordLongerThanSnaplen(t *testing.T) {
+	const snaplen = 4
+	long := []byte{1, 2, 3, 4, 5, 6, 7, 8}
+	short := []byte{9, 10}
+
+	var file bytes.Buffer
+	if err := NewWriter(&file).WriteFileHeader(snaplen, layers.LinkTypeEthernet); err != nil {
+		t.Fatal(err)
+	}
+	// Above libpcap's maximum snap length the record is still refused.
+	huge := make([]byte, eagerReadMax+1)
+	for _, data := range [][]byte{long, short, huge} {
+		// Record header: seconds, microseconds, capture length, length.
+		var hdr [16]byte
+		binary.LittleEndian.PutUint32(hdr[8:12], uint32(len(data)))
+		binary.LittleEndian.PutUint32(hdr[12:16], uint32(len(data)))
+		file.Write(hdr[:])
+		file.Write(data)
+	}
+
+	r, err := NewReader(bytes.NewReader(file.Bytes()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, want := range [][]byte{long, short} {
+		data, ci, err := r.ReadPacketData()
+		if err != nil {
+			t.Fatalf("record %d: %v", i, err)
+		}
+		if !bytes.Equal(data, want) || ci.CaptureLength != len(want) {
+			t.Errorf("record %d: got %v (capture length %d), want %v", i, data, ci.CaptureLength, want)
+		}
+	}
+	if _, _, err := r.ReadPacketData(); err == nil {
+		t.Errorf("read a record of %d bytes, want an error", len(huge))
 	}
 }
 
