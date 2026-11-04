@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"fmt"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -273,6 +274,34 @@ var testPacketInvalidContentLengthMaxedout = []byte(
 		"\r\n",
 )
 
+// TestPacket whose CSeq, Contact and Content-Length headers are spread over
+// multiple lines (RFC 3261 - 7.3.1)
+var testPacketSIPOnlyResponseFoldedHeaders = []byte(
+	"SIP/2.0 200 OK\r\n" +
+		"From: \"Bob\" <sip:bob@sip.provider.com>\r\n" +
+		"To: \"Alice\" <sip:alice@sip.provider.com>\r\n" +
+		"Call-Id: 306366781@172_16_254_66\r\n" +
+		"CSeq: 101 \r\n" +
+		"\t INVITE\r\n" +
+		"Contact: <sip:bob@172.16.254.66:5060>\r\n" +
+		" ;expires=1800\r\n" +
+		" ;q=0.5\r\n" +
+		"Content-Length:\r\n" +
+		" 4\r\n" +
+		"\r\n" +
+		"body and more",
+)
+
+// TestPacket whose folded Content-Length header is invalid on its second line
+// !This will trigger a parse-error
+var testPacketInvalidFoldedContentLength = []byte(
+	"INVITE sip:sip.provider.com SIP/2.0\r\n" +
+		"CSeq: 101 INVITE\r\n" +
+		"Content-Length:\r\n" +
+		" -129\r\n" +
+		"\r\n",
+)
+
 func TestSIPDecode(t *testing.T) {
 	type args struct {
 		firstLayerDecoder gopacket.Decoder
@@ -305,6 +334,14 @@ func TestSIPDecode(t *testing.T) {
 		},
 		{"invalid Content-Length maxedout", args{LayerTypeSIP, testPacketInvalidContentLengthMaxedout},
 			`invalid Content-Length: strconv.ParseInt: parsing "94294967296": value out of range`,
+			false, false, SIPMethodInfo, 1, 0, map[string][]string{}, "", []byte{},
+		},
+		{"invalid folded Content-Length", args{LayerTypeSIP, testPacketInvalidFoldedContentLength},
+			"invalid Content-Length: -129 out of range",
+			false, false, SIPMethodInfo, 1, 0, map[string][]string{}, "", []byte{},
+		},
+		{"continuation line without header", args{LayerTypeSIP, []byte("SIP/2.0 200 OK\r\n foo\r\n bar\r\n\r\n")},
+			"SIP header continuation line with no preceding header",
 			false, false, SIPMethodInfo, 1, 0, map[string][]string{}, "", []byte{},
 		},
 		{"single empty line", args{LayerTypeSIP, []byte("\r\n")},
@@ -412,6 +449,17 @@ func TestSIPDecode(t *testing.T) {
 			"",
 			[]byte{},
 		},
+		{"responseFoldedHeaders", args{LayerTypeSIP, testPacketSIPOnlyResponseFoldedHeaders},
+			"", false, true, SIPMethodInvite, 101, 4,
+			map[string][]string{
+				"call-id":        {`306366781@172_16_254_66`},
+				"cseq":           {`101 INVITE`},
+				"contact":        {`<sip:bob@172.16.254.66:5060> ;expires=1800 ;q=0.5`},
+				"content-length": {`4`},
+			},
+			"",
+			[]byte("body"),
+		},
 		{"compactInvite", args{LinkTypeEthernet, testPacketSIPCompactInvite},
 			"", false, false, SIPMethodInvite, 1, 0,
 			map[string][]string{
@@ -451,6 +499,28 @@ func TestSIPDecode(t *testing.T) {
 		})
 	}
 
+}
+
+// TestSIPFoldedHeaderCost decodes a message made of continuation lines.
+// Each one used to copy the whole header value collected so far, which made
+// the decode quadratic in the message size.
+func TestSIPFoldedHeaderCost(t *testing.T) {
+	const num = 16384
+	msg := []byte("OPTIONS sip:b@example.com SIP/2.0\r\nSubject: ")
+	msg = append(msg, bytes.Repeat([]byte("a"), num)...)
+	msg = append(msg, bytes.Repeat([]byte("\r\n b"), num)...)
+	msg = append(msg, "\r\n\r\n"...)
+
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+	if err := NewSIP().DecodeFromBytes(msg, gopacket.NilDecodeFeedback); err != nil {
+		t.Fatal(err)
+	}
+	runtime.ReadMemStats(&after)
+
+	if grew := after.TotalAlloc - before.TotalAlloc; grew > 64*uint64(len(msg)) {
+		t.Fatalf("decoding %d bytes allocated %d bytes", len(msg), grew)
+	}
 }
 
 func TestSIPGetFirstHeader(t *testing.T) {

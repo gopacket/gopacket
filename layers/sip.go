@@ -253,7 +253,8 @@ func (s *SIP) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	var line []byte
 	var err error
 	var offset int
-	var eoh = false // track End Of Headers
+	var eoh = false   // track End Of Headers
+	var header []byte // current header, continuation lines included
 
 	// Iterate on all lines of the SIP Headers
 	// and stop when we reach the SDP (aka when the new line
@@ -296,14 +297,27 @@ func (s *SIP) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 				return err
 			}
 
+		} else if len(header) > 0 && (line[0] == ' ' || line[0] == '\t') {
+			// RFC 3261 - 7.3.1 - a line break and the whitespace around it
+			// stand for a single SP. Unfold before parsing, so that CSeq and
+			// Content-Length are computed from the whole value.
+			header = append(bytes.TrimRight(header, " \t"), ' ')
+			header = append(header, bytes.TrimSpace(line)...)
+
 		} else {
-			err = s.ParseHeader(line)
+			// A new header starts, the previous one is complete
+			err = s.ParseHeader(header)
 			if err != nil {
 				return err
 			}
+			header = line
 		}
 
 		countLines++
+	}
+	err = s.ParseHeader(header)
+	if err != nil {
+		return err
 	}
 	if !eoh {
 		df.SetTruncated()
