@@ -162,3 +162,57 @@ func TestNewPacketPoolCapsData(t *testing.T) {
 		t.Fatalf("decoder input has capacity %d, want %d", gotCap, size)
 	}
 }
+
+// countingChecksumLayer has one byte of contents, the rest is payload, and
+// its checksum covers both; summed counts the bytes it was asked to sum.
+type countingChecksumLayer struct {
+	data   []byte
+	summed *int
+}
+
+func (l countingChecksumLayer) LayerType() LayerType  { return LayerTypeZero }
+func (l countingChecksumLayer) LayerContents() []byte { return l.data[:1] }
+func (l countingChecksumLayer) LayerPayload() []byte  { return l.data[1:] }
+func (l countingChecksumLayer) VerifyChecksum() (error, ChecksumVerificationResult) {
+	*l.summed += len(l.data)
+	return nil, ChecksumVerificationResult{Valid: true}
+}
+
+// TestVerifyChecksumsNested checks that the bytes VerifyChecksums sums stay
+// linear in the packet size when every layer's checksum covers its payload,
+// and that a reasonable nesting depth still verifies.
+func TestVerifyChecksumsNested(t *testing.T) {
+	summed := 0
+	var dec DecodeFunc
+	dec = func(data []byte, p PacketBuilder) error {
+		if data[0] != 0 {
+			return p.NextDecoder(LayerTypePayload)
+		}
+		p.AddLayer(countingChecksumLayer{data, &summed})
+		return p.NextDecoder(dec)
+	}
+	packet := func(layers, size int) Packet {
+		data := make([]byte, size)
+		data[layers] = 1
+		p := NewPacket(data, dec, Default)
+		if p.ErrorLayer() != nil {
+			t.Fatal(p.ErrorLayer().Error())
+		}
+		return p
+	}
+
+	const size = 10000
+	if err, mismatches := packet(maxChecksumPasses, size).VerifyChecksums(); err != nil || len(mismatches) != 0 {
+		t.Errorf("%d nested layers: err %v, mismatches %v", maxChecksumPasses, err, mismatches)
+	}
+
+	// one layer per byte, as many as eager decoding allows
+	const deep = maxEagerDecodeDepth - 1
+	summed = 0
+	if err, _ := packet(deep-1, deep).VerifyChecksums(); err == nil {
+		t.Error("quadratic packet verified without error")
+	}
+	if summed > (maxChecksumPasses+1)*deep {
+		t.Errorf("summed %d bytes for a %d-byte packet", summed, deep)
+	}
+}

@@ -207,10 +207,28 @@ func (p *packet) DecodeOptions() *DecodeOptions {
 	return &p.decodeOptions
 }
 
+// maxChecksumPasses bounds the bytes the checksums of one packet cover to
+// this many times the size of its largest layer with a checksum. Layers
+// whose checksum covers their payload (GRE, UDP/VXLAN) can be nested as
+// deep as the packet is long, which makes the verification quadratic; 32
+// passes leave room for sixteen levels of IPv4/GRE tunnels.
+const maxChecksumPasses = 32
+
 func (p *packet) VerifyChecksums() (error, []ChecksumMismatch) {
 	mismatches := make([]ChecksumMismatch, 0)
+	covered, largest := 0, 0
 	for i, l := range p.layers {
 		if lwc, ok := l.(LayerWithChecksum); ok {
+			// The bound is taken from the layers, not len(p.data): a
+			// PacketBuilder can be given layers decoded from a larger buffer.
+			size := len(l.LayerContents()) + len(l.LayerPayload())
+			covered += size
+			largest = max(largest, size)
+			if covered > maxChecksumPasses*largest {
+				return fmt.Errorf("couldn't verify checksum for layer %d (%s): too many nested layers with checksums",
+					i+1, l.LayerType()), nil
+			}
+
 			// Verify checksum for that layer
 			err, res := lwc.VerifyChecksum()
 			if err != nil {
