@@ -6,6 +6,7 @@
 package layers
 
 import (
+	"bytes"
 	"fmt"
 	"net"
 	"reflect"
@@ -276,7 +277,7 @@ func TestGREDecodeFromBytesTruncatedOptionalFields(t *testing.T) {
 		},
 		{
 			name: "missing ack field",
-			data: []byte{0x00, 0x80, 0x08, 0x00},
+			data: []byte{0x00, 0x81, 0x88, 0x0b},
 		},
 		{
 			name: "routing sre length overruns packet",
@@ -297,6 +298,54 @@ func TestGREDecodeFromBytesTruncatedOptionalFields(t *testing.T) {
 			}
 			if !df.truncated {
 				t.Fatal("expected packet to be marked truncated")
+			}
+		})
+	}
+}
+
+// Only enhanced GRE (version 1) carries an acknowledgment number. In version
+// 0 the same bit is reserved and a receiver ignores it, so the decoder must
+// not shift the payload by four bytes when it is set.
+func TestGREDecodeFromBytesAck(t *testing.T) {
+	tests := []struct {
+		name       string
+		data       []byte
+		ackPresent bool
+		ack        uint32
+		headerLen  int
+	}{
+		{
+			name:       "version 1 has an ack field",
+			data:       []byte{0x20, 0x81, 0x88, 0x0b, 0x00, 0x00, 0x00, 0x01, 0x01, 0x02, 0x03, 0x04},
+			ackPresent: true,
+			ack:        0x01020304,
+			headerLen:  12,
+		},
+		{
+			name:      "version 0 ignores the reserved bit",
+			data:      []byte{0x00, 0x80, 0x08, 0x00, 0x01, 0x02, 0x03, 0x04},
+			headerLen: 4,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gre GRE
+			if err := gre.DecodeFromBytes(tt.data, gopacket.NilDecodeFeedback); err != nil {
+				t.Fatal("unexpected decode error:", err)
+			}
+			if gre.AckPresent != tt.ackPresent || gre.Ack != tt.ack {
+				t.Errorf("got AckPresent=%v Ack=%#x, want AckPresent=%v Ack=%#x", gre.AckPresent, gre.Ack, tt.ackPresent, tt.ack)
+			}
+			if !bytes.Equal(gre.Contents, tt.data[:tt.headerLen]) || !bytes.Equal(gre.Payload, tt.data[tt.headerLen:]) {
+				t.Errorf("got header %x payload %x, want header length %d", gre.Contents, gre.Payload, tt.headerLen)
+			}
+			buf := gopacket.NewSerializeBuffer()
+			if err := gopacket.SerializeLayers(buf, gopacket.SerializeOptions{}, &gre, gopacket.Payload(gre.Payload)); err != nil {
+				t.Fatal("unexpected serialize error:", err)
+			}
+			if !bytes.Equal(buf.Bytes(), tt.data) {
+				t.Errorf("serialized to %x, want %x", buf.Bytes(), tt.data)
 			}
 		})
 	}

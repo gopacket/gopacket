@@ -73,10 +73,13 @@ func (g *GRE) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	g.KeyPresent = data[0]&0x20 != 0
 	g.SeqPresent = data[0]&0x10 != 0
 	g.StrictSourceRoute = data[0]&0x08 != 0
-	g.AckPresent = data[1]&0x80 != 0
 	g.RecursionControl = data[0] & 0x7
 	g.Flags = data[1] >> 3
 	g.Version = data[1] & 0x7
+	// Only enhanced GRE (version 1, RFC 2637) carries an acknowledgment
+	// number. In version 0 the bit is reserved and ignored on receipt
+	// (RFC 2784 2.3); it stays visible in Flags so SerializeTo keeps it.
+	g.AckPresent = g.Version == 1 && data[1]&0x80 != 0
 	g.Protocol = EthernetType(binary.BigEndian.Uint16(data[2:4]))
 	offset := 4
 	if g.ChecksumPresent || g.RoutingPresent {
