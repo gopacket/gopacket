@@ -112,10 +112,16 @@ func (u *UDP) CanDecode() gopacket.LayerClass {
 // right next decoder. It tries first to decode via the
 // destination port, then the source port.
 func (u *UDP) NextLayerType() gopacket.LayerType {
-	if lt := u.DstPort.LayerType(); lt != gopacket.LayerTypePayload {
-		return lt
+	lt := u.DstPort.LayerType()
+	if lt == gopacket.LayerTypePayload {
+		lt = u.SrcPort.LayerType()
 	}
-	return u.SrcPort.LayerType()
+	// Both GUE variants share a port; the two high bits of the payload tell
+	// them apart (01 is variant 1, whose "header" is the IP packet itself).
+	if lt == LayerTypeAGUEVar0 && len(u.Payload) > 0 && u.Payload[0]>>6 == 1 {
+		return LayerTypeAGUEVar1
+	}
+	return lt
 }
 
 func decodeUDP(data []byte, p gopacket.PacketBuilder) error {

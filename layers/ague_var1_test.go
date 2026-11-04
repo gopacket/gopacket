@@ -11,6 +11,7 @@ package layers
 
 import (
 	"net"
+	"reflect"
 	"testing"
 
 	"github.com/gopacket/gopacket"
@@ -133,4 +134,24 @@ func TestIPv6OverAGUEVar1Encode(t *testing.T) {
 	}
 	logLayers(packet, t)
 	checkLayers(packet, []gopacket.LayerType{LayerTypeEthernet, LayerTypeIPv4, LayerTypeUDP, LayerTypeAGUEVar1, LayerTypeIPv6, LayerTypeICMPv4, gopacket.LayerTypePayload}, t)
+}
+
+// A DecodingLayerParser must reach AGUEVar1 for a variant 1 payload on the
+// GUE port, as NewPacket does, instead of parsing the IP header as AGUEVar0.
+func TestIPv4OverAGUEVar1DecodingLayerParser(t *testing.T) {
+	serialBuf := gopacket.NewSerializeBuffer()
+	opts := gopacket.SerializeOptions{FixLengths: true}
+	if err := gopacket.SerializeLayers(serialBuf, opts, &ethernet, ipv4, udp, aguevar1, innerIPv4, icmpv4, payload); err != nil {
+		t.Fatalf("Failed to serialize packet: %v", err)
+	}
+	var decoded []gopacket.LayerType
+	parser := gopacket.NewDecodingLayerParser(LayerTypeEthernet,
+		&Ethernet{}, &IPv4{}, &UDP{}, &AGUEVar0{}, &AGUEVar1{}, &ICMPv4{}, &gopacket.Payload{})
+	if err := parser.DecodeLayers(serialBuf.Bytes(), &decoded); err != nil {
+		t.Fatalf("Failed to decode packet: %v", err)
+	}
+	want := []gopacket.LayerType{LayerTypeEthernet, LayerTypeIPv4, LayerTypeUDP, LayerTypeAGUEVar1, LayerTypeIPv4, LayerTypeICMPv4, gopacket.LayerTypePayload}
+	if !reflect.DeepEqual(decoded, want) {
+		t.Errorf("Layer mismatch, \nwant: %v\ngot %v\n", want, decoded)
+	}
 }
