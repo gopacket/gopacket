@@ -370,3 +370,121 @@ func TestSerializeRadioTapTooLong(t *testing.T) {
 		})
 	}
 }
+
+// TestRadioTapTruncatedFields cuts a header short at every position behind its
+// present words. The fields these announce no longer fit then, which has to be
+// an error instead of a read behind the end of the data.
+func TestRadioTapTruncatedFields(t *testing.T) {
+	fields := RadioTapPresentHEMU - 1 // every field up to and including HE
+	rt := RadioTap{
+		Present: []RadioTapPresent{
+			fields | RadioTapPresentRadioTapNamespace | RadioTapPresentEXT,
+			fields | RadioTapPresentVendorNamespace | RadioTapPresentEXT,
+			0,
+		},
+		RadioTapValues: make([]RadioTapNamespace, 2),
+		VendorValues:   []VendorNamespace{{OUI: []uint8{1, 2, 3}, SkipLength: 4, Contents: []uint8{4, 5, 6, 7}}},
+	}
+	buf := gopacket.NewSerializeBuffer()
+	if err := rt.SerializeTo(buf, gopacket.SerializeOptions{FixLengths: true}); err != nil {
+		t.Fatal("Failed to serialize RadioTap layer:", err)
+	}
+	header := buf.Bytes()
+	if err := (&RadioTap{}).DecodeFromBytes(header, gopacket.NilDecodeFeedback); err != nil {
+		t.Fatal("Failed to decode the whole header:", err)
+	}
+
+	for n := 4 + 4*len(rt.Present); n < len(header); n++ {
+		if err := (&RadioTap{}).DecodeFromBytes(header[:n:n], gopacket.NilDecodeFeedback); err == nil {
+			t.Errorf("Expected an error for the first %d of %d bytes", n, len(header))
+		}
+		// The capacity of a record in a reused read buffer exceeds its length.
+		if err := (&RadioTap{}).DecodeFromBytes(header[:n], gopacket.NilDecodeFeedback); err == nil {
+			t.Errorf("Expected an error for the first %d of %d bytes with spare capacity", n, len(header))
+		}
+	}
+}
+
+// TestRadioTapVendorSkipLengthWrap has a vendor namespace whose contents end
+// inside the data, but behind the last offset a uint16 can hold, so that
+// offset+SkipLength wraps.
+func TestRadioTapVendorSkipLengthWrap(t *testing.T) {
+	data := make([]byte, 1<<16+32)
+	binary.LittleEndian.PutUint32(data[4:], uint32(RadioTapPresentVendorNamespace|RadioTapPresentEXT))
+	binary.LittleEndian.PutUint16(data[18:], 0xffff) // SkipLength
+	if err := (&RadioTap{}).DecodeFromBytes(data, gopacket.NilDecodeFeedback); err == nil {
+		t.Error("Expected an error for a vendor namespace that ends at offset 0x10013")
+	}
+}
+
+// TestRadioTapDatapadShortPayload cuts a QoS data frame whose 802.11 header is
+// padded to 28 bytes (Datapad flag set) at every length. The padding is only
+// removed when it was captured; shorter frames are passed on unchanged.
+func TestRadioTapDatapadShortPayload(t *testing.T) {
+	header := []byte{0x00, 0x00, 0x09, 0x00, 0x02, 0x00, 0x00, 0x00, 0x20} // Flags present, Flags = Datapad
+	dot11 := []byte{
+		0x88, 0x01, 0x30, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0xaa, 0x02, 0x00, 0x00, 0x00, 0x00, 0xbb,
+		0x02, 0x00, 0x00, 0x00, 0x00, 0xcc, 0x10, 0x00, 0x00, 0x00, // QoS data header
+		0x00, 0x00, // padding
+		0xaa, 0xaa, 0x03, 0x00, 0x00, 0x00, 0x08, 0x00, // LLC, SNAP
+	}
+	for n := 0; n <= len(dot11); n++ {
+		data := append(append([]byte{}, header...), dot11[:n]...)
+		var rt RadioTap
+		if err := rt.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err != nil {
+			t.Fatalf("%d bytes of 802.11: %v", n, err)
+		}
+		want := n + 4 // no FCS flag, so a checksum is appended
+		if n >= 28 {
+			want -= 2 // padding removed
+		}
+		if len(rt.Payload) != want {
+			t.Errorf("%d bytes of 802.11: got %d bytes of payload, want %d", n, len(rt.Payload), want)
+		}
+	}
+}
+
+// TestRadioTapPresentBitmapNeverEnds checks that a chain of it_present words
+// which all have the EXT bit set is rejected when it runs into the end of the
+// data, also where offset+4 no longer fits into a uint16.
+func TestRadioTapPresentBitmapNeverEnds(t *testing.T) {
+	for _, size := range []int{65531, 65532, 65535, 65536, 65536 + 64} {
+		data := make([]byte, size)
+		data[2], data[3] = 0xff, 0xff
+		for i := 7; i < size; i += 4 {
+			data[i] = 0x80
+		}
+		if err := (&RadioTap{}).DecodeFromBytes(data, gopacket.NilDecodeFeedback); err == nil {
+			t.Errorf("Expected an error for %d bytes of present bitmap", size)
+		}
+	}
+}
+
+// TestRadioTapLargeData checks that the length of the data is not cut down to
+// 16 bits, which shortened the header of anything larger than 64 KiB.
+func TestRadioTapLargeData(t *testing.T) {
+	for _, size := range []int{65535, 65536, 65536 + 8} {
+		data := make([]byte, size)
+		copy(data, testPacketRadiotap0)
+		var rt RadioTap
+		if err := rt.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err != nil {
+			t.Errorf("Failed to decode %d bytes: %v", size, err)
+			continue
+		}
+		if rt.Length != 18 || len(rt.Contents) != 18 {
+			t.Errorf("Expected an 18 byte header in %d bytes, got Length %d and %d bytes", size, rt.Length, len(rt.Contents))
+		}
+	}
+}
+
+// TestRadioTapTimestampTruncated cuts a header inside its 12 byte Timestamp
+// field. The field is skipped without being read, but the check has to
+// cover it so the offset never passes the end of the data.
+func TestRadioTapTimestampTruncated(t *testing.T) {
+	data := make([]byte, 8+4)
+	binary.LittleEndian.PutUint16(data[2:], uint16(len(data)))
+	binary.LittleEndian.PutUint32(data[4:], uint32(RadioTapPresentTimestamp))
+	if err := (&RadioTap{}).DecodeFromBytes(data, gopacket.NilDecodeFeedback); err == nil {
+		t.Error("Expected an error for a header cut inside the Timestamp field")
+	}
+}

@@ -1348,7 +1348,8 @@ func (m *RadioTap) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) erro
 	// start from a clean layer: DecodingLayerParser reuses one per packet
 	*m = RadioTap{}
 
-	dataLen := uint16(len(data))
+	// offsets are 16 bits like the length field, longer data is just payload
+	dataLen := uint16(min(len(data), math.MaxUint16))
 	if dataLen < 8 {
 		df.SetTruncated()
 		return errors.New("RadioTap too small")
@@ -1369,7 +1370,7 @@ func (m *RadioTap) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) erro
 		// and expects all fields are packed in the first it_present.
 		// Extended bitmap will be just ignored.
 		offset += 4
-		if offset+4 > dataLen {
+		if int(offset)+4 > int(dataLen) {
 			df.SetTruncated()
 			return errors.New("RadioTap present bitmap extends beyond data")
 		}
@@ -1382,11 +1383,19 @@ func (m *RadioTap) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) erro
 	vendorNamespace := false
 	for _, present := range m.Present {
 		if radioTapNamespace {
-			rValues, newOffset := RadioTapNamespace{}.decodeRadioTapNamespace(data, offset, present)
+			rValues, newOffset, err := RadioTapNamespace{}.decodeRadioTapNamespace(data, offset, present)
+			if err != nil {
+				df.SetTruncated()
+				return err
+			}
 			m.RadioTapValues = append(m.RadioTapValues, rValues)
 			offset = newOffset
 		} else if vendorNamespace {
-			vValues, newOffset := VendorNamespace{}.decodeVendorNamespace(data, offset, present)
+			vValues, newOffset, err := VendorNamespace{}.decodeVendorNamespace(data, offset, present)
+			if err != nil {
+				df.SetTruncated()
+				return err
+			}
 			m.VendorValues = append(m.VendorValues, vValues)
 			offset = newOffset
 		} else {
@@ -1408,6 +1417,7 @@ func (m *RadioTap) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) erro
 
 	// Remove non standard padding used by some Wi-Fi drivers
 	if m.RadioTapValues[0].Flags.Datapad() &&
+		len(payload) >= 2 &&
 		payload[0]&0xC == 0x8 { //&& // Data frame
 		headlen := 24
 		if payload[0]&0x8C == 0x88 { // QoS
@@ -1416,7 +1426,7 @@ func (m *RadioTap) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) erro
 		if payload[1]&0x3 == 0x3 { // 4 addresses
 			headlen += 2
 		}
-		if headlen%4 == 2 {
+		if headlen%4 == 2 && len(payload) >= headlen+2 {
 			payload = append(payload[:headlen], payload[headlen+2:len(payload)]...)
 		}
 	}
@@ -1441,89 +1451,152 @@ func (m *RadioTap) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) erro
 	return nil
 }
 
-func (m RadioTapNamespace) decodeRadioTapNamespace(data []byte, offset uint16, present RadioTapPresent) (RadioTapNamespace, uint16) {
+// radioTapField aligns offset to width and checks that size bytes fit in
+// data. Arithmetic is done in int so an offset near 64 KiB cannot wrap.
+func radioTapField(data []byte, offset, width, size uint16) (uint16, error) {
+	start := (int(offset) + int(width) - 1) &^ (int(width) - 1)
+	end := start + int(size)
+	if end > len(data) || end > math.MaxUint16 {
+		return offset, errors.New("RadioTap field extends beyond data")
+	}
+
+	return uint16(start), nil
+}
+
+func (m RadioTapNamespace) decodeRadioTapNamespace(data []byte, offset uint16, present RadioTapPresent) (RadioTapNamespace, uint16, error) {
+	var err error
 	if present.TSFT() {
-		offset += align(offset, 8)
+		if offset, err = radioTapField(data, offset, 8, 8); err != nil {
+			return m, offset, err
+		}
 		m.TSFT = binary.LittleEndian.Uint64(data[offset : offset+8])
 		offset += 8
 	}
 	if present.Flags() {
+		if offset, err = radioTapField(data, offset, 1, 1); err != nil {
+			return m, offset, err
+		}
 		m.Flags = RadioTapFlags(data[offset])
 		offset++
 	}
 	if present.Rate() {
+		if offset, err = radioTapField(data, offset, 1, 1); err != nil {
+			return m, offset, err
+		}
 		m.Rate = RadioTapRate(data[offset])
 		offset++
 	}
 	if present.Channel() {
-		offset += align(offset, 2)
+		if offset, err = radioTapField(data, offset, 2, 4); err != nil {
+			return m, offset, err
+		}
 		m.ChannelFrequency = RadioTapChannelFrequency(binary.LittleEndian.Uint16(data[offset : offset+2]))
 		offset += 2
 		m.ChannelFlags = RadioTapChannelFlags(binary.LittleEndian.Uint16(data[offset : offset+2]))
 		offset += 2
 	}
 	if present.FHSS() {
+		if offset, err = radioTapField(data, offset, 1, 2); err != nil {
+			return m, offset, err
+		}
 		m.FHSS = binary.LittleEndian.Uint16(data[offset : offset+2])
 		offset += 2
 	}
 	if present.DBMAntennaSignal() {
+		if offset, err = radioTapField(data, offset, 1, 1); err != nil {
+			return m, offset, err
+		}
 		m.DBMAntennaSignal = int8(data[offset])
 		offset++
 	}
 	if present.DBMAntennaNoise() {
+		if offset, err = radioTapField(data, offset, 1, 1); err != nil {
+			return m, offset, err
+		}
 		m.DBMAntennaNoise = int8(data[offset])
 		offset++
 	}
 	if present.LockQuality() {
-		offset += align(offset, 2)
+		if offset, err = radioTapField(data, offset, 2, 2); err != nil {
+			return m, offset, err
+		}
 		m.LockQuality = binary.LittleEndian.Uint16(data[offset : offset+2])
 		offset += 2
 	}
 	if present.TxAttenuation() {
-		offset += align(offset, 2)
+		if offset, err = radioTapField(data, offset, 2, 2); err != nil {
+			return m, offset, err
+		}
 		m.TxAttenuation = binary.LittleEndian.Uint16(data[offset : offset+2])
 		offset += 2
 	}
 	if present.DBTxAttenuation() {
-		offset += align(offset, 2)
+		if offset, err = radioTapField(data, offset, 2, 2); err != nil {
+			return m, offset, err
+		}
 		m.DBTxAttenuation = binary.LittleEndian.Uint16(data[offset : offset+2])
 		offset += 2
 	}
 	if present.DBMTxPower() {
+		if offset, err = radioTapField(data, offset, 1, 1); err != nil {
+			return m, offset, err
+		}
 		m.DBMTxPower = int8(data[offset])
 		offset++
 	}
 	if present.Antenna() {
+		if offset, err = radioTapField(data, offset, 1, 1); err != nil {
+			return m, offset, err
+		}
 		m.Antenna = uint8(data[offset])
 		offset++
 	}
 	if present.DBAntennaSignal() {
+		if offset, err = radioTapField(data, offset, 1, 1); err != nil {
+			return m, offset, err
+		}
 		m.DBAntennaSignal = uint8(data[offset])
 		offset++
 	}
 	if present.DBAntennaNoise() {
+		if offset, err = radioTapField(data, offset, 1, 1); err != nil {
+			return m, offset, err
+		}
 		m.DBAntennaNoise = uint8(data[offset])
 		offset++
 	}
 	if present.RxFlags() {
-		offset += align(offset, 2)
+		if offset, err = radioTapField(data, offset, 2, 2); err != nil {
+			return m, offset, err
+		}
 		m.RxFlags = RadioTapRxFlags(binary.LittleEndian.Uint16(data[offset:]))
 		offset += 2
 	}
 	if present.TxFlags() {
-		offset += align(offset, 2)
+		if offset, err = radioTapField(data, offset, 2, 2); err != nil {
+			return m, offset, err
+		}
 		m.TxFlags = RadioTapTxFlags(binary.LittleEndian.Uint16(data[offset:]))
 		offset += 2
 	}
 	if present.RtsRetries() {
+		if offset, err = radioTapField(data, offset, 1, 1); err != nil {
+			return m, offset, err
+		}
 		m.RtsRetries = uint8(data[offset])
 		offset++
 	}
 	if present.DataRetries() {
+		if offset, err = radioTapField(data, offset, 1, 1); err != nil {
+			return m, offset, err
+		}
 		m.DataRetries = uint8(data[offset])
 		offset++
 	}
 	if present.MCS() {
+		if offset, err = radioTapField(data, offset, 1, 3); err != nil {
+			return m, offset, err
+		}
 		m.MCS = RadioTapMCS{
 			RadioTapMCSKnown(data[offset]),
 			RadioTapMCSFlags(data[offset+1]),
@@ -1532,7 +1605,9 @@ func (m RadioTapNamespace) decodeRadioTapNamespace(data []byte, offset uint16, p
 		offset += 3
 	}
 	if present.AMPDUStatus() {
-		offset += align(offset, 4)
+		if offset, err = radioTapField(data, offset, 4, 7); err != nil {
+			return m, offset, err
+		}
 		m.AMPDUStatus = RadioTapAMPDUStatus{
 			Reference: binary.LittleEndian.Uint32(data[offset:]),
 			Flags:     RadioTapAMPDUStatusFlags(binary.LittleEndian.Uint16(data[offset+4:])),
@@ -1541,7 +1616,9 @@ func (m RadioTapNamespace) decodeRadioTapNamespace(data []byte, offset uint16, p
 		offset += 8
 	}
 	if present.VHT() {
-		offset += align(offset, 2)
+		if offset, err = radioTapField(data, offset, 2, 12); err != nil {
+			return m, offset, err
+		}
 		m.VHT = RadioTapVHT{
 			Known:     RadioTapVHTKnown(binary.LittleEndian.Uint16(data[offset:])),
 			Flags:     RadioTapVHTFlags(data[offset+2]),
@@ -1559,11 +1636,15 @@ func (m RadioTapNamespace) decodeRadioTapNamespace(data []byte, offset uint16, p
 		offset += 12
 	}
 	if present.Timestamp() {
-		offset += align(offset, 8)
+		if offset, err = radioTapField(data, offset, 8, 12); err != nil {
+			return m, offset, err
+		}
 		offset += 12
 	}
 	if present.HE() {
-		offset += align(offset, 2)
+		if offset, err = radioTapField(data, offset, 2, 12); err != nil {
+			return m, offset, err
+		}
 		m.HE = RadiotapHE{
 			Data1: RadiotapHEData1(binary.LittleEndian.Uint16(data[offset:])),
 			Data2: RadiotapHEData2(binary.LittleEndian.Uint16(data[offset+2:])),
@@ -1575,11 +1656,18 @@ func (m RadioTapNamespace) decodeRadioTapNamespace(data []byte, offset uint16, p
 		offset += 12
 	}
 
-	return m, offset
+	return m, offset, nil
 }
 
-func (v VendorNamespace) decodeVendorNamespace(data []byte, offset uint16, present RadioTapPresent) (VendorNamespace, uint16) {
-	offset += align(offset, 2)
+// vendorNamespaceHeaderLen covers the OUI, sub namespace and skip length
+// fields as this decoder lays them out.
+const vendorNamespaceHeaderLen = 8
+
+func (v VendorNamespace) decodeVendorNamespace(data []byte, offset uint16, present RadioTapPresent) (VendorNamespace, uint16, error) {
+	offset, err := radioTapField(data, offset, 2, vendorNamespaceHeaderLen)
+	if err != nil {
+		return v, offset, err
+	}
 
 	v.OUI = data[offset : offset+3]
 	offset += 4
@@ -1590,10 +1678,13 @@ func (v VendorNamespace) decodeVendorNamespace(data []byte, offset uint16, prese
 	v.SkipLength = binary.LittleEndian.Uint16(data[offset:])
 	offset += 2
 
+	if offset, err = radioTapField(data, offset, 1, v.SkipLength); err != nil {
+		return v, offset, err
+	}
 	v.Contents = data[offset : offset+v.SkipLength]
 	offset += v.SkipLength
 
-	return v, offset
+	return v, offset, nil
 }
 
 // radioTapNamespaceMaxLength is an upper bound for what RadioTapNamespace.serializeTo
