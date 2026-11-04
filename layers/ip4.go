@@ -247,8 +247,10 @@ pullOutOptions:
 				df.SetTruncated()
 				return fmt.Errorf("IP option length exceeds remaining IP header size, option type %v length %v", opt.OptionType, opt.OptionLength)
 			}
-			if opt.OptionLength <= 2 {
-				return fmt.Errorf("Invalid IP option type %v length %d. Must be greater than 2", opt.OptionType, opt.OptionLength)
+			// The length counts the type and length bytes, so 2 is the
+			// smallest valid value: an option with no data (RFC 791 3.1).
+			if opt.OptionLength < 2 {
+				return fmt.Errorf("Invalid IP option type %v length %d. Must be at least 2", opt.OptionType, opt.OptionLength)
 			}
 			opt.OptionData = headerOptionsData[2:opt.OptionLength]
 			headerOptionsData = headerOptionsData[opt.OptionLength:]

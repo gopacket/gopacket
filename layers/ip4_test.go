@@ -112,6 +112,23 @@ func TestIPv4InvalidOptionLength(t *testing.T) {
 	}
 }
 
+// An option of length 2 is the type and length bytes with no data. RFC 791
+// allows it and Linux delivers such packets, so the decoder must accept it.
+func TestIPv4EmptyOption(t *testing.T) {
+	// IHL 6, options: type 30 length 2, NOP, NOP
+	b, err := hex.DecodeString("460000180000400040061cdb7f0000017f0000011e020101")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ip4 IPv4
+	if err := ip4.DecodeFromBytes(b, gopacket.NilDecodeFeedback); err != nil {
+		t.Fatalf("Failed to decode option of length 2: %v", err)
+	}
+	if len(ip4.Options) != 3 || ip4.Options[0].OptionType != 30 || ip4.Options[0].OptionLength != 2 || len(ip4.Options[0].OptionData) != 0 {
+		t.Fatalf("Unexpected options: %v", ip4.Options)
+	}
+}
+
 func TestIPv4SerializeShortOptionLength(t *testing.T) {
 	ip := &IPv4{
 		SrcIP:   make([]byte, 4),
