@@ -234,6 +234,20 @@ func (ipv6 *IPv6) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error
 	ipv6.HopByHop = nil
 	ipv6.BaseLayer = BaseLayer{data[:40], data[40:]}
 
+	// The payload length covers the extension headers as well (RFC 8200
+	// section 3), so bound the payload by it before decoding any of them.
+	// Otherwise the HopByHop header and the layer after it would be decoded
+	// from bytes past the end of the IPv6 packet (e.g. a frame trailer).
+	// A length of 0 means jumbogram and is handled with HopByHop below.
+	if ipv6.Length != 0 {
+		pEnd := int(ipv6.Length)
+		if pEnd > len(ipv6.Payload) {
+			df.SetTruncated()
+			pEnd = len(ipv6.Payload)
+		}
+		ipv6.Payload = ipv6.Payload[:pEnd]
+	}
+
 	// We treat a HopByHop IPv6 option as part of the IPv6 packet, since its
 	// options are crucial for understanding what's actually happening per packet.
 	if ipv6.NextHeader == IPProtocolIPv6HopByHop {
@@ -266,13 +280,6 @@ func (ipv6 *IPv6) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error
 	if ipv6.Length == 0 {
 		return fmt.Errorf("IPv6 length 0, but next header is %v, not HopByHop", ipv6.NextHeader)
 	}
-
-	pEnd := int(ipv6.Length)
-	if pEnd > len(ipv6.Payload) {
-		df.SetTruncated()
-		pEnd = len(ipv6.Payload)
-	}
-	ipv6.Payload = ipv6.Payload[:pEnd]
 
 	return nil
 }

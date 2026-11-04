@@ -431,6 +431,57 @@ func TestIPv6JumbogramDecode(t *testing.T) {
 	}
 }
 
+// testPacketIPv6HopByHopTrailer is an IPv6 packet with a payload length of 8
+// (the HopByHop header alone, announcing TCP), followed by 20 trailer bytes
+// shaped like a TCP header that lie past the end of the IPv6 packet.
+var testPacketIPv6HopByHopTrailer = []byte{
+	0x60, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x40, 0x20, 0x01, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x20, 0x01, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x06, 0x00, 0x01, 0x04, 0x00, 0x00, 0x00, 0x00,
+	0x9c, 0x40, 0x00, 0x50, 0x00, 0x00, 0x03, 0xe9, 0x00, 0x00, 0x00, 0x01, 0x50, 0x18, 0xff, 0xff,
+	0x00, 0x00, 0x00, 0x00,
+}
+
+// The Payload Length covers the extension headers too (RFC 8200 3), so
+// bytes past it must not be decoded as the layer after HopByHop.
+func TestPacketIPv6HopByHopTrailerDecode(t *testing.T) {
+	p := gopacket.NewPacket(testPacketIPv6HopByHopTrailer, LinkTypeRaw, gopacket.Default)
+	if p.ErrorLayer() != nil {
+		t.Error("Failed to decode packet:", p.ErrorLayer().Error())
+	}
+	if p.Metadata().Truncated {
+		t.Error("Packet marked truncated")
+	}
+	checkLayers(p, []gopacket.LayerType{LayerTypeIPv6, LayerTypeIPv6HopByHop}, t)
+
+	if got, ok := p.Layer(LayerTypeIPv6).(*IPv6); ok {
+		if len(got.Payload) != 0 {
+			t.Errorf("IPv6 payload extends past the payload length: %d bytes", len(got.Payload))
+		}
+		if len(got.HopByHop.Payload) != 0 {
+			t.Errorf("IPv6HopByHop payload extends past the payload length: %d bytes", len(got.HopByHop.Payload))
+		}
+	} else {
+		t.Error("No IPv6 layer type found in packet")
+	}
+
+	// Same through the DecodingLayerParser, which feeds the next layer from
+	// the IPv6 layer's payload.
+	var ip6 IPv6
+	var tcp TCP
+	decoded := []gopacket.LayerType{}
+	parser := gopacket.NewDecodingLayerParser(LayerTypeIPv6, &ip6, &tcp)
+	if err := parser.DecodeLayers(testPacketIPv6HopByHopTrailer, &decoded); err != nil {
+		t.Error("DecodingLayerParser failed to decode packet:", err)
+	}
+	if !reflect.DeepEqual(decoded, []gopacket.LayerType{LayerTypeIPv6}) {
+		t.Errorf("DecodingLayerParser decoded %v, want [IPv6]", decoded)
+	}
+	if len(ip6.Payload) != 0 {
+		t.Errorf("IPv6 payload extends past the payload length: %d bytes", len(ip6.Payload))
+	}
+}
+
 // A routing header of any type is followed by its Next Header. A receiver
 // skips a type it does not know when Segments Left is 0 (RFC 8200 4.4), so
 // the decoder must not stop there.
