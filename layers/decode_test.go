@@ -1375,6 +1375,31 @@ func TestSCTPChunkBadLength(t *testing.T) {
 	gopacket.NewPacket(data, LinkTypeEthernet, gopacket.Default)
 }
 
+// TestSCTPUnknownChunkBundled checks that a chunk type without a decoder is
+// skipped over and the chunks bundled after it are still decoded, as a
+// receiver does for types 0x80-0xFF (RFC 9260 3.2).
+func TestSCTPUnknownChunkBundled(t *testing.T) {
+	data := append(make([]byte, 12),
+		// PAD chunk (RFC 4820), length 8
+		0x84, 0, 0, 8, 0, 0, 0, 0,
+		// DATA chunk, B|E, length 20, TSN 1, stream 0, PPID 46, 4 bytes of data
+		0, 3, 0, 20, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 46, 'd', 'a', 't', 'a',
+	)
+	p := gopacket.NewPacket(data, LayerTypeSCTP, testDecodeOptions)
+	checkLayers(p, []gopacket.LayerType{LayerTypeSCTP, LayerTypeSCTPUnknownChunkType, LayerTypeSCTPData}, t)
+	sd, ok := p.Layer(LayerTypeSCTPData).(*SCTPData)
+	if !ok || string(sd.Payload) != "data" {
+		t.Fatalf("DATA chunk behind unknown chunk not decoded: %+v", sd)
+	}
+
+	// An unknown chunk whose length runs past the packet must still fail.
+	data = append(make([]byte, 12), 0x84, 0, 0, 12, 0, 0, 0, 0)
+	p = gopacket.NewPacket(data, LayerTypeSCTP, testDecodeOptions)
+	if p.ErrorLayer() == nil || p.ErrorLayer().LayerType() != gopacket.LayerTypeDecodeFailure {
+		t.Errorf("oversized unknown chunk decoded without error, got %v", p.ErrorLayer())
+	}
+}
+
 // TestSTP
 func TestSTP(t *testing.T) {
 	testSTPpacket := []byte{

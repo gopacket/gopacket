@@ -54,6 +54,12 @@ func decodeWithSCTPChunkTypePrefix(data []byte, p gopacket.PacketBuilder) error 
 		return errors.New("invalid SCTP chunk length")
 	}
 	chunkType := SCTPChunkType(data[0])
+	if SCTPChunkTypeMetadata[chunkType].DecodeWith == nil {
+		// A chunk type we have no decoder for still carries its length, so
+		// skip over it and keep decoding the chunks bundled behind it
+		// (RFC 9260 3.2) instead of failing the rest of the packet.
+		return decodeSCTPChunkTypeUnknown(data, p)
+	}
 	return chunkType.Decode(data, p)
 }
 
