@@ -164,3 +164,24 @@ func TestAGUEVar0HlenCountsWords(t *testing.T) {
 		}
 	}
 }
+
+// TestAGUEVar0ControlMessage leaves the body of a control message (C bit
+// set) as payload: the second byte is then a control type, not an IP
+// protocol number.
+func TestAGUEVar0ControlMessage(t *testing.T) {
+	data := []byte{0x20, 0x04, 0x00, 0x00, 0x45, 0x00, 0x00, 0x14, 0, 0, 0, 0, 64, 6, 0, 0, 10, 0, 0, 1, 10, 0, 0, 2}
+	l := &AGUEVar0{}
+	if err := l.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err != nil {
+		t.Fatal(err)
+	}
+	if !l.C {
+		t.Fatal("C bit not decoded")
+	}
+	if got := l.NextLayerType(); got != gopacket.LayerTypePayload {
+		t.Errorf("control message next layer is %v, want Payload", got)
+	}
+	p := gopacket.NewPacket(data, LayerTypeAGUEVar0, gopacket.Default)
+	if p.Layer(LayerTypeIPv4) != nil {
+		t.Error("control message body decoded as IPv4")
+	}
+}

@@ -276,7 +276,8 @@ func (d *DHCPv6DUID) DecodeFromBytes(data []byte) error {
 	}
 
 	d.Type = DHCPv6DUIDType(binary.BigEndian.Uint16(data[:2]))
-	if d.Type == DHCPv6DUIDTypeLLT || d.Type == DHCPv6DUIDTypeLL {
+	// LLT, LL and unknown types keep bytes 2-3 here, as Len and String assume
+	if d.Type != DHCPv6DUIDTypeEN {
 		if len(data) < 4 {
 			return fmt.Errorf("Not enough bytes to decode: %d", len(data))
 		}
@@ -311,7 +312,7 @@ func (d *DHCPv6DUID) Encode() []byte {
 	data := make([]byte, length)
 	binary.BigEndian.PutUint16(data[0:2], uint16(d.Type))
 
-	if d.Type == DHCPv6DUIDTypeLLT || d.Type == DHCPv6DUIDTypeLL {
+	if d.Type != DHCPv6DUIDTypeEN {
 		copy(data[2:4], d.HardwareType)
 	}
 

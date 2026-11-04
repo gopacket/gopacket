@@ -110,6 +110,11 @@ func (l *AGUEVar0) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) erro
 
 // NextLayerType returns the next layer type, e.g. LayerTypeIPv4
 func (l AGUEVar0) NextLayerType() gopacket.LayerType {
+	// Control message: Protocol holds a control type, not an IP protocol
+	// number, and the body is consumed by the decapsulator, not forwarded.
+	if l.C {
+		return gopacket.LayerTypePayload
+	}
 	return l.Protocol.LayerType()
 }
 
