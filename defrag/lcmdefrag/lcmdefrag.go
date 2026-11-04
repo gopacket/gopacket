@@ -21,6 +21,9 @@ const (
 	timeout time.Duration = 3 * time.Second
 )
 
+// timeNow is time.Now, replaced by tests that move the clock.
+var timeNow = time.Now
+
 type lcmPacket struct {
 	lastPacket time.Time
 	done       bool
@@ -36,7 +39,8 @@ type lcmPacket struct {
 //	https://lcm-proj.github.io/
 //	https://github.com/lcm-proj/lcm
 type LCMDefragmenter struct {
-	packets map[uint32]*lcmPacket
+	packets     map[uint32]*lcmPacket
+	lastCleanUp time.Time
 }
 
 func newLCMPacket(totalFrags uint16) *lcmPacket {
@@ -55,10 +59,13 @@ func NewLCMDefragmenter() *LCMDefragmenter {
 	}
 }
 
-func (lp *lcmPacket) append(in *layers.LCM) {
+func (lp *lcmPacket) append(in *layers.LCM, now time.Time) {
+	// A retransmitted fragment must not count towards completion twice.
+	if _, ok := lp.frags[in.FragmentNumber]; !ok {
+		lp.recFrags++
+	}
 	lp.frags[in.FragmentNumber] = in
-	lp.recFrags++
-	lp.lastPacket = time.Now()
+	lp.lastPacket = now
 }
 
 func (lp *lcmPacket) assemble() (out *layers.LCM, err error) {
@@ -96,8 +103,10 @@ func (lp *lcmPacket) assemble() (out *layers.LCM, err error) {
 }
 
 func (ld *LCMDefragmenter) cleanUp() {
+	now := timeNow()
+	ld.lastCleanUp = now
 	for key, packet := range ld.packets {
-		if packet.done || time.Now().Sub(packet.lastPacket) > timeout {
+		if packet.done || now.Sub(packet.lastPacket) > timeout {
 			delete(ld.packets, key)
 		}
 	}
@@ -113,12 +122,19 @@ func (ld *LCMDefragmenter) cleanUp() {
 // If an error was encountered during defragmentation, out will also be nil,
 // while err will contain further information on the failure.
 func (ld *LCMDefragmenter) Defrag(in *layers.LCM) (out *layers.LCM, err error) {
-	// Timeout old packages and erase error prone ones.
-	ld.cleanUp()
-
 	// For running cleanup only
 	if in == nil {
+		ld.cleanUp()
 		return
+	}
+
+	// Timeout old packages and erase error prone ones. The sweep visits
+	// every pending package, so run it once per timeout instead of on every
+	// fragment: a sender that keeps starting new sequences would otherwise
+	// make each call cost as much as all of its unfinished messages.
+	now := timeNow()
+	if now.Sub(ld.lastCleanUp) > timeout {
+		ld.cleanUp()
 	}
 
 	// Quick check if this is acutally a single packet. In that case, just
@@ -128,18 +144,44 @@ func (ld *LCMDefragmenter) Defrag(in *layers.LCM) (out *layers.LCM, err error) {
 		return
 	}
 
-	// Do we need to start a new fragments obj?
-	if _, ok := ld.packets[in.SequenceNumber]; !ok {
-		ld.packets[in.SequenceNumber] = newLCMPacket(in.TotalFragments)
+	// A fragment outside of the range it announces can never be assembled.
+	if in.FragmentNumber >= in.TotalFragments {
+		err = fmt.Errorf("Fragment number %d is out of range for a message "+
+			"of %d fragments. Dropping fragment.", in.FragmentNumber,
+			in.TotalFragments)
+		return
+	}
+
+	// Do we need to start a new fragments obj? A package that timed out but
+	// was not swept yet belongs to an earlier message with this number.
+	packet, ok := ld.packets[in.SequenceNumber]
+	if ok && now.Sub(packet.lastPacket) > timeout {
+		delete(ld.packets, in.SequenceNumber)
+		ok = false
+	}
+	if !ok {
+		packet = newLCMPacket(in.TotalFragments)
+		ld.packets[in.SequenceNumber] = packet
+	}
+
+	// All fragments of a message have to agree on the number of fragments,
+	// otherwise a sender could make us run assemble() on every fragment.
+	if in.TotalFragments != packet.totalFrags {
+		err = fmt.Errorf("Fragment announces %d total fragments, but the "+
+			"message was started with %d. Dropping fragment.",
+			in.TotalFragments, packet.totalFrags)
+		return
 	}
 
 	// Append the packet
-	ld.packets[in.SequenceNumber].append(in)
+	packet.append(in, now)
 
 	// Check if this is the last package of that series
-	if ld.packets[in.SequenceNumber].recFrags == in.TotalFragments {
-		out, err = ld.packets[in.SequenceNumber].assemble()
+	if packet.recFrags != packet.totalFrags {
+		return
 	}
+	out, err = packet.assemble()
+	delete(ld.packets, in.SequenceNumber)
 
 	return
 }
