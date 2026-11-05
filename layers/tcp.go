@@ -141,8 +141,7 @@ func (t TCPOption) String() string {
 		}
 
 	case TCPOptionKindMultipathTCP:
-		// The per-subtype pointer is nil when DecodeFromBytes rejected the
-		// option before filling it in, or when the option was built by hand,
+		// The per-subtype pointer is nil when the option was built by hand,
 		// so each case that reads through one falls back to the generic
 		// line below instead, as MSS and Timestamps do for short OptionData.
 		switch t.OptionMultipath {
@@ -370,23 +369,17 @@ OPTIONS:
 		case TCPOptionKindMultipathTCP:
 			tcp.Multipath = true
 			// The subtype nibble lives in data[2], so three bytes are the
-			// minimum any MPTCP option can occupy.
-			if len(data) < 3 {
-				df.SetTruncated()
-				return fmt.Errorf("Invalid MPTCP option. Length %d less than 3", len(data))
+			// minimum any MPTCP option can occupy. Bound the declared length
+			// against the bytes actually present before any subtype dispatch:
+			// the per-subtype checks below only compare OptionLength against
+			// the expected constant for that subtype, so without this every
+			// fixed-offset slice below is reachable past the end of the
+			// options region.
+			if len(data) < 3 || data[1] < 3 || int(data[1]) > len(data) {
+				tcp.stopOptions(data)
+				break OPTIONS
 			}
 			opt.OptionLength = data[1]
-			if opt.OptionLength < 3 {
-				return fmt.Errorf("MPTCP bad option length %d", opt.OptionLength)
-			} else if int(opt.OptionLength) > len(data) {
-				// Bound the declared length against the bytes actually present
-				// before any subtype dispatch. The per-subtype checks below only
-				// compare OptionLength against the expected constant for that
-				// subtype, so without this every fixed-offset slice below is
-				// reachable past the end of the options region.
-				df.SetTruncated()
-				return fmt.Errorf("Invalid MPTCP option length %d exceeds remaining %d bytes", opt.OptionLength, len(data))
-			}
 			// SerializeTo sizes and writes every option from OptionData, so
 			// keep the raw value next to the decoded subtype struct.
 			opt.OptionData = data[2:opt.OptionLength]
@@ -394,7 +387,8 @@ OPTIONS:
 			switch opt.OptionMultipath {
 			case MPTCPSubtypeMPCAPABLE:
 				if opt.OptionLength != OptionLenMpCapableSyn && opt.OptionLength != OptionLenMpCapableSynAck && opt.OptionLength != OptionLenMpCapableAck && opt.OptionLength != OptionLenMpCapableAckData && opt.OptionLength != OptionLenMpCapableAckDataCSum {
-					return fmt.Errorf("MP_CAPABLE bad option length %d", opt.OptionLength)
+					tcp.stopOptions(data)
+					break OPTIONS
 				}
 				opt.OptionMPTCPMpCapable = &MPCapable{
 					Version: data[2] & 0x0F,
@@ -421,7 +415,8 @@ OPTIONS:
 				}
 			case MPTCPSubtypeMPJOIN:
 				if opt.OptionLength != OptionLenMpJoinSyn && opt.OptionLength != OptionLenMpJoinSynAck && opt.OptionLength != OptionLenMpJoinAck {
-					return fmt.Errorf("MP_JOIN bad option length %d", opt.OptionLength)
+					tcp.stopOptions(data)
+					break OPTIONS
 				}
 				switch opt.OptionLength {
 				case OptionLenMpJoinSyn:
@@ -448,7 +443,8 @@ OPTIONS:
 				// it, so it needs its own bound; 4 is the smallest value
 				// optionMptcpDsslen can return.
 				if opt.OptionLength < 4 {
-					return fmt.Errorf("DSS bad option length %d", opt.OptionLength)
+					tcp.stopOptions(data)
+					break OPTIONS
 				}
 				opt.OptionMPTCPDss = &Dss{
 					F: data[3]&0x10 != 0,
@@ -458,7 +454,8 @@ OPTIONS:
 					A: data[3]&0x01 != 0,
 				}
 				if opt.OptionLength != optionMptcpDsslen(opt.OptionMPTCPDss, false) && opt.OptionLength != optionMptcpDsslen(opt.OptionMPTCPDss, true) {
-					return fmt.Errorf("DSS bad option length %d", opt.OptionLength)
+					tcp.stopOptions(data)
+					break OPTIONS
 				}
 				var lenOpt uint8 = 4
 				if opt.OptionMPTCPDss.A { // Data ACK present
@@ -498,7 +495,8 @@ OPTIONS:
 					bitE = data[2]&0x01 != 0
 				}
 				if !isValidOptionMptcpAddAddrlen(opt.OptionLength, mptcpVer, bitE) {
-					return fmt.Errorf("ADD_ADDR bad option length %d", opt.OptionLength)
+					tcp.stopOptions(data)
+					break OPTIONS
 				}
 				switch mptcpVer {
 				case MptcpVersion0:
@@ -530,7 +528,8 @@ OPTIONS:
 				}
 			case MPTCPSubtypeREMOVEADDR:
 				if opt.OptionLength < OptionLenRemAddr {
-					return fmt.Errorf("Rem_ADDR bad option length %d", opt.OptionLength)
+					tcp.stopOptions(data)
+					break OPTIONS
 				}
 				var addrIds []uint8
 				var n uint8
@@ -542,7 +541,8 @@ OPTIONS:
 				}
 			case MPTCPSubtypeMPPRIO:
 				if opt.OptionLength != OptionLenMpPrio && opt.OptionLength != OptionLenMpPrioAddr {
-					return fmt.Errorf("MP_PRIO bad option length %d", opt.OptionLength)
+					tcp.stopOptions(data)
+					break OPTIONS
 				}
 				opt.OptionMPTCPMpPrio = &MPPrio{
 					Backup: data[2]&0x01 != 0,
@@ -552,7 +552,8 @@ OPTIONS:
 				}
 			case MPTCPSubtypeMPFAIL:
 				if opt.OptionLength != OptionLenMpFail {
-					return fmt.Errorf("MP_FAIL bad option length %d", opt.OptionLength)
+					tcp.stopOptions(data)
+					break OPTIONS
 				}
 				opt.OptionMTCPMPFail = &MPFail{
 					DSN: binary.BigEndian.Uint64(data[4:OptionLenMpFail]),
@@ -560,14 +561,16 @@ OPTIONS:
 
 			case MPTCPSubtypeMPFASTCLOSE:
 				if opt.OptionLength != OptionLenMpFClose {
-					return fmt.Errorf("MP_FASTCLOSE bad option length %d", opt.OptionLength)
+					tcp.stopOptions(data)
+					break OPTIONS
 				}
 				opt.OptionMTCPMPFastClose = &MPFClose{
 					ReceivKey: data[4:OptionLenMpFClose],
 				}
 			case MPTCPSubtypeMPTCPRST:
 				if opt.OptionLength != OptionLenMpTcpRst {
-					return fmt.Errorf("MP_TCPRST bad option length %d", opt.OptionLength)
+					tcp.stopOptions(data)
+					break OPTIONS
 				}
 				opt.OptionMPTCPMPTcpRst = &MPTcpRst{
 					U:      data[2]&0x08 != 0,
@@ -578,22 +581,43 @@ OPTIONS:
 				}
 			}
 		default:
-			if len(data) < 2 {
-				df.SetTruncated()
-				return fmt.Errorf("Invalid TCP option length. Length %d less than 2", len(data))
+			// Kind and length bytes are the minimum, and the length must stay
+			// inside the option area.
+			if len(data) < 2 || data[1] < 2 || int(data[1]) > len(data) {
+				tcp.stopOptions(data)
+				break OPTIONS
 			}
 			opt.OptionLength = data[1]
-			if opt.OptionLength < 2 {
-				return fmt.Errorf("Invalid TCP option length %d < 2", opt.OptionLength)
-			} else if int(opt.OptionLength) > len(data) {
-				df.SetTruncated()
-				return fmt.Errorf("Invalid TCP option length %d exceeds remaining %d bytes", opt.OptionLength, len(data))
-			}
 			opt.OptionData = data[2:opt.OptionLength]
 		}
 		data = data[opt.OptionLength:]
 	}
 	return nil
+}
+
+// stopOptions ends option parsing at an option whose length cannot be
+// followed. A receiving host stops reading options there and still delivers
+// the segment, so the layer stays valid: the option itself is dropped from
+// Options and the rest of the option area, from its kind byte on, is kept as
+// Padding. The option area lies within DataOffset, which was already checked
+// against the packet, so this is never a truncation.
+func (t *TCP) stopOptions(rest []byte) {
+	dropped := t.Options[len(t.Options)-1]
+	t.Options = t.Options[:len(t.Options)-1]
+	t.Padding = rest
+
+	// The flag was raised for the dropped option; keep it only if an MPTCP
+	// option decoded before it.
+	if dropped.OptionType != TCPOptionKindMultipathTCP {
+		return
+	}
+	t.Multipath = false
+	for _, o := range t.Options {
+		if o.OptionType == TCPOptionKindMultipathTCP {
+			t.Multipath = true
+			return
+		}
+	}
 }
 
 func optionMptcpDsslen(OptionMPTCPDss *Dss, csum bool) uint8 {

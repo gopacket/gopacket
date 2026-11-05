@@ -9,7 +9,6 @@ package layers
 import (
 	"bytes"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/gopacket/gopacket"
@@ -46,8 +45,8 @@ func TestTCPOptionKindString(t *testing.T) {
 		},
 			"MPTCPOption(MP_CAPABLE Version 1)"},
 		// An MPTCP option whose subtype is set but whose per-subtype pointer
-		// is not, as DecodeFromBytes leaves behind on a bad option length,
-		// must print the generic line rather than dereference nil.
+		// is not, as a hand-built option can be, must print the generic line
+		// rather than dereference nil.
 		{&TCPOption{
 			OptionType:      TCPOptionKindMultipathTCP,
 			OptionLength:    3,
@@ -223,12 +222,21 @@ func TestMPTCPInvalidLengthAndSubtype(t *testing.T) {
 	t.Log("Starting packet decoding")
 	p := gopacket.NewPacket(testMPTCPInvalidLengthAndSubtype, LinkTypeLinuxSLL2, gopacket.Default)
 
-	if !strings.HasSuffix(p.ErrorLayer().Error().Error(), "MPTCP bad option length 0") {
-		t.Error("Failed to catch broken MPTCP packet")
+	// A receiver stops reading options at the zero length and keeps the
+	// segment, so the layer decodes with the NOP and the unknown option
+	// before it, and the MPTCP bytes left as Padding.
+	if p.ErrorLayer() != nil {
+		t.Fatalf("Failed to decode packet: %v", p.ErrorLayer().Error())
 	}
-	// The rejected option stays in tcp.Options with its per-subtype pointer
-	// unset; stringifying the packet runs outside decode recovery and must
-	// not panic on it.
+	tcp := p.Layer(LayerTypeTCP).(*TCP)
+	if len(tcp.Options) != 2 || tcp.Options[0].OptionType != TCPOptionKindNop || tcp.Options[1].OptionType != 0x21 {
+		t.Errorf("expected NOP and kind 33 options, got %v", tcp.Options)
+	}
+	if !bytes.Equal(tcp.Padding, []byte{0x1e, 0x00, 0xa0}) {
+		t.Errorf("expected the MPTCP bytes as padding, got %x", tcp.Padding)
+	}
+	// Stringifying the packet runs outside decode recovery and must not
+	// panic.
 	p.Dump()
 }
 
@@ -259,6 +267,80 @@ func TestMPTCPOptionSerialize(t *testing.T) {
 			if !bytes.Equal(buf.Bytes(), seg) {
 				t.Errorf("%s: %+v: expected %x, but got %x", tc.name, opts, seg, buf.Bytes())
 			}
+		}
+	}
+}
+
+// TestTCPBadOptionLengthKeepsPayload checks that an option the decoder cannot
+// follow (length byte missing, below the minimum, past the option area, or
+// not what its MPTCP subtype allows) stops option parsing without failing
+// the segment. A receiving host stops reading options there and still
+// delivers the data, so both decode paths must hand the payload on, keep the
+// options decoded before it and leave the rest of the option area in Padding.
+func TestTCPBadOptionLengthKeepsPayload(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		options []byte
+		kept    int // options decoded before the bad one
+		padding int // offset of the first unparsed byte
+	}{
+		{"length 1", []byte{0xfd, 0x01, 0x01, 0x01}, 0, 0},
+		{"length 0", []byte{0xfd, 0x00, 0x01, 0x01}, 0, 0},
+		{"length past option area", []byte{0xfd, 0x08, 0x01, 0x01}, 0, 0},
+		{"kind byte without length", []byte{0x01, 0x01, 0x01, 0xfd}, 3, 3},
+		{"MPTCP length 0", []byte{0x1e, 0x00, 0x01, 0x01}, 0, 0},
+		{"MPTCP length past option area", []byte{0x1e, 0x08, 0x01, 0x01}, 0, 0},
+		{"MPTCP kind byte without subtype", []byte{0x01, 0x01, 0x1e, 0x03}, 2, 2},
+		{"MP_CAPABLE bad length", []byte{0x1e, 0x03, 0x00, 0x01}, 0, 0},
+		{"MP_JOIN bad length", []byte{0x1e, 0x04, 0x10, 0x00}, 0, 0},
+		{"DSS bad length", []byte{0x1e, 0x05, 0x20, 0x00, 0x00, 0x01, 0x01, 0x01}, 0, 0},
+		{"ADD_ADDR bad length", []byte{0x1e, 0x03, 0x30, 0x01}, 0, 0},
+		{"REMOVE_ADDR bad length", []byte{0x1e, 0x03, 0x40, 0x01}, 0, 0},
+		{"MP_PRIO bad length", []byte{0x1e, 0x05, 0x50, 0x01, 0x01, 0x01, 0x01, 0x01}, 0, 0},
+		{"MP_FAIL bad length", []byte{0x1e, 0x03, 0x60, 0x01}, 0, 0},
+		{"MP_FASTCLOSE bad length", []byte{0x1e, 0x03, 0x70, 0x01}, 0, 0},
+		{"MP_TCPRST bad length", []byte{0x1e, 0x03, 0x80, 0x01}, 0, 0},
+	} {
+		seg := make([]byte, 20)
+		seg[12] = byte((20+len(tc.options))/4) << 4
+		seg = append(append(seg, tc.options...), "Test"...)
+
+		p := gopacket.NewPacket(seg, LayerTypeTCP, gopacket.Default)
+		if p.ErrorLayer() != nil {
+			t.Errorf("%s: NewPacket: %v", tc.name, p.ErrorLayer().Error())
+			continue
+		}
+		tcp := p.Layer(LayerTypeTCP).(*TCP)
+		if string(tcp.Payload) != "Test" {
+			t.Errorf("%s: payload %q, want %q", tc.name, tcp.Payload, "Test")
+		}
+		if len(tcp.Options) != tc.kept {
+			t.Errorf("%s: kept %d options, want %d", tc.name, len(tcp.Options), tc.kept)
+		}
+		if !bytes.Equal(tcp.Padding, tc.options[tc.padding:]) {
+			t.Errorf("%s: padding %x, want %x", tc.name, tcp.Padding, tc.options[tc.padding:])
+		}
+		// No case keeps an MPTCP option, so the flag must not survive the
+		// dropped one.
+		if tcp.Multipath {
+			t.Errorf("%s: Multipath set with no MPTCP option kept", tc.name)
+		}
+		if p.ApplicationLayer() == nil || string(p.ApplicationLayer().Payload()) != "Test" {
+			t.Errorf("%s: application layer %v, want payload %q", tc.name, p.ApplicationLayer(), "Test")
+		}
+		// Printing runs outside decode recovery: it must not panic.
+		_ = p.String()
+
+		var dlpTCP TCP
+		var payload gopacket.Payload
+		parser := gopacket.NewDecodingLayerParser(LayerTypeTCP, &dlpTCP, &payload)
+		decoded := []gopacket.LayerType{}
+		if err := parser.DecodeLayers(seg, &decoded); err != nil {
+			t.Errorf("%s: DecodeLayers: %v", tc.name, err)
+			continue
+		}
+		if len(decoded) != 2 || decoded[1] != gopacket.LayerTypePayload || string(payload) != "Test" {
+			t.Errorf("%s: DecodeLayers decoded %v, payload %q", tc.name, decoded, payload)
 		}
 	}
 }
