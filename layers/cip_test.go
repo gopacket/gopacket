@@ -322,3 +322,53 @@ func TestCIPRequestPath(t *testing.T) {
 		t.Errorf("segment past the end of the path: got error %v, want %v", err, ErrCIPDataTooSmall)
 	}
 }
+
+// A 32-bit logical segment (0x22 class, 0x26 instance) carries a pad byte
+// and a 32-bit little-endian value. It must be decoded, or rejected if the
+// value does not fit the field, never skipped.
+func TestCIPRequest32BitSegments(t *testing.T) {
+	for _, test := range []struct {
+		data []byte
+		want *CIP
+	}{
+		{
+			data: []byte{0x05, 0x04, 0x20, 0x01, 0x26, 0x00, 0x01, 0x00, 0x00, 0x00},
+			want: &CIP{ServiceID: 0x05, ClassID: 0x1, InstanceID: 0x1},
+		},
+		{
+			data: []byte{0x0e, 0x04, 0x20, 0x01, 0x26, 0x00, 0x34, 0x12, 0x00, 0x00, 0xaa},
+			want: &CIP{ServiceID: 0x0e, ClassID: 0x1, InstanceID: 0x1234, Data: []byte{0xaa}},
+		},
+		{
+			data: []byte{0x05, 0x04, 0x22, 0x00, 0x78, 0x56, 0x00, 0x00, 0x24, 0x01},
+			want: &CIP{ServiceID: 0x05, ClassID: 0x5678, InstanceID: 0x1},
+		},
+	} {
+		got := &CIP{}
+		if err := got.DecodeFromBytes(test.data, gopacket.NilDecodeFeedback); err != nil {
+			t.Errorf("Failed to decode CIP request % x: %v", test.data, err)
+		} else if !reflect.DeepEqual(got, test.want) {
+			t.Errorf("CIP request % x does not match:\ngot  %+v\nwant %+v", test.data, got, test.want)
+		}
+	}
+
+	// truncated inside the 32-bit segment
+	for _, data := range [][]byte{
+		{0x05, 0x03, 0x22, 0x00, 0x01, 0x00, 0x00},
+		{0x05, 0x04, 0x20, 0x01, 0x26, 0x00, 0x01, 0x00, 0x00},
+	} {
+		if err := (&CIP{}).DecodeFromBytes(data, gopacket.NilDecodeFeedback); err != ErrCIPDataTooSmall {
+			t.Errorf("CIP request % x: got error %v, want %v", data, err, ErrCIPDataTooSmall)
+		}
+	}
+
+	// IDs above 16 bits cannot be represented and must be refused
+	for _, data := range [][]byte{
+		{0x05, 0x04, 0x20, 0x01, 0x26, 0x00, 0x01, 0x00, 0x01, 0x00},
+		{0x05, 0x04, 0x22, 0x00, 0x01, 0x00, 0x01, 0x00, 0x24, 0x01},
+	} {
+		if err := (&CIP{}).DecodeFromBytes(data, gopacket.NilDecodeFeedback); err == nil {
+			t.Errorf("CIP request % x: ID above 16 bits decoded without error", data)
+		}
+	}
+}

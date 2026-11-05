@@ -9,6 +9,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"math"
 
 	"github.com/gopacket/gopacket"
 )
@@ -251,6 +252,24 @@ type CIP struct {
 	Data             []byte   // Command data for request, reply data for response
 }
 
+// cipLogical32Len is the size of a 32-bit logical segment value: one pad
+// byte followed by a little-endian 32-bit ID.
+const cipLogical32Len = 5
+
+// cipLogical32 reads the ID of a 32-bit logical segment at offset. The CIP
+// fields are 16 bits wide, so a larger ID cannot be represented.
+func cipLogical32(path []byte, offset int, df gopacket.DecodeFeedback) (uint16, error) {
+	if offset+cipLogical32Len > len(path) {
+		df.SetTruncated()
+		return 0, ErrCIPDataTooSmall
+	}
+	id := binary.LittleEndian.Uint32(path[offset+1 : offset+cipLogical32Len])
+	if id > math.MaxUint16 {
+		return 0, fmt.Errorf("CIP class/instance ID 0x%x does not fit in 16 bits", id)
+	}
+	return uint16(id), nil
+}
+
 // DecodeFromBytes unpacks a CIP packet in the `data` argument into the receiver.
 func (cip *CIP) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	// start from a clean layer: DecodingLayerParser reuses one per packet
@@ -322,6 +341,14 @@ func (cip *CIP) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 				}
 				cip.ClassID = binary.LittleEndian.Uint16(data[offset+1 : offset+3])
 				offset += 3
+			case 0x22:
+				// 32-bit ID
+				id, err := cipLogical32(data[:pathEnd], offset, df)
+				if err != nil {
+					return err
+				}
+				cip.ClassID = id
+				offset += cipLogical32Len
 			}
 		}
 
@@ -348,6 +375,14 @@ func (cip *CIP) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 				}
 				cip.InstanceID = binary.LittleEndian.Uint16(data[offset+1 : offset+3])
 				offset += 3
+			case 0x26:
+				// 32-bit ID
+				id, err := cipLogical32(data[:pathEnd], offset, df)
+				if err != nil {
+					return err
+				}
+				cip.InstanceID = id
+				offset += cipLogical32Len
 			}
 		}
 
