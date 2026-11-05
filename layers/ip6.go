@@ -730,12 +730,13 @@ func (i *IPv6Fragment) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.Ser
 // LayerType returns LayerTypeIPv6Fragment.
 func (i *IPv6Fragment) LayerType() gopacket.LayerType { return LayerTypeIPv6Fragment }
 
-func decodeIPv6Fragment(data []byte, p gopacket.PacketBuilder) error {
+// DecodeFromBytes implementation according to gopacket.DecodingLayer
+func (i *IPv6Fragment) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	if len(data) < 8 {
-		p.SetTruncated()
+		df.SetTruncated()
 		return fmt.Errorf("Invalid ip6-fragment header. Length %d less than 8", len(data))
 	}
-	i := &IPv6Fragment{
+	*i = IPv6Fragment{
 		BaseLayer:      BaseLayer{data[:8], data[8:]},
 		NextHeader:     IPProtocol(data[0]),
 		Reserved1:      data[1],
@@ -743,6 +744,30 @@ func decodeIPv6Fragment(data []byte, p gopacket.PacketBuilder) error {
 		Reserved2:      data[3] & 0x6 >> 1,
 		MoreFragments:  data[3]&0x1 != 0,
 		Identification: binary.BigEndian.Uint32(data[4:8]),
+	}
+	return nil
+}
+
+// CanDecode implementation according to gopacket.DecodingLayer
+func (i *IPv6Fragment) CanDecode() gopacket.LayerClass {
+	return LayerTypeIPv6Fragment
+}
+
+// NextLayerType implementation according to gopacket.DecodingLayer. The
+// data behind a fragment header is a piece of the original packet, so it
+// is a Fragment as it is for IPv4; only an atomic fragment (offset 0, no
+// more fragments) carries the header named by NextHeader.
+func (i *IPv6Fragment) NextLayerType() gopacket.LayerType {
+	if i.FragmentOffset != 0 || i.MoreFragments {
+		return gopacket.LayerTypeFragment
+	}
+	return i.NextHeader.LayerType()
+}
+
+func decodeIPv6Fragment(data []byte, p gopacket.PacketBuilder) error {
+	i := &IPv6Fragment{}
+	if err := i.DecodeFromBytes(data, p); err != nil {
+		return err
 	}
 	p.AddLayer(i)
 	return p.NextDecoder(gopacket.DecodeFragment)

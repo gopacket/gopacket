@@ -706,3 +706,53 @@ func TestIPv6HeaderTLVOptionBounds(t *testing.T) {
 		}
 	}
 }
+
+// testPacketIPv6FragmentTail is a non-initial (offset 32 units, M=0) fragment of
+// a TCP segment. The 20 bytes behind the Fragment header are payload of the
+// original segment that happen to look like a TCP header (SYN 31337->22).
+var testPacketIPv6FragmentTail = []byte{
+	0x60, 0x00, 0x00, 0x00, 0x00, 0x1c, 0x2c, 0x40, 0x20, 0x01, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x66, 0x20, 0x01, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x06, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01,
+	0x7a, 0x69, 0x00, 0x16, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x50, 0x02, 0x04, 0x00,
+	0x00, 0x00, 0x00, 0x00,
+}
+
+// A parser that registers IPv6Fragment behind the skipper stops at a
+// fragment the way it does for IPv4, instead of reading the fragment's
+// bytes as the header named by Next Header. Without it the skipper keeps
+// stepping over the Fragment header as before.
+func TestIPv6FragmentDecodingLayer(t *testing.T) {
+	var (
+		ip6     IPv6
+		skipper IPv6ExtensionSkipper
+		frag    IPv6Fragment
+		tcp     TCP
+		payload gopacket.Payload
+		piece   gopacket.Fragment
+	)
+	decoded := make([]gopacket.LayerType, 0, 4)
+
+	dlp := gopacket.NewDecodingLayerParser(LayerTypeIPv6, &ip6, &skipper, &frag, &tcp, &payload, &piece)
+	if err := dlp.DecodeLayers(testPacketIPv6FragmentTail, &decoded); err != nil {
+		t.Errorf("Error from dlp parser: %v", err)
+	}
+	want := []gopacket.LayerType{LayerTypeIPv6, LayerTypeIPv6Fragment, gopacket.LayerTypeFragment}
+	if !reflect.DeepEqual(decoded, want) {
+		t.Errorf("decoded layers: got %v, want %v", decoded, want)
+	}
+	if frag.FragmentOffset != 32 || frag.MoreFragments || frag.NextHeader != IPProtocolTCP {
+		t.Errorf("fragment header: %+v", frag)
+	}
+
+	// The old behaviour is kept for parsers that do not register IPv6Fragment.
+	decoded = decoded[:0]
+	dlp = gopacket.NewDecodingLayerParser(LayerTypeIPv6, &ip6, &skipper, &tcp, &payload)
+	if err := dlp.DecodeLayers(testPacketIPv6FragmentTail, &decoded); err != nil {
+		t.Errorf("Error from dlp parser: %v", err)
+	}
+	want = []gopacket.LayerType{LayerTypeIPv6, LayerTypeIPv6Fragment, LayerTypeTCP}
+	if !reflect.DeepEqual(decoded, want) {
+		t.Errorf("decoded layers: got %v, want %v", decoded, want)
+	}
+}
