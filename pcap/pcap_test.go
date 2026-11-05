@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/gopacket/gopacket"
@@ -171,6 +172,37 @@ func TestBPFEmptyPacket(t *testing.T) {
 			}
 		}
 	}
+}
+
+// Matches reads like a query on an immutable program, so callers share one
+// BPF between goroutines. The packet lengths must then not pass through the
+// BPF itself, or one goroutine's packet is matched with another's length.
+func TestBPFMatchesConcurrent(t *testing.T) {
+	bpf, err := NewBPF(layers.LinkTypeEthernet, 65535, "less 100")
+	if err != nil {
+		t.Fatal(err)
+	}
+	short := make([]byte, 42)
+	long := make([]byte, 242)
+
+	var wg sync.WaitGroup
+	for g := 0; g < 2; g++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := 0; i < 2000; i++ {
+				if !bpf.Matches(gopacket.CaptureInfo{Length: len(short)}, short) {
+					t.Error("short packet not matched")
+					return
+				}
+				if bpf.Matches(gopacket.CaptureInfo{Length: len(long)}, long) {
+					t.Error("long packet matched")
+					return
+				}
+			}
+		}()
+	}
+	wg.Wait()
 }
 
 func TestWritePacketDataEmptyPacket(t *testing.T) {

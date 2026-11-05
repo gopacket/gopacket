@@ -107,7 +107,6 @@ type bpfFilter struct {
 type BPF struct {
 	orig string
 	bpf  *bpfFilter
-	hdr  pcapPkthdr // allocate on the heap to enable optimizations
 }
 
 // BPFInstruction is a byte encoded structure holding a BPF instruction

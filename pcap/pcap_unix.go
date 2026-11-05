@@ -152,8 +152,17 @@ int pcap_next_ex_escaping(pcap_t *p, uintptr_t pkt_hdr, uintptr_t pkt_data) {
   return ex;
 }
 
-int pcap_offline_filter_escaping(struct bpf_program *fp, uintptr_t pkt_hdr, uintptr_t pkt) {
-	return pcap_offline_filter(fp, (struct pcap_pkthdr*)(pkt_hdr), (const u_char*)(pkt));
+// The packet header is built here, on the C stack, so that concurrent calls
+// on one filter do not share it: BPF.Matches reads like a query on an
+// immutable program and is used from several goroutines.
+int pcap_offline_filter_escaping(struct bpf_program *fp, gopacket_time_secs_t sec,
+  gopacket_time_usecs_t usec, bpf_u_int32 caplen, bpf_u_int32 len, uintptr_t pkt) {
+	struct pcap_pkthdr hdr;
+	hdr.ts.tv_sec = sec;
+	hdr.ts.tv_usec = usec;
+	hdr.caplen = caplen;
+	hdr.len = len;
+	return pcap_offline_filter(fp, &hdr, (const u_char*)(pkt));
 }
 
 // pcap_wait returns when the next packet is available or the timeout expires.
@@ -359,16 +368,14 @@ func pcapLookupnet(device string) (netp, maskp uint32, err error) {
 }
 
 func (b *BPF) pcapOfflineFilter(ci gopacket.CaptureInfo, data []byte) bool {
-	hdr := (*C.struct_pcap_pkthdr)(&b.hdr)
-	hdr.ts.tv_sec = C.gopacket_time_secs_t(ci.Timestamp.Unix())
-	hdr.ts.tv_usec = C.gopacket_time_usecs_t(ci.Timestamp.Nanosecond() / 1000)
-	hdr.caplen = C.bpf_u_int32(len(data)) // Trust actual length over ci.Length.
-	hdr.len = C.bpf_u_int32(ci.Length)
 	// unsafe.SliceData rather than &data[0]: data may be empty (a record with
 	// caplen 0), which libpcap handles but indexing would panic on.
 	dataptr := (*C.u_char)(unsafe.SliceData(data))
 	return C.pcap_offline_filter_escaping((*C.struct_bpf_program)(&b.bpf.bpf),
-		C.uintptr_t(uintptr(unsafe.Pointer(hdr))),
+		C.gopacket_time_secs_t(ci.Timestamp.Unix()),
+		C.gopacket_time_usecs_t(ci.Timestamp.Nanosecond()/1000),
+		C.bpf_u_int32(len(data)), // Trust actual length over ci.Length.
+		C.bpf_u_int32(ci.Length),
 		C.uintptr_t(uintptr(unsafe.Pointer(dataptr)))) != 0
 }
 
