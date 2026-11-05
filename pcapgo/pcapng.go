@@ -308,8 +308,6 @@ type NgInterface struct {
 	Statistics NgInterfaceStatistics
 
 	secondMask uint64
-	scaleUp    uint64
-	scaleDown  uint64
 }
 
 // Resolution returns the timestamp resolution of acquired timestamps before scaling to NanosecondTimestampResolution.
