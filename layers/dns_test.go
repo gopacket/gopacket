@@ -1579,3 +1579,97 @@ func TestDNSBadAddressLength(t *testing.T) {
 		}
 	}
 }
+
+// testPacketDNSOverTCP is the query `www.example.com A` (ID 0x1234, RD set)
+// sent over TCP to port 53, the two-octet message length of RFC 1035
+// section 4.2.2 in front of the message:
+//
+//	IP 10.0.0.1.40000 > 10.0.0.53.53: Flags [P.], seq 1:36, ack 1, win 65535, length 35 4660+ A? www.example.com. (33)
+var testPacketDNSOverTCP = []byte{
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x45, 0x00,
+	0x00, 0x4b, 0x00, 0x00, 0x00, 0x00, 0x40, 0x06, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x01, 0x0a, 0x00,
+	0x00, 0x35, 0x9c, 0x40, 0x00, 0x35, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x50, 0x18,
+	0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x21, 0x12, 0x34, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x03, 0x77, 0x77, 0x77, 0x07, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65,
+	0x03, 0x63, 0x6f, 0x6d, 0x00, 0x00, 0x01, 0x00, 0x01,
+}
+
+func checkDNSOverTCPQuery(t *testing.T, dns *DNS) {
+	t.Helper()
+	if dns.ID != 0x1234 || !dns.RD || dns.QR {
+		t.Errorf("unexpected header: ID=%#x RD=%v QR=%v", dns.ID, dns.RD, dns.QR)
+	}
+	if len(dns.Questions) != 1 {
+		t.Fatalf("expected 1 question, got %d", len(dns.Questions))
+	}
+	q := dns.Questions[0]
+	if string(q.Name) != "www.example.com" || q.Type != DNSTypeA || q.Class != DNSClassIN {
+		t.Errorf("unexpected question %s %v %v", q.Name, q.Type, q.Class)
+	}
+}
+
+// A DNS message over TCP is decoded behind its length prefix; a second
+// message in the same segment is left as the layer's payload.
+func TestPacketDNSOverTCP(t *testing.T) {
+	opts := gopacket.DecodeOptions{SkipDecodeRecovery: true, DecodeStreamsAsDatagrams: true}
+	p := gopacket.NewPacket(testPacketDNSOverTCP, LinkTypeEthernet, opts)
+	if p.ErrorLayer() != nil {
+		t.Fatal("Failed to decode packet:", p.ErrorLayer().Error())
+	}
+	checkLayers(p, []gopacket.LayerType{LayerTypeEthernet, LayerTypeIPv4, LayerTypeTCP, LayerTypeDNS}, t)
+	dns, ok := p.ApplicationLayer().(*DNS)
+	if !ok {
+		t.Fatalf("application layer is %T, want *DNS", p.ApplicationLayer())
+	}
+	checkDNSOverTCPQuery(t, dns)
+	if want, got := testPacketDNSOverTCP[56:], dns.LayerContents(); !bytes.Equal(want, got) {
+		t.Errorf("DNS contents: want %x, got %x", want, got)
+	}
+	if len(dns.LayerPayload()) != 0 {
+		t.Errorf("unexpected trailing payload %x", dns.LayerPayload())
+	}
+
+	// Two pipelined messages: the first is decoded, the second is payload.
+	second := testPacketDNSOverTCP[54:]
+	pipelined := append(append([]byte{}, testPacketDNSOverTCP...), second...)
+	binary.BigEndian.PutUint16(pipelined[16:], uint16(len(pipelined)-14))
+	p = gopacket.NewPacket(pipelined, LinkTypeEthernet, opts)
+	if p.ErrorLayer() != nil {
+		t.Fatal("Failed to decode pipelined packet:", p.ErrorLayer().Error())
+	}
+	dns = p.Layer(LayerTypeDNS).(*DNS)
+	checkDNSOverTCPQuery(t, dns)
+	if !bytes.Equal(dns.LayerPayload(), second) {
+		t.Errorf("pipelined payload: want %x, got %x", second, dns.LayerPayload())
+	}
+
+	// A segment starting with the bare message, its prefix sent in an earlier
+	// segment: the ID 0x1234 read as a prefix does not fit, so the bytes
+	// decode from the first byte as they always did.
+	bare := append(append([]byte{}, testPacketDNSOverTCP[:54]...), testPacketDNSOverTCP[56:]...)
+	binary.BigEndian.PutUint16(bare[16:], uint16(len(bare)-14))
+	p = gopacket.NewPacket(bare, LinkTypeEthernet, opts)
+	if p.ErrorLayer() != nil {
+		t.Fatal("Failed to decode bare packet:", p.ErrorLayer().Error())
+	}
+	checkDNSOverTCPQuery(t, p.Layer(LayerTypeDNS).(*DNS))
+
+	// The same message over UDP carries no prefix and decodes as before.
+	udp := gopacket.NewPacket(testPacketDNSOverUDP(), LinkTypeEthernet, opts)
+	if udp.ErrorLayer() != nil {
+		t.Fatal("Failed to decode UDP packet:", udp.ErrorLayer().Error())
+	}
+	checkDNSOverTCPQuery(t, udp.Layer(LayerTypeDNS).(*DNS))
+}
+
+// testPacketDNSOverUDP wraps the message of testPacketDNSOverTCP in a UDP
+// datagram to port 53.
+func testPacketDNSOverUDP() []byte {
+	msg := testPacketDNSOverTCP[56:]
+	frame := append([]byte{}, testPacketDNSOverTCP[:34]...)
+	frame[23] = byte(IPProtocolUDP)
+	frame = append(frame, 0x9c, 0x40, 0x00, 0x35, 0x00, byte(8+len(msg)), 0x00, 0x00)
+	frame = append(frame, msg...)
+	binary.BigEndian.PutUint16(frame[16:], uint16(len(frame)-14))
+	return frame
+}
