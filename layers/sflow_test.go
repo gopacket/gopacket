@@ -2021,3 +2021,95 @@ func FuzzDecodeSFlow(f *testing.F) {
 		_ = (&SFlowDatagram{}).DecodeFromBytes(data, gopacket.NilDecodeFeedback)
 	})
 }
+
+// sflowTestOpaque returns a sample or record: format, body length, body.
+func sflowTestOpaque(format uint32, body ...[]byte) []byte {
+	var content, d []byte
+	for _, b := range body {
+		content = append(content, b...)
+	}
+	putU32(&d, format)
+	putU32(&d, uint32(len(content)))
+	return append(d, content...)
+}
+
+// sflowTestWords returns the big-endian encoding of words.
+func sflowTestWords(words ...uint32) []byte {
+	var d []byte
+	for _, w := range words {
+		putU32(&d, w)
+	}
+	return d
+}
+
+// sflowTestIncomingVLANs decodes a datagram made of samples and returns the
+// incoming VLAN of every extended switch record of every flow sample.
+func sflowTestIncomingVLANs(t *testing.T, samples ...[]byte) ([]uint32, *SFlowDatagram) {
+	data := sflowTestWords(5, 1, 0x7f000001, 0, 0, 0, uint32(len(samples)))
+	for _, sample := range samples {
+		data = append(data, sample...)
+	}
+	dg := &SFlowDatagram{}
+	if err := dg.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err != nil {
+		t.Fatal("Failed to decode datagram:", err)
+	}
+	var vlans []uint32
+	for _, sample := range dg.FlowSamples {
+		for _, record := range sample.Records {
+			vlans = append(vlans, record.(SFlowExtendedSwitchFlowRecord).IncomingVLAN)
+		}
+	}
+	return vlans, dg
+}
+
+// TestSFlowSampleLengthSkipsPadding checks that bytes a sample's length
+// covers behind its last record are stepped over, so the next sample is
+// read where the length says and the padding is not taken for a sample.
+func TestSFlowSampleLengthSkipsPadding(t *testing.T) {
+	flowSampleHeader := sflowTestWords(1, 1, 256, 256, 0, 1, 2, 1) // last: one record
+	padding := sflowTestWords(2, 12, 1, 1, 0)                      // reads as an empty counter sample
+	vlans, dg := sflowTestIncomingVLANs(t,
+		sflowTestOpaque(1, flowSampleHeader, sflowTestOpaque(1001, sflowTestWords(10, 0, 10, 0)), padding),
+		sflowTestOpaque(1, flowSampleHeader, sflowTestOpaque(1001, sflowTestWords(20, 0, 20, 0))))
+	if want := []uint32{10, 20}; !reflect.DeepEqual(want, vlans) {
+		t.Errorf("incoming VLANs of the flow samples: want %v, got %v", want, vlans)
+	}
+	if len(dg.CounterSamples) != 0 {
+		t.Errorf("padding inside a flow sample decoded as counter sample: %#v", dg.CounterSamples)
+	}
+}
+
+// TestSFlowRecordLengthSkipsPadding checks the same for the records of a
+// sample: padding covered by a record's length hides no record behind it.
+func TestSFlowRecordLengthSkipsPadding(t *testing.T) {
+	flowSampleHeader := sflowTestWords(1, 1, 256, 256, 0, 1, 2, 2) // last: two records
+	padding := sflowTestWords(1<<12|1, 0)                          // reads as an empty vendor record
+	vlans, _ := sflowTestIncomingVLANs(t,
+		sflowTestOpaque(1, flowSampleHeader,
+			sflowTestOpaque(1001, sflowTestWords(10, 0, 10, 0), padding),
+			sflowTestOpaque(1001, sflowTestWords(20, 0, 20, 0))))
+	if want := []uint32{10, 20}; !reflect.DeepEqual(want, vlans) {
+		t.Errorf("incoming VLANs of the flow sample: want %v, got %v", want, vlans)
+	}
+}
+
+// TestSFlowLengthDisagreesWithContent checks that a declared length shorter
+// than the content, or running past the datagram, is ignored: real agents
+// send such lengths and the samples still decode by content.
+func TestSFlowLengthDisagreesWithContent(t *testing.T) {
+	flowSampleHeader := sflowTestWords(1, 1, 256, 256, 0, 1, 2, 1) // last: one record
+	record := sflowTestOpaque(1001, sflowTestWords(10, 0, 10, 0))
+	second := sflowTestOpaque(1, flowSampleHeader, sflowTestOpaque(1001, sflowTestWords(20, 0, 20, 0)))
+
+	tooShort := sflowTestOpaque(1, flowSampleHeader, record)
+	tooShort[7] -= 4
+	if vlans, _ := sflowTestIncomingVLANs(t, tooShort, second); !reflect.DeepEqual([]uint32{10, 20}, vlans) {
+		t.Errorf("sample declared shorter than its content: got VLANs %v", vlans)
+	}
+
+	tooLong := sflowTestOpaque(1, flowSampleHeader, record)
+	tooLong[7] += 4
+	if vlans, _ := sflowTestIncomingVLANs(t, tooLong); !reflect.DeepEqual([]uint32{10}, vlans) {
+		t.Errorf("sample declared past the datagram: got VLANs %v", vlans)
+	}
+}

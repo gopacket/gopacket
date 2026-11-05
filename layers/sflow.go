@@ -343,6 +343,7 @@ func (s *SFlowDatagram) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback)
 		}
 		sdf := SFlowDataFormat(binary.BigEndian.Uint32(data[:4]))
 		_, sampleType := sdf.decode()
+		sampleStart := data
 		switch sampleType {
 		case SFlowTypeFlowSample:
 			if flowSample, err := decodeFlowSample(&data, false, depth); err == nil {
@@ -372,6 +373,10 @@ func (s *SFlowDatagram) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback)
 		default:
 			return fmt.Errorf("Unsupported SFlow sample type %d", sampleType)
 		}
+
+		// the next sample starts where this one's length says, not where
+		// its last record ended
+		sflowSkipDeclared(&data, sampleStart)
 	}
 	return nil
 }
@@ -503,6 +508,32 @@ func sflowPadded(data *[]byte, n uint32, what string) (int, error) {
 	return padded, nil
 }
 
+// sflowOpaqueHeaderLen is the size of the format and length words in front
+// of every sample and record.
+const sflowOpaqueHeaderLen = 8
+
+// sflowSkipDeclared moves data from where the decoder of the sample or
+// record at start stopped to the end that its length word declares, when
+// that end lies further on and inside the datagram. Decoding goes by
+// content because real agents declare lengths that disagree with it, so a
+// length that is shorter than what was consumed, or runs past the
+// datagram, leaves the cursor where the decoder left it.
+//
+//	start: | format | length |  content decoded  | padding | next ...
+//	                                             ^ data    ^ 8 + length
+func sflowSkipDeclared(data *[]byte, start []byte) {
+	if len(start) < sflowOpaqueHeaderLen {
+		return
+	}
+	end := uint64(sflowOpaqueHeaderLen) + uint64(binary.BigEndian.Uint32(start[4:8]))
+	consumed := uint64(len(start) - len(*data))
+	if end <= consumed || end > uint64(len(start)) {
+		return
+	}
+
+	*data = start[end:]
+}
+
 func skipRecord(data *[]byte) {
 	if len(*data) < 8 {
 		*data = (*data)[:0]
@@ -602,6 +633,7 @@ func decodeFlowSample(data *[]byte, expanded bool, depth int) (SFlowFlowSample, 
 		}
 		rdf := SFlowFlowDataFormat(binary.BigEndian.Uint32((*data)[:4]))
 		enterpriseID, flowRecordType := rdf.decode()
+		recordStart := *data
 
 		// Try to decode when EnterpriseID is 0 signaling
 		// default sflow structs are used according specification
@@ -744,6 +776,9 @@ func decodeFlowSample(data *[]byte, expanded bool, depth int) (SFlowFlowSample, 
 		} else {
 			skipRecord(data)
 		}
+
+		// the next record starts where this one's length says
+		sflowSkipDeclared(data, recordStart)
 	}
 	return s, nil
 }
@@ -880,6 +915,7 @@ func decodeCounterSample(data *[]byte, expanded bool) (SFlowCounterSample, error
 		}
 		cdf := SFlowCounterDataFormat(binary.BigEndian.Uint32((*data)[:4]))
 		_, counterRecordType := cdf.decode()
+		recordStart := *data
 		switch counterRecordType {
 		case SFlowTypeGenericInterfaceCounters:
 			if record, err := decodeGenericInterfaceCounters(data); err == nil {
@@ -944,6 +980,9 @@ func decodeCounterSample(data *[]byte, expanded bool) (SFlowCounterSample, error
 		default:
 			return s, fmt.Errorf("Invalid counter record type: %d", counterRecordType)
 		}
+
+		// the next record starts where this one's length says
+		sflowSkipDeclared(data, recordStart)
 	}
 	return s, nil
 }
