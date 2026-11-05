@@ -2255,6 +2255,39 @@ func TestNgReadShortOption(t *testing.T) {
 	}
 }
 
+// epb_dropcount is 8 bytes; a 4 byte one is skipped the same way.
+func TestNgReadShortDropCount(t *testing.T) {
+	var buf bytes.Buffer
+	w, err := NewNgWriter(&buf, layers.LinkTypeEthernet)
+	if err != nil {
+		t.Fatal("Unexpected error returned:", err)
+	}
+	if err = w.Flush(); err != nil {
+		t.Fatal("Unexpected error returned:", err)
+	}
+	buf.Write([]byte{
+		0x06, 0x00, 0x00, 0x00, 0x2c, 0x00, 0x00, 0x00, // type, length
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // interface, timestamp
+		0x02, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, // captured length, original length
+		0x01, 0x02, 0x00, 0x00, // packet data + padding
+		0x04, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, // epb_dropcount, length 4
+		0x00, 0x00, 0x00, 0x00, // end of options
+		0x2c, 0x00, 0x00, 0x00, // length
+	})
+
+	r, err := NewNgReader(&buf, DefaultNgReaderOptions)
+	if err != nil {
+		t.Fatal("Unexpected error returned:", err)
+	}
+	data, _, opts, err := r.ReadPacketDataWithOptions()
+	if err != nil {
+		t.Fatal("Unexpected error returned:", err)
+	}
+	if !bytes.Equal(data, []byte{1, 2}) || opts.DropCount != nil {
+		t.Fatalf("got packet %v, drop count %v; want [1 2] and the short epb_dropcount skipped", data, opts.DropCount)
+	}
+}
+
 func BenchmarkNgReadPacketData(b *testing.B) {
 	r := setupNgReadBenchmark(b)
 	b.ResetTimer()

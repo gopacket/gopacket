@@ -156,6 +156,20 @@ func TestTruncatedPacketData(t *testing.T) {
 	buf[18] = 0x00
 }
 
+// A record cut to 1 of 100 bytes (28 byte record: header, 1 byte, 3 pad)
+// has its pad computed from the included length, not the original one,
+// or the zero copy buffer gets a negative length.
+func TestTruncatedPacketDataZeroCopy(t *testing.T) {
+	buf, handle, err := OpenHandlePack()
+	equalNil(t, err)
+	copy(buf[16:28], []byte{0, 0, 0, 100, 0, 0, 0, 1, 0, 0, 0, 28})
+	data, ci, err := handle.ZeroCopyReadPacketData()
+	equalNil(t, err)
+	equal(t, ci.CaptureLength, 1)
+	equal(t, ci.Length, 100)
+	equal(t, len(data), 1)
+}
+
 func TestBadRecordLength(t *testing.T) {
 	buf, handle, err := OpenHandlePack()
 	equalNil(t, err)
