@@ -205,6 +205,44 @@ func TestBPFMatchesConcurrent(t *testing.T) {
 	wg.Wait()
 }
 
+// The *os.File stays the caller's: closing the handle must not close its
+// descriptor, which the caller closes again, by then another file's.
+func TestOpenOfflineFileLeavesFileOpen(t *testing.T) {
+	file, err := os.Open("test_ethernet.pcap")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+
+	handle, err := OpenOfflineFile(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := handle.ReadPacketData(); err != nil {
+		t.Fatal(err)
+	}
+	handle.Close()
+
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		t.Errorf("file unusable after handle.Close: %v", err)
+	}
+	if err := file.Close(); err != nil {
+		t.Errorf("file.Close after handle.Close: %v", err)
+	}
+
+	// A file libpcap rejects is the caller's too.
+	empty, err := os.CreateTemp(t.TempDir(), "empty")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := OpenOfflineFile(empty); err == nil {
+		t.Error("opened an empty file")
+	}
+	if err := empty.Close(); err != nil {
+		t.Errorf("file.Close after a rejected open: %v", err)
+	}
+}
+
 func TestWritePacketDataEmptyPacket(t *testing.T) {
 	handle, err := OpenOffline("test_ethernet.pcap")
 	if err != nil {

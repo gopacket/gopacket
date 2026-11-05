@@ -725,10 +725,29 @@ func openOfflineFile(file *os.File) (handle *Handle, err error) {
 	defer C.free(unsafe.Pointer(buf))
 	cmode := C.CString("rb")
 	defer C.free(unsafe.Pointer(cmode))
-	cf := C.fdopen(C.int(file.Fd()), cmode)
+
+	// pcap_close closes the stream and with it the descriptor, while the
+	// *os.File stays the caller's and closes it again, by then possibly
+	// another file's. Give the stream a descriptor of its own.
+	syscall.ForkLock.RLock()
+	fd, err := syscall.Dup(int(file.Fd()))
+	if err == nil {
+		syscall.CloseOnExec(fd)
+	}
+	syscall.ForkLock.RUnlock()
+	if err != nil {
+		return nil, err
+	}
+	cf, err := C.fdopen(C.int(fd), cmode)
+	if cf == nil {
+		syscall.Close(fd)
+		return nil, err
+	}
 
 	cptr := C.pcap_fopen_offline_with_tstamp_precision(cf, C.PCAP_TSTAMP_PRECISION_NANO, buf)
 	if cptr == nil {
+		// libpcap leaves a stream it rejects open.
+		C.fclose(cf)
 		return nil, errors.New(C.GoString(buf))
 	}
 	return &Handle{cptr: cptr}, nil
