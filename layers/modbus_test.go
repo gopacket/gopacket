@@ -1,6 +1,7 @@
 package layers
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -94,6 +95,85 @@ func TestModbusExceptionResponse(t *testing.T) {
 		}
 	} else {
 		t.Error("Failed to get modbus layer")
+	}
+}
+
+// testModbusPipelined is the TCP payload of two requests sent in one segment:
+// transaction 1 Read Holding Registers, transaction 2 Write Single Coil.
+var testModbusPipelined = []byte{
+	0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x01, 0x03, 0x00, 0x00, 0x00, 0x01,
+	0x00, 0x02, 0x00, 0x00, 0x00, 0x06, 0x01, 0x05, 0x00, 0x10, 0xff, 0x00,
+}
+
+// testPacketModbusPipelined carries testModbusPipelined in the frame of
+// testPacketModbusReadCoils.
+func testPacketModbusPipelined() []byte {
+	frame := append([]byte{}, testPacketModbusReadCoils[:54]...)
+	frame = append(frame, testModbusPipelined...)
+	binary.BigEndian.PutUint16(frame[16:], uint16(len(frame)-14))
+	return frame
+}
+
+// Every ADU of a segment gets a layer of its own with NewPacket, while a
+// DecodingLayerParser keeps giving the first ADU, as it did.
+func TestModbusPipelinedRequests(t *testing.T) {
+	frame := testPacketModbusPipelined()
+	p := gopacket.NewPacket(frame, LinkTypeEthernet, gopacket.DecodeOptions{DecodeStreamsAsDatagrams: true})
+	if p.ErrorLayer() != nil {
+		t.Fatal("Failed to decode modbus packet:", p.ErrorLayer().Error())
+	}
+	checkLayers(p, []gopacket.LayerType{LayerTypeEthernet, LayerTypeIPv4, LayerTypeTCP, LayerTypeModbus, LayerTypeModbus}, t)
+	adus := p.Layers()[3:]
+	for i, want := range []ModbusFunctionCode{ModbusFuncCodeReadHoldingRegisters, ModbusFuncCodeWriteSingleCoil} {
+		if i >= len(adus) {
+			break
+		}
+		got, ok := adus[i].(*Modbus)
+		if !ok {
+			continue
+		}
+		if got.TransactionID != uint16(i+1) || got.GetFunction() != want {
+			t.Errorf("ADU %d: got transaction %d, function %v, want transaction %d, function %v",
+				i, got.TransactionID, got.GetFunction(), i+1, want)
+		}
+	}
+
+	// The second ADU continues in the next segment: the segment decodes as
+	// it always did, one layer with the partial ADU as its payload.
+	p = gopacket.NewPacket(testModbusPipelined[:20], LayerTypeModbus, gopacket.Default)
+	if p.ErrorLayer() != nil {
+		t.Fatal("Partial trailing ADU failed the segment:", p.ErrorLayer().Error())
+	}
+	checkLayers(p, []gopacket.LayerType{LayerTypeModbus}, t)
+	if p.Metadata().Truncated {
+		t.Error("Partial trailing ADU set the truncated flag")
+	}
+	if first, ok := p.Layers()[0].(*Modbus); ok && !bytes.Equal(first.Payload, testModbusPipelined[12:20]) {
+		t.Errorf("Partial trailing ADU not kept as payload: got %x", first.Payload)
+	}
+
+	// A parser holding one Modbus value decodes the segment as before: no
+	// error, the first ADU in the value, the second in its payload.
+	var (
+		eth    Ethernet
+		ip4    IPv4
+		tcp    TCP
+		modbus Modbus
+	)
+	parser := gopacket.NewDecodingLayerParser(LayerTypeEthernet, &eth, &ip4, &tcp, &modbus)
+	decoded := []gopacket.LayerType{}
+	if err := parser.DecodeLayers(frame, &decoded); err != nil {
+		t.Fatal("DecodingLayerParser failed:", err)
+	}
+	want := []gopacket.LayerType{LayerTypeEthernet, LayerTypeIPv4, LayerTypeTCP, LayerTypeModbus}
+	if !reflect.DeepEqual(decoded, want) {
+		t.Errorf("DecodingLayerParser decoded %v, want %v", decoded, want)
+	}
+	if modbus.TransactionID != 1 || modbus.GetFunction() != ModbusFuncCodeReadHoldingRegisters {
+		t.Errorf("DecodingLayerParser got transaction %d, function %v", modbus.TransactionID, modbus.GetFunction())
+	}
+	if !reflect.DeepEqual(modbus.LayerPayload(), testModbusPipelined[12:]) {
+		t.Errorf("DecodingLayerParser payload %x, want the second ADU", modbus.LayerPayload())
 	}
 }
 
