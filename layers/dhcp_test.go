@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"net"
+	"reflect"
 	"testing"
 
 	"github.com/gopacket/gopacket"
@@ -158,6 +159,105 @@ func TestDHCPv4DecodeOption(t *testing.T) {
 		)
 		if want, got := tests[i].err, err; want != got {
 			t.Errorf("[#%v %v] Unexpected error want: %v, got: %v\n", i, tests[i].msg, want, err)
+		}
+	}
+}
+
+// Option Overload (RFC 2131 section 4.1) continues the option list in the
+// 'file' and then the 'sname' field; the two fields themselves stay as read.
+func TestDHCPv4DecodeOptionOverload(t *testing.T) {
+	msgType := []byte{byte(DHCPOptMessageType), 1, byte(DHCPMsgTypeAck)}
+	router := []byte{byte(DHCPOptRouter), 4, 192, 168, 1, 66}
+	end := []byte{byte(DHCPOptEnd)}
+	overload := func(value byte) []byte {
+		return []byte{byte(DHCPOptExtOptions), 1, value, byte(DHCPOptEnd)}
+	}
+
+	var tests = []struct {
+		msg     string
+		options []byte
+		file    []byte
+		sname   []byte
+		want    []DHCPOpt
+	}{
+		{
+			msg:     "No overload",
+			options: end,
+			file:    bytes.Join([][]byte{msgType, end}, nil),
+			sname:   bytes.Join([][]byte{router, end}, nil),
+		},
+		{
+			msg:     "Overload file",
+			options: overload(1),
+			file:    bytes.Join([][]byte{msgType, end}, nil),
+			sname:   bytes.Join([][]byte{router, end}, nil),
+			want:    []DHCPOpt{DHCPOptExtOptions, DHCPOptMessageType},
+		},
+		{
+			msg:     "Overload sname",
+			options: overload(2),
+			file:    bytes.Join([][]byte{msgType, end}, nil),
+			sname:   bytes.Join([][]byte{router, end}, nil),
+			want:    []DHCPOpt{DHCPOptExtOptions, DHCPOptRouter},
+		},
+		{
+			msg:     "Overload both, file before sname",
+			options: overload(3),
+			file:    bytes.Join([][]byte{msgType, end}, nil),
+			sname:   bytes.Join([][]byte{router, end}, nil),
+			want:    []DHCPOpt{DHCPOptExtOptions, DHCPOptMessageType, DHCPOptRouter},
+		},
+		{
+			msg:     "Overload inside file is not followed",
+			options: overload(1),
+			file:    overload(2),
+			sname:   bytes.Join([][]byte{router, end}, nil),
+			want:    []DHCPOpt{DHCPOptExtOptions, DHCPOptExtOptions},
+		},
+		{
+			msg:     "Malformed option in sname ends that field without failing",
+			options: overload(3),
+			file:    bytes.Join([][]byte{msgType, end}, nil),
+			sname:   bytes.Join([][]byte{router, {byte(DHCPOptHostname), 63}}, nil),
+			want:    []DHCPOpt{DHCPOptExtOptions, DHCPOptMessageType, DHCPOptRouter},
+		},
+	}
+
+	for i := range tests {
+		data := make([]byte, 240, 240+len(tests[i].options))
+		copy(data[44:108], tests[i].sname)
+		copy(data[108:236], tests[i].file)
+		binary.BigEndian.PutUint32(data[236:240], DHCPMagic)
+		data = append(data, tests[i].options...)
+
+		var d DHCPv4
+		if err := d.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err != nil {
+			t.Errorf("[#%v %v] Unexpected error: %v", i, tests[i].msg, err)
+			continue
+		}
+		var got []DHCPOpt
+		for _, o := range d.Options {
+			got = append(got, o.Type)
+		}
+		if want := tests[i].want; !reflect.DeepEqual(want, got) {
+			t.Errorf("[#%v %v] Unexpected options want: %v, got: %v", i, tests[i].msg, want, got)
+		}
+		if !bytes.Equal(d.File, data[108:236]) || !bytes.Equal(d.ServerName, data[44:108]) {
+			t.Errorf("[#%v %v] File or ServerName changed", i, tests[i].msg)
+		}
+
+		// The overloaded options live in File and ServerName already, so a
+		// round trip must not write them a second time.
+		buf := gopacket.NewSerializeBuffer()
+		if err := d.SerializeTo(buf, gopacket.SerializeOptions{}); err != nil {
+			t.Errorf("[#%v %v] SerializeTo: %v", i, tests[i].msg, err)
+			continue
+		}
+		if !bytes.Equal(buf.Bytes(), data) {
+			t.Errorf("[#%v %v] round trip changed the message:\n got %x\nwant %x", i, tests[i].msg, buf.Bytes(), data)
+		}
+		if int(d.Len()) != len(data) {
+			t.Errorf("[#%v %v] Len() = %d, want %d", i, tests[i].msg, d.Len(), len(data))
 		}
 	}
 }

@@ -99,6 +99,11 @@ type DHCPv4 struct {
 	ServerName   []byte
 	File         []byte
 	Options      DHCPOptions
+
+	// overloaded counts the options at the end of Options that were read
+	// from File and ServerName (Option Overload). They are still in those
+	// fields, so SerializeTo and Len leave them out of the options field.
+	overloaded int
 }
 
 // DHCPOptions is used to get nicely printed option lists which would normally
@@ -129,6 +134,7 @@ func (d *DHCPv4) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error 
 		return fmt.Errorf("DHCPv4 length %d too short", len(data))
 	}
 	d.Options = d.Options[:0]
+	d.overloaded = 0
 	d.Operation = DHCPOp(data[0])
 	d.HardwareType = LinkType(data[1])
 	d.HardwareLen = data[2]
@@ -158,19 +164,52 @@ func (d *DHCPv4) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error 
 		return nil
 	}
 
-	options := data[240:]
+	overload, err := d.decodeOptions(data[240:])
+	if err != nil {
+		return err
+	}
 
+	// RFC 2131 section 4.1: with Option Overload the 'file' field and then
+	// the 'sname' field continue the option list. A malformed option there
+	// ends that field; it does not fail a message that decoded before.
+	inField := len(d.Options)
+	if overload&dhcpOverloadFile != 0 {
+		d.decodeOptions(d.File)
+	}
+	if overload&dhcpOverloadSname != 0 {
+		d.decodeOptions(d.ServerName)
+	}
+	d.overloaded = len(d.Options) - inField
+
+	d.Contents = data
+
+	return nil
+}
+
+// Option Overload values (RFC 2132 section 9.3): which fixed fields carry
+// options as well, as a bit set.
+const (
+	dhcpOverloadFile  = 1
+	dhcpOverloadSname = 2
+)
+
+// decodeOptions appends the options of one field to d.Options, up to its End
+// option, and returns the value of its Option Overload option, if any.
+func (d *DHCPv4) decodeOptions(options []byte) (overload byte, err error) {
 	stop := len(options)
 	start := 0
 	for start < stop {
 		o := DHCPOption{}
-		if err := o.decode(options[start:]); err != nil {
-			return err
+		if err = o.decode(options[start:]); err != nil {
+			return overload, err
 		}
 		if o.Type == DHCPOptEnd {
 			break
 		}
 		d.Options = append(d.Options, o)
+		if o.Type == DHCPOptExtOptions && len(o.Data) > 0 {
+			overload = o.Data[0]
+		}
 		// Check if the option is a single byte pad
 		if o.Type == DHCPOptPad {
 			start++
@@ -179,9 +218,17 @@ func (d *DHCPv4) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error 
 		}
 	}
 
-	d.Contents = data
+	return overload, nil
+}
 
-	return nil
+// optionsField is the part of Options that the options field carries: the
+// ones decoded from File and ServerName are written with those fields. A
+// caller who trimmed Options after decoding gets them all.
+func (d *DHCPv4) optionsField() DHCPOptions {
+	if d.overloaded <= 0 || d.overloaded > len(d.Options) {
+		return d.Options
+	}
+	return d.Options[:len(d.Options)-d.overloaded]
 }
 
 // Len returns the length of a DHCPv4 packet. The result wraps for a packet
@@ -194,7 +241,7 @@ func (d *DHCPv4) Len() uint16 {
 // jumbogram-sized message does not wrap.
 func (d *DHCPv4) serializedLen() int {
 	n := 240
-	for _, o := range d.Options {
+	for _, o := range d.optionsField() {
 		if o.Type == DHCPOptPad {
 			n++
 		} else {
@@ -240,7 +287,7 @@ func (d *DHCPv4) SerializeTo(b gopacket.SerializeBuffer, opts gopacket.Serialize
 
 	offset := 240
 	if len(d.Options) > 0 {
-		for _, o := range d.Options {
+		for _, o := range d.optionsField() {
 			if err := o.encode(data[offset:]); err != nil {
 				return err
 			}
