@@ -87,7 +87,7 @@ func TestGTPv2RejectsOtherVersions(t *testing.T) {
 	// number happen to read as the header of an IE that covers the rest
 	// of the message, so it decodes without error with the GTPv2 layout.
 	data := []byte{
-		0x32, 0x14, 0x00, 0x08, 0x0b, 0xad, 0xca, 0xfe,
+		0x32, 0x14, 0x00, 0x0c, 0x0b, 0xad, 0xca, 0xfe,
 		0x77, 0x00, 0x04, 0x00, 0x13, 0xff, 0x14, 0x05,
 	}
 	for version := byte(0); version < 8; version++ {
@@ -98,5 +98,40 @@ func TestGTPv2RejectsOtherVersions(t *testing.T) {
 		} else if version != 2 && err == nil {
 			t.Errorf("version %d: expected a decoding error", version)
 		}
+	}
+}
+
+// TestGTPv2MessageLengthBoundsIEs checks that the IE walk stops at the end of
+// the message given by Message Length rather than at the end of the buffer,
+// so a piggybacked message (3GPP TS 29.274 clause 5.5.1) ends up as payload.
+func TestGTPv2MessageLengthBoundsIEs(t *testing.T) {
+	// Create Session Response (P=1, T=1, length 36) with Cause, F-TEID and
+	// PAA IEs, followed by a piggybacked Create Bearer Request header.
+	data := []byte{
+		0x58, 0x21, 0x00, 0x24, 0x00, 0x00, 0x20, 0x01, 0x00, 0x00, 0x01, 0x00,
+		0x02, 0x00, 0x02, 0x00, 0x10, 0x00,
+		0x57, 0x00, 0x09, 0x00, 0x8b, 0x00, 0x00, 0x10, 0x01, 0x0a, 0x00, 0x00, 0x02,
+		0x4f, 0x00, 0x05, 0x00, 0x01, 0x0a, 0x2d, 0x00, 0x02,
+		0x48, 0x5f, 0x00, 0x30, 0x00, 0x00, 0x20, 0x01, 0x00, 0x00, 0x02, 0x00,
+	}
+	var g GTPv2
+	if err := g.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err != nil {
+		t.Fatal("Failed to decode:", err)
+	}
+	if !g.PiggybackingFlag || g.MessageType != 33 || g.MessageLength != 36 ||
+		len(g.IEs) != 3 || g.IEs[0].Type != 2 || g.IEs[1].Type != 87 || g.IEs[2].Type != 79 {
+		t.Errorf("Unexpected GTPv2 message:\n%#v", g)
+	}
+	if !reflect.DeepEqual(g.LayerContents(), data[:40]) {
+		t.Errorf("Contents mismatch:\ngot  : %v\nwant : %v", g.LayerContents(), data[:40])
+	}
+	if !reflect.DeepEqual(g.LayerPayload(), data[40:]) {
+		t.Errorf("Expected the piggybacked message as payload, got: %v", g.LayerPayload())
+	}
+
+	// A Message Length that does not cover the fixed header is rejected.
+	short := []byte{0x48, 0x21, 0x00, 0x04, 0x00, 0x00, 0x20, 0x01, 0x00, 0x00, 0x01, 0x00}
+	if err := g.DecodeFromBytes(short, gopacket.NilDecodeFeedback); err == nil {
+		t.Error("Expected an error for a message length shorter than the header")
 	}
 }
