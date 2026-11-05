@@ -101,6 +101,86 @@ type TLSHandshakeRecord struct {
 	ClientKeyChange TLSHandshakeRecordClientKeyChange
 }
 
+const (
+	// tlsRecordHeaderLen is a record header: type (1), version (2), length (2).
+	tlsRecordHeaderLen = 5
+	// tlsHandshakeHeaderLen is a handshake message header: type (1), length (3).
+	tlsHandshakeHeaderLen = 4
+)
+
+// appendFragmentedClientHello handles a ClientHello that starts in body and
+// continues in the handshake records at the start of rest, all in the same
+// data:
+//
+//	[16 .. 00 40][01 00 00 81 ....] [16 .. 00 45][.... rest of hello]
+//	      body, fragment 1                 rest, fragment 2
+//
+// It appends one entry per record, the first holding the decoded message and
+// the others their header only, and returns the bytes taken from rest. It
+// returns 0, appending nothing, when body does not start such a message,
+// rest does not complete it, or the message does not decode: those inputs
+// keep the result they had before, so nothing that decoded starts failing.
+func (t *TLS) appendFragmentedClientHello(h TLSRecordHeader, body, rest []byte) int {
+	msg, continuation := fragmentedClientHello(body, rest)
+	if msg == nil {
+		return 0
+	}
+
+	// The attempt must leave no trace, feedback included, when it fails.
+	r := TLSHandshakeRecord{TLSRecordHeader: h}
+	if err := r.ClientHello.decodeFromBytes(msg, gopacket.NilDecodeFeedback); err != nil {
+		return 0
+	}
+
+	t.Handshake = append(t.Handshake, r)
+	taken := 0
+	for _, ch := range continuation {
+		t.Handshake = append(t.Handshake, TLSHandshakeRecord{TLSRecordHeader: ch})
+		taken += tlsRecordHeaderLen + int(ch.Length)
+	}
+	return taken
+}
+
+// fragmentedClientHello reassembles, into a new buffer, a ClientHello that
+// body starts and the handshake records at the start of rest complete. It
+// returns nil when body holds no such message or rest does not complete it.
+func fragmentedClientHello(body, rest []byte) ([]byte, []TLSRecordHeader) {
+	if len(body) < tlsHandshakeHeaderLen || body[0] != TLSHandshakeClientHello {
+		return nil, nil
+	}
+	need := tlsHandshakeHeaderLen + (int(body[1])<<16 | int(body[2])<<8 | int(body[3]))
+
+	// A message that fits its record is not fragmented; one longer than the
+	// data cannot be completed here, and is not worth a buffer.
+	if need <= len(body) || need > len(body)+len(rest) {
+		return nil, nil
+	}
+
+	msg := append(make([]byte, 0, need), body...)
+	var continuation []TLSRecordHeader
+	for len(msg) < need {
+		if len(rest) < tlsRecordHeaderLen || TLSType(rest[0]) != TLSHandshake {
+			return nil, nil
+		}
+		h := TLSRecordHeader{
+			ContentType: TLSType(rest[0]),
+			Version:     TLSVersion(binary.BigEndian.Uint16(rest[1:3])),
+			Length:      binary.BigEndian.Uint16(rest[3:5]),
+		}
+		end := tlsRecordHeaderLen + int(h.Length)
+		if len(rest) < end {
+			return nil, nil
+		}
+
+		msg = append(msg, rest[tlsRecordHeaderLen:end]...)
+		rest = rest[end:]
+		continuation = append(continuation, h)
+	}
+
+	// The last fragment may carry the start of the next message too.
+	return msg[:need], continuation
+}
+
 func (t *TLSHandshakeRecordClientHello) decodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	// data is exactly the body of one handshake record (see decodeTLSRecords).
 	// Never look past len(data): the backing array may hold the next record,

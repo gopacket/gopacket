@@ -352,6 +352,63 @@ func TestParseTLSClientHelloSNILengthWrap(t *testing.T) {
 	}
 }
 
+// tlsHandshakeRecords puts each fragment into a handshake record of its own.
+func tlsHandshakeRecords(fragments ...[]byte) []byte {
+	var data []byte
+	for _, f := range fragments {
+		data = append(data, 0x16, 0x03, 0x01, byte(len(f)>>8), byte(len(f)))
+		data = append(data, f...)
+	}
+	return data
+}
+
+// A ClientHello fragmented over several handshake records in the same data
+// is decoded from all of them, with one record entry per record on the wire.
+func TestParseTLSClientHelloFragmented(t *testing.T) {
+	msg := testClientHello[59:]
+	want := testClientHelloDecoded.Handshake[0].ClientHello
+
+	for _, test := range []struct {
+		name      string
+		fragments [][]byte
+	}{
+		{"two records", [][]byte{msg[:64], msg[64:]}},
+		{"three records", [][]byte{msg[:64], msg[64:200], msg[200:]}},
+		{"empty record between", [][]byte{msg[:64], nil, msg[64:]}},
+	} {
+		data := append(tlsHandshakeRecords(test.fragments...), testDoubleAppData...)
+		var got TLS
+		if err := got.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err != nil {
+			t.Errorf("%s: TLS DecodeFromBytes failed: %v", test.name, err)
+			continue
+		}
+		if len(got.Handshake) != len(test.fragments) || len(got.AppData) != 2 {
+			t.Errorf("%s: got %d handshake and %d application data records, want %d and 2",
+				test.name, len(got.Handshake), len(got.AppData), len(test.fragments))
+			continue
+		}
+		if !reflect.DeepEqual(got.Handshake[0].ClientHello, want) {
+			t.Errorf("%s: ClientHello doesn't match:\ngot:\n%#v\n\nwant:\n%#v\n\n", test.name, got.Handshake[0].ClientHello, want)
+		}
+		for i, r := range got.Handshake {
+			wantHeader := TLSRecordHeader{ContentType: TLSHandshake, Version: 0x0301, Length: uint16(len(test.fragments[i]))}
+			if r.TLSRecordHeader != wantHeader {
+				t.Errorf("%s: record %d header: got %#v want %#v", test.name, i, r.TLSRecordHeader, wantHeader)
+			}
+		}
+	}
+
+	// A hello whose continuation is in another segment is what it was: a
+	// record skipped as encrypted, with no error.
+	var got TLS
+	if err := got.DecodeFromBytes(tlsHandshakeRecords(msg[:64]), gopacket.NilDecodeFeedback); err != nil {
+		t.Fatal("TLS DecodeFromBytes failed on a lone fragment:", err)
+	}
+	if len(got.Handshake) != 1 || got.Handshake[0].ClientHello.HandshakeType != 0 {
+		t.Errorf("lone fragment: got %#v", got.Handshake)
+	}
+}
+
 func TestTLSClientHelloDecodeFromBytes(t *testing.T) {
 	var got TLS
 	want := *testClientKeyExchangeDecoded
