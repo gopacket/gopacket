@@ -995,6 +995,13 @@ func (p *PacketSource) NextPacket() (Packet, error) {
 	}
 	packet := NewPacket(data, p.decoder, p.DecodeOptions)
 	m := packet.Metadata()
+
+	// A zero copy source reuses its AncillaryData slice from one read to the
+	// next, as it does the data. The packet keeps a copy of the data, so it
+	// must keep a copy of the ancillary data too.
+	if !p.NoCopy && len(ci.AncillaryData) > 0 {
+		ci.AncillaryData = append([]interface{}(nil), ci.AncillaryData...)
+	}
 	m.CaptureInfo = ci
 	m.Truncated = m.Truncated || ci.CaptureLength < ci.Length
 	return packet, nil

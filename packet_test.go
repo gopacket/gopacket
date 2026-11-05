@@ -84,6 +84,42 @@ func TestConcatPacketSources(t *testing.T) {
 	}
 }
 
+// sharedAncillarySource hands out the same AncillaryData slice on every
+// read, as pcapgo.EthernetHandle.ZeroCopyReadPacketData does.
+type sharedAncillarySource struct {
+	ancil []interface{}
+	vlans []int
+}
+
+func (s *sharedAncillarySource) ZeroCopyReadPacketData() ([]byte, CaptureInfo, error) {
+	if len(s.vlans) == 0 {
+		return nil, CaptureInfo{}, io.EOF
+	}
+	s.ancil[0] = s.vlans[0]
+	s.vlans = s.vlans[1:]
+	ci := CaptureInfo{CaptureLength: 1, Length: 1, AncillaryData: s.ancil}
+	return []byte{1}, ci, nil
+}
+
+// NextPacket copies the bytes of a zero copy source unless NoCopy is set,
+// and the ancillary data belongs to the packet just as much.
+func TestNextPacketCopiesAncillaryData(t *testing.T) {
+	source := &sharedAncillarySource{ancil: make([]interface{}, 1), vlans: []int{100, 200}}
+	decoder := DecodeFunc(func([]byte, PacketBuilder) error { return nil })
+	ps := NewZeroCopyPacketSource(source, decoder)
+
+	first, err := ps.NextPacket()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ps.NextPacket(); err != nil {
+		t.Fatal(err)
+	}
+	if got := first.Metadata().AncillaryData; len(got) != 1 || got[0] != 100 {
+		t.Errorf("first packet got AncillaryData %v, want [100]", got)
+	}
+}
+
 // oneByteLayer has one byte of contents, the rest of the data is its payload.
 type oneByteLayer []byte
 
