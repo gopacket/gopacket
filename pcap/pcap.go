@@ -44,8 +44,9 @@ const bpfInstructionBufferSize = 8 * MaxBpfInstructions
 //
 // Handles are already pcap_activate'd
 type Handle struct {
-	// stop is set to a non-zero value by Handle.Close to signal to
-	// getNextBufPtrLocked to stop trying to read packets
+	// stop is set to a non-zero value by Handle.Close, and by a read error
+	// on a capture file, to signal to getNextBufPtrLocked to stop trying
+	// to read packets
 	// This must be the first entry to ensure alignment for sync.atomic
 	stop uint64
 	// cptr is the handle for the actual pcap C object.
@@ -338,6 +339,15 @@ func (p *Handle) getNextBufPtrLocked(ci *gopacket.CaptureInfo) error {
 			// wait for packet before trying again
 			p.waitForPacket()
 			waited = true
+		case NextErrorReadError:
+			// A read error on a capture file is final for libpcap, which
+			// leaves the reader in an undefined state: reading on returns
+			// garbage or divides by zero. Report it once, then io.EOF, as
+			// for the end of the file. Live captures may recover.
+			if len(p.device) == 0 {
+				atomic.StoreUint64(&p.stop, 1)
+			}
+			return result
 		default:
 			return result
 		}

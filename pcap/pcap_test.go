@@ -7,11 +7,13 @@
 package pcap
 
 import (
+	"encoding/binary"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 
@@ -240,6 +242,87 @@ func TestOpenOfflineFileLeavesFileOpen(t *testing.T) {
 	}
 	if err := empty.Close(); err != nil {
 		t.Errorf("file.Close after a rejected open: %v", err)
+	}
+}
+
+// badOptionPcapng is a pcapng file with a section header, interface 0,
+// interface 1 with an if_tsresol option of length 2 (only 1 is valid) and
+// one packet on interface 1. libpcap rejects the second interface block.
+func badOptionPcapng() []byte {
+	const (
+		sectionHeaderBlock = 0x0A0D0D0A
+		interfaceBlock     = 1
+		packetBlock        = 6
+		linkTypeEthernet   = 1
+		optEndOfOpt        = 0
+		optIfTsresol       = 9
+		tsresolMicro       = 6
+	)
+	le := binary.LittleEndian
+	block := func(blockType uint32, body []byte) []byte {
+		total := uint32(4 + 4 + len(body) + 4)
+		out := le.AppendUint32(nil, blockType)
+		out = le.AppendUint32(out, total)
+		out = append(out, body...)
+		return le.AppendUint32(out, total)
+	}
+
+	// byte-order magic, version 1.0, section length unknown
+	section := le.AppendUint32(nil, 0x1A2B3C4D)
+	section = le.AppendUint16(section, 1)
+	section = le.AppendUint16(section, 0)
+	section = le.AppendUint64(section, ^uint64(0))
+
+	// link type, reserved, snap length
+	iface := le.AppendUint16(nil, linkTypeEthernet)
+	iface = le.AppendUint16(iface, 0)
+	iface = le.AppendUint32(iface, 65535)
+
+	// the one byte value is padded to 4 whatever the length field says
+	tsresol := le.AppendUint16(nil, optIfTsresol)
+	tsresol = le.AppendUint16(tsresol, 2)
+	tsresol = append(tsresol, tsresolMicro, 0, 0, 0)
+	tsresol = le.AppendUint16(tsresol, optEndOfOpt)
+	tsresol = le.AppendUint16(tsresol, 0)
+
+	// interface 1, timestamp 0, 60 byte frame
+	frame := make([]byte, 60)
+	packet := le.AppendUint32(nil, 1)
+	packet = le.AppendUint32(packet, 0)
+	packet = le.AppendUint32(packet, 0)
+	packet = le.AppendUint32(packet, uint32(len(frame)))
+	packet = le.AppendUint32(packet, uint32(len(frame)))
+	packet = append(packet, frame...)
+
+	var file []byte
+	file = append(file, block(sectionHeaderBlock, section)...)
+	file = append(file, block(interfaceBlock, iface)...)
+	file = append(file, block(interfaceBlock, append(iface, tsresol...))...)
+	return append(file, block(packetBlock, packet)...)
+}
+
+// A read error on a capture file is final for libpcap; reading on returns
+// garbage or, with libpcap 1.10.3 and 1.11.0, divides by zero. Report it
+// once and io.EOF after that, so Packets() stops instead of retrying.
+func TestPcapFileReadErrorIsFinal(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "bad_option.pcapng")
+	if err := os.WriteFile(path, badOptionPcapng(), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	handle, err := OpenOffline(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer handle.Close()
+
+	if _, _, err := handle.ReadPacketData(); err != NextErrorReadError {
+		t.Fatalf("first read: got %v, want %v", err, NextErrorReadError)
+	}
+	if _, _, err := handle.ReadPacketData(); err != io.EOF {
+		t.Errorf("read after the error: got %v, want io.EOF", err)
+	}
+	if _, _, err := handle.ZeroCopyReadPacketData(); err != io.EOF {
+		t.Errorf("zero copy read after the error: got %v, want io.EOF", err)
 	}
 }
 
