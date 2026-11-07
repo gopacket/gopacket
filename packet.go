@@ -961,8 +961,9 @@ type PacketSource struct {
 // NewZeroCopyPacketSource creates a zero copy packet data source.
 func NewZeroCopyPacketSource(source ZeroCopyPacketDataSource, decoder Decoder, opts ...PacketSourceOption) *PacketSource {
 	ps := &PacketSource{
-		source:  source.ZeroCopyReadPacketData,
-		decoder: decoder,
+		zeroCopy: true,
+		source:   source.ZeroCopyReadPacketData,
+		decoder:  decoder,
 	}
 
 	for idx := range opts {
@@ -989,17 +990,22 @@ func NewPacketSource(source PacketDataSource, decoder Decoder, opts ...PacketSou
 // NextPacket returns the next decoded packet from the PacketSource.  On error,
 // it returns a nil packet and a non-nil error.
 func (p *PacketSource) NextPacket() (Packet, error) {
+	return p.nextPacket(p.DecodeOptions)
+}
+
+// nextPacket reads and decodes the next packet using opts.
+func (p *PacketSource) nextPacket(opts DecodeOptions) (Packet, error) {
 	data, ci, err := p.source()
 	if err != nil {
 		return nil, err
 	}
-	packet := NewPacket(data, p.decoder, p.DecodeOptions)
+	packet := NewPacket(data, p.decoder, opts)
 	m := packet.Metadata()
 
 	// A zero copy source reuses its AncillaryData slice from one read to the
 	// next, as it does the data. The packet keeps a copy of the data, so it
 	// must keep a copy of the ancillary data too.
-	if !p.NoCopy && len(ci.AncillaryData) > 0 {
+	if !opts.NoCopy && len(ci.AncillaryData) > 0 {
 		ci.AncillaryData = append([]interface{}(nil), ci.AncillaryData...)
 	}
 	m.CaptureInfo = ci
@@ -1012,8 +1018,17 @@ func (p *PacketSource) NextPacket() (Packet, error) {
 // is returned by NextPacket().
 func (p *PacketSource) packetsToChannel(ctx context.Context) {
 	defer close(p.c)
+
+	// Packets wait in the channel while a zero copy source reuses its
+	// buffer for the next reads, so they must not alias it. Copy the data
+	// even if NoCopy is set.
+	opts := p.DecodeOptions
+	if p.zeroCopy {
+		opts.NoCopy = false
+	}
+
 	for ctx.Err() == nil {
-		packet, err := p.NextPacket()
+		packet, err := p.nextPacket(opts)
 		if err == nil {
 			select {
 			case p.c <- packet:
@@ -1071,11 +1086,11 @@ func (p *PacketSource) Packets() chan Packet {
 //	}
 //
 // If called more than once, returns the same channel.
+//
+// For a source created with NewZeroCopyPacketSource, the packets sent on the
+// channel always own a copy of their data, even if NoCopy is set, because the
+// source reuses its buffer while packets wait in the channel.
 func (p *PacketSource) PacketsCtx(ctx context.Context) chan Packet {
-	if p.DecodeOptions.NoCopy && p.zeroCopy {
-		panic("PacketSource uses a zero copy datasource and NoCopy decoder option activated - Packets() uses a buffered channel hence packets are most likely overwritten")
-	}
-
 	const defaultPacketChannelSize = 1000
 	if p.c == nil {
 		p.c = make(chan Packet, defaultPacketChannelSize)
