@@ -56,6 +56,7 @@ type Handle struct {
 	deviceIndex    int
 	mu             sync.Mutex
 	closeMu        sync.Mutex
+	live           bool // only activated live captures can need a breakloop wakeup
 	nanoSecsFactor int64
 
 	// Since pointers to these objects are passed into a C function, if
@@ -153,6 +154,7 @@ func OpenLive(device string, snaplen int32, promisc bool, timeout time.Duration)
 		return nil, err
 	}
 	p.timeout = timeout
+	p.live = true
 	p.device = device
 
 	ifc, err := net.InterfaceByName(device)
@@ -398,7 +400,11 @@ func (p *Handle) Close() {
 	// Wake a reader blocked in pcap_next_ex (BlockForever), otherwise the
 	// lock below waits for the next packet, which may never come. libpcap
 	// allows calling this from another thread.
-	p.pcapBreakloop()
+	// Dead handles can have no breakloop callback (macOS libpcap 1.10.1).
+	// Offline readers do not need a live-capture wakeup either.
+	if p.live {
+		p.pcapBreakloop()
+	}
 
 	// wait for packet reader to stop
 	p.mu.Lock()
@@ -788,6 +794,7 @@ func (p *InactiveHandle) Activate() (*Handle, error) {
 		return nil, err
 	}
 	handle.timeout = p.timeout
+	handle.live = true
 	if p.timeout > 0 {
 		if err := handle.setNonBlocking(); err != nil {
 			handle.pcapClose()
