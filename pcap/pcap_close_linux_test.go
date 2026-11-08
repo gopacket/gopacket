@@ -20,9 +20,37 @@ const closeDeadline = 3 * time.Second
 // the reader holds the handle lock inside pcap_next_ex, so Close used to wait
 // for a packet that never came.
 func TestCloseWhileReadBlocked(t *testing.T) {
+	t.Run("OpenLive", func(t *testing.T) { testCloseWhileReadBlocked(t, false) })
+	t.Run("Activate", func(t *testing.T) { testCloseWhileReadBlocked(t, true) })
+}
+
+func testCloseWhileReadBlocked(t *testing.T, activate bool) {
+	if activate {
+		inactive, err := NewInactiveHandle("lo")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer inactive.CleanUp()
+		if err := inactive.SetTimeout(BlockForever); err != nil {
+			t.Fatal(err)
+		}
+		handle, err := inactive.Activate()
+		if err != nil {
+			t.Skipf("cannot activate live capture: %v", err)
+		}
+		checkBlockedClose(t, handle)
+		return
+	}
 	handle, err := OpenLive("lo", 65535, false, BlockForever)
 	if err != nil {
 		t.Skipf("cannot open live capture on lo (needs CAP_NET_RAW): %v", err)
+	}
+	checkBlockedClose(t, handle)
+}
+
+func checkBlockedClose(t *testing.T, handle *Handle) {
+	if !handle.live {
+		t.Fatal("live handle was not marked live")
 	}
 
 	// Match nothing, so the reader stays blocked.
@@ -42,7 +70,7 @@ func TestCloseWhileReadBlocked(t *testing.T) {
 
 	closeDone := make(chan struct{})
 	go func() {
-		handle.Close()
+		closeConcurrently(handle)
 		close(closeDone)
 	}()
 
