@@ -263,14 +263,15 @@ func NewTPacket(opts ...interface{}) (h *TPacket, err error) {
 	if h.opts, err = parseOptions(opts...); err != nil {
 		return nil, err
 	}
-	fd, err := unix.Socket(unix.AF_PACKET, int(h.opts.socktype), int(endian.Htons(h.opts.protocol)))
+	// Open the socket with protocol 0: the kernel doesn't deliver any packets to
+	// a packet socket until it is bound to a non-zero protocol, so the ring and
+	// the BPF filter are set up before the first packet arrives. Binding last
+	// means that packets which don't match the filter never end up in the ring.
+	fd, err := unix.Socket(unix.AF_PACKET, int(h.opts.socktype), 0)
 	if err != nil {
 		return nil, err
 	}
 	h.fd = fd
-	if err = h.bindToInterface(h.opts.iface); err != nil {
-		goto errlbl
-	}
 	if err = h.setRequestedTPacketVersion(); err != nil {
 		goto errlbl
 	}
@@ -280,6 +281,14 @@ func NewTPacket(opts ...interface{}) (h *TPacket, err error) {
 		}
 	}
 	if err = h.setUpRing(); err != nil {
+		goto errlbl
+	}
+	if len(h.opts.bpfFilter) > 0 {
+		if err = h.SetBPF(h.opts.bpfFilter); err != nil {
+			goto errlbl
+		}
+	}
+	if err = h.bindToInterface(h.opts.iface); err != nil {
 		goto errlbl
 	}
 	// Clear stat counter from socket
@@ -293,13 +302,20 @@ errlbl:
 	return nil, err
 }
 
-// SetBPF attaches a BPF filter to the underlying socket
+// maxBPFFilterLen is the maximum number of instructions in a classic BPF program
+// (sock_fprog.len is an unsigned short).
+const maxBPFFilterLen = int(^uint16(0))
+
+// SetBPF attaches a BPF filter to the underlying socket.
+//
+// Packets which were queued in the ring before the filter is attached are not
+// filtered. Use OptBPFFilter to attach the filter before any packets are received.
 func (h *TPacket) SetBPF(filter []bpf.RawInstruction) error {
 	if len(filter) == 0 {
 		return unix.SetsockoptInt(h.fd, unix.SOL_SOCKET, unix.SO_DETACH_FILTER, 0)
 	}
 	var p unix.SockFprog
-	if len(filter) > int(^uint16(0)) {
+	if len(filter) > maxBPFFilterLen {
 		return errors.New("filter too large")
 	}
 	p.Len = uint16(len(filter))
