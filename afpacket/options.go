@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"time"
 
+	"golang.org/x/net/bpf"
 	"golang.org/x/sys/unix"
 )
 
@@ -122,6 +123,12 @@ type OptAddVLANHeader bool
 // is needed.
 type OptVNetHdrSize int
 
+// OptBPFFilter is a classic BPF program attached to the socket before it is
+// bound to the interface. Unlike calling SetBPF after NewTPacket returns, this
+// guarantees that no packet which doesn't match the filter ever reaches the ring.
+// It can be passed into NewTPacket.
+type OptBPFFilter []bpf.RawInstruction
+
 // Default constants used by options.
 const (
 	DefaultFrameSize    = 4096                   // Default value for OptFrameSize.
@@ -144,6 +151,7 @@ type options struct {
 	socktype       OptSocketType
 	protocol       uint16
 	iface          string
+	bpfFilter      []bpf.RawInstruction
 }
 
 var defaultOpts = options{
@@ -183,6 +191,8 @@ func parseOptions(opts ...interface{}) (ret options, err error) {
 			ret.addVLANHeader = bool(v)
 		case OptVNetHdrSize:
 			ret.vnetHdrSize = int(v)
+		case OptBPFFilter:
+			ret.bpfFilter = []bpf.RawInstruction(v)
 		default:
 			err = errors.New("unknown type in options")
 			return
@@ -206,6 +216,8 @@ func (o options) check() error {
 		return fmt.Errorf("block timeout %v must be > %v", o.blockTimeout, time.Millisecond)
 	case o.version < tpacketVersionMin || o.version > tpacketVersionMax:
 		return fmt.Errorf("tpacket version %v is invalid", o.version)
+	case len(o.bpfFilter) > maxBPFFilterLen:
+		return fmt.Errorf("bpf filter length %d must be <= %d", len(o.bpfFilter), maxBPFFilterLen)
 	}
 	return nil
 }
