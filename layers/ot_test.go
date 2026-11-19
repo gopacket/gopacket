@@ -21,6 +21,7 @@ var otEtherTypes = []EthernetType{
 	EthernetTypeGOOSE,
 	EthernetTypeSV,
 	EthernetTypePTP,
+	EthernetTypeOPCUAPubSub,
 }
 
 // otCapture is a committed capture and the layer every frame of it, or

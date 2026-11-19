@@ -54,6 +54,8 @@ func layerSummary(l gopacket.Layer) (string, bool) {
 		return iec104Summary(v), true
 	case *layers.OPCUA:
 		return opcuaSummary(v), true
+	case *layers.OPCUAPubSub:
+		return fmt.Sprintf("OPC UA PubSub %v messages=%d", v.Type, len(v.Messages)), true
 	case *layers.Modbus:
 		return fmt.Sprintf("Modbus tx=%d unit=%d %v", v.TransactionID, v.UnitID, v.GetFunction()), true
 	case *layers.GOOSE:
