@@ -240,7 +240,7 @@ func TestEtherCATMailbox(t *testing.T) {
 			sdo:  &EtherCATSDO{Command: 0x80, Specifier: EtherCATSDOCCSAbort, Index: 0x6040, Value: 0x06020000, Data: []byte{}},
 		},
 		{
-			name: "eoe kept raw",
+			name: "eoe header only",
 			data: []byte{4, 0, 0, 0, 0, 0x02, 1, 2, 3, 4, 0xff},
 			typ:  EtherCATMailboxEoE,
 		},
@@ -352,8 +352,10 @@ func TestEtherCATTruncation(t *testing.T) {
 
 func FuzzEtherCAT(f *testing.F) {
 	withEtherCAT(f)
-	for _, frame := range readPNECATPcap(f, ecatPcap) {
-		f.Add(frame)
+	for _, path := range []string{ecatPcap, ecatHandPcap} {
+		for _, frame := range readPNECATPcap(f, path) {
+			f.Add(frame)
+		}
 	}
 
 	f.Fuzz(func(t *testing.T, data []byte) {
@@ -363,11 +365,72 @@ func FuzzEtherCAT(f *testing.F) {
 			if len(e.Datagrams)*(ethercatDatagramHeaderLen+ethercatWKCLen) > len(data) {
 				t.Fatalf("%d datagrams from %d bytes", len(e.Datagrams), len(data))
 			}
+			ecatFuzzBounds(t, e, len(data))
+			ecatTouch(e)
 		}
 
 		// Decode the frame and the mailbox directly too.
 		var e EtherCAT
-		_ = e.DecodeFromBytes(data, gopacket.NilDecodeFeedback)
-		_, _ = DecodeEtherCATMailbox(data)
+		if err := e.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err == nil {
+			ecatFuzzBounds(t, &e, len(data))
+			ecatTouch(&e)
+		}
+		if m, err := DecodeEtherCATMailbox(data); err == nil {
+			ecatFuzzMailbox(t, m, len(data))
+			ecatTouchMailbox(m)
+		}
 	})
+}
+
+// ecatFuzzBounds fails when a decoded list is larger than its input
+// could pay for.
+func ecatFuzzBounds(t *testing.T, e *EtherCAT, size int) {
+	if e.NV != nil && len(e.NV.Variables)*ethercatNVVarHeaderLen > size {
+		t.Fatalf("%d NV variables from %d bytes", len(e.NV.Variables), size)
+	}
+	if e.ADS != nil {
+		ecatFuzzADS(t, e.ADS, size)
+	}
+	ecatFuzzMailbox(t, e.Mailbox, size)
+
+	for i := range e.Datagrams {
+		d := &e.Datagrams[i]
+		ecatFuzzMailbox(t, d.Mailbox, size)
+		if n := len(d.Registers()); n > escRegisterMax {
+			t.Fatalf("%d registers, table allows %d", n, escRegisterMax)
+		}
+	}
+}
+
+// ecatFuzzMailbox checks the lists of a mailbox body against the input.
+func ecatFuzzMailbox(t *testing.T, m *EtherCATMailbox, size int) {
+	if m == nil {
+		return
+	}
+	if m.AoE != nil {
+		ecatFuzzADS(t, m.AoE, size)
+	}
+	if m.CoE != nil && m.CoE.SDOInfo != nil && len(m.CoE.SDOInfo.Indexes)*ethercatIndexLen > size {
+		t.Fatalf("%d indexes from %d bytes", len(m.CoE.SDOInfo.Indexes), size)
+	}
+	if m.EoE != nil && m.EoE.MACFilter != nil {
+		if f := m.EoE.MACFilter; len(f.Filters) >= ethercatEoEMaxFilters || len(f.Masks) >= ethercatEoEMaxMasks {
+			t.Fatalf("%d filters, %d masks", len(f.Filters), len(f.Masks))
+		}
+	}
+}
+
+// ecatFuzzADS checks the notification stamps against the input.
+func ecatFuzzADS(t *testing.T, a *EtherCATAMS, size int) {
+	if a.ADS == nil {
+		return
+	}
+
+	cost := 0
+	for _, s := range a.ADS.Stamps {
+		cost += ethercatADSStampLen + len(s.Samples)*ethercatADSSampleLen
+	}
+	if cost > size {
+		t.Fatalf("stamps worth %d bytes from %d", cost, size)
+	}
 }

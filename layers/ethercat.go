@@ -22,6 +22,14 @@
 //
 // M (more follows) says another datagram comes next; C marks a frame that
 // circulated the ring.
+//
+// The other frame types carry one PDU each, decoded into a field of the
+// EtherCAT layer (see ethercat_nv.go):
+//
+//	type 2  ADS              -> EtherCAT.ADS
+//	type 3  raw IO           -> EtherCAT.RawIO
+//	type 4  network vars     -> EtherCAT.NV
+//	type 5  mailbox gateway  -> EtherCAT.Mailbox
 
 package layers
 
@@ -184,8 +192,11 @@ func (d *EtherCATDatagram) ADO() uint16 { return uint16(d.Address >> ethercatAdd
 // EtherCAT is an EtherCAT frame.
 //
 // For type 1 frames the datagrams are decoded and there is no payload;
-// Ethernet padding after the last datagram is dropped. Other types keep
-// their data raw in the payload.
+// Ethernet padding after the last datagram is dropped.
+//
+// Types 2 to 5 set the one field that matches and have no payload
+// either. A body too short for its header, or of an unknown type, stays
+// raw in the payload.
 type EtherCAT struct {
 	BaseLayer
 
@@ -193,6 +204,11 @@ type EtherCAT struct {
 	Reserved  uint8
 	Type      EtherCATFrameType
 	Datagrams []EtherCATDatagram
+
+	ADS     *EtherCATAMS     // type 2
+	RawIO   *EtherCATRawIO   // type 3
+	NV      *EtherCATNV      // type 4
+	Mailbox *EtherCATMailbox // type 5
 }
 
 // LayerType returns LayerTypeEtherCAT.
@@ -201,7 +217,7 @@ func (e *EtherCAT) LayerType() gopacket.LayerType { return LayerTypeEtherCAT }
 // CanDecode returns LayerTypeEtherCAT.
 func (e *EtherCAT) CanDecode() gopacket.LayerClass { return LayerTypeEtherCAT }
 
-// NextLayerType returns LayerTypePayload for non-command frames.
+// NextLayerType returns LayerTypePayload for frames left undecoded.
 func (e *EtherCAT) NextLayerType() gopacket.LayerType {
 	if len(e.BaseLayer.Payload) == 0 {
 		return gopacket.LayerTypeZero
@@ -224,6 +240,7 @@ func (e *EtherCAT) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) erro
 	}
 	e.Type = EtherCATFrameType(hdr >> ethercatTypeShift)
 	e.Datagrams = e.Datagrams[:0]
+	e.ADS, e.RawIO, e.NV, e.Mailbox = nil, nil, nil, nil
 
 	// The header length bounds the frame; past it is Ethernet padding.
 	end := ethercatFrameHeaderLen + int(e.Length)
@@ -234,6 +251,11 @@ func (e *EtherCAT) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) erro
 	body := data[ethercatFrameHeaderLen:end]
 
 	if e.Type != EtherCATFrameCommands {
+		if e.decodeOther(body) {
+			e.BaseLayer = BaseLayer{Contents: data[:end]}
+			return nil
+		}
+
 		e.BaseLayer = BaseLayer{Contents: data[:ethercatFrameHeaderLen], Payload: body}
 		return nil
 	}
@@ -244,6 +266,27 @@ func (e *EtherCAT) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) erro
 	}
 	e.BaseLayer = BaseLayer{Contents: data[:ethercatFrameHeaderLen+used]}
 	return nil
+}
+
+// decodeOther decodes the body of a type 2 to 5 frame into its field and
+// reports whether it did.
+func (e *EtherCAT) decodeOther(body []byte) bool {
+	switch e.Type {
+	case EtherCATFrameADS:
+		e.ADS = decodeEtherCATAMS(body)
+		return e.ADS != nil
+	case EtherCATFrameRawIO:
+		e.RawIO = decodeEtherCATRawIO(body)
+		return e.RawIO != nil
+	case EtherCATFrameNV:
+		e.NV = decodeEtherCATNV(body)
+		return e.NV != nil
+	case EtherCATFrameMailbox:
+		// A mailbox whose length field lies stays raw.
+		e.Mailbox, _ = DecodeEtherCATMailbox(body)
+		return e.Mailbox != nil
+	}
+	return false
 }
 
 // decodeDatagrams walks the datagram chain while the more-follows bit is

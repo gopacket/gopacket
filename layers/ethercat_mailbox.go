@@ -15,7 +15,9 @@
 //	SDO header (8):      Command (1) | Index (2) | SubIndex (1) | Data (4)
 //
 // SDO segment services carry the command byte and then segment data, with
-// no index.
+// no index. The other CoE services and the EoE, FoE, SoE, AoE and VoE
+// bodies live in the ethercat_coe.go, ethercat_eoe.go, ethercat_foe.go,
+// ethercat_soe.go and ethercat_ams.go files.
 
 package layers
 
@@ -40,6 +42,20 @@ const (
 	ethercatCoENumberMask    = 0x01FF
 	ethercatCoEServiceShift  = 12
 	ethercatSDOSpecShift     = 5
+
+	// SDO command byte bits below the specifier. Initiate services use
+	// the first set, segment services the second.
+	ethercatSDOSizeIndBit    = 0x01
+	ethercatSDOExpeditedBit  = 0x02
+	ethercatSDOSizeShift     = 2
+	ethercatSDOSizeMask      = 0x03
+	ethercatSDOCompleteBit   = 0x10
+	ethercatSDOLastSegBit    = 0x01
+	ethercatSDOSegSizeShift  = 1
+	ethercatSDOSegSizeMask   = 0x07
+	ethercatSDOToggleBit     = 0x10
+	ethercatSDOExpeditedSize = 4
+	ethercatSDODataOffset    = 4 // of the 4 data bytes in the SDO header
 )
 
 // ErrEtherCATMailbox is returned when a mailbox header or its declared
@@ -143,6 +159,20 @@ const (
 // is the expedited data, the complete size or the abort code. For segment
 // services Segment is true and Data holds the segment bytes after the
 // command byte.
+//
+// The flags come from the command byte and only mean something for the
+// services that define them:
+//
+//	initiate download request, initiate upload response:
+//	    SizeIndicated, Expedited, UnusedBytes (of the 4 expedited bytes),
+//	    CompleteAccess, ExpeditedData
+//	initiate upload request:   CompleteAccess
+//	download segment request, upload segment response:
+//	    LastSegment, UnusedBytes (of the 7 byte minimum segment), Toggle
+//	upload segment request, download segment response: Toggle
+//
+// A normal (not expedited) initiate transfer has its complete size in
+// Value and the first data bytes in Data.
 type EtherCATSDO struct {
 	Command   uint8
 	Specifier EtherCATSDOSpecifier
@@ -151,14 +181,32 @@ type EtherCATSDO struct {
 	SubIndex  uint8
 	Value     uint32
 	Data      []byte
+
+	SizeIndicated  bool
+	Expedited      bool
+	CompleteAccess bool
+	LastSegment    bool
+	Toggle         bool
+	UnusedBytes    uint8
+	// ExpeditedData is the used part of the 4 data bytes of an expedited
+	// transfer; it aliases the packet data.
+	ExpeditedData []byte
 }
 
+// AbortCode returns Value as an SDO abort code.
+func (s *EtherCATSDO) AbortCode() EtherCATSDOAbortCode { return EtherCATSDOAbortCode(s.Value) }
+
 // EtherCATCoE is a CANopen over EtherCAT message.
+//
+// Number is the PDO number for the PDO services, whose PDO bytes are Data.
+// The remote request services carry no data.
 type EtherCATCoE struct {
-	Number  uint16
-	Service EtherCATCoEService
-	Data    []byte       // bytes after the CoE header
-	SDO     *EtherCATSDO // SDO request and response services
+	Number    uint16
+	Service   EtherCATCoEService
+	Data      []byte             // bytes after the CoE header
+	SDO       *EtherCATSDO       // SDO request and response services
+	SDOInfo   *EtherCATSDOInfo   // SDO information service
+	Emergency *EtherCATEmergency // emergency service
 }
 
 // EtherCATMailbox is an EtherCAT mailbox. Data aliases the packet data.
@@ -171,6 +219,11 @@ type EtherCATMailbox struct {
 	Counter  uint8
 	Data     []byte       // Length bytes of service data
 	CoE      *EtherCATCoE // Type CoE only
+	EoE      *EtherCATEoE // Type EoE only
+	FoE      *EtherCATFoE // Type FoE only
+	SoE      *EtherCATSoE // Type SoE only
+	VoE      *EtherCATVoE // Type VoE only
+	AoE      *EtherCATAMS // Type AoE only
 }
 
 // DecodeEtherCATMailbox decodes a mailbox from the data of a datagram.
@@ -195,8 +248,20 @@ func DecodeEtherCATMailbox(data []byte) (*EtherCATMailbox, error) {
 	}
 	m.Data = data[ethercatMailboxHeaderLen:end]
 
-	if m.Type == EtherCATMailboxCoE {
+	// A body too short for its protocol header stays nil; Data keeps it.
+	switch m.Type {
+	case EtherCATMailboxCoE:
 		m.CoE = decodeEtherCATCoE(m.Data)
+	case EtherCATMailboxEoE:
+		m.EoE = decodeEtherCATEoE(m.Data)
+	case EtherCATMailboxFoE:
+		m.FoE = decodeEtherCATFoE(m.Data)
+	case EtherCATMailboxSoE:
+		m.SoE = decodeEtherCATSoE(m.Data)
+	case EtherCATMailboxVoE:
+		m.VoE = decodeEtherCATVoE(m.Data)
+	case EtherCATMailboxAoE:
+		m.AoE = decodeEtherCATAMS(m.Data)
 	}
 	return m, nil
 }
@@ -214,8 +279,14 @@ func decodeEtherCATCoE(data []byte) *EtherCATCoE {
 		Service: EtherCATCoEService(hdr >> ethercatCoEServiceShift),
 		Data:    data[ethercatCoEHeaderLen:],
 	}
-	if c.Service == EtherCATCoESDORequest || c.Service == EtherCATCoESDOResponse {
+
+	switch c.Service {
+	case EtherCATCoESDORequest, EtherCATCoESDOResponse:
 		c.SDO = decodeEtherCATSDO(c.Data, c.Service)
+	case EtherCATCoESDOInfo:
+		c.SDOInfo = decodeEtherCATSDOInfo(c.Data)
+	case EtherCATCoEEmergency:
+		c.Emergency = decodeEtherCATEmergency(c.Data)
 	}
 	return c
 }
@@ -238,6 +309,9 @@ func decodeEtherCATSDO(data []byte, service EtherCATCoEService) *EtherCATSDO {
 	case service == EtherCATCoESDORequest && s.Specifier == EtherCATSDOCCSDownloadSegment,
 		service == EtherCATCoESDOResponse && s.Specifier == EtherCATSDOSCSUploadSegment:
 		s.Segment = true
+		s.LastSegment = s.Command&ethercatSDOLastSegBit != 0
+		s.UnusedBytes = (s.Command >> ethercatSDOSegSizeShift) & ethercatSDOSegSizeMask
+		s.Toggle = s.Command&ethercatSDOToggleBit != 0
 		s.Data = data[ethercatSDOCommandLen:]
 		return s
 	}
@@ -246,7 +320,38 @@ func decodeEtherCATSDO(data []byte, service EtherCATCoEService) *EtherCATSDO {
 	s.SubIndex = data[3]
 	s.Value = binary.LittleEndian.Uint32(data[4:8])
 	s.Data = data[ethercatSDOHeaderLen:]
+	s.decodeFlags(data, service)
 	return s
+}
+
+// decodeFlags splits the command byte of the services without segment
+// data. data holds the full 8-byte SDO header.
+func (s *EtherCATSDO) decodeFlags(data []byte, service EtherCATCoEService) {
+	request := service == EtherCATCoESDORequest
+
+	switch {
+	case request && s.Specifier == EtherCATSDOCCSInitiateDownload,
+		!request && s.Specifier == EtherCATSDOSCSInitiateUpload:
+		s.SizeIndicated = s.Command&ethercatSDOSizeIndBit != 0
+		s.Expedited = s.Command&ethercatSDOExpeditedBit != 0
+		s.CompleteAccess = s.Command&ethercatSDOCompleteBit != 0
+		if !s.Expedited {
+			return
+		}
+
+		// Expedited: the size bits count the unused bytes of the 4.
+		used := ethercatSDOExpeditedSize
+		if s.SizeIndicated {
+			s.UnusedBytes = (s.Command >> ethercatSDOSizeShift) & ethercatSDOSizeMask
+			used -= int(s.UnusedBytes)
+		}
+		s.ExpeditedData = data[ethercatSDODataOffset : ethercatSDODataOffset+used]
+	case request && s.Specifier == EtherCATSDOCCSInitiateUpload:
+		s.CompleteAccess = s.Command&ethercatSDOCompleteBit != 0
+	case request && s.Specifier == EtherCATSDOCCSUploadSegment,
+		!request && s.Specifier == EtherCATSDOSCSDownloadSegment:
+		s.Toggle = s.Command&ethercatSDOToggleBit != 0
+	}
 }
 
 // findMailbox applies Wireshark's mailbox heuristic to a datagram: a
