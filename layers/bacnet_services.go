@@ -26,8 +26,8 @@ var errBACnetShape = errors.New("BACnet service parameters do not match the serv
 // *BACnetWhoIs, *BACnetIAm, *BACnetWhoHas, *BACnetIHave,
 // *BACnetReadProperty, *BACnetReadPropertyAck, *BACnetWriteProperty,
 // *BACnetReadPropertyMultiple, *BACnetReadPropertyMultipleAck,
-// *BACnetSubscribeCOV, *BACnetCOVNotification or
-// *BACnetTimeSynchronization.
+// *BACnetSubscribeCOV, *BACnetCOVNotification, *BACnetTimeSynchronization
+// or, for every other service and for Error PDUs, *BACnetParameters.
 type BACnetServiceData interface {
 	bacnetServiceData()
 }
@@ -204,11 +204,12 @@ func (*BACnetSubscribeCOV) bacnetServiceData()            {}
 func (*BACnetCOVNotification) bacnetServiceData()         {}
 func (*BACnetTimeSynchronization) bacnetServiceData()     {}
 
-// decodeService fills ServiceData for the common services and Error for
-// an Error PDU. Parameters that do not fit leave both unset.
+// decodeService fills ServiceData, and Error for an Error PDU. Parameters
+// that do not fit leave both unset.
 func (a *BACnetAPDU) decodeService() {
 	if a.PDUType == BACnetPDUError {
 		a.Error, _ = bacnetFirstError(a.Tags)
+		a.decodeParameters()
 		return
 	}
 
@@ -226,11 +227,28 @@ func (a *BACnetAPDU) decodeService() {
 		data, err = r.complexACK(a.ConfirmedService)
 	}
 
+	if err != nil {
+		return
+	}
+	// The services without a type of their own are read by production.
+	if data == nil {
+		a.decodeParameters()
+		return
+	}
+
 	// Leftover tags mean the parameters were not what the service expects.
-	if err != nil || data == nil || r.more() {
+	if r.more() {
 		return
 	}
 	a.ServiceData = data
+}
+
+// decodeParameters sets ServiceData to the parameters read against the
+// production of the service, when they match it.
+func (a *BACnetAPDU) decodeParameters() {
+	if vals := a.decodeProduction(); vals != nil {
+		a.ServiceData = &BACnetParameters{Fields: vals}
+	}
 }
 
 // bacnetFirstError returns the first two application Enumerated tags,

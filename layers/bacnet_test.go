@@ -643,9 +643,28 @@ func decodeBACnetAll(data []byte) {
 	for _, l := range p.Layers() {
 		_ = fmt.Sprint(l)
 	}
+	// The same octets as the layers no port leads to.
+	sc := gopacket.NewPacket(data, LayerTypeBACnetSC, gopacket.Default)
+	for _, l := range sc.Layers() {
+		_ = fmt.Sprint(l)
+	}
+	var any BVLCAny
+	if err := any.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err == nil {
+		_, _ = any.NextLayerType(), any.LayerPayload()
+	}
+
 	a, ok := p.Layer(LayerTypeBACnetAPDU).(*BACnetAPDU)
 	if !ok {
 		return
+	}
+	bacnetTouchValues(a.Values())
+
+	// A segment is fed twice: the second is a duplicate or a restart.
+	asm := &BACnetSegmentAssembler{MaxSize: len(data)}
+	for i := 0; i < 2; i++ {
+		if whole, err := asm.Add(data[:1], a); err == nil && whole != nil {
+			bacnetTouchValues(whole.Values())
+		}
 	}
 	_ = fmt.Sprintf("%v %v %v %v %v %v %v", a.PDUType, a.ConfirmedService, a.UnconfirmedService,
 		a.RejectReason, a.AbortReason, a.Error.Class, a.Error.Code)

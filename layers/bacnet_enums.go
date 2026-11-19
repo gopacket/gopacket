@@ -357,6 +357,8 @@ const (
 	BACnetPropertyTimeSynchronizationInterval      BACnetPropertyIdentifier = 204
 	BACnetPropertyTrigger                          BACnetPropertyIdentifier = 205
 	BACnetPropertyUTCTimeSynchronizationRecipients BACnetPropertyIdentifier = 206
+	BACnetPropertyNodeSubtype                      BACnetPropertyIdentifier = 207
+	BACnetPropertyNodeType                         BACnetPropertyIdentifier = 208
 	BACnetPropertyStructuredObjectList             BACnetPropertyIdentifier = 209
 	BACnetPropertySubordinateAnnotations           BACnetPropertyIdentifier = 210
 	BACnetPropertySubordinateList                  BACnetPropertyIdentifier = 211
@@ -364,8 +366,6 @@ const (
 	BACnetPropertyDutyWindow                       BACnetPropertyIdentifier = 213
 	BACnetPropertyExpectedShedLevel                BACnetPropertyIdentifier = 214
 	BACnetPropertyFullDutyBaseline                 BACnetPropertyIdentifier = 215
-	BACnetPropertyNodeSubtype                      BACnetPropertyIdentifier = 216
-	BACnetPropertyNodeType                         BACnetPropertyIdentifier = 217
 	BACnetPropertyRequestedShedLevel               BACnetPropertyIdentifier = 218
 	BACnetPropertyShedDuration                     BACnetPropertyIdentifier = 219
 	BACnetPropertyShedLevelDescriptions            BACnetPropertyIdentifier = 220
@@ -416,6 +416,8 @@ const (
 	BACnetPropertyLastAccessPoint                  BACnetPropertyIdentifier = 276
 	BACnetPropertyLastCredentialAdded              BACnetPropertyIdentifier = 277
 	BACnetPropertyLastCredentialAddedTime          BACnetPropertyIdentifier = 278
+	BACnetPropertyLastCredentialRemoved            BACnetPropertyIdentifier = 279
+	BACnetPropertyLastCredentialRemovedTime        BACnetPropertyIdentifier = 280
 	BACnetPropertyLastUseTime                      BACnetPropertyIdentifier = 281
 	BACnetPropertyLockout                          BACnetPropertyIdentifier = 282
 	BACnetPropertyLockoutRelinquishTime            BACnetPropertyIdentifier = 283

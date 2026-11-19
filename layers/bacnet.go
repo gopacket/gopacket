@@ -12,7 +12,10 @@
 //	       └─ BACnetNPDU   network layer: routing, network layer messages
 //	            └─ BACnetAPDU  application layer: services, tagged parameters
 //
-// MS/TP and the other BACnet data links are not decoded.
+// BACnetSC is the link control of BACnet Secure Connect (Annex AB), which
+// runs over WebSockets on TLS: it decodes a binary WebSocket message once
+// the caller has unwrapped one. MS/TP and the other BACnet data links are
+// not decoded.
 
 package layers
 
@@ -192,8 +195,10 @@ type BVLC struct {
 	BDT []BVLCBDTEntry
 	// FDT holds the entries of Read-FDT-Ack.
 	FDT []BVLCFDTEntry
-	// Secured is the security wrapper of Secure-BVLL, left undecoded.
+	// Secured is the security wrapper of Secure-BVLL, raw.
 	Secured []byte
+	// Security is Secured decoded, or nil when it is not a whole wrapper.
+	Security *BACnetSecurityWrapper
 }
 
 // LayerType returns LayerTypeBVLC.
@@ -212,8 +217,7 @@ func (b *BVLC) NextLayerType() gopacket.LayerType {
 
 // DecodeFromBytes decodes a BACnet/IP BVLL. A BACnet/IPv6 frame is
 // rejected with ErrBVLCType; decode it with BVLC6. gopacket.NewPacket
-// does that by itself; a DecodingLayerParser started at UDP cannot, so on
-// BACnet/IPv6 networks decode the UDP payload with BVLC6 directly.
+// does that by itself; a DecodingLayerParser needs BVLCAny for it.
 func (b *BVLC) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	*b = BVLC{}
 	body, err := bvlcFrame(data, bvlcTypeIPv4, df)
@@ -284,6 +288,7 @@ func (b *BVLC) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 
 	case BVLCFunctionSecureBVLL:
 		b.Secured = body
+		b.Security = bacnetSecurityOf(body)
 	}
 	return nil
 }
@@ -320,6 +325,50 @@ func bvlcAddress(b []byte) BACnetIPAddress {
 func bacnetTruncated(df gopacket.DecodeFeedback) error {
 	df.SetTruncated()
 	return ErrBACnetTruncated
+}
+
+// BVLCAny decodes either BVLL on the BACnet/IP port, so that a
+// DecodingLayerParser reaches BACnet/IPv6 as well: it can decode
+// LayerTypeBVLC, looks at the type octet and fills BVLC or BVLC6.
+//
+//	var any layers.BVLCAny
+//	parser := gopacket.NewDecodingLayerParser(layers.LayerTypeEthernet, &eth, &ip6, &udp, &any, &npdu, &apdu)
+//
+// The parser reports LayerTypeBVLC as decoded for both; IPv6 tells which
+// of the two embedded layers the frame filled.
+type BVLCAny struct {
+	BVLC  BVLC
+	BVLC6 BVLC6
+	// IPv6 tells which of the two the last frame filled.
+	IPv6 bool
+}
+
+// CanDecode returns LayerTypeBVLC, what the BACnet/IP port maps to.
+func (b *BVLCAny) CanDecode() gopacket.LayerClass { return LayerTypeBVLC }
+
+// NextLayerType returns LayerTypeBACnetNPDU when the function carries an NPDU.
+func (b *BVLCAny) NextLayerType() gopacket.LayerType {
+	if b.IPv6 {
+		return b.BVLC6.NextLayerType()
+	}
+	return b.BVLC.NextLayerType()
+}
+
+// LayerPayload returns the NPDU, if the function carries one.
+func (b *BVLCAny) LayerPayload() []byte {
+	if b.IPv6 {
+		return b.BVLC6.Payload
+	}
+	return b.BVLC.Payload
+}
+
+// DecodeFromBytes decodes a BACnet/IP or BACnet/IPv6 BVLL.
+func (b *BVLCAny) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+	b.IPv6 = len(data) > 0 && data[0] == bvlcTypeIPv6
+	if b.IPv6 {
+		return b.BVLC6.DecodeFromBytes(data, df)
+	}
+	return b.BVLC.DecodeFromBytes(data, df)
 }
 
 // decodeBVLC decodes BACnet/IP, handing a BACnet/IPv6 frame (type 0x82) to
@@ -449,8 +498,10 @@ type BVLC6 struct {
 	// Address is the original source of a forwarded message, or the entry
 	// that Delete-Foreign-Device-Table-Entry removes.
 	Address BACnetIPAddress
-	// Secured is the security wrapper of Secure-BVLL, left undecoded.
+	// Secured is the security wrapper of Secure-BVLL, raw.
 	Secured []byte
+	// Security is Secured decoded, or nil when it is not a whole wrapper.
+	Security *BACnetSecurityWrapper
 }
 
 // LayerType returns LayerTypeBVLC6.
@@ -484,6 +535,7 @@ func (b *BVLC6) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	// are left in Contents.
 	if b.Function == BVLC6FunctionSecureBVLL {
 		b.Secured = body
+		b.Security = bacnetSecurityOf(body)
 		return nil
 	}
 	layout, ok := bvlc6Layouts[b.Function]

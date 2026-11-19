@@ -201,6 +201,10 @@ type BACnetNPDU struct {
 	VendorID uint16
 	// Body is the raw network layer message after its type (and vendor ID).
 	Body []byte
+	// Security is the security wrapper of the network security messages,
+	// Challenge-Request to Set-Master-Key, or nil when Body is not a whole
+	// wrapper. What the wrapper secures is left in its ServiceData.
+	Security *BACnetSecurityWrapper
 
 	// Networks is the DNET list of Who-Is-Router (at most one),
 	// I-Am-Router, Router-Busy and Router-Available, and the single network
@@ -312,7 +316,7 @@ func bacnetNetAddr(data []byte, off int, df gopacket.DecodeFeedback) (uint16, []
 }
 
 // decodeMessage decodes the body of the standard network layer messages
-// that carry network numbers; the security messages stay in Body.
+// that carry network numbers, and the wrapper of the security messages.
 func (n *BACnetNPDU) decodeMessage(df gopacket.DecodeFeedback) error {
 	body := n.Body
 
@@ -360,6 +364,12 @@ func (n *BACnetNPDU) decodeMessage(df gopacket.DecodeFeedback) error {
 
 	case BACnetNetworkMessageInitializeRoutingTable, BACnetNetworkMessageInitializeRoutingTableAck:
 		return n.decodeRoutingTable(body, df)
+
+	case BACnetNetworkMessageChallengeRequest, BACnetNetworkMessageSecurityPayload,
+		BACnetNetworkMessageSecurityResponse, BACnetNetworkMessageRequestKeyUpdate,
+		BACnetNetworkMessageUpdateKeySet, BACnetNetworkMessageUpdateDistributionKey,
+		BACnetNetworkMessageRequestMasterKey, BACnetNetworkMessageSetMasterKey:
+		n.Security = bacnetSecurityOf(body)
 	}
 	return nil
 }
