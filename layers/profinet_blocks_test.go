@@ -17,7 +17,7 @@ import (
 	"github.com/gopacket/gopacket"
 )
 
-// profinet-blocks.pcap holds 84 hand-built frames, one or more blocks
+// profinet-blocks.pcap holds 103 hand-built frames, one or more blocks
 // each: records in read responses and write requests, the optional blocks
 // of connect, and alarms. Their values were compared with tshark 4.7.
 //
@@ -29,9 +29,53 @@ import (
 //	65-70  optional connect blocks, SubmoduleListBlock, ARUUIDBlock
 //	71-79  reporting system records and alarms, a multiple alarm item
 //	80-84  NME and CIM records
+//	85     PDRsiInstances
+//	86-90  TSN station and network configuration, CIM calling home,
+//	       capabilities and record access policy
+//	91-92  ARSXPBlock of a connect over SXP, ARAlgorithmInfoBlock
+//	93-98  security, SCM and SAM services, one block per operation
+//	99     ReadAuditableEventsRsp
+//	100    RecordDataReadQuery
+//	101-103 reporting system events of the stop, time status and source
+//	       identification observers
+//
+// The layouts of the blocks in the frames 85 to 103 have no public
+// document; each is the one tshark 4.7 dissects, found by building frames
+// and reading the fields, offsets and sizes it reports:
+//
+//	0x0241 PDRsiInstances                    tshark
+//	0x0272 CIMStationPortConfigBlock         tshark, one entry only
+//	0x0273 CIMStationQueueConfigBlock        tshark
+//	0x0275 CIMNetConfStreamPathData          tshark
+//	0x0276 CIMNetConfSyncTreeData            tshark
+//	0x0277 CIMNetConfUploadNetworkAttributes tshark
+//	0x0278 ForwardingDelayBlock              tshark
+//	0x0279 CIMNetConfExpectedNetworkAttributes tshark (padding, then
+//	       blocks; it reads on past the block end and reports malformed)
+//	0x027A CIMNetConfStreamPathDataReal      tshark
+//	0x027B CIMStationPortIngressRateLimiterBlock tshark
+//	0x027C CIMStationEgressRateLimiterBlock  tshark
+//	0x027D CIMStationPortCapabilitiesBlock   tshark
+//	0x027E CIMStationExpectedNeighborBlock   tshark
+//	0x0310, 0x0311 CIMCallingHome            tshark, one entry only
+//	0x0312 CIM_Capabilities                  tshark
+//	0x0313, 0x0314 ARRecordAccessPolicy      tshark
+//	0x010D, 0x810D ARSXPBlock                tshark
+//	0x011A, 0x811A security service          tshark
+//	0x811C ReadAuditableEventsRsp            tshark; syslog is RFC 5424
+//	0x0500 RecordDataReadQuery               tshark (user specific data)
+//	0x06E0, 0x86E0 SAM service               tshark; EAP is RFC 3748
+//	0x06E2 ARAlgorithmInfoBlock              tshark
+//	0x06F0, 0x86F0 SCM service               tshark
+//	RS event extensions per observer         tshark
+//
+// tshark reports the frames 89, 101 and 102 as malformed although it
+// shows every field: it reads past the end of
+// CIMNetConfExpectedNetworkAttributes, and looks for one more extension
+// behind the last one of a stop or time status observer event.
 const pnBlocksPcap = "testdata/profinet-blocks.pcap"
 
-const pnBlocksFrames = 84
+const pnBlocksFrames = 103
 
 // pnGoldenMax bounds a golden string; longer values compare by prefix.
 const pnGoldenMax = 300
@@ -124,8 +168,8 @@ func TestProfinetBlocksPcap(t *testing.T) {
 		})
 	}
 
-	if len(typed) < 120 {
-		t.Errorf("%d block types in the capture, want at least 120", len(typed))
+	if len(typed) < 140 {
+		t.Errorf("%d block types in the capture, want at least 140", len(typed))
 	}
 }
 
@@ -227,7 +271,27 @@ func TestProfinetStatusNames(t *testing.T) {
 		{ProfinetPNIOStatus{ProfinetErrorCodeConnect, ProfinetErrorDecodePNIO, 1, 1}, "Connect: faulty ARBlockReq", "BlockLength"},
 		{ProfinetPNIOStatus{ProfinetErrorCodeConnect, ProfinetErrorDecodePNIO, 2, 6}, "Connect: faulty IOCRBlockReq", "Field 3 of the block"},
 		{ProfinetPNIOStatus{ProfinetErrorCodeConnect, ProfinetErrorDecodePNIO, 30, 1}, "", ""},
-		{ProfinetPNIOStatus{ProfinetErrorCodeConnect, ProfinetErrorDecodePNIO, 64, 5}, "CMRPC", "Out of AR resources"},
+		{ProfinetPNIOStatus{ProfinetErrorCodeConnect, ProfinetErrorDecodePNIO, 64, 0}, "CMRPC", "ArgsLength invalid"},
+		{ProfinetPNIOStatus{ProfinetErrorCodeConnect, ProfinetErrorDecodePNIO, 64, 4}, "CMRPC", "Out of AR resources"},
+		{ProfinetPNIOStatus{ProfinetErrorCodeConnect, ProfinetErrorDecodePNIO, 64, 12}, "CMRPC", "PDev, port(s) without interface"},
+		{ProfinetPNIOStatus{ProfinetErrorCodeConnect, ProfinetErrorDecodePNIO, 64, 14}, "CMRPC", "PDev, discrepancy between PDev ownership and ARProperties"},
+		{ProfinetPNIOStatus{ProfinetErrorCodeConnect, ProfinetErrorDecodePNIO, 64, 15}, "CMRPC", ""},
+		{ProfinetPNIOStatus{ProfinetErrorCodeConnect, ProfinetErrorDecodePNIO, 14, 0}, "Connect: faulty ARSXPBlockReq", "BlockType"},
+		{ProfinetPNIOStatus{ProfinetErrorCodeConnect, ProfinetErrorDecodePNIO, 54, 1}, "Connect: faulty ARRPCBlockRes", "BlockLength"},
+		{ProfinetPNIOStatus{ProfinetErrorCodeConnect, ProfinetErrorDecodePNIO, 56, 1}, "Connect: faulty ARVendorBlockRes", "BlockLength"},
+		{ProfinetPNIOStatus{ProfinetErrorCodeConnect, ProfinetErrorDecodePNIO, 57, 1}, "Connect: faulty ARSXPBlockRes", "BlockLength"},
+		{ProfinetPNIOStatus{ProfinetErrorCodeConnect, ProfinetErrorDecodePNIO, 108, 0}, "CTLPBE", ""},
+		{ProfinetPNIOStatus{ProfinetErrorCodeSXP, ProfinetErrorDecodePNIO, 224, 0}, "SXP protocol error", ""},
+		{ProfinetPNIOStatus{ProfinetErrorCodeRTA, ProfinetErrorDecodePNIO, 225, 0}, "RTAv3 protocol error", ""},
+		{ProfinetPNIOStatus{ProfinetErrorCodeRTA, ProfinetErrorDecodePNIO, 253, 26}, "RTA protocol error", "AR AP removed"},
+		{ProfinetPNIOStatus{ProfinetErrorCodeRTA, ProfinetErrorDecodePNIO, 253, 27}, "RTA protocol error", "AR link down"},
+		{ProfinetPNIOStatus{ProfinetErrorCodeRTA, ProfinetErrorDecodePNIO, 253, 28}, "RTA protocol error", "AR could not register multicast MAC address"},
+		{ProfinetPNIOStatus{ProfinetErrorCodeRTA, ProfinetErrorDecodePNIO, 253, 29}, "RTA protocol error", "Not synchronized (cannot start companion AR)"},
+		{ProfinetPNIOStatus{ProfinetErrorCodeRTA, ProfinetErrorDecodePNIO, 253, 41}, "RTA protocol error", "IOCARSR redundant interface lost or access to the peripherals impossible"},
+		{ProfinetPNIOStatus{ProfinetErrorCodeWrite, ProfinetErrorDecodePNIORW, 0xBF, 0}, "Access: unauthorized access denied", ""},
+		{ProfinetPNIOStatus{ProfinetErrorCodeWrite, ProfinetErrorDecodePNIORW, 0xA3, 0}, "", ""},
+		{ProfinetPNIOStatus{ProfinetErrorCodeWrite, ProfinetErrorDecodePNIORW, 0xC7, 0}, "", ""},
+		{ProfinetPNIOStatus{ProfinetErrorCodeWrite, ProfinetErrorDecodePNIORW, 0xC8, 0}, "Resource: user specific", ""},
 		{ProfinetPNIOStatus{ProfinetErrorCodeConnect, ProfinetErrorDecodePNIO, 64, 200}, "CMRPC", ""},
 		{ProfinetPNIOStatus{ProfinetErrorCodeRTA, ProfinetErrorDecodePNIO, 253, 5}, "RTA protocol error", "AR consumer DHT or WDT expired"},
 		{ProfinetPNIOStatus{ProfinetErrorCodeRTA, ProfinetErrorDecodePNIO, 253, 0}, "RTA protocol error", ""},
@@ -274,6 +338,19 @@ func TestProfinetBlockVersions(t *testing.T) {
 		{ProfinetBlockLogBookData, 1, false},
 		{ProfinetBlockRSGetEvent, 1, false},
 		{ProfinetBlockCIMDCPReal, 1, false},
+		{ProfinetBlockPDRsiInstances, 0, true},
+		{ProfinetBlockPDRsiInstances, 1, false},
+		{ProfinetBlockCIMQueueConfig, 0, true},
+		{ProfinetBlockCIMQueueConfig, 1, false},
+		{ProfinetBlockCIMPortConfig, 0, false}, // no entry
+		{ProfinetBlockCIMCallingHomeAdj, 0, false},
+		{ProfinetBlockRecordPolicyReal, 1, false},
+		{ProfinetBlockARSXPReq, 0, true},
+		{ProfinetBlockARSXPReq, 1, false},
+		{ProfinetBlockSecurityRes, 1, false},
+		{ProfinetBlockSCMReq, 0, true},
+		{ProfinetBlockAuditableEvents, 1, false},
+		{ProfinetBlockType(0x0270), 0, false}, // CIMNetConfDataReal: layout not established
 	} {
 		blocks, err := ProfinetDecodeBlocks(pnBlockVer(test.typ, test.low, body...))
 		if err != nil || len(blocks) != 1 {
@@ -332,7 +409,8 @@ func TestProfinetRecordDispatch(t *testing.T) {
 // TestProfinetBlockNesting: containers nest no deeper than the cap, and a
 // chain of 200 containers costs no recursion beyond it.
 func TestProfinetBlockNesting(t *testing.T) {
-	for _, typ := range []ProfinetBlockType{ProfinetBlockPDevData, ProfinetBlockARFSU, ProfinetBlockIM5, ProfinetBlockRecordOutput} {
+	for _, typ := range []ProfinetBlockType{ProfinetBlockPDevData, ProfinetBlockARFSU, ProfinetBlockIM5, ProfinetBlockRecordOutput,
+		ProfinetBlockCIMExpectedNetAttr} {
 		// Each container holds the previous one behind two bytes of head;
 		// RecordOutputDataObjectElement needs eight.
 		head := 2
@@ -351,6 +429,28 @@ func TestProfinetBlockNesting(t *testing.T) {
 		}
 		if depth := pnBlockDepth(blocks); depth > int(profinetMaxDepth)+1 {
 			t.Errorf("%v: nested %d deep, cap %d", typ, depth, profinetMaxDepth+1)
+		}
+	}
+
+	// The TSN containers with a head of their own: one port entry, and
+	// the upload attributes with fields around their two blocks.
+	port := pnBlock(ProfinetBlockCIMQueueConfig, 0, 0)
+	upload := pnBlock(ProfinetBlockCIMPortCapabilities, 0, 0)
+	for i := 0; i < 200; i++ {
+		port = pnBlock(ProfinetBlockCIMPortConfig, append([]byte{0, 1, 0, 1, 0x80, 0x01, 0, 0, 0, 0}, port...)...)
+
+		body := append([]byte{0, 0}, upload...)
+		body = append(body, make([]byte, 12)...)
+		body = append(body, pnBlock(ProfinetBlockCIMForwardingDelay, 0, 0)...)
+		upload = pnBlock(ProfinetBlockCIMUploadNetAttr, append(body, make([]byte, 10)...)...)
+	}
+	for name, data := range map[string][]byte{"port config": port, "upload attributes": upload} {
+		blocks, err := ProfinetDecodeBlocks(data)
+		if err != nil || len(blocks) != 1 || !blocks[0].Decoded() {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if depth := pnBlockDepth(blocks); depth != int(profinetMaxDepth)+1 {
+			t.Errorf("%s: nested %d deep, want %d", name, depth, profinetMaxDepth+1)
 		}
 	}
 
@@ -475,7 +575,20 @@ func TestProfinetBlockAllocs(t *testing.T) {
 	item := append([]byte{0x80, 0x01}, bytes.Repeat(pnBlockVer(ProfinetBlockDiagnosisData, 1), 9000)...)
 	alarm := pnBlock(ProfinetBlockAlarmLow, append(make([]byte, profinetAlarmHeadLen), item...)...)
 
-	for name, data := range map[string][]byte{"nested containers": inner, "RS events": events, "multiple alarm item": alarm} {
+	// The lists of the security and TSN blocks, every element as short
+	// as it gets: empty certificates, empty syslog messages, ports with
+	// no peers and peers with no names, events with a typed extension.
+	certs := pnBlock(ProfinetBlockSecurityRes, append([]byte{0, 4, 0, 0, 0xFF, 0xFF}, make([]byte, 40000)...)...)
+	audit := pnBlock(ProfinetBlockAuditableEvents, append([]byte{0xFF, 0xFF}, make([]byte, 40000)...)...)
+	ports := pnBlock(ProfinetBlockCIMExpectedNeighbor, append([]byte{0xFF, 0xFF}, make([]byte, 40000)...)...)
+	peers := pnBlock(ProfinetBlockCIMExpectedNeighbor, append([]byte{0, 1, 0, 0, 0, 0, 0, 0, 0, 0xFF}, make([]byte, 1500)...)...)
+
+	stop := append(make([]byte, profinetRSEventFixedLen), 0x80, profinetRSStopLen, 0x40, 0x10, 0, 0, 0, 0)
+	stop = pnBlock(ProfinetBlockType(ProfinetRSStopObserver), stop...)
+	stops := pnBlock(ProfinetBlockRSGetEvent, append([]byte{0xFF, 0xFF}, bytes.Repeat(stop, 200)...)...)
+
+	for name, data := range map[string][]byte{"nested containers": inner, "RS events": events, "multiple alarm item": alarm,
+		"certificates": certs, "auditable events": audit, "neighbor ports": ports, "neighbor peers": peers, "RS stop events": stops} {
 		got := allocPerByte(len(data), func() {
 			_, _ = ProfinetDecodeBlocks(data)
 		})
@@ -620,4 +733,38 @@ var pnBlockGolden = []struct {
 	{83, 0x0305, 0, "&{SetControl:17 GetControl:1 MulticastControl:257}"},
 	{83, 0x0306, 0, "&{SetControl:1 GetControl:0 MulticastControl:256}"},
 	{84, 0x011B, 0, "&{ARUUID:c0c1c2c3-c4c5-c6c7-c8c9-cacbcccdcecf}"},
+	{85, 0x0241, 0, "&{Instances:[{VendorID:42 DeviceID:257 InstanceID:1 Interface:1} {VendorID:42 DeviceID:257 InstanceID:2 Interface:2}] DeviceType:ET200SP IM155-6           OrderID:6ES7 155-6AU01-0BN0  SerialNumber:S C-J1234567     HardwareRevision:00003 SoftwarePrefix:86 SoftwareRevision:004002000}"},
+	{86, 0x0273, 0, "&{Queues:[137438969856016743 0]}"},
+	{86, 0x0272, 0, "&{NumberOfEntries:1 Slot:1 Subslot:32769 Status:5}"},
+	{86, 0x027B, 0, "&{Limiters:[281483666391140 4494459880]}"},
+	{86, 0x027C, 0, "&{Limiters:[1971433038282852 1691053377978418]}"},
+	{86, 0x0278, 0, "&{Entries:[{ForwardingGroupIngress:1 ForwardingGroupEgress:2 StreamClass:1 ForwardingDelay:3000} {ForwardingGroupIngress:2 ForwardingGroupEgress:1 StreamClass:2 ForwardingDelay:268447456}]}"},
+	{86, 0x027D, 0, "&{Ports:[{Slot:1 Subslot:32769 MAUType:100BASE-TX full duplex MAUTypeExtension:256 NumberOfQueues:8 Capabilities:7 ForwardingGroup:1} {Slot:1 Subslot:32770 MAUType:1000BASE-T full duplex MAUTypeExtension:0 NumberOfQueues:4 Capabilities:2 ForwardingGroup:2}]}"},
+	{87, 0x027E, 0, "&{Ports:[{Slot:1 Subslot:32769 Peers:[{PortName:port-001 StationName:dev-a LineDelay:2147483748} {PortName:p2 StationName:station-b LineDelay:101}]} {Slot:1 Subslot:32770 Peers:[{PortName:port-9 StationName:devc LineDelay:0}]}]}"},
+	{88, 0x0275, 0, "&{FDBCommand:1 Entries:[{DestinationAddress:01:80:c2:00:01:01 StreamClass:1 Elements:[{Slot:1 Subslot:32769} {Slot:1 Subslot:32770}]} {DestinationAddress:01:80:c2:00:01:02 StreamClass:2 Elements:[{Slot:1 Subslot:32770} {Slot:1 Subslot:32771}]}] StreamCollectionUUID:40414243-4445-4647-4849-4a4b4c4d4e"},
+	{88, 0x027A, 0, "&{FDBCommand:0 Entries:[{DestinationAddress:01:80:c2:00:01:03 StreamClass:1 Elements:[{Slot:1 Subslot:32769} {Slot:1 Subslot:32770}]}] StreamCollectionUUID:40414243-4445-4647-4849-4a4b4c4d4e4f}"},
+	{88, 0x0276, 0, "&{Ports:[{Slot:1 Subslot:32769 TimeDomainNumber:0 SyncPortRole:1} {Slot:1 Subslot:32770 TimeDomainNumber:32 SyncPortRole:2}] SyncTreeDataUUID:50515253-5455-5657-5859-5a5b5c5d5e5f}"},
+	{89, 0x0277, 0, "&{MaxSupportedRecordSize:4096 TransferTimeTX:1000 TransferTimeRX:2000 SupportedBurstSize:256 MinIPGBreakingPoint:64 MinIPGFrameSize:96 FrameSendOffsetDeviation:16}"},
+	{89, 0x027D, 0, "&{Ports:[{Slot:1 Subslot:32769 MAUType:100BASE-TX full duplex MAUTypeExtension:256 NumberOfQueues:8 Capabilities:7 ForwardingGroup:1} {Slot:1 Subslot:32770 MAUType:1000BASE-T full duplex MAUTypeExtension:0 NumberOfQueues:4 Capabilities:2 ForwardingGroup:2}]}"},
+	{89, 0x0278, 0, "&{Entries:[{ForwardingGroupIngress:1 ForwardingGroupEgress:2 StreamClass:1 ForwardingDelay:3000} {ForwardingGroupIngress:2 ForwardingGroupEgress:1 StreamClass:2 ForwardingDelay:268447456}]}"},
+	{89, 0x027E, 0, "&{Ports:[{Slot:1 Subslot:32769 Peers:[{PortName:port-001 StationName:dev-a LineDelay:2147483748} {PortName:p2 StationName:station-b LineDelay:101}]} {Slot:1 Subslot:32770 Peers:[{PortName:port-9 StationName:devc LineDelay:0}]}]}"},
+	{90, 0x0310, 0, "&{NumberOfEntries:1 Reserved:[0 0 0 0 0 0] Flags:3 StationName:home-a StationIP:192.168.0.9}"},
+	{90, 0x0311, 0, "&{NumberOfEntries:1 Reserved:[0 0 0 0 0 0] Flags:1 StationName:homeBCDE StationIP:10.0.0.1}"},
+	{90, 0x0312, 0, "&{Entries:[{EntryLength:8 NamespaceFormat:1 NamespaceID:1 CapabilityID:16} {EntryLength:8 NamespaceFormat:2 NamespaceID:42 CapabilityID:305419896}]}"},
+	{90, 0x0313, 0, "&{Entries:[{Condition:1 Access:0 Slot:131073 Subslot:2147549185 Index:2951741440} {Condition:2 Access:1 Slot:4294901760 Subslot:4294901760 Index:2955849728}]}"},
+	{90, 0x0314, 0, "&{Entries:[{Condition:1 Access:0 Slot:131073 Subslot:2147549185 Index:2951741440} {Condition:2 Access:1 Slot:4294901760 Subslot:4294901760 Index:2955849728}]}"},
+	{91, 0x010D, 0, "&{ARType:IO Controller AR ARUUID:60616263-6465-6667-6869-6a6b6c6d6e6f SessionKey:7 ActivityTimeoutFactor:600 Properties:17 Endpoint:{ID:1 VendorID:42 DeviceID:257 InstanceID:1} MAC:00:0e:8c:01:02:03 StationName:ctrl}"},
+	{91, 0x06E2, 0, "&{IOProtection:258 AlarmProtection:258 SXPProtection:514 KeyDerivation:259 KeyAgreement:260}"},
+	{92, 0x810D, 0, "&{ARType:IO Controller AR ARUUID:60616263-6465-6667-6869-6a6b6c6d6e6f SessionKey:7 ActivityTimeoutFactor:0 Properties:0 Endpoint:{ID:1 VendorID:42 DeviceID:257 InstanceID:1} MAC:00:0e:8c:04:05:06 StationName:dev1}"},
+	{93, 0x011A, 0, "&{Operation:Get Available CredentialIDs CredentialID:0 Config:0 Credentials:[] ProfinetSecurityParams:{Features:0 Capabilities:[] Certificates:[] CSR:[] Data:[]}}"},
+	{94, 0x811A, 0, "&{Operation:Get Security Capabilities CredentialID:0 Config:0 Credentials:[] ProfinetSecurityParams:{Features:1 Capabilities:[258 260 259] Certificates:[] CSR:[] Data:[]}}"},
+	{95, 0x06F0, 0, "&{Operation:Get Security Capabilities DevIDDomain:0 Config:0 EAP:[] ProfinetSecurityParams:{Features:0 Capabilities:[] Certificates:[] CSR:[] Data:[]}}"},
+	{96, 0x86F0, 0, "&{Operation:Get Security Capabilities DevIDDomain:0 Config:0 EAP:[] ProfinetSecurityParams:{Features:1 Capabilities:[258 260] Certificates:[] CSR:[] Data:[]}}"},
+	{97, 0x06E0, 0, "&{Operation:Process EAP Message DevIDDomain:0 Config:0 EAP:[1 5 0 9 1 117 115 101 114] ProfinetSecurityParams:{Features:0 Capabilities:[] Certificates:[] CSR:[] Data:[]}}"},
+	{98, 0x86E0, 0, "&{Operation:Process EAP Message DevIDDomain:0 Config:0 EAP:[2 5 0 10 1 117 115 101 114 49] ProfinetSecurityParams:{Features:0 Capabilities:[] Certificates:[] CSR:[] Data:[]}}"},
+	{99, 0x811C, 0, "&{NumberOfEntries:2 Events:[<34>1 2026-11-20T10:00:00Z host app - ID47 - msg1 <35>1 2026-11-20T10:00:01Z host app - ID48 - msg]}"},
+	{100, 0x0500, 0, "&{Data:[1 2 3 4 5 6 7 8]}"},
+	{101, 0x0901, 0, "&{NumberOfEntries:1 Events:[{ProfinetRSBlockHead:{BlockType:Stop observer Length:58 VersionHigh:1 VersionLow:0} ARUUID:d0d1d2d3-d4d5-d6d7-d8d9-dadbdcdddedf API:14848 Slot:1 Subslot:2 ChannelNumber:3 Specifier:16675 TimeStamp:{Status:2 SecondsHigh:0 Seconds:1694498816 Nanoseconds:123456789} MinusErro"},
+	{102, 0x0901, 0, "&{NumberOfEntries:1 Events:[{ProfinetRSBlockHead:{BlockType:Time status observer Length:88 VersionHigh:1 VersionLow:0} ARUUID:d0d1d2d3-d4d5-d6d7-d8d9-dadbdcdddedf API:14848 Slot:1 Subslot:2 ChannelNumber:3 Specifier:16675 TimeStamp:{Status:2 SecondsHigh:0 Seconds:1694498816 Nanoseconds:123456789} Mi"},
+	{103, 0x0901, 0, "&{NumberOfEntries:1 Events:[{ProfinetRSBlockHead:{BlockType:Source identification observer Length:112 VersionHigh:1 VersionLow:0} ARUUID:d0d1d2d3-d4d5-d6d7-d8d9-dadbdcdddedf API:14848 Slot:1 Subslot:2 ChannelNumber:3 Specifier:16675 TimeStamp:{Status:2 SecondsHigh:0 Seconds:1694498816 Nanoseconds:12"},
 }

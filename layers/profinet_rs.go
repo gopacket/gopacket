@@ -16,6 +16,17 @@
 //	                RS_Specifier (2), RS_TimeStamp (12), RS_MinusError (2),
 //	                RS_PlusError (2), RS_EventDataExtension*
 //	RS_AdjustBlock  BlockHeader, Padding (2), settings of the observer
+//
+// The settings of an observer have no layout Wireshark knows; they stay
+// raw. The first extension of an event is read by the observer that made
+// it, as Wireshark does:
+//
+//	Stop observer            observer (2), RS_ReasonCode (4), user data
+//	Time status observer     Padding (2), RS_DomainIdentification (16),
+//	                         RS_MasterIdentification (8), RS_TimeStamp (12)
+//	Source identification    AM_DeviceIdentification (8),
+//	                         IM_Tag_Function (32), IM_Tag_Location (22)
+//	Digital input observer   SoE_DigitalInputCurrentValue (2)
 
 package layers
 
@@ -93,10 +104,97 @@ type ProfinetRSTimeStamp struct {
 	Nanoseconds uint32
 }
 
-// ProfinetRSExtension is one RS_EventDataExtension.
+// ProfinetRSExtension is one RS_EventDataExtension. Value is set on the
+// first extension of an event of a standard observer: a pointer to
+// ProfinetRSStop, ProfinetRSTimeStatus, ProfinetRSSourceIdent or
+// ProfinetRSDigitalInput.
 type ProfinetRSExtension struct {
-	Type uint8
-	Data []byte
+	Type  uint8
+	Data  []byte
+	Value interface{}
+}
+
+// ProfinetRSStop is the extension of a stop observer event: the observer
+// that stopped and why.
+type ProfinetRSStop struct {
+	Observer ProfinetRSBlockType
+	Reason   uint16 // RS_ReasonCode bits 0-15
+	Detail   uint16 // RS_ReasonCode bits 16-31
+	Data     []byte
+}
+
+// ProfinetRSTimeStatus is the extension of a time status observer event.
+type ProfinetRSTimeStatus struct {
+	DomainIdentification []byte // RS_DomainIdentification, 16 bytes
+	MasterIdentification []byte // RS_MasterIdentification, 8 bytes
+	TimeStamp            ProfinetRSTimeStamp
+}
+
+// ProfinetRSSourceIdent is the extension of a source identification
+// observer event. The tags keep their padding.
+type ProfinetRSSourceIdent struct {
+	Organization uint16 // AM_DeviceIdentification
+	VendorID     uint16
+	DeviceID     uint16
+	DeviceSubID  uint16
+	TagFunction  string // IM_Tag_Function
+	TagLocation  string // IM_Tag_Location
+}
+
+// ProfinetRSDigitalInput is the extension of a digital input observer
+// event.
+type ProfinetRSDigitalInput struct {
+	CurrentValue uint16 // SoE_DigitalInputCurrentValue
+}
+
+// One reports whether the digital input is one (bit 0).
+func (d *ProfinetRSDigitalInput) One() bool { return d.CurrentValue&1 != 0 }
+
+// Sizes of the typed extensions.
+const (
+	profinetRSStopLen         = 6
+	profinetRSDomainIdentLen  = 16
+	profinetRSMasterIdentLen  = 8
+	profinetRSTimeStampLen    = 12
+	profinetRSTimeStatusLen   = 2 + profinetRSDomainIdentLen + profinetRSMasterIdentLen + profinetRSTimeStampLen
+	profinetRSSourceIdentLen  = 8 + profinetIMTagFunctionLen + profinetIMTagLocationLen
+	profinetRSDigitalInputLen = 2
+)
+
+// timeStamp reads an RS_TimeStamp.
+func (r *profinetReader) timeStamp() ProfinetRSTimeStamp {
+	return ProfinetRSTimeStamp{Status: r.u16(), SecondsHigh: r.u16(), Seconds: r.u32(), Nanoseconds: r.u32()}
+}
+
+// decodeProfinetRSExt reads the data of the first extension of an event
+// by the observer that made it. It returns nil for other observers and
+// for data shorter than the fields.
+func decodeProfinetRSExt(observer ProfinetRSBlockType, data []byte) interface{} {
+	r := &profinetReader{data: data}
+
+	switch observer {
+	case ProfinetRSStopObserver:
+		if len(data) >= profinetRSStopLen {
+			s := &ProfinetRSStop{Observer: ProfinetRSBlockType(r.u16())}
+			s.Detail, s.Reason, s.Data = r.u16(), r.u16(), r.rest()
+			return s
+		}
+	case ProfinetRSTimeStatusObserver:
+		if len(data) >= profinetRSTimeStatusLen {
+			r.skip(2)
+			return &ProfinetRSTimeStatus{r.bytes(profinetRSDomainIdentLen), r.bytes(profinetRSMasterIdentLen), r.timeStamp()}
+		}
+	case ProfinetRSSourceIdentObserver:
+		if len(data) >= profinetRSSourceIdentLen {
+			return &ProfinetRSSourceIdent{r.u16(), r.u16(), r.u16(), r.u16(),
+				r.str(profinetIMTagFunctionLen), r.str(profinetIMTagLocationLen)}
+		}
+	case ProfinetRSDigitalInputObserver:
+		if len(data) >= profinetRSDigitalInputLen {
+			return &ProfinetRSDigitalInput{CurrentValue: r.u16()}
+		}
+	}
+	return nil
 }
 
 // ProfinetRSBlockHead is the header of a reporting system block.
@@ -173,10 +271,13 @@ func decodeProfinetRSEvents(r *profinetReader) *ProfinetRSEventInfo {
 		e.Subslot = body.u16()
 		e.ChannelNumber = body.u16()
 		e.Specifier = ProfinetRSSpecifier(body.u16())
-		e.TimeStamp = ProfinetRSTimeStamp{Status: body.u16(), SecondsHigh: body.u16(), Seconds: body.u32(), Nanoseconds: body.u32()}
+		e.TimeStamp = body.timeStamp()
 		e.MinusError = body.u16()
 		e.PlusError = body.u16()
 		e.Extensions = body.rsExtensions()
+		if len(e.Extensions) > 0 {
+			e.Extensions[0].Value = decodeProfinetRSExt(head.BlockType, e.Extensions[0].Data)
+		}
 		info.Events = append(info.Events, e)
 	}
 	return info
@@ -203,7 +304,7 @@ func (r *profinetReader) rsExtensions() []ProfinetRSExtension {
 }
 
 // ProfinetRSAdjustBlock is one RS_AdjustBlock: the settings of one
-// observer, raw.
+// observer, raw (Wireshark shows them as user data for every observer).
 type ProfinetRSAdjustBlock struct {
 	ProfinetRSBlockHead
 	Data []byte

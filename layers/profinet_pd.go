@@ -69,6 +69,7 @@ const (
 	ProfinetBlockPDPortStatistic   ProfinetBlockType = 0x0251 // *ProfinetPDPortStatistic
 	ProfinetBlockOwnPort           ProfinetBlockType = 0x0260 // *ProfinetOwnPort
 	ProfinetBlockNeighbors         ProfinetBlockType = 0x0261 // *ProfinetNeighbors
+	ProfinetBlockPDRsiInstances    ProfinetBlockType = 0x0241 // *ProfinetPDRsiInstances
 	ProfinetBlockMultipleHeader    ProfinetBlockType = 0x0400 // *ProfinetMultipleHeader +Blocks
 	ProfinetBlockCOContainer       ProfinetBlockType = 0x0401 // *ProfinetCOContainer +Blocks
 	ProfinetBlockFSHello           ProfinetBlockType = 0x0600 // *ProfinetFSHello
@@ -911,6 +912,73 @@ type ProfinetFSParameter struct {
 	UUID ProfinetUUID
 }
 
+// ProfinetRsiInstance is one PDRsiInstance: a remote service interface
+// the device offers.
+type ProfinetRsiInstance struct {
+	VendorID   uint16
+	DeviceID   uint16
+	InstanceID uint16
+	Interface  uint8 // RsiInterface
+}
+
+// ProfinetPDRsiInstances is the body of PDRsiInstances: the instances and
+// the SystemIdentification of the device, whose fixed-size strings keep
+// their padding.
+//
+//	| DeviceType | OrderID | IM_Serial_Number | HWRevision | Prefix | SWRevision |
+//	| 25         | 20      | 16               | 5          | 1      | 9          |
+//
+// One blank separates the fields, but not the prefix from the revision.
+type ProfinetPDRsiInstances struct {
+	Instances        []ProfinetRsiInstance
+	DeviceType       string
+	OrderID          string
+	SerialNumber     string // IM_Serial_Number
+	HardwareRevision string // HWRevision, five digits
+	SoftwarePrefix   byte   // SWRevisionPrefix
+	SoftwareRevision string // SWRevision, three numbers of three digits
+}
+
+const (
+	profinetRsiInstanceLen   = 8
+	profinetRsiDeviceTypeLen = 25
+	profinetRsiHWRevisionLen = 5
+	profinetRsiSWRevisionLen = 9
+
+	// profinetSystemIdentLen counts the six fields and four blanks.
+	profinetSystemIdentLen = profinetRsiDeviceTypeLen + profinetIMOrderIDLen + profinetIMSerialLen +
+		profinetRsiHWRevisionLen + 1 + profinetRsiSWRevisionLen + 4
+)
+
+func decodeProfinetRsi(r *profinetReader) interface{} {
+	if r.left() < 2 {
+		return nil
+	}
+
+	v := &ProfinetPDRsiInstances{Instances: make([]ProfinetRsiInstance, r.count(profinetRsiInstanceLen))}
+	for i := range v.Instances {
+		v.Instances[i] = ProfinetRsiInstance{VendorID: r.u16(), DeviceID: r.u16(), InstanceID: r.u16(), Interface: r.u8()}
+		r.skip(1)
+	}
+
+	// The count lied or the identification is cut: nothing to trust.
+	if r.short || r.left() < profinetSystemIdentLen {
+		return nil
+	}
+
+	v.DeviceType = r.str(profinetRsiDeviceTypeLen)
+	r.skip(1)
+	v.OrderID = r.str(profinetIMOrderIDLen)
+	r.skip(1)
+	v.SerialNumber = r.str(profinetIMSerialLen)
+	r.skip(1)
+	v.HardwareRevision = r.str(profinetRsiHWRevisionLen)
+	r.skip(1)
+	v.SoftwarePrefix = r.u8()
+	v.SoftwareRevision = r.str(profinetRsiSWRevisionLen)
+	return v
+}
+
 // decodePDValue decodes the PDev blocks.
 func (b *ProfinetBlock) decodePDValue(r *profinetReader, low uint8) interface{} {
 	// Blocks with more than one version check it themselves.
@@ -977,6 +1045,8 @@ func (b *ProfinetBlock) decodePDValue(r *profinetReader, low uint8) interface{} 
 		return decodeProfinetMultiHead(r, b)
 	case ProfinetBlockCOContainer:
 		return decodeProfinetCOContainer(r, b)
+	case ProfinetBlockPDRsiInstances:
+		return decodeProfinetRsi(r)
 	}
 	return b.decodePDScalar(r)
 }

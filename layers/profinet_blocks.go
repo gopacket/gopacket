@@ -22,7 +22,7 @@ func (b *ProfinetBlock) decodeValue(r *profinetReader) {
 		b.Value = b.decodeMrpValue(r, low)
 	case b.Type >= ProfinetBlockRSAdjustObserver && b.Type <= ProfinetBlockRSAckEvent:
 		b.Value = b.decodeRSValue(r, low)
-	case b.Type >= ProfinetBlockNMEDomainTime && b.Type <= ProfinetBlockCIMPortSAPReal:
+	case b.Type >= ProfinetBlockCIMPortConfig && b.Type <= ProfinetBlockRecordPolicyReal:
 		b.Value = b.decodeTSNValue(r, low)
 	}
 	if b.Decoded() {
@@ -33,7 +33,10 @@ func (b *ProfinetBlock) decodeValue(r *profinetReader) {
 	if b.Value = b.decodePDValue(r, low); b.Decoded() {
 		return
 	}
-	b.Value = b.decodeARValue(r, low)
+	if b.Value = b.decodeARValue(r, low); b.Decoded() {
+		return
+	}
+	b.Value = b.decodeSecValue(r, low)
 }
 
 // Ranges of block types one decoder covers. Types inside a range that it

@@ -19,7 +19,7 @@ import "fmt"
 // ErrorCode1 values of ErrorDecode PNIO that the ErrorCode2 tables key on.
 const (
 	profinetErr1BlockFirst  = 1  // faulty connect, control and release blocks
-	profinetErr1BlockLast   = 57 // ARVendorBlockRes
+	profinetErr1BlockLast   = 57 // ARSXPBlockRes
 	profinetErr1CMRPC       = 64
 	profinetErr1RTAProtocol = 253
 
@@ -45,18 +45,25 @@ var profinetErr1PNIORW = map[uint8]string{
 	0xB8: "Access: invalid parameter",
 	0xB9: "Access: invalid type",
 	0xBA: "Access: backup",
+	0xBF: "Access: unauthorized access denied",
 	0xC0: "Resource: read constrain conflict",
 	0xC1: "Resource: write constrain conflict",
 	0xC2: "Resource: resource busy",
 	0xC3: "Resource: resource unavailable",
 }
 
-// profinetErrClassNames names the error classes of PNIORW for the codes
-// the table above leaves to the user.
-var profinetErrClassNames = map[uint8]string{
-	0xA: "Application",
-	0xB: "Access",
-	0xC: "Resource",
+// profinetErrClass is an error class of PNIORW: its name and the first
+// low nibble of ErrorCode1 that is left to the user. The codes between the
+// named ones and that nibble are not specified.
+type profinetErrClass struct {
+	name      string
+	userFirst uint8
+}
+
+var profinetErrClasses = map[uint8]profinetErrClass{
+	0xA: {"Application", 0xA},
+	0xB: {"Access", 0xB},
+	0xC: {"Resource", 0x8},
 }
 
 // profinetErr1PNIO names ErrorCode1 of ErrorDecode PNIO.
@@ -74,6 +81,7 @@ var profinetErr1PNIO = map[uint8]string{
 	11:  "Connect: faulty ARFSUBlock",
 	12:  "Connect: faulty ARVendorBlockReq",
 	13:  "Connect: faulty RSInfoBlock",
+	14:  "Connect: faulty ARSXPBlockReq",
 	20:  "Control: faulty block of PrmEnd after connect",
 	21:  "Control: faulty block of PrmEnd after plug",
 	22:  "Control: faulty block of ApplicationReady after connect",
@@ -85,10 +93,10 @@ var profinetErr1PNIO = map[uint8]string{
 	51:  "Connect: faulty IOCRBlockRes",
 	52:  "Connect: faulty AlarmCRBlockRes",
 	53:  "Connect: faulty ModuleDiffBlock",
-	54:  "Connect: faulty PrmServerBlockRes",
+	54:  "Connect: faulty ARRPCBlockRes",
 	55:  "Connect: faulty ARServerBlockRes",
-	56:  "Connect: faulty ARRPCBlockRes",
-	57:  "Connect: faulty ARVendorBlockRes",
+	56:  "Connect: faulty ARVendorBlockRes",
+	57:  "Connect: faulty ARSXPBlockRes",
 	60:  "AlarmAck error",
 	61:  "CMDEV",
 	62:  "CMCTL",
@@ -116,7 +124,7 @@ var profinetErr1PNIO = map[uint8]string{
 	105: "CTLIO",
 	106: "CTLSU",
 	107: "CTLRPC",
-	108: "CTLBE",
+	108: "CTLPBE",
 	109: "CTLSRL",
 	200: "CMSM",
 	202: "CMRDR",
@@ -127,6 +135,8 @@ var profinetErr1PNIO = map[uint8]string{
 	209: "CMPBE",
 	210: "CMSRL",
 	211: "CMDMC",
+	224: "SXP protocol error",
+	225: "RTAv3 protocol error",
 	253: "RTA protocol error",
 	255: "User specific",
 }
@@ -137,19 +147,21 @@ var profinetErr2Block = [...]string{"BlockType", "BlockLength", "BlockVersionHig
 
 // profinetErr2CMRPC names ErrorCode2 of ErrorCode1 CMRPC.
 var profinetErr2CMRPC = [...]string{
-	1:  "ArgsLength invalid",
-	2:  "Unknown blocks",
-	3:  "IOCR missing",
-	4:  "Wrong AlarmCRBlock count",
-	5:  "Out of AR resources",
-	6:  "AR UUID unknown",
-	7:  "State conflict",
-	8:  "Out of provider, consumer or alarm resources",
-	9:  "Out of memory",
-	10: "PDev already owned",
-	11: "ARset state conflict during connection establishment",
-	12: "ARset parameter conflict during connection establishment",
-	13: "PDev, port(s) without interface",
+	0:  "ArgsLength invalid",
+	1:  "Unknown blocks",
+	2:  "IOCR missing",
+	3:  "Wrong AlarmCRBlock count",
+	4:  "Out of AR resources",
+	5:  "AR UUID unknown",
+	6:  "State conflict",
+	7:  "Out of provider, consumer or alarm resources",
+	8:  "Out of memory",
+	9:  "PDev already owned",
+	10: "ARset state conflict during connection establishment",
+	11: "ARset parameter conflict during connection establishment",
+	12: "PDev, port(s) without interface",
+	13: "Discrepancy between PDev and ARType",
+	14: "PDev, discrepancy between PDev ownership and ARProperties",
 }
 
 // profinetErr2RTA names ErrorCode2 of ErrorCode1 RTA protocol error: why
@@ -180,14 +192,14 @@ var profinetErr2RTA = [...]string{
 	23: "AR RPC write error",
 	24: "AR RPC control error",
 	25: "AR forbidden pull or plug after check response and before in-data indication",
-	26: "AR add, remove or control error",
-	27: "AR PDev, port(s) without interface",
-	28: "AR status of port MAU mismatch",
-	29: "AR IRData sync lost",
-	30: "AR wrong topology",
+	26: "AR AP removed",
+	27: "AR link down",
+	28: "AR could not register multicast MAC address",
+	29: "Not synchronized (cannot start companion AR)",
+	30: "Wrong topology (cannot start companion AR)",
 	31: "AR DCP station name changed",
 	32: "AR DCP reset to factory",
-	33: "AR cannot parameterize a 0x8ipp submodule in the first AR",
+	33: "Cannot start companion AR because of a 0x8ipp submodule in the first AR",
 	34: "AR no IRData record yet",
 	35: "AR PDev",
 	36: "AR PDev, no port offers required speed or duplex",
@@ -195,7 +207,7 @@ var profinetErr2RTA = [...]string{
 	38: "IOCARSR RDHT expired",
 	39: "IOCARSR PDev parameterization impossible",
 	40: "Remote application ready timeout expired",
-	41: "IOCARSR redundant interface list or access to the peripherals impossible",
+	41: "IOCARSR redundant interface lost or access to the peripherals impossible",
 	42: "IOCARSR MTOT expired",
 	43: "IOCARSR AR protocol violation",
 	44: "PDev, plug port without CombinedObjectContainer",
@@ -210,8 +222,9 @@ func (s ProfinetPNIOStatus) Code1Name() string {
 		if name, ok := profinetErr1PNIORW[s.ErrorCode1]; ok {
 			return name
 		}
-		if class, ok := profinetErrClassNames[s.ErrorCode1>>profinetErrClassShift]; ok {
-			return class + ": user specific"
+		class, ok := profinetErrClasses[s.ErrorCode1>>profinetErrClassShift]
+		if ok && s.ErrorCode1&profinetNibbleMask >= class.userFirst {
+			return class.name + ": user specific"
 		}
 	case ProfinetErrorDecodePNIO:
 		return profinetErr1PNIO[s.ErrorCode1]
