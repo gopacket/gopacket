@@ -990,10 +990,17 @@ func (a *DNP3Application) decode(frag []byte, end dnp3SegmentEnd) error {
 		mode = dnp3HeadersOnly
 	}
 
+	lenient := false
 	for len(rest) > 0 {
 		var h DNP3ObjectHeader
 		n, err := h.decode(rest, mode)
 		if errors.Is(err, ErrDNP3ObjTruncated) && end == dnp3MoreSegments {
+			err = errDNP3Stop
+		}
+
+		// Bytes past a late sized object were never parsed before, so
+		// their errors stop parsing rather than fail the frame.
+		if err != nil && lenient {
 			err = errDNP3Stop
 		}
 
@@ -1008,6 +1015,7 @@ func (a *DNP3Application) decode(frag []byte, end dnp3SegmentEnd) error {
 		}
 		a.Objects = append(a.Objects, h)
 		rest = rest[n:]
+		lenient = lenient || h.lateSliced(mode)
 	}
 	return nil
 }
@@ -1090,6 +1098,10 @@ func (h *DNP3ObjectHeader) decodeObjects(b []byte, mode dnp3ObjMode) (int, error
 		return h.decodeSized(b, prefix)
 	}
 
+	if dnp3LateSized(h.Group, h.Variation) {
+		return h.decodeLate(b, prefix)
+	}
+
 	size, ok := dnp3SizeOf(h.Group, h.Variation)
 	if !ok {
 		return 0, errDNP3Stop
@@ -1157,6 +1169,79 @@ func (h *DNP3ObjectHeader) decodeSized(b []byte, prefix int) (int, error) {
 		start := off + prefix
 		off = start + int(size)
 		h.Objects = append(h.Objects, DNP3Object{Index: h.Start + uint32(i), Data: b[start:off]})
+	}
+	h.Data = b[:off]
+	return off, nil
+}
+
+// dnp3LateSizes are fixed object sizes added after the first release.
+var dnp3LateSizes = map[uint16]int{
+	dnp3GV(120, 3): 6, // aggressive mode request: CSQ, user
+	dnp3GV(120, 4): 2, // session key status request: user
+}
+
+// dnp3LateSized reports whether objects of group g variation v were left
+// unsized, so in Unparsed, by the first release: device attributes,
+// whose size each carries, and dnp3LateSizes. g0v254 asks for all
+// attributes and carries none.
+func dnp3LateSized(g DNP3Group, v uint8) bool {
+	if g == DNP3GroupDeviceAttributes {
+		return v != 0 && v != dnp3AttrAll
+	}
+
+	_, ok := dnp3LateSizes[dnp3GV(g, v)]
+	return ok
+}
+
+// lateSliced reports whether decodeObjects sliced the header through
+// decodeLate.
+func (h *DNP3ObjectHeader) lateSliced(mode dnp3ObjMode) bool {
+	return mode == dnp3WithValues && len(h.Objects) > 0 && !h.Prefix.IsSize() && dnp3LateSized(h.Group, h.Variation)
+}
+
+// decodeLate slices objects dnp3LateSized names. Any shortfall stops
+// parsing, as their unknown size did, so no frame that decoded before
+// fails now.
+func (h *DNP3ObjectHeader) decodeLate(b []byte, prefix int) (int, error) {
+	if h.Range == DNP3RangeFreeFormat1 {
+		return 0, errDNP3Stop
+	}
+
+	var n int
+	var err error
+	if h.Group == DNP3GroupDeviceAttributes {
+		n, err = h.decodeAttrs(b, prefix)
+	} else {
+		n, err = h.decodeFixed(b, prefix, dnp3LateSizes[dnp3GV(h.Group, h.Variation)])
+	}
+
+	if err != nil {
+		h.Data, h.Objects = nil, nil
+		return 0, errDNP3Stop
+	}
+	return n, nil
+}
+
+// decodeAttrs slices Count device attributes, each its prefix, a data
+// type code, a length and that many value bytes: 01 02 41 42 is a VSTR
+// "AB".
+func (h *DNP3ObjectHeader) decodeAttrs(b []byte, prefix int) (int, error) {
+	per := prefix + dnp3AttrHeaderLen
+	h.Objects = make([]DNP3Object, 0, min(h.Count, uint64(len(b)/per)))
+	off := 0
+	for i := 0; uint64(i) < h.Count; i++ {
+		if len(b)-off < per {
+			return 0, ErrDNP3ObjTruncated
+		}
+
+		start := off + prefix
+		end := start + dnp3AttrHeaderLen + int(b[start+1])
+		if end > len(b) {
+			return 0, ErrDNP3ObjTruncated
+		}
+
+		h.Objects = append(h.Objects, DNP3Object{Index: h.index(i, b[off:start]), Data: b[start:end]})
+		off = end
 	}
 	h.Data = b[:off]
 	return off, nil
