@@ -10,6 +10,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/gopacket/gopacket"
 )
@@ -252,6 +253,46 @@ var (
 	errISOSessionGroup     = errors.New("ISO session: parameter group nested in a group")
 )
 
+// ISOSessionFlaws flags what is wrong with a TSDU that still decodes.
+type ISOSessionFlaws uint8
+
+// Flaws of a session TSDU.
+const (
+	// ISOSessionLengthOverrun: the length indicator of an SPDU runs past
+	// the TSDU, yet the octets present are whole parameters. The SPDU is
+	// decoded from those; ISOSessionSPDU.Length keeps the indicator.
+	ISOSessionLengthOverrun ISOSessionFlaws = 1 << iota
+	// ISOSessionBadConcat: what follows the concatenated SPDUs starts
+	// like another one and does not decode. It is left undecoded.
+	ISOSessionBadConcat
+	// ISOSessionTooManySPDUs: more SPDUs are concatenated than the
+	// decoder reads. The others are left undecoded.
+	ISOSessionTooManySPDUs
+)
+
+// String lists the flaws, e.g. "length-overrun|bad-concatenation".
+func (f ISOSessionFlaws) String() string {
+	if f == 0 {
+		return "none"
+	}
+
+	var parts []string
+	for i, name := range isoSessionFlawNames {
+		if f&(1<<uint(i)) != 0 {
+			parts = append(parts, name)
+		}
+	}
+
+	// Bits without a name.
+	if rest := f &^ (1<<uint(len(isoSessionFlawNames)) - 1); rest != 0 {
+		parts = append(parts, fmt.Sprintf("Unknown(%#x)", uint8(rest)))
+	}
+	return strings.Join(parts, "|")
+}
+
+// isoSessionFlawNames is indexed by flaw bit.
+var isoSessionFlawNames = [...]string{"length-overrun", "bad-concatenation", "too-many-spdus"}
+
 // ISOSessionParam is one PI or PGI unit. Params holds the PIs of a PGI.
 type ISOSessionParam struct {
 	ID     ISOSessionParamID
@@ -454,9 +495,13 @@ func (s *ISOSessionSPDU) value(id ISOSessionParamID) []byte {
 // being the main SPDU. The layer payload is the session user data: the
 // User Data parameter of connection SPDUs, the bytes that follow a DT,
 // or the SS-user data trailing a Refuse reason code.
+//
+// Flaws tells what was tolerated to decode the TSDU. No flaw is an error:
+// the layers above still get the user data found.
 type ISOSession struct {
 	BaseLayer
 	SPDUs []ISOSessionSPDU
+	Flaws ISOSessionFlaws
 }
 
 // Type returns the type of the last (main) SPDU.
@@ -485,7 +530,7 @@ func (s *ISOSession) NextLayerType() gopacket.LayerType {
 func (s *ISOSession) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	*s = ISOSession{SPDUs: s.SPDUs[:0]}
 
-	first, rest, err := decodeISOSessionSPDU(data)
+	first, rest, err := s.decodeSPDU(data, df)
 	if err != nil {
 		isoSessionFeedback(err, df)
 		return err
@@ -495,13 +540,13 @@ func (s *ISOSession) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) er
 	// A category 0 SPDU (GT, PT) must be followed by another SPDU. When the
 	// next octet is no category 2 SPDU, the first one is a lone DT.
 	if isoSessionCategory0(first.Type) && isoSessionCategory2(rest) {
-		second, more, err := decodeISOSessionSPDU(rest)
+		second, more, err := s.decodeSPDU(rest, df)
 		if err != nil {
 			isoSessionFeedback(err, df)
 			return err
 		}
 		s.SPDUs = append(s.SPDUs, second)
-		rest = s.decodeExtended(more)
+		rest = s.decodeExtended(more, df)
 	}
 
 	s.Contents = data[:len(data)-len(rest)]
@@ -509,25 +554,42 @@ func (s *ISOSession) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) er
 	return nil
 }
 
+// decodeSPDU reads one SPDU and records a tolerated length overrun: the
+// data then ends before the SPDU does, so the packet is flagged truncated.
+func (s *ISOSession) decodeSPDU(b []byte, df gopacket.DecodeFeedback) (ISOSessionSPDU, []byte, error) {
+	spdu, rest, fit, err := decodeISOSessionSPDU(b)
+	if err == nil && fit == isoSessionClamped {
+		s.Flaws |= ISOSessionLengthOverrun
+		df.SetTruncated()
+	}
+	return spdu, rest, err
+}
+
 // decodeExtended adds the category 2 SPDUs extended concatenation puts
 // after the second one and returns what follows them. An SPDU with a
-// user information field ends the TSDU. What does not decode is no SPDU:
-// it is left alone, as it was before these were read.
-func (s *ISOSession) decodeExtended(rest []byte) []byte {
-	for len(s.SPDUs) < isoSessionMaxSPDUs {
+// user information field ends the TSDU. What does not decode, or comes
+// after isoSessionMaxSPDUs SPDUs, is left alone and flagged.
+func (s *ISOSession) decodeExtended(rest []byte, df gopacket.DecodeFeedback) []byte {
+	for {
 		last := s.SPDUs[len(s.SPDUs)-1].Type
 		if isoSessionHasUserInfo(last) || !isoSessionCategory2(rest) {
-			break
+			return rest
+		}
+		if len(s.SPDUs) >= isoSessionMaxSPDUs {
+			s.Flaws |= ISOSessionTooManySPDUs
+			return rest
 		}
 
-		next, more, err := decodeISOSessionSPDU(rest)
+		// A failed SPDU must not leave its own flaw behind.
+		flaws := s.Flaws
+		next, more, err := s.decodeSPDU(rest, df)
 		if err != nil {
-			break
+			s.Flaws = flaws | ISOSessionBadConcat
+			return rest
 		}
 		s.SPDUs = append(s.SPDUs, next)
 		rest = more
 	}
-	return rest
 }
 
 // isoSessionHasUserInfo reports whether the SPDU carries its user data
@@ -610,26 +672,49 @@ func isoSessionLI(b []byte) (int, int, error) {
 	return int(binary.BigEndian.Uint16(b[1:])), 3, nil
 }
 
+// isoSessionFit tells whether an SPDU fits the data that holds it.
+type isoSessionFit uint8
+
+const (
+	isoSessionWhole isoSessionFit = iota
+	// isoSessionClamped: the length indicator overran the data and the
+	// parameter field was cut to what is there.
+	isoSessionClamped
+)
+
 // decodeISOSessionSPDU reads SI, LI and the parameter field.
-func decodeISOSessionSPDU(b []byte) (ISOSessionSPDU, []byte, error) {
+//
+// A length indicator past the end of the data is tolerated when the
+// octets present are whole PI units, as in an AC SPDU seen on the wire
+// whose LI is one too many: 0e 89 followed by 136 octets of parameters.
+// ISO 8327-1 8.2 does not allow it: the LI is the length of the parameter
+// field. A truncated capture, cut inside a parameter, still fails.
+func decodeISOSessionSPDU(b []byte) (ISOSessionSPDU, []byte, isoSessionFit, error) {
 	var s ISOSessionSPDU
 	if len(b) < isoSessionMinLen {
-		return s, nil, errISOSessionTruncated
+		return s, nil, isoSessionWhole, errISOSessionTruncated
 	}
 	s.Type = ISOSessionSPDUType(b[0])
 
 	li, used, err := isoSessionLI(b[1:])
 	if err != nil {
-		return s, nil, err
+		return s, nil, isoSessionWhole, err
 	}
 	off := 1 + used
-	if li > len(b)-off {
-		return s, nil, errISOSessionTruncated
-	}
 	s.Length = li
 
+	fit := isoSessionWhole
+	if li > len(b)-off {
+		// Without a single parameter there is nothing to go by.
+		if len(b) == off {
+			return s, nil, fit, errISOSessionTruncated
+		}
+		fit = isoSessionClamped
+		li = len(b) - off
+	}
+
 	s.Params, err = decodeISOSessionParams(b[off:off+li], isoSessionTop)
-	return s, b[off+li:], err
+	return s, b[off+li:], fit, err
 }
 
 // isoSessionLevel tells whether parameters sit in an SPDU or inside a PGI.

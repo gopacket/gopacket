@@ -45,7 +45,7 @@ func layerSummary(l gopacket.Layer) (string, bool) {
 	case *layers.S7CommPlus:
 		return fmt.Sprintf("S7comm-plus %v %v seq=%d", v.Opcode, v.Function, v.Sequence), true
 	case *layers.ISOSession:
-		return fmt.Sprintf("ISO session %v", v.Type()), true
+		return sessionSummary(v), true
 	case *layers.COTP:
 		return fmt.Sprintf("COTP %v", v.Type), true
 	case *layers.DNP3:
@@ -70,6 +70,15 @@ func layerSummary(l gopacket.Layer) (string, bool) {
 		return l.LayerType().String(), true
 	}
 	return "", false
+}
+
+// sessionSummary names the main SPDU and what was tolerated to decode
+// the TSDU, e.g. "ISO session AC flaws=length-overrun".
+func sessionSummary(s *layers.ISOSession) string {
+	if s.Flaws == 0 {
+		return fmt.Sprintf("ISO session %v", s.Type())
+	}
+	return fmt.Sprintf("ISO session %v flaws=%v", s.Type(), s.Flaws)
 }
 
 func mmsSummary(m *layers.MMS) string {

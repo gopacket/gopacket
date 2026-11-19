@@ -794,6 +794,9 @@ func FuzzMMSServices(f *testing.F) {
 	for _, v := range mmsVectors() {
 		f.Add(v.pdu)
 	}
+	for _, v := range mmsRealVectors() {
+		f.Add(mresp(mc(4, mc(1, mp(8, v.raw), mp(11, []byte("20260102030405.5Z"))))))
+	}
 	for _, ts := range iecExtractTSDUs(iecReadPcap(f, "testdata/iec61850_mms_siemens.pcap")) {
 		if m, ok := iecSession(ts.data).Layer(LayerTypeMMS).(*MMS); ok && m.VariableAttributes != nil {
 			f.Add([]byte(m.Contents))
@@ -810,6 +813,11 @@ func FuzzMMSServices(f *testing.F) {
 		}
 		if m.EventNotification != nil {
 			_, _ = m.EventNotification.Response()
+		}
+		if m.ReadResp != nil {
+			for i := range m.ReadResp.Results {
+				mmsDataWalk(t, &m.ReadResp.Results[i].Data)
+			}
 		}
 
 		// Through the stack, with the PDU as a second PDV.

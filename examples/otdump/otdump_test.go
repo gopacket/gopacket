@@ -40,6 +40,8 @@ var captureCases = []captureCase{
 	{"iec61850_mms.pcap", layers.LayerTypeTPKT, 165, 165, ""},
 	{"iec61850_mms_libiec61850.pcap", layers.LayerTypeMMS, 5, 5, ""},
 	{"iec61850_mms_libiec61850.pcap", layers.LayerTypeTPKT, 8, 8, ""},
+	{"iec61850_mms_libiec61850.pcap", layers.LayerTypeISOSession, 10, 6,
+		"tshark counts GT and DT apart in 4 TSDUs; frame 10 (AC) decodes with a length overrun flaw, as in tshark"},
 	{"iec61850_mms_reports_goose.pcap", layers.LayerTypeMMS, 8, 36,
 		"tshark decodes MMS only after seeing the association; 36 is its 38 PRES PDUs less 2 release PDUs"},
 	{"iec61850_mms_reports_goose.pcap", layers.LayerTypeTPKT, 42, 40,
@@ -156,6 +158,22 @@ func TestNonTCPPerPacket(t *testing.T) {
 				t.Errorf("dumper decoded %d %v, per packet %d", got, tc.layer, want)
 			}
 		})
+	}
+}
+
+// A session TSDU decoded despite a flaw says so.
+func TestSessionSummaryFlaws(t *testing.T) {
+	s := &layers.ISOSession{
+		SPDUs: []layers.ISOSessionSPDU{{Type: layers.ISOSessionAccept}},
+		Flaws: layers.ISOSessionLengthOverrun,
+	}
+	if got, want := sessionSummary(s), "ISO session AC flaws=length-overrun"; got != want {
+		t.Errorf("summary %q, want %q", got, want)
+	}
+
+	s.Flaws = 0
+	if got, want := sessionSummary(s), "ISO session AC"; got != want {
+		t.Errorf("summary %q, want %q", got, want)
 	}
 }
 

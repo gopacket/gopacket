@@ -203,11 +203,14 @@ func TestMMSPcaps(t *testing.T) {
 		name   string
 		frames int
 		errors []int
+		// flawed lists the frames whose session layer decodes with a
+		// flaw and without user data.
+		flawed []int
 	}{
-		{"iec61850_mms.pcap", 163, nil},
-		{"iec61850_mms_reports_goose.pcap", 31, nil},
-		{"iec61850_mms_siemens.pcap", 129, nil},
-		{"iec61850_mms_libiec61850.pcap", 6, []int{10}},
+		{"iec61850_mms.pcap", 163, nil, nil},
+		{"iec61850_mms_reports_goose.pcap", 31, nil, nil},
+		{"iec61850_mms_siemens.pcap", 129, nil, nil},
+		{"iec61850_mms_libiec61850.pcap", 6, nil, []int{10}},
 	}
 
 	for _, tc := range tests {
@@ -216,7 +219,7 @@ func TestMMSPcaps(t *testing.T) {
 			t.Errorf("%s: %d frames with TSDUs, want %d", tc.name, len(tsdus), tc.frames)
 		}
 
-		var failed []int
+		var failed, flawed []int
 		for frame, list := range tsdus {
 			for _, data := range list {
 				p := iecSession(data)
@@ -225,14 +228,19 @@ func TestMMSPcaps(t *testing.T) {
 					continue
 				}
 
-				// Every TSDU here carries MMS or ACSE.
+				if s := p.Layer(LayerTypeISOSession).(*ISOSession); s.Flaws != 0 {
+					flawed = append(flawed, frame)
+					continue
+				}
+
+				// Every other TSDU here carries MMS or ACSE.
 				if p.Layer(LayerTypeISOPresentation) == nil || (p.Layer(LayerTypeMMS) == nil && p.Layer(LayerTypeACSE) == nil) {
 					t.Errorf("%s frame %d: layers %v", tc.name, frame, p.Layers())
 				}
 			}
 		}
-		if !iecSameInts(failed, tc.errors) {
-			t.Errorf("%s: failed frames %v, want %v", tc.name, failed, tc.errors)
+		if !iecSameInts(failed, tc.errors) || !iecSameInts(flawed, tc.flawed) {
+			t.Errorf("%s: failed frames %v, want %v; flawed %v, want %v", tc.name, failed, tc.errors, flawed, tc.flawed)
 		}
 	}
 }
@@ -456,9 +464,11 @@ func TestMMSLibIEC61850(t *testing.T) {
 		t.Errorf("AARQ %+v initiate %+v", a, m.Initiate)
 	}
 
-	// The AC SPDU length overruns the TSDU by one octet.
-	if err := (&ISOSession{}).DecodeFromBytes(tsdus[10][0], gopacket.NilDecodeFeedback); err != errISOSessionTruncated {
-		t.Errorf("AC: %v", err)
+	// The AC SPDU length overruns the TSDU by one octet: decoded and
+	// flagged, see TestISOSessionLongAC.
+	s := &ISOSession{}
+	if err := s.DecodeFromBytes(tsdus[10][0], gopacket.NilDecodeFeedback); err != nil || s.Flaws != ISOSessionLengthOverrun {
+		t.Errorf("AC: %v, flaws %v", err, s.Flaws)
 	}
 
 	// A confirmed-ResponsePDU with an invokeID and no service.
@@ -748,6 +758,10 @@ func FuzzISOSession(f *testing.F) {
 	for _, seed := range osiMoreSeeds() {
 		f.Add(seed)
 	}
+	// Flawed TSDUs: too many SPDUs, a malformed one, a length overrun.
+	f.Add(isoConcat(9))
+	f.Add(isoConcat(2, []byte{byte(ISOSessionMinorSync), 4, 42, 9}))
+	f.Add([]byte{byte(ISOSessionAccept), 9, 20, 2, 0, 2})
 
 	f.Fuzz(func(t *testing.T, data []byte) {
 		p := iecSession(data)
@@ -758,6 +772,10 @@ func FuzzISOSession(f *testing.F) {
 		}
 		if s, ok := p.Layer(LayerTypeISOSession).(*ISOSession); ok {
 			osiReadParams(s)
+			if len(s.SPDUs) == 0 || len(s.SPDUs) > isoSessionMaxSPDUs {
+				t.Fatalf("%d SPDUs", len(s.SPDUs))
+			}
+			_ = s.Flaws.String()
 		}
 	})
 }

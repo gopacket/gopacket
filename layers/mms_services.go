@@ -1990,14 +1990,22 @@ func (m *MMS) decodeNewResp(t osiBERTLV) error {
 	return err
 }
 
-// mmsNullResp checks the responses of the services above that are NULL.
+// mmsNullResp checks the responses that are NULL: a primitive element
+// without content, e.g. bf 28 00 for a start response. Every confirmed
+// service of ISO 9506-2 that answers NULL is listed, but the access
+// control ones, checked with their requests' services.
 func mmsNullResp(t osiBERTLV, s MMSConfirmedService) error {
 	switch s {
 	case MMSDefineNamedVariable, MMSDefineScatteredAccess, MMSDefineNamedType, MMSOutput,
 		MMSRelinquishControl, MMSDefineSemaphore, MMSDeleteSemaphore,
 		MMSRequestDomainDownload, MMSRequestDomainUpload, MMSLoadDomainContent, MMSStoreDomainContent,
 		MMSAlterEventConditionMonitoring, MMSTriggerEvent, MMSDefineEventAction, MMSDefineEventEnrollment,
-		MMSCreateJournal, MMSDeleteJournal:
+		MMSCreateJournal, MMSDeleteJournal,
+		MMSRename, MMSDefineNamedVariableList,
+		MMSInitiateDownloadSequence, MMSTerminateDownloadSequence, MMSTerminateUploadSequence, MMSDeleteDomain,
+		MMSCreateProgramInvocation, MMSDeleteProgramInvocation, MMSStart, MMSStop, MMSResume, MMSReset, MMSKill,
+		MMSObtainFile, MMSFileClose, MMSFileRename, MMSFileDelete,
+		MMSDefineEventCondition, MMSAcknowledgeEventNotification, MMSWriteJournal:
 		_, err := mmsBody(t, osiBERPrimitive)
 		if err == nil {
 			err = mmsNull(t.Value)

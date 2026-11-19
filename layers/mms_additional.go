@@ -1606,6 +1606,10 @@ func decodeMMSAccessResp(t osiBERTLV, s MMSConfirmedService) (*MMSAccessControl,
 			return err
 		})
 	default:
+		// NULL is primitive and empty.
+		if _, err := mmsBody(t, osiBERPrimitive); err != nil {
+			return nil, err
+		}
 		return nil, mmsNull(t.Value)
 	}
 	return mmsResult(a, err)

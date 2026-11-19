@@ -19,7 +19,8 @@ import (
 // allData and MMS read, write and report values all use this type.
 type MMSDataType uint8
 
-// MMS Data CHOICE tags.
+// MMS Data CHOICE tags. MMSDataReal is the ASN.1 REAL of ISO 9506-2:1990,
+// a tag the 2003 edition reserves.
 const (
 	MMSDataArray           MMSDataType = 1
 	MMSDataStructure       MMSDataType = 2
@@ -28,6 +29,7 @@ const (
 	MMSDataInteger         MMSDataType = 5
 	MMSDataUnsigned        MMSDataType = 6
 	MMSDataFloatingPoint   MMSDataType = 7
+	MMSDataReal            MMSDataType = 8
 	MMSDataOctetString     MMSDataType = 9
 	MMSDataVisibleString   MMSDataType = 10
 	MMSDataGeneralizedTime MMSDataType = 11
@@ -56,6 +58,8 @@ func (t MMSDataType) String() string {
 		return "unsigned"
 	case MMSDataFloatingPoint:
 		return "floating-point"
+	case MMSDataReal:
+		return "real"
 	case MMSDataOctetString:
 		return "octet-string"
 	case MMSDataVisibleString:
@@ -150,13 +154,13 @@ type MMSData struct {
 	Int int64
 	// Uint is set for unsigned.
 	Uint uint64
-	// Float is set for floating-point.
+	// Float is set for floating-point and real.
 	Float float64
 	// Bits and UnusedBits are set for bit-string and booleanArray.
 	Bits       []byte
 	UnusedBits uint8
 	// String is set for visible-string, mMSString, generalized-time and
-	// objId (dotted form).
+	// objId (dotted form). GeneralizedTime parses a generalized-time.
 	String string
 	// Time is set for binary-time. A 4 octet TimeOfDay carries no date
 	// and is reported on 1984-01-01.
@@ -241,6 +245,8 @@ func decodeMMSData(t osiBERTLV, depth int) (MMSData, error) {
 		d.Uint, d.IntOverflow, err = mmsDataUint(v)
 	case MMSDataFloatingPoint:
 		d.Float, err = decodeMMSFloat(v)
+	case MMSDataReal:
+		d.Float, err = osiBERReal(v)
 	case MMSDataOctetString:
 	case MMSDataVisibleString, MMSDataMMSString, MMSDataGeneralizedTime:
 		d.String = string(v)
@@ -296,6 +302,49 @@ func decodeMMSFloat(v []byte) (float64, error) {
 		return math.Float64frombits(binary.BigEndian.Uint64(v[1:])), nil
 	}
 	return 0, errMMSDataFloat
+}
+
+// mmsGenTimeLayouts are the GeneralizedTime forms of X.680 with the hour
+// alone, minutes and seconds, each with a UTC designator or offset or,
+// last, as local time. time.Parse reads a fraction after the seconds.
+var mmsGenTimeLayouts = [...]string{
+	"20060102150405Z0700", "200601021504Z0700", "2006010215Z0700",
+	"20060102150405", "200601021504", "2006010215",
+}
+
+// GeneralizedTime parses a generalized-time value, e.g.
+// "20260102030405.5Z" or "202601020304+0100". A local time, one without
+// "Z" or offset, is returned as UTC. ok is false for another Data type
+// or a string that is no GeneralizedTime; a fraction of an hour or of a
+// minute is not read.
+func (d *MMSData) GeneralizedTime() (t time.Time, ok bool) {
+	if d.Type != MMSDataGeneralizedTime {
+		return time.Time{}, false
+	}
+
+	for _, layout := range mmsGenTimeLayouts {
+		if t, err := time.Parse(layout, d.String); err == nil {
+			return t, true
+		}
+	}
+	return time.Time{}, false
+}
+
+// Octets returns the value of an octet-string, nil for other types.
+func (d *MMSData) Octets() []byte {
+	if d.Type != MMSDataOctetString {
+		return nil
+	}
+	return d.Raw
+}
+
+// BCD returns the value of a bcd, which is encoded as an INTEGER; ok is
+// false for other types and for a value too long for an int64.
+func (d *MMSData) BCD() (n int64, ok bool) {
+	if d.Type != MMSDataBCD || d.IntOverflow {
+		return 0, false
+	}
+	return d.Int, true
 }
 
 // decodeMMSTimeOfDay decodes TimeOfDay: milliseconds since midnight and,
