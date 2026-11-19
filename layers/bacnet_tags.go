@@ -233,6 +233,11 @@ func (t *BACnetTag) Double() (float64, error) {
 // CharacterString returns the character set and text of a CharacterString.
 // UTF-8, ISO 8859-1, UCS-2 and UCS-4 are converted to UTF-8; the double
 // byte sets are returned as raw bytes.
+//
+// The text is every character after the character set octet (Clause
+// 20.2.9), which knows no terminator: a NUL or a line feed that a device
+// sends at the end of a name is part of the string and stays in it. The
+// octets as sent are in Data.
 func (t *BACnetTag) CharacterString() (BACnetCharacterSet, string, error) {
 	if !t.holds(BACnetAppTagCharacterString) || len(t.Data) == 0 {
 		return 0, "", errBACnetTagType

@@ -91,7 +91,9 @@ func (b BACnetBitString) String() string {
 // property.
 //
 // Type BACnetDataTypeAny marks data of unknown type: a primitive context
-// tag (its octets are Tags[0].Data) or, with Fields, a bracketed run.
+// tag (its octets are Tags[0].Data) or, with Fields, a bracketed run. The
+// vendor block of a private transfer that is not tag encoded is one too,
+// with the block as a []byte Value and no Fields.
 type BACnetValue struct {
 	// Name is the Clause 21 name of the field, such as "object-identifier";
 	// list elements and untyped data have none.
@@ -280,6 +282,15 @@ func (a *BACnetAPDU) decodeProduction() []BACnetValue {
 	vals, err := bacnetDecodeFields(a.Tags, fields, bacnetScope{})
 	if err != nil {
 		return nil
+	}
+
+	// The brackets of a vendor block that is not tag encoded read as an
+	// empty value; the block goes there.
+	if a.vendorBlock != nil && len(vals) > 0 {
+		last := &vals[len(vals)-1]
+		if len(last.Tags) > 0 && last.Tags[0].Kind == BACnetTagOpening {
+			last.Value, last.Fields = a.vendorBlock, nil
+		}
 	}
 	return vals
 }

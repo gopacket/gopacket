@@ -10,6 +10,9 @@ package layers
 // parameters. The frames were built by hand from the Clause 21 productions
 // and every value in them was compared with tshark 4.7, which dissects
 // the capture without a complaint.
+//
+// The list is maintained by hand from ASHRAE 135-2020, next to the
+// capture; no generator belongs to it.
 var bacnetValueVectors = []struct {
 	name string
 	want string

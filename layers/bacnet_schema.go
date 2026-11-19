@@ -741,8 +741,8 @@ var bacnetTypes = [bacnetDataTypeNamedBase]bacnetType{
 	BACnetDataTypeChannelValue: {name: "BACnetChannelValue", kind: bacnetKindChoice, fields: []bacnetMember{
 		bacnetBare("value", bacnetDataTypeApplication),
 		bacnetCtx(0, "lighting-command", BACnetDataTypeLightingCommand),
-		bacnetCtx(1, "color-command", BACnetDataTypeAny),
-		bacnetCtx(2, "xy-color", BACnetDataTypeAny),
+		bacnetCtx(1, "xy-color", BACnetDataTypeAny),
+		bacnetCtx(2, "color-command", BACnetDataTypeAny),
 	}},
 	BACnetDataTypeGroupChannelValue: {name: "BACnetGroupChannelValue", kind: bacnetKindSequence, fields: []bacnetMember{
 		bacnetCtx(0, "channel", BACnetDataTypeUnsigned),

@@ -6,6 +6,9 @@
 // Datatypes of the standard BACnet properties (ASHRAE 135 Clause 12) that
 // are constructed, enumerated or named bit strings. Properties left out
 // are primitive, and application tags say what they hold.
+//
+// The tables are maintained by hand from ASHRAE 135-2020 and its addenda;
+// no generator belongs to them.
 
 package layers
 

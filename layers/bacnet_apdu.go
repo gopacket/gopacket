@@ -25,6 +25,14 @@ const (
 	bacnetMaxSegmentsMask  = 0x07
 	bacnetMaxAPDUMask      = 0x0F
 	bacnetSegmentHeaderLen = 2 // sequence number + window size
+
+	// Context tags that bracket the vendor block of a private transfer
+	// and of its Error.
+	bacnetPrivateBlockTag      uint8 = 2
+	bacnetPrivateErrorBlockTag uint8 = 3
+	// bacnetPrivateMaxTags is the most tags around a vendor block: those
+	// of an Error and its brackets.
+	bacnetPrivateMaxTags = 8
 )
 
 // BACnetPDUType is the APDU type (Clause 20.1.1).
@@ -426,6 +434,10 @@ type BACnetAPDU struct {
 	Tags       []BACnetTag
 	// ServiceData holds the typed parameters of a decoded service, or nil.
 	ServiceData BACnetServiceData
+
+	// vendorBlock is the block of a private transfer that is not tag
+	// encoded; Tags then holds the tags around it.
+	vendorBlock []byte
 }
 
 // LayerType returns LayerTypeBACnetAPDU.
@@ -453,6 +465,11 @@ var apduHeaderLen = map[BACnetPDUType]int{
 // DecodeFromBytes decodes an APDU. A malformed tag stream is an error;
 // parameters that are well tagged but do not match the service leave
 // ServiceData nil.
+//
+// The vendor block of a private transfer (request, ACK or Error) is the
+// exception: when it is not tag encoded the vendor identifier and service
+// number are still decoded, and the block is the []byte Value of the last
+// parameter.
 func (a *BACnetAPDU) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	*a = BACnetAPDU{}
 	if len(data) == 0 {
@@ -492,15 +509,86 @@ func (a *BACnetAPDU) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) er
 
 	// Services without parameters, such as an unlimited Who-Is, still
 	// get their ServiceData.
-	if len(a.Parameters) > 0 {
-		tags, err := decodeBACnetTags(a.Parameters)
-		if err != nil {
-			return err
-		}
-		a.Tags = tags
+	if len(a.Parameters) == 0 {
+		a.decodeService()
+		return nil
 	}
-	a.decodeService()
+
+	tags, err := decodeBACnetTags(a.Parameters)
+	if err == nil {
+		a.Tags = tags
+		a.decodeService()
+		return nil
+	}
+
+	// A vendor may fill a private transfer with anything. The fallback
+	// only stands when the tags around the block are those of the service.
+	if a.Tags, a.vendorBlock = a.privateBlock(); a.Tags != nil {
+		a.decodeService()
+	}
+	if a.ServiceData == nil {
+		a.Tags, a.vendorBlock = nil, nil
+		return err
+	}
 	return nil
+}
+
+// privateBlock splits the parameters of a private transfer whose vendor
+// block is not tag encoded:
+//
+//	09 07     1a 01 ff        2e        00 00 00 56 ...   2f
+//	vendor    service number  opening   vendor block      closing
+//
+// It returns the tags around the block, the brackets included, and the
+// block. The tags are nil when the APDU is not a private transfer or has
+// no such block.
+func (a *BACnetAPDU) privateBlock() ([]BACnetTag, []byte) {
+	// An Error carries the block under [3], after the error and the
+	// vendor and service number; the others under [2].
+	bracket := bacnetPrivateBlockTag
+	switch {
+	case a.PDUType == BACnetPDUUnconfirmedRequest && a.UnconfirmedService == BACnetUnconfirmedServiceUnconfirmedPrivateTransfer:
+	case a.PDUType == BACnetPDUError && a.ConfirmedService == BACnetConfirmedServiceConfirmedPrivateTransfer:
+		bracket = bacnetPrivateErrorBlockTag
+	case a.PDUType == BACnetPDUUnconfirmedRequest, a.ConfirmedService != BACnetConfirmedServiceConfirmedPrivateTransfer:
+		return nil, nil
+	}
+
+	// The block runs to the closing tag that ends the APDU.
+	data := a.Parameters
+	end := len(data) - 1
+	if data[end] != bracket<<bacnetTagNumberShift|bacnetTagClassBit|uint8(bacnetLVTClosing) {
+		return nil, nil
+	}
+
+	tags := make([]BACnetTag, 0, bacnetPrivateMaxTags)
+	nested := false
+	for off := 0; off < end && len(tags) < bacnetPrivateMaxTags-1; {
+		t, n, err := decodeBACnetTag(data[off:end])
+		if err != nil {
+			return nil, nil
+		}
+		off += n
+
+		// Only the Error of an Error PDU is bracketed before the block.
+		switch {
+		case t.Kind == BACnetTagOpening && !nested && t.Number == bracket:
+			tags = append(tags, t)
+			return append(tags, BACnetTag{Class: BACnetTagClassContext, Kind: BACnetTagClosing, Number: bracket}), data[off:end]
+		case t.Kind == BACnetTagOpening && nested, t.Kind == BACnetTagClosing && !nested:
+			return nil, nil
+		case t.Kind == BACnetTagOpening:
+			nested = true
+		case t.Kind == BACnetTagClosing:
+			nested = false
+		default:
+			if nested {
+				t.Depth = 1
+			}
+		}
+		tags = append(tags, t)
+	}
+	return nil, nil
 }
 
 // decodeHeader reads the fixed fields of the PDU type; the caller checked

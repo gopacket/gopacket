@@ -5,6 +5,9 @@
 
 // Names of the enumerations and bit strings of ASHRAE 135 Clause 21 that
 // property values and service parameters are typed with.
+//
+// The tables are maintained by hand from ASHRAE 135-2020 and its addenda;
+// no generator belongs to them.
 
 package layers
 
@@ -803,7 +806,7 @@ var bacnetNamesLightingOperation = map[uint32]string{
 	10: "stop",
 	11: "restore-on",
 	12: "default-on",
-	13: "toggle-restor",
+	13: "toggle-restore",
 	14: "toggle-default",
 }
 
