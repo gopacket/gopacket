@@ -37,11 +37,13 @@ const (
 	cotpDCFixedLen    = 4 // dst-ref, src-ref
 	cotpRefNRFixedLen = 3 // ED, AK, EA, RJ, ER, DT normal: dst-ref, octet
 	cotpDTShortLI     = 2 // class 0/1 DT: type, EOT+NR
+	cotpDTExtFixedLen = 6 // extended DT: dst-ref, 4-octet EOT+NR
 
 	cotpTypeMask   = 0xF0
 	cotpCreditMask = 0x0F
 	cotpEOTMask    = 0x80
 	cotpNRMask     = 0x7F
+	cotpExtNRMask  = 0x7FFFFFFF
 	cotpParamHdr   = 2 // code, length
 
 	// TPDU size parameter values are log2 of the size: 7 (128) to 13 (8192).
@@ -210,12 +212,14 @@ type COTPParameter struct {
 //	DR         DstRef, SrcRef, Reason
 //	DC         DstRef, SrcRef
 //	ER         DstRef, Reason (reject cause)
-//	DT         TPDUNumber, EOT (and DstRef above class 1)
+//	DT         TPDUNumber, EOT (and DstRef above class 1; Extended and
+//	           ExtTPDUNumber in extended format)
 //	ED         DstRef, TPDUNumber, EOT
 //	AK, EA, RJ DstRef, TPDUNumber
 //
 // Payload is the user data. A DT without EOT is one segment of a longer
-// TSDU and goes to LayerTypeFragment rather than to an upper layer.
+// TSDU and goes to LayerTypeFragment rather than to an upper layer;
+// COTPAssembler joins the segments.
 type COTP struct {
 	BaseLayer
 	Length     uint8 // length indicator: header octets after this one
@@ -229,6 +233,12 @@ type COTP struct {
 	TPDUNumber uint8 // DT, ED, AK, EA, RJ: 7-bit sequence number
 	EOT        bool  // DT, ED: last TPDU of the TSDU
 	Parameters []COTPParameter
+
+	// Extended is set for a DT in extended format (classes 2 to 4,
+	// ISO 8073 13.7.3), whose 31-bit number is ExtTPDUNumber;
+	// TPDUNumber holds its low 7 bits.
+	Extended      bool
+	ExtTPDUNumber uint32
 }
 
 // LayerType returns LayerTypeCOTP.
@@ -250,11 +260,16 @@ func (c *COTP) NextLayerType() gopacket.LayerType {
 	if !c.EOT {
 		return gopacket.LayerTypeFragment
 	}
+	return cotpUserLayer(c.Payload)
+}
 
+// cotpUserLayer picks the decoder of a whole, non-empty TSDU by its
+// first octets.
+func cotpUserLayer(tsdu []byte) gopacket.LayerType {
 	switch {
-	case isS7Comm(c.Payload):
+	case isS7Comm(tsdu):
 		return LayerTypeS7Comm
-	case isS7CommPlus(c.Payload):
+	case isS7CommPlus(tsdu):
 		return LayerTypeS7CommPlus
 	default:
 		return LayerTypeISOSession
@@ -322,7 +337,11 @@ func (c *COTP) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	}
 	c.decodeFixed(data[cotpMinLen : cotpMinLen+fixed])
 
-	if err := c.decodeParams(data[cotpMinLen+fixed : hdrEnd]); err != nil {
+	err := c.decodeParams(data[cotpMinLen+fixed : hdrEnd])
+	if err != nil && c.Type == COTPTypeDT {
+		err = c.decodeDTExt(data[cotpMinLen:hdrEnd], err)
+	}
+	if err != nil {
 		return err
 	}
 
@@ -353,6 +372,37 @@ func (c *COTP) decodeFixed(f []byte) {
 	default:
 		c.TPDUNumber = f[2] & cotpNRMask
 	}
+}
+
+// decodeDTExt re-reads a DT whose variable part is no parameter list
+// in normal format as extended format, where the number takes four
+// octets:
+//
+//	normal:   dst-ref(2) | EOT+NR(1) | parameters
+//	extended: dst-ref(2) | EOT+NR(4) | parameters
+//
+// The format is negotiated in CR and CC, which a single TPDU does not
+// show, so it is told by which layout parses. An extended DT whose
+// number octets happen to form a parameter (third octet 1, no
+// checksum) reads as normal format; EOT and user data are the same
+// either way. h is the header after the type octet; normErr is returned
+// when h is not extended format either.
+func (c *COTP) decodeDTExt(h []byte, normErr error) error {
+	if len(h) < cotpDTExtFixedLen {
+		return normErr
+	}
+
+	c.Parameters = nil
+	if c.decodeParams(h[cotpDTExtFixedLen:]) != nil {
+		c.Parameters = nil
+		return normErr
+	}
+
+	c.Extended = true
+	c.ExtTPDUNumber = binary.BigEndian.Uint32(h[2:cotpDTExtFixedLen]) & cotpExtNRMask
+	c.EOT = h[2]&cotpEOTMask != 0
+	c.TPDUNumber = uint8(c.ExtTPDUNumber) & cotpNRMask
+	return nil
 }
 
 // setNR splits a DT or ED octet into EOT flag and TPDU number.

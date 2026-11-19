@@ -26,11 +26,6 @@ const (
 	flushEvery = time.Minute
 )
 
-// maxTSDU bounds a COTP TSDU held across DT segments. MMS negotiates
-// far smaller PDUs; this only stops a stream of segments that never
-// ends from holding memory unbounded.
-const maxTSDU = 1 << 20
-
 // eofMode tells a drain whether the direction has ended.
 type eofMode int
 
@@ -184,7 +179,7 @@ type otStream struct {
 // good.
 type half struct {
 	buf  bytes.Buffer
-	tsdu []byte
+	cotp layers.COTPAssembler
 	lost bool
 }
 
@@ -217,7 +212,7 @@ func (s *otStream) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.Asse
 	if skip > 0 {
 		fmt.Fprintf(s.d.out, "%s %v gap of %d octets\n", s.flows[i], s.layer, skip)
 		h.buf.Reset()
-		h.tsdu = nil
+		h.cotp.Reset()
 	}
 
 	n, _ := sg.Lengths()
@@ -270,39 +265,39 @@ func (s *otStream) token(i int, tok []byte) {
 	s.tpkt(i, tok)
 }
 
-// tpkt joins COTP DT segments: a TSDU too large for one TPDU is sent as
-// DTs without EOT, then one with it (ISO 8073 segmentation, as MMS does
-// for large responses). Segments are held and counted; the last one
-// decodes the whole TSDU behind its COTP header.
+// tpkt decodes one TPKT. DT TPDUs go through the COTP assembler, which
+// joins the segments of a TSDU too large for one TPDU (as MMS sends
+// large responses); the last segment decodes the whole TSDU.
 //
 //	TPKT|DT      |seg 1   TPKT|DT      |seg 2   TPKT|DT EOT|seg 3
-//	                   -> COTP DT EOT |seg 1 seg 2 seg 3| -> ISO session
+//	                   -> |seg 1 seg 2 seg 3| -> ISO session
 func (s *otStream) tpkt(i int, tok []byte) {
 	h := &s.halves[i]
 	var t layers.TPKT
 	var c layers.COTP
 	if t.DecodeFromBytes(tok, gopacket.NilDecodeFeedback) != nil ||
-		c.DecodeFromBytes(t.Payload, gopacket.NilDecodeFeedback) != nil ||
-		c.Type != layers.COTPTypeDT || (c.EOT && h.tsdu == nil) {
+		c.DecodeFromBytes(t.Payload, gopacket.NilDecodeFeedback) != nil {
 		s.d.pdu(s.flows[i], s.layer, tok)
 		return
 	}
 
-	h.tsdu = append(h.tsdu, c.Payload...)
-	if len(h.tsdu) > maxTSDU {
-		fmt.Fprintf(s.d.out, "%s COTP TSDU above %d octets, dropped\n", s.flows[i], maxTSDU)
-		h.tsdu = nil
+	tsdu, next, err := h.cotp.Feed(&c)
+	if c.Type != layers.COTPTypeDT {
+		s.d.pdu(s.flows[i], s.layer, tok)
 		return
 	}
 
+	// The TSDU is decoded on its own, so count its carriers here.
 	s.d.counts[layers.LayerTypeTPKT]++
-	if !c.EOT {
-		s.d.counts[layers.LayerTypeCOTP]++
-		fmt.Fprintf(s.d.out, "%s COTP DT segment, %d octets held\n", s.flows[i], len(h.tsdu))
-		return
+	s.d.counts[layers.LayerTypeCOTP]++
+	switch {
+	case err != nil:
+		fmt.Fprintf(s.d.out, "%s %v, dropped\n", s.flows[i], err)
+	case next != gopacket.LayerTypeZero:
+		s.d.pdu(s.flows[i], next, tsdu)
+	case c.EOT:
+		fmt.Fprintf(s.d.out, "%s COTP DT, no user data\n", s.flows[i])
+	default:
+		fmt.Fprintf(s.d.out, "%s COTP DT segment, %d octets held\n", s.flows[i], h.cotp.Pending())
 	}
-
-	tsdu := append(bytes.Clone(c.Contents), h.tsdu...)
-	h.tsdu = nil
-	s.d.pdu(s.flows[i], layers.LayerTypeCOTP, tsdu)
 }
