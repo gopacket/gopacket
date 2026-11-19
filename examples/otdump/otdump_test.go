@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/gopacket/gopacket"
@@ -155,5 +156,15 @@ func TestNonTCPPerPacket(t *testing.T) {
 				t.Errorf("dumper decoded %d %v, per packet %d", got, tc.layer, want)
 			}
 		})
+	}
+}
+
+// A confirmed PDU without a service must not be labelled with service 0.
+func TestMMSSummaryNoService(t *testing.T) {
+	m := &layers.MMS{Type: layers.MMSConfirmedResponse, InvokeID: 7, NoService: true}
+
+	got := mmsSummary(m)
+	if strings.Contains(got, "status") {
+		t.Errorf("summary %q names a service the PDU does not carry", got)
 	}
 }

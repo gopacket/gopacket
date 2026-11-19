@@ -75,6 +75,11 @@ func layerSummary(l gopacket.Layer) (string, bool) {
 func mmsSummary(m *layers.MMS) string {
 	switch m.Type {
 	case layers.MMSConfirmedRequest, layers.MMSConfirmedResponse:
+		// Service is the zero value (status) when the PDU carries none.
+		if m.NoService {
+			return fmt.Sprintf("MMS %v invoke=%d no service", m.Type, m.InvokeID)
+		}
+
 		return fmt.Sprintf("MMS %v invoke=%d %v", m.Type, m.InvokeID, m.Service)
 	case layers.MMSUnconfirmed:
 		return fmt.Sprintf("MMS %v %v", m.Type, m.Unconfirmed)
