@@ -355,7 +355,7 @@ func TestDNP3ValueErrors(t *testing.T) {
 		{"unknown group", DNP3ObjectHeader{Group: 99, Variation: 1, Objects: []DNP3Object{{Data: []byte{1}}}}, 0, ErrDNP3UnknownValue},
 		{"unknown variation", DNP3ObjectHeader{Group: 30, Variation: 99, Objects: []DNP3Object{{Data: []byte{1}}}}, 0, ErrDNP3UnknownValue},
 		{"g51v3", DNP3ObjectHeader{Group: 51, Variation: 3, Objects: []DNP3Object{{Data: []byte{1}}}}, 0, ErrDNP3UnknownValue},
-		{"g70v1 obsolete", DNP3ObjectHeader{Group: 70, Variation: 1, Objects: []DNP3Object{{Data: []byte{1}}}}, 0, ErrDNP3UnknownValue},
+		{"g86v3", DNP3ObjectHeader{Group: 86, Variation: 3, Objects: []DNP3Object{{Data: []byte{1}}}}, 0, ErrDNP3UnknownValue},
 		{"packed past count", DNP3ObjectHeader{Group: 1, Variation: 1, Count: 2, BitsPerObject: 1, Data: []byte{3}}, 2, ErrDNP3BadObject},
 		{"packed past data", DNP3ObjectHeader{Group: 3, Variation: 1, Count: 5, BitsPerObject: 2, Data: []byte{3}}, 4, ErrDNP3ValueShort},
 	}
@@ -594,6 +594,20 @@ func dnp3Exercise(a *DNP3Application, h int, v DNP3Value) {
 		_, _ = x.Float()
 		_, _ = x.Time()
 		_, _ = x.List()
+		_, _ = x.Octets()
+		_, _ = x.Bits()
+		_, _ = x.Bit(len(x.Data))
+		_, _ = x.Unicode()
+	case DNP3BCD:
+		_, _ = x.Uint()
+	case DNP3DataSetTraits:
+		_ = x.String()
+	case DNP3SecurityStat:
+		_, ts = x.Flags.String(), x.Time
+	case DNP3DataSetDescriptor:
+		for _, e := range x.Elements {
+			_, _ = e.Code.String(), e.Type.String()
+		}
 	}
 
 	if a != nil {
@@ -626,7 +640,7 @@ func FuzzDNP3Values(f *testing.F) {
 	for _, frame := range testDNP3Frames() {
 		f.Add(frame)
 	}
-	for _, v := range testDNP3Vectors {
+	for _, v := range append(testDNP3Vectors[:len(testDNP3Vectors):len(testDNP3Vectors)], testDNP3MoreVectors...) {
 		f.Add(dnp3Resp(append([]byte{byte(v.g), v.v, 0x5b, 0x01, byte(len(v.data))}, v.data...)...))
 		f.Add(append([]byte{byte(v.g), v.v}, v.data...))
 	}

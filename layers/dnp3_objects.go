@@ -13,6 +13,7 @@ import (
 	"math"
 	"strings"
 	"time"
+	"unicode/utf16"
 )
 
 // Object values (IEEE 1815-2012 annex A). DNP3ObjectHeader.Value decodes
@@ -37,6 +38,7 @@ var (
 	ErrDNP3NoCTO        = errors.New("DNP3 fragment has no CTO before this header")
 	ErrDNP3NoTime       = errors.New("DNP3 object carries no time")
 	ErrDNP3AttrType     = errors.New("DNP3 attribute holds another type or width")
+	ErrDNP3BadBCD       = errors.New("DNP3 BCD value holds a digit above 9")
 )
 
 // Octet masks and sizes of object values.
@@ -52,7 +54,8 @@ const (
 	dnp3LastBlockBit  = 0x80000000 // g70 block number: last block
 	dnp3AttrHeaderLen = 2          // data type code, length
 	dnp3AttrListEntry = 2          // variation, properties
-	dnp3AttrAll       = 254        // g0v254: all attributes, read only
+	dnp3UTF16Len      = 2
+	dnp3AttrAll       = 254 // g0v254: all attributes, read only
 	dnp3SignBit64     = 64
 	dnp3Float32Len    = 4
 	dnp3Float64Len    = 8
@@ -131,10 +134,28 @@ var dnp3FamilyFlags = map[DNP3FlagFamily][]dnp3FlagName{
 	DNP3FlagsAnalogOutput: nil,
 }
 
-// Has reports whether every bit of flag is set. It is false when the
-// object has no flags octet.
+// defined returns the bits the family of f gives a name: none without a
+// flags octet, and never the state bits of a double-bit input.
+func (f DNP3Flags) defined() DNP3Flag {
+	if f.Family == DNP3FlagsAbsent {
+		return 0
+	}
+
+	var mask DNP3Flag
+	for _, set := range [][]dnp3FlagName{dnp3CommonFlags, dnp3FamilyFlags[f.Family]} {
+		for _, n := range set {
+			mask |= n.bit
+		}
+	}
+	return mask
+}
+
+// Has reports whether every bit of flag is set and defined for the
+// family: DNP3FlagState is never reported for an analog input, whatever
+// its reserved bit 7 holds. It is false when the object has no flags
+// octet.
 func (f DNP3Flags) Has(flag DNP3Flag) bool {
-	return f.Family != DNP3FlagsAbsent && DNP3Flag(f.Raw)&flag == flag
+	return flag != 0 && f.defined()&flag == flag && DNP3Flag(f.Raw)&flag == flag
 }
 
 // String lists the set bits in wire order, e.g. "Online|Restart", and
@@ -196,6 +217,7 @@ const (
 	DNP3NumUint32
 	DNP3NumFloat32
 	DNP3NumFloat64
+	DNP3NumUint8
 )
 
 // DNP3DoubleBit is the state of a double-bit binary input.
@@ -554,9 +576,48 @@ type DNP3AttrEntry struct {
 	Properties uint8 // bit 0: writable
 }
 
-// Text returns the value as a string, as for VSTR and UNCD.
+// Text returns the value octets as a string, as for VSTR.
 func (a DNP3Attribute) Text() string {
 	return string(a.Data)
+}
+
+// Octets returns an OSTR value.
+func (a DNP3Attribute) Octets() ([]byte, error) {
+	if a.Type != DNP3AttrOctets {
+		return nil, ErrDNP3AttrType
+	}
+	return a.Data, nil
+}
+
+// Bits returns a BSTR value: bit n of the string is bit n%8 of octet
+// n/8. Bit reads one of them.
+func (a DNP3Attribute) Bits() ([]byte, error) {
+	if a.Type != DNP3AttrBits {
+		return nil, ErrDNP3AttrType
+	}
+	return a.Data, nil
+}
+
+// Bit returns bit n of a BSTR value.
+func (a DNP3Attribute) Bit(n int) (bool, error) {
+	if a.Type != DNP3AttrBits || n < 0 || n/dnp3BitsPerByte >= len(a.Data) {
+		return false, ErrDNP3AttrType
+	}
+	return a.Data[n/dnp3BitsPerByte]>>(n%dnp3BitsPerByte)&1 != 0, nil
+}
+
+// Unicode returns a UNCD value. The octets are read as UTF-16, low
+// octet first; this decoder has no capture that confirms the encoding.
+func (a DNP3Attribute) Unicode() (string, error) {
+	if a.Type != DNP3AttrUnicode || len(a.Data)%dnp3UTF16Len != 0 {
+		return "", ErrDNP3AttrType
+	}
+
+	units := make([]uint16, len(a.Data)/dnp3UTF16Len)
+	for i := range units {
+		units[i] = binary.LittleEndian.Uint16(a.Data[i*dnp3UTF16Len:])
+	}
+	return string(utf16.Decode(units)), nil
 }
 
 // Uint returns a UINT value of 1 to 8 octets.
@@ -607,9 +668,10 @@ func (a DNP3Attribute) Time() (time.Time, error) {
 	return DNP3Time(a.Data), nil
 }
 
-// List returns the entries of a U8BS8LIST value, as g0v255 carries.
+// List returns the entries of a U8BS8LIST value, as g0v255 carries, or
+// of a U8BS8EXLIST value, read as the same pairs.
 func (a DNP3Attribute) List() ([]DNP3AttrEntry, error) {
-	if a.Type != DNP3AttrList || len(a.Data)%dnp3AttrListEntry != 0 {
+	if a.Type != DNP3AttrList && a.Type != DNP3AttrListExtend || len(a.Data)%dnp3AttrListEntry != 0 {
 		return nil, ErrDNP3AttrType
 	}
 
@@ -887,6 +949,8 @@ func (r *dnp3Reader) num(f DNP3NumFormat) float64 {
 		return float64(int16(r.u16()))
 	case DNP3NumInt32:
 		return float64(int32(r.u32()))
+	case DNP3NumUint8:
+		return float64(r.u8())
 	case DNP3NumUint16:
 		return float64(r.u16())
 	case DNP3NumUint32:
@@ -1078,6 +1142,8 @@ var dnp3Layouts = map[uint16]dnp3Layout{
 	dnp3GV(43, 6): {kind: dnp3KindAnalogCmdEvent, num: dnp3F64},
 	dnp3GV(43, 7): {kind: dnp3KindAnalogCmdEvent, num: dnp3F32, time: dnp3Abs},
 	dnp3GV(43, 8): {kind: dnp3KindAnalogCmdEvent, num: dnp3F64, time: dnp3Abs},
+
+	dnp3GV(102, 1): {kind: dnp3KindAnalog, num: DNP3NumUint8},
 }
 
 // decode builds the value of one point object.
@@ -1147,8 +1213,22 @@ func dnp3Decode(g DNP3Group, v uint8, b []byte) (DNP3Value, error) {
 		val = DNP3OctetString(r.bytes(int(v)))
 	case DNP3GroupFile:
 		val = dnp3File(&r, v)
+	case DNP3GroupDeviceStorage, DNP3GroupDeviceProfile:
+		val = dnp3Storage(&r, g, v)
+	case DNP3GroupPrivateObject:
+		val = dnp3Private(&r, v)
+	case DNP3GroupDataSetPrototype, DNP3GroupDataSetDescriptor, DNP3GroupDataSet, DNP3GroupDataSetEvent:
+		val = dnp3DataSet(&r, g, v)
+	case DNP3GroupApplication:
+		val = dnp3AppID(&r, v)
+	case DNP3GroupOperationStatus:
+		val = dnp3Activate(&r, v)
+	case DNP3GroupBCD:
+		val = dnp3BCD(&r, v)
 	case DNP3GroupAuthentication:
 		val = dnp3Auth(&r, v)
+	case DNP3GroupSecurityStat, DNP3GroupSecurityStatEvent:
+		val = dnp3SecStat(&r, g, v)
 	}
 
 	if val == nil {
@@ -1232,6 +1312,7 @@ func dnp3Delay(r *dnp3Reader, v uint8) DNP3Value {
 
 // File object variations (g70).
 const (
+	dnp3FileIDVar         = 1
 	dnp3FileAuthVar       = 2
 	dnp3FileCommandVar    = 3
 	dnp3FileStatusVar     = 4
@@ -1245,6 +1326,8 @@ const (
 // offset fields are skipped, as Wireshark does.
 func dnp3File(r *dnp3Reader, v uint8) DNP3Value {
 	switch v {
+	case dnp3FileIDVar:
+		return dnp3FileID(r)
 	case dnp3FileAuthVar:
 		r.u16() // user name offset
 		user := r.u16()
@@ -1330,7 +1413,7 @@ func dnp3Auth(r *dnp3Reader, v uint8) DNP3Value {
 	case dnp3AuthMACVar:
 		return DNP3AuthMAC{MAC: r.rest()}
 	}
-	return nil
+	return dnp3AuthUpdate(r, v)
 }
 
 // CTO returns the common time of occurrence for header h of the

@@ -28,8 +28,9 @@ import (
 //	         CRCs stripped -> UserData: | TH | AC | FC | IIN | objects ... |
 //
 // Bad CRCs are flagged (HeaderCRCOK, BadBlocks), not fatal: the frame is
-// still decoded, as Wireshark does. Application fragments spread over
-// several frames are not reassembled; each layer shows what its frame holds.
+// still decoded, as Wireshark does. So are link headers a receiver would
+// reject (LinkIssues). Each layer shows what its frame holds; a
+// DNP3Assembler joins the frames of a fragment and decodes it whole.
 
 // DNP3Port is the IANA port for DNP3 over TCP and UDP.
 const DNP3Port uint16 = 20000
@@ -213,10 +214,12 @@ type DNP3Transport struct {
 // block CRCs removed: the transport header then an application fragment
 // or a piece of one. Application is set when the frame begins a fragment
 // (transport FIR). Payload of the embedded BaseLayer holds the bytes after
-// this frame, which may be more frames.
+// this frame, which may be more frames. LinkIssues flags what a receiver
+// would reject the frame for; it is never a decoding error.
 type DNP3 struct {
 	BaseLayer
 	Link        DNP3Link
+	LinkIssues  DNP3LinkIssue
 	HeaderCRCOK bool
 	BadBlocks   int // user data blocks whose CRC does not match
 	UserData    []byte
@@ -297,6 +300,7 @@ func (d *DNP3) decodeFrame(data []byte, df gopacket.DecodeFeedback) error {
 	}
 
 	d.decodeLink(data)
+	d.LinkIssues = d.Link.issues()
 	d.HeaderCRCOK = DNP3CRC(data[:dnp3HeaderCRCOff]) == d.Link.CRC
 	d.stripCRCs(data[dnp3HeaderLen:frameLen], userLen)
 	d.Contents = data[:frameLen]
@@ -326,7 +330,14 @@ func (d *DNP3) decodeApp() error {
 	}
 
 	d.Application = &DNP3Application{}
-	return d.Application.decode(d.UserData[1:], end)
+	err := d.Application.decode(d.UserData[1:], end)
+
+	// Masters send requests with DIR set, outstations responses with it
+	// clear. A fragment too short to hold its function says nothing.
+	if len(d.UserData) > dnp3AppHeaderLen && d.Application.Function.IsResponse() == d.Link.Dir {
+		d.LinkIssues |= DNP3LinkBadDirection
+	}
+	return err
 }
 
 // decodeLink reads the fixed link header fields. The caller has checked
@@ -649,11 +660,24 @@ const (
 	DNP3GroupClassData          DNP3Group = 60
 	DNP3GroupFile               DNP3Group = 70
 	DNP3GroupIIN                DNP3Group = 80
+	DNP3GroupDeviceStorage      DNP3Group = 81
+	DNP3GroupDeviceProfile      DNP3Group = 82
+	DNP3GroupPrivateObject      DNP3Group = 83
+	DNP3GroupDataSetPrototype   DNP3Group = 85
+	DNP3GroupDataSetDescriptor  DNP3Group = 86
+	DNP3GroupDataSet            DNP3Group = 87
+	DNP3GroupDataSetEvent       DNP3Group = 88
+	DNP3GroupApplication        DNP3Group = 90
+	DNP3GroupOperationStatus    DNP3Group = 91
+	DNP3GroupBCD                DNP3Group = 101
+	DNP3GroupUint8              DNP3Group = 102
 	DNP3GroupOctetString        DNP3Group = 110
 	DNP3GroupOctetStringEvent   DNP3Group = 111
 	DNP3GroupVTOutput           DNP3Group = 112
 	DNP3GroupVTEvent            DNP3Group = 113
 	DNP3GroupAuthentication     DNP3Group = 120
+	DNP3GroupSecurityStat       DNP3Group = 121
+	DNP3GroupSecurityStatEvent  DNP3Group = 122
 )
 
 // dnp3GroupNames maps groups to their names.
@@ -686,11 +710,24 @@ var dnp3GroupNames = map[DNP3Group]string{
 	DNP3GroupClassData:          "Class Data",
 	DNP3GroupFile:               "File Control",
 	DNP3GroupIIN:                "Internal Indications",
+	DNP3GroupDeviceStorage:      "Device Storage",
+	DNP3GroupDeviceProfile:      "Device Profile",
+	DNP3GroupPrivateObject:      "Private Registration Object",
+	DNP3GroupDataSetPrototype:   "Data Set Prototype",
+	DNP3GroupDataSetDescriptor:  "Data Set Descriptor",
+	DNP3GroupDataSet:            "Data Set",
+	DNP3GroupDataSetEvent:       "Data Set Event",
+	DNP3GroupApplication:        "Application",
+	DNP3GroupOperationStatus:    "Status of Requested Operation",
+	DNP3GroupBCD:                "Binary-Coded Decimal Integer",
+	DNP3GroupUint8:              "Unsigned Integer",
 	DNP3GroupOctetString:        "Octet String",
 	DNP3GroupOctetStringEvent:   "Octet String Event",
 	DNP3GroupVTOutput:           "Virtual Terminal Output",
 	DNP3GroupVTEvent:            "Virtual Terminal Event",
 	DNP3GroupAuthentication:     "Authentication",
+	DNP3GroupSecurityStat:       "Security Statistic",
+	DNP3GroupSecurityStatEvent:  "Security Statistic Event",
 }
 
 // String returns the group name.
@@ -964,7 +1001,13 @@ var dnp3ObjSizes = map[uint16]dnp3ObjSize{
 	dnp3GV(50, 1): {bytes: 6}, dnp3GV(50, 2): {bytes: 10}, dnp3GV(50, 3): {bytes: 6}, dnp3GV(50, 4): {bytes: 11},
 	dnp3GV(51, 1): {bytes: 6}, dnp3GV(51, 2): {bytes: 6},
 	dnp3GV(52, 1): {bytes: 2}, dnp3GV(52, 2): {bytes: 2},
-	dnp3GV(80, 1): {bits: 1},
+	dnp3GV(80, 1):  {bits: 1},
+	dnp3GV(81, 1):  {bytes: 3},
+	dnp3GV(86, 2):  {bytes: 1},
+	dnp3GV(101, 1): {bytes: 2}, dnp3GV(101, 2): {bytes: 4}, dnp3GV(101, 3): {bytes: 8},
+	dnp3GV(102, 1): {bytes: 1},
+	dnp3GV(121, 1): {bytes: 7},
+	dnp3GV(122, 1): {bytes: 7}, dnp3GV(122, 2): {bytes: 13},
 }
 
 // dnp3SizeOf returns the layout of group g variation v. Class data has no
