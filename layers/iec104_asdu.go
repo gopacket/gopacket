@@ -26,10 +26,15 @@ import (
 	"time"
 )
 
-// Data unit identifier layout.
+// Data unit identifier layout. IEC 104 fixes the sizes of the cause of
+// transmission, common address and object address; IEC 101 lets a system
+// pick them, see IEC104ASDUOptions.
 const (
-	iec104DUILen = 6
-	iec104IOALen = 3
+	iec104TypeVSQLen = 2 // type identification and structure qualifier
+	iec104COTLen     = 2
+	iec104CALen      = 2
+	iec104IOALen     = 3
+	iec104DUILen     = iec104TypeVSQLen + iec104COTLen + iec104CALen
 
 	iec104SQBit       = 0x80 // variable structure qualifier: sequence
 	iec104NumMask     = 0x7F // variable structure qualifier: object count
@@ -37,7 +42,7 @@ const (
 	iec104NegativeBit = 0x40
 	iec104TestBit     = 0x80
 
-	iec104IOAMask = 0xFFFFFF
+	iec104BitsPerOctet = 8
 )
 
 // Information element bit fields (IEC 60870-5-101, 7.2.6).
@@ -132,6 +137,7 @@ const (
 	IEC104TypeProtEventTime56          IEC104TypeID = 38  // M_EP_TD_1
 	IEC104TypeProtStartTime56          IEC104TypeID = 39  // M_EP_TE_1
 	IEC104TypeProtCircuitTime56        IEC104TypeID = 40  // M_EP_TF_1
+	IEC104TypeSecurityStatistics       IEC104TypeID = 41  // S_IT_TC_1
 	IEC104TypeSingleCommand            IEC104TypeID = 45  // C_SC_NA_1
 	IEC104TypeDoubleCommand            IEC104TypeID = 46  // C_DC_NA_1
 	IEC104TypeStepCommand              IEC104TypeID = 47  // C_RC_NA_1
@@ -203,6 +209,7 @@ const (
 	partFileQual                    // FRQ, SRQ, SCQ, LSQ, AFQ or SOF
 	partCHS                         // checksum
 	partSegment                     // LOS and that many octets of segment
+	partAID                         // association ID of security statistics
 )
 
 // iec104PartSize is the octet size of each part; partSegment gives its
@@ -214,7 +221,7 @@ var iec104PartSize = [...]int{
 	partCP16: 2, partCP24: 3, partCP56: 7, partCP56Stop: 7,
 	partSCO: 1, partDCO: 1, partRCO: 1, partQOS: 1, partQualifier: 1,
 	partTest: 2, partNOF: 2, partLOF: 3, partNOS: 1, partFileQual: 1,
-	partCHS: 1, partSegment: 1,
+	partCHS: 1, partSegment: 1, partAID: 2,
 }
 
 // iec104Type describes a type identification: its mnemonic and the parts
@@ -259,6 +266,7 @@ var iec104Types = map[IEC104TypeID]iec104Type{
 	IEC104TypeProtEventTime56:          {"M_EP_TD_1", []iec104Part{partSEP, partCP16, partCP56}},
 	IEC104TypeProtStartTime56:          {"M_EP_TE_1", []iec104Part{partSPE, partQDP, partCP16, partCP56}},
 	IEC104TypeProtCircuitTime56:        {"M_EP_TF_1", []iec104Part{partOCI, partQDP, partCP16, partCP56}},
+	IEC104TypeSecurityStatistics:       {"S_IT_TC_1", []iec104Part{partAID, partBCR, partCP56}},
 	IEC104TypeSingleCommand:            {"C_SC_NA_1", []iec104Part{partSCO}},
 	IEC104TypeDoubleCommand:            {"C_DC_NA_1", []iec104Part{partDCO}},
 	IEC104TypeStepCommand:              {"C_RC_NA_1", []iec104Part{partRCO}},
@@ -300,6 +308,9 @@ var iec104Types = map[IEC104TypeID]iec104Type{
 func (t IEC104TypeID) String() string {
 	if info, ok := iec104Types[t]; ok {
 		return info.name
+	}
+	if name, ok := iec104SecurityNames[t]; ok {
+		return name
 	}
 	return fmt.Sprintf("Unknown(%d)", uint8(t))
 }
@@ -516,7 +527,7 @@ type IEC104Command struct {
 	// State is SCS (0 off, 1 on), DCS (1 off, 2 on) or RCS (1 lower,
 	// 2 higher); zero for a set-point.
 	State uint8
-	// Qualifier is QU for commands, QL for set-points.
+	// Qualifier is QU for commands, see QU, and QL for set-points.
 	Qualifier uint8
 	// Select is S/E: select rather than execute.
 	Select bool
@@ -528,7 +539,8 @@ type IEC104File struct {
 	Section uint8  // NOS
 	// Length is LOF, or LOS for a segment.
 	Length uint32
-	// Qualifier is the raw FRQ, SRQ, SCQ, LSQ, AFQ or SOF octet.
+	// Qualifier is the raw FRQ, SRQ, SCQ, LSQ, AFQ or SOF octet; the
+	// methods of the same names split it.
 	Qualifier uint8
 	Checksum  uint8  // CHS
 	Segment   []byte // F_SG_NA_1 segment data
@@ -574,7 +586,8 @@ type IEC104Object struct {
 	Elapsed uint16
 	// Command is SCO, DCO, RCO or QOS.
 	Command IEC104Command
-	// Qualifier is the raw COI, QOI, QCC, QRP, QPM or QPA octet.
+	// Qualifier is the raw COI, QOI, QCC, QRP, QPM or QPA octet; the
+	// methods of the same names give it its type.
 	Qualifier uint8
 	// Test is the FBP test pattern of C_TS_NA_1 or the TSC counter of
 	// C_TS_TA_1.
@@ -583,6 +596,8 @@ type IEC104Object struct {
 	Time IEC104Time
 	// File holds the file transfer elements.
 	File IEC104File
+	// AssociationID is AID of S_IT_TC_1 security statistics.
+	AssociationID uint16
 }
 
 // NormalizedValue returns NVA as a fraction in [-1, 1).
@@ -608,22 +623,39 @@ type IEC104ASDU struct {
 	// Raw holds the object octets left undecoded: all of them for a type
 	// this decoder does not know, else any past the last object.
 	Raw []byte
+	// Security holds the body of the IEC 62351-5 types S_CH_NA_1 to
+	// S_ER_NA_1, which carry no information objects.
+	Security IEC104Security
 }
 
-// decode reads an ASDU from data, the octets after the APCI.
-func (a *IEC104ASDU) decode(data []byte) error {
-	if len(data) < iec104DUILen {
+// decode reads an ASDU from data, the octets after the APCI, with the
+// field sizes of f.
+func (a *IEC104ASDU) decode(data []byte, f iec104Fields) error {
+	dui := iec104TypeVSQLen + f.cot + f.ca
+	if len(data) < dui {
 		return ErrIEC104ASDUTooShort
 	}
+
 	a.TypeID = IEC104TypeID(data[0])
 	a.Sequence = data[1]&iec104SQBit != 0
 	a.NumObjects = data[1] & iec104NumMask
 	a.Cause = IEC104Cause(data[2] & iec104CauseMask)
 	a.Negative = data[2]&iec104NegativeBit != 0
 	a.Test = data[2]&iec104TestBit != 0
-	a.Originator = data[3]
-	a.CommonAddr = binary.LittleEndian.Uint16(data[4:6])
-	body := data[iec104DUILen:]
+
+	// The originator address is the second octet of a 2-octet COT.
+	if f.cot == iec104COTLen {
+		a.Originator = data[3]
+	}
+	a.CommonAddr = uint16(iec104UintLE(data[iec104TypeVSQLen+f.cot : dui]))
+	body := data[dui:]
+
+	// Secure authentication ASDUs have a body of their own, not objects.
+	if a.TypeID.hasSecurityBody() {
+		rest, err := a.Security.decode(a.TypeID, body, f)
+		a.Raw = rest
+		return err
+	}
 
 	// Keep the objects of an unknown type as raw octets.
 	info, ok := iec104Types[a.TypeID]
@@ -632,7 +664,7 @@ func (a *IEC104ASDU) decode(data []byte) error {
 		return nil
 	}
 
-	rest, err := a.decodeObjects(body, info.parts)
+	rest, err := a.decodeObjects(body, info.parts, f.ioa)
 	if err != nil {
 		return err
 	}
@@ -640,9 +672,9 @@ func (a *IEC104ASDU) decode(data []byte) error {
 	return nil
 }
 
-// decodeObjects reads NumObjects objects of parts each and returns the
-// octets after them.
-func (a *IEC104ASDU) decodeObjects(data []byte, parts []iec104Part) ([]byte, error) {
+// decodeObjects reads NumObjects objects of parts each, their addresses
+// ioaLen octets long, and returns the octets after them.
+func (a *IEC104ASDU) decodeObjects(data []byte, parts []iec104Part, ioaLen int) ([]byte, error) {
 	n := int(a.NumObjects)
 	if n == 0 {
 		return data, nil
@@ -653,9 +685,9 @@ func (a *IEC104ASDU) decodeObjects(data []byte, parts []iec104Part) ([]byte, err
 	for _, part := range parts {
 		size += iec104PartSize[part]
 	}
-	need := n * (iec104IOALen + size)
+	need := n * (ioaLen + size)
 	if a.Sequence {
-		need = iec104IOALen + n*size
+		need = ioaLen + n*size
 	}
 	if len(data) < need {
 		return nil, ErrIEC104ObjectsTooLong
@@ -672,17 +704,18 @@ func (a *IEC104ASDU) decodeObjects(data []byte, parts []iec104Part) ([]byte, err
 	}
 
 	// With SQ set only the first object carries an address; the others
-	// follow it, e.g. IOA 100 then 101, 102.
+	// follow it, e.g. IOA 100 then 101, 102, wrapping at the address size.
+	ioaMask := uint32(1)<<(uint(ioaLen)*iec104BitsPerOctet) - 1
 	var ioa uint32
 	for k := 0; k < n; k++ {
 		if k == 0 || !a.Sequence {
-			if len(data) < iec104IOALen {
+			if len(data) < ioaLen {
 				return nil, ErrIEC104ObjectsTooLong
 			}
-			ioa = iec104Uint24(data)
-			data = data[iec104IOALen:]
+			ioa = iec104UintLE(data[:ioaLen])
+			data = data[ioaLen:]
 		} else {
-			ioa = (ioa + 1) & iec104IOAMask
+			ioa = (ioa + 1) & ioaMask
 		}
 
 		obj := IEC104Object{IOA: ioa}
@@ -790,13 +823,15 @@ func (o *IEC104Object) decodeControl(part iec104Part, b []byte) {
 	case partNOF:
 		o.File.Name = binary.LittleEndian.Uint16(b)
 	case partLOF:
-		o.File.Length = iec104Uint24(b)
+		o.File.Length = iec104UintLE(b)
 	case partNOS:
 		o.File.Section = b[0]
 	case partFileQual:
 		o.File.Qualifier = b[0]
 	case partCHS:
 		o.File.Checksum = b[0]
+	case partAID:
+		o.AssociationID = binary.LittleEndian.Uint16(b)
 	}
 }
 
@@ -856,7 +891,12 @@ func iec104DecodeTime(b []byte) IEC104Time {
 	return t
 }
 
-// iec104Uint24 reads a little endian 3-octet value.
-func iec104Uint24(b []byte) uint32 {
-	return uint32(b[0]) | uint32(b[1])<<8 | uint32(b[2])<<16
+// iec104UintLE reads a little endian value of up to four octets, e.g. the
+// 3-octet object address 0x01 0x02 0x03 as 0x030201.
+func iec104UintLE(b []byte) uint32 {
+	var v uint32
+	for k := len(b) - 1; k >= 0; k-- {
+		v = v<<iec104BitsPerOctet | uint32(b[k])
+	}
+	return v
 }

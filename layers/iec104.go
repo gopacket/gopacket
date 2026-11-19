@@ -147,6 +147,15 @@ func (i *IEC104) NextLayerType() gopacket.LayerType {
 
 // DecodeFromBytes decodes the first APDU of data.
 func (i *IEC104) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+	if err := i.decodeAPCI(data, df); err != nil {
+		return err
+	}
+	return i.decodeASDU()
+}
+
+// decodeAPCI reads the framing of the first APDU of data: start, length
+// and control field. It sets Contents and Payload and clears the ASDU.
+func (i *IEC104) decodeAPCI(data []byte, df gopacket.DecodeFeedback) error {
 	if len(data) < iec104APCILen {
 		df.SetTruncated()
 		return ErrIEC104TooShort
@@ -170,16 +179,20 @@ func (i *IEC104) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error 
 	i.ASDU = IEC104ASDU{Objects: i.ASDU.Objects[:0]}
 	i.Contents = data[:end]
 	i.Payload = data[end:]
+	return nil
+}
 
+// decodeASDU reads the ASDU of an APDU whose APCI decodeAPCI accepted.
+func (i *IEC104) decodeASDU() error {
 	// Only I-format frames carry an ASDU.
-	asdu := data[iec104APCILen:end]
+	asdu := i.Contents[iec104APCILen:]
 	if i.Format != IEC104FormatI {
 		if len(asdu) != 0 {
 			return ErrIEC104BadLength
 		}
 		return nil
 	}
-	return i.ASDU.decode(asdu)
+	return i.ASDU.decode(asdu, iec104DefaultFields)
 }
 
 // decodeControl reads the format and its numbers from the control field.
@@ -203,26 +216,33 @@ func (i *IEC104) decodeControl(c []byte) {
 }
 
 func decodeIEC104(data []byte, p gopacket.PacketBuilder) error {
-	apdu := &IEC104{}
-	if err := apdu.DecodeFromBytes(data, p); err != nil {
-		return err
-	}
-	p.AddLayer(apdu)
-
 	// A segment may carry several APDUs back to back. Give each its own
 	// layer, in a loop rather than through NextDecoder so a large buffer
 	// does not cost a stack frame per APDU. Each pass consumes at least
-	// iec104APCILen octets. An APDU that does not decode, such as one cut
-	// short by segmentation, stays the previous layer's payload.
-	for len(apdu.Payload) > 0 {
-		next := &IEC104{}
-		if err := next.DecodeFromBytes(apdu.Payload, gopacket.NilDecodeFeedback); err != nil {
-			break
+	// iec104APCILen octets.
+	//
+	// An APDU that does not frame, such as one cut short by segmentation,
+	// ends the loop with its error: gopacket turns that into an error
+	// layer holding the octets from that APDU on. An APDU that frames but
+	// carries a bad ASDU still becomes a layer, so its APCI is not lost,
+	// and then ends the loop the same way.
+	for {
+		apdu := &IEC104{}
+		if err := apdu.decodeAPCI(data, p); err != nil {
+			return err
 		}
-		p.AddLayer(next)
-		apdu = next
+
+		err := apdu.decodeASDU()
+		p.AddLayer(apdu)
+		if err != nil {
+			return err
+		}
+
+		data = apdu.Payload
+		if len(data) == 0 {
+			return nil
+		}
 	}
-	return nil
 }
 
 // registerIEC104Decoders routes TCP port 2404 to the IEC 104 decoder.

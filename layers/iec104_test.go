@@ -170,8 +170,8 @@ var iec104Vectors = [][]byte{
 		0xf0, 0x00, 0x01, 0x01, 0x00},
 	// M_ME_NA_1 IOA=3: NVA 0x4000 (0.5).
 	{0x68, 0x10, 0x16, 0x00, 0x02, 0x00, 0x09, 0x01, 0x03, 0x00, 0x0a, 0x00, 0x03, 0x00, 0x00, 0x00, 0x40, 0x00},
-	// Type 81 (S_CH_NA_1, IEC 62351-5), not decoded: kept raw.
-	{0x68, 0x0e, 0x18, 0x00, 0x02, 0x00, 0x51, 0x01, 0x06, 0x00, 0x0a, 0x00, 0xaa, 0xbb, 0xcc, 0xdd},
+	// Type 200, private range, not decoded: kept raw.
+	{0x68, 0x0e, 0x18, 0x00, 0x02, 0x00, 0xc8, 0x01, 0x06, 0x00, 0x0a, 0x00, 0xaa, 0xbb, 0xcc, 0xdd},
 	// S-format, N(R)=5.
 	{0x68, 0x04, 0x01, 0x00, 0x0a, 0x00},
 	// U-format TESTFR act.
@@ -225,7 +225,7 @@ var iec104Want = []IEC104{
 	{Length: 16, SendSeq: 11, RecvSeq: 1, ASDU: IEC104ASDU{TypeID: IEC104TypeNormalized, NumObjects: 1,
 		Cause: IEC104CauseSpontaneous, CommonAddr: 10,
 		Objects: []IEC104Object{{IOA: 3, Normalized: 0x4000}}}},
-	{Length: 14, SendSeq: 12, RecvSeq: 1, ASDU: IEC104ASDU{TypeID: 81, NumObjects: 1,
+	{Length: 14, SendSeq: 12, RecvSeq: 1, ASDU: IEC104ASDU{TypeID: 200, NumObjects: 1,
 		Cause: IEC104CauseActivation, CommonAddr: 10, Raw: []byte{0xaa, 0xbb, 0xcc, 0xdd}}},
 	{Length: 4, Format: IEC104FormatS, RecvSeq: 5},
 	{Length: 4, Format: IEC104FormatU, UFunction: IEC104TestFRAct},
@@ -312,7 +312,9 @@ func TestIEC104Strings(t *testing.T) {
 	}{
 		{IEC104TypeFloatTime56, "M_ME_TF_1"},
 		{IEC104TypeQueryLog, "F_SC_NB_1"},
-		{IEC104TypeID(81), "Unknown(81)"},
+		{IEC104TypeID(81), "S_CH_NA_1"},
+		{IEC104TypeSecurityStatistics, "S_IT_TC_1"},
+		{IEC104TypeID(200), "Unknown(200)"},
 		{IEC104CauseInterrogated, "Inrogen"},
 		{IEC104Cause(23), "Inro3"},
 		{IEC104Cause(40), "Reqco3"},
@@ -558,12 +560,47 @@ func TestIEC104Malformed(t *testing.T) {
 		}
 	}
 
-	// A broken APDU after a good one stays the good one's payload.
+	// A bad first ASDU keeps its valid APCI as a layer, then the error.
+	for _, tt := range tests[4:] {
+		p := gopacket.NewPacket(tt.data, LayerTypeIEC104, gopacket.Default)
+		apdu, _ := p.Layer(LayerTypeIEC104).(*IEC104)
+		if apdu == nil || apdu.Format != IEC104FormatI || len(apdu.Contents) != len(tt.data) {
+			t.Errorf("%s: APCI layer not kept: %v", tt.name, p.Layers())
+		}
+		if e := p.ErrorLayer(); e == nil || !errors.Is(e.Error(), tt.want) {
+			t.Errorf("%s: error layer %v, want %v", tt.name, e, tt.want)
+		}
+	}
+
+	// An APDU cut short after a good one is an error layer holding the
+	// cut octets, and the packet is flagged truncated.
 	good := iec104Vectors[len(iec104Vectors)-1]
-	data := append(append([]byte{}, good...), 0x68, 0x04, 0x01)
-	p := gopacket.NewPacket(data, LayerTypeIEC104, gopacket.Default)
-	if p.ErrorLayer() != nil || len(p.Layers()) != 1 || len(p.Layers()[0].LayerPayload()) != 3 {
+	cut := []byte{0x68, 0x04, 0x01}
+	p := gopacket.NewPacket(append(append([]byte{}, good...), cut...), LayerTypeIEC104, gopacket.Default)
+	e := p.ErrorLayer()
+	if e == nil || !errors.Is(e.Error(), ErrIEC104TooShort) || len(p.Layers()) != 2 ||
+		!bytes.Equal(e.LayerContents(), cut) || !p.Metadata().Truncated {
 		t.Errorf("trailing fragment: %v", p.Layers())
+	}
+
+	// A broken APDU between good ones is an error layer too: the good one
+	// before it stays, the octets from the broken one on go to the error.
+	broken := []byte{0x68, 0x02, 0x00, 0x00, 0x00, 0x00}
+	rest := append(append([]byte{}, broken...), good...)
+	p = gopacket.NewPacket(append(append([]byte{}, good...), rest...), LayerTypeIEC104, gopacket.Default)
+	e = p.ErrorLayer()
+	if e == nil || !errors.Is(e.Error(), ErrIEC104BadLength) || len(p.Layers()) != 2 ||
+		p.Layers()[0].LayerType() != LayerTypeIEC104 || !bytes.Equal(e.LayerContents(), rest) {
+		t.Errorf("broken middle APDU: %v", p.Layers())
+	}
+
+	// A middle APDU with a valid APCI and a bad ASDU keeps its layer.
+	bad := tests[5].data
+	p = gopacket.NewPacket(bytes.Join([][]byte{good, bad, good}, nil), LayerTypeIEC104, gopacket.Default)
+	e = p.ErrorLayer()
+	if e == nil || !errors.Is(e.Error(), tests[5].want) || len(p.Layers()) != 3 ||
+		!bytes.Equal(p.Layers()[1].LayerContents(), bad) || !bytes.Equal(e.LayerContents(), good) {
+		t.Errorf("bad middle ASDU: %v", p.Layers())
 	}
 }
 
@@ -605,7 +642,37 @@ func FuzzIEC104(f *testing.F) {
 		}
 	}
 
+	for _, data := range iec104Handmade(f) {
+		f.Add(data)
+		f.Add(data[iec104APCILen:])
+	}
+
+	sizes := []IEC104ASDUOptions{{}, {COTSize: 1, CommonAddrSize: 1, IOASize: 2}, {COTSize: 1, CommonAddrSize: 2, IOASize: 1}}
+	assembler := IEC104SecurityAssembler{MaxSize: 1 << 10}
+
 	f.Fuzz(func(t *testing.T, data []byte) {
+		// The ASDU alone, under each set of field sizes: what it holds
+		// fits the input, and the accessors take any value.
+		for _, opts := range sizes {
+			var a IEC104ASDU
+			if err := a.DecodeWithOptions(data, opts); err != nil {
+				continue
+			}
+			iec104Bounded(t, &a, data)
+
+			x := iec104Dump{}
+			x.asdu(&a)
+			_ = x.String()
+
+			if body, err := assembler.Add(&a.Security); err == nil && body != nil {
+				var s IEC104Security
+				_, _ = s.DecodeBody(a.TypeID, body, opts)
+			}
+			if len(assembler.body) > assembler.MaxSize {
+				t.Fatalf("assembler holds %d octets", len(assembler.body))
+			}
+		}
+
 		var apdu IEC104
 		if err := apdu.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err == nil {
 			if len(apdu.Contents) != 2+int(apdu.Length) {
