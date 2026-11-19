@@ -603,10 +603,11 @@ type DNP3AppControl struct {
 }
 
 // DNP3Application is the application layer of a frame that begins a
-// fragment. Objects lists the object headers that decoded completely.
-// Unparsed holds the bytes from the first header that could not be
-// decoded: an object whose size this decoder does not know, a reserved
-// qualifier, or objects continuing in the next frame of the fragment.
+// fragment. Objects lists the object headers in order. When the parse
+// stops early, the last one is the header that stopped it, its State
+// saying why: an object whose size this decoder does not know, a reserved
+// qualifier code, a bad range, or objects continuing in the next frame of
+// the fragment. Unparsed holds the bytes from that header on.
 type DNP3Application struct {
 	Control  DNP3AppControl
 	Function DNP3AppFunc
@@ -751,7 +752,11 @@ func (c DNP3PrefixCode) String() string {
 // DNP3RangeCode is the range specifier code of a qualifier.
 type DNP3RangeCode uint8
 
-// DNP3RangeCode values.
+// DNP3RangeCode values. Codes 3 to 5 hold a start and a stop like codes
+// 0 to 2 (IEEE 1815-2012 table 4-6, and the parsing rules of DNP3
+// application note AN2013-004b), one object per address. Wireshark
+// follows the older reading of a single absolute address instead, so it
+// shows other objects for these three codes.
 const (
 	DNP3RangeStartStop1  DNP3RangeCode = 0x0 // 1 octet start and stop index
 	DNP3RangeStartStop2  DNP3RangeCode = 0x1
@@ -787,6 +792,12 @@ func (c DNP3RangeCode) IsStartStop() bool {
 	return c <= DNP3RangeVirtual4
 }
 
+// IsVirtual reports whether the start and stop values are virtual
+// addresses (codes 3 to 5) rather than point indexes.
+func (c DNP3RangeCode) IsVirtual() bool {
+	return c >= DNP3RangeVirtual1 && c <= DNP3RangeVirtual4
+}
+
 // String returns the range code name.
 func (c DNP3RangeCode) String() string {
 	switch {
@@ -804,6 +815,43 @@ func (c DNP3RangeCode) String() string {
 	return fmt.Sprintf("Reserved(%d)", uint8(c))
 }
 
+// DNP3HeaderState says how far an object header decoded.
+type DNP3HeaderState uint8
+
+// DNP3HeaderState values.
+const (
+	// DNP3HeaderDecoded: the header and every object it covers decoded.
+	DNP3HeaderDecoded DNP3HeaderState = iota
+	// DNP3HeaderReserved: the qualifier holds a reserved prefix or range
+	// code, so the range field and the objects cannot be delimited.
+	DNP3HeaderReserved
+	// DNP3HeaderUnsized: the range decoded, the objects are of a size
+	// this decoder cannot tell.
+	DNP3HeaderUnsized
+	// DNP3HeaderTruncated: the range field or the objects run past the
+	// end of the fragment, or of the segment when more segments follow.
+	DNP3HeaderTruncated
+	// DNP3HeaderBadRange: the stop of the range is below its start.
+	DNP3HeaderBadRange
+)
+
+// String returns the state name.
+func (s DNP3HeaderState) String() string {
+	switch s {
+	case DNP3HeaderDecoded:
+		return "Decoded"
+	case DNP3HeaderReserved:
+		return "Reserved Qualifier"
+	case DNP3HeaderUnsized:
+		return "Unsized Objects"
+	case DNP3HeaderTruncated:
+		return "Truncated"
+	case DNP3HeaderBadRange:
+		return "Bad Range"
+	}
+	return fmt.Sprintf("Unknown(%d)", uint8(s))
+}
+
 // DNP3ObjectHeader is one object header and the objects it covers.
 //
 // Count is the number of objects (stop-start+1 for a start/stop range),
@@ -814,6 +862,10 @@ func (c DNP3RangeCode) String() string {
 // aligned objects. Packed objects (one bit per binary input, two per
 // double-bit input) are not sliced: BitsPerObject is set and PackedValue
 // reads them out of Data.
+//
+// State is DNP3HeaderDecoded for every header but the last of a fragment
+// whose parse stopped there: that one names the object that stopped it
+// and has neither Data nor Objects. Wireshark lists such a header too.
 type DNP3ObjectHeader struct {
 	Group         DNP3Group
 	Variation     uint8
@@ -826,6 +878,13 @@ type DNP3ObjectHeader struct {
 	Data          []byte
 	Objects       []DNP3Object
 	BitsPerObject uint8
+	State         DNP3HeaderState
+}
+
+// ReservedBit reports whether bit 7 of the qualifier, reserved and sent
+// as 0, is set. The prefix and range codes are read all the same.
+func (h *DNP3ObjectHeader) ReservedBit() bool {
+	return h.Qualifier&dnp3QualReserved != 0
 }
 
 // DNP3Object is one object of a header. Index is the point index from the
@@ -1004,6 +1063,12 @@ func (a *DNP3Application) decode(frag []byte, end dnp3SegmentEnd) error {
 			err = errDNP3Stop
 		}
 
+		// Name the object that stopped the parse. Fewer than three
+		// bytes are no header: it has no state and is left out.
+		if err != nil && h.State != DNP3HeaderDecoded {
+			a.Objects = append(a.Objects, h)
+		}
+
 		if errors.Is(err, errDNP3Stop) {
 			a.Unparsed = rest
 			return nil
@@ -1022,7 +1087,8 @@ func (a *DNP3Application) decode(frag []byte, end dnp3SegmentEnd) error {
 
 // decode reads one object header and the objects it covers from b and
 // returns how many bytes they take. It returns errDNP3Stop for objects it
-// cannot size and ErrDNP3ObjTruncated when b ends early.
+// cannot size and ErrDNP3ObjTruncated when b ends early. Once the three
+// header bytes are read, any failure is recorded in State.
 func (h *DNP3ObjectHeader) decode(b []byte, mode dnp3ObjMode) (int, error) {
 	if len(b) < dnp3ObjHeaderLen {
 		return 0, ErrDNP3ObjTruncated
@@ -1036,22 +1102,40 @@ func (h *DNP3ObjectHeader) decode(b []byte, mode dnp3ObjMode) (int, error) {
 
 	n, err := h.decodeRange(b[dnp3ObjHeaderLen:])
 	if err != nil {
-		return 0, err
+		return 0, h.stopped(err)
 	}
 	n += dnp3ObjHeaderLen
 
 	size, err := h.decodeObjects(b[n:], mode)
 	if err != nil {
-		return 0, err
+		return 0, h.stopped(err)
 	}
 	return n + size, nil
+}
+
+// stopped records in State why the header did not decode, unless a more
+// precise state is set, and drops any object sliced before the fault.
+func (h *DNP3ObjectHeader) stopped(err error) error {
+	switch {
+	case h.State != DNP3HeaderDecoded:
+	case errors.Is(err, ErrDNP3BadRange):
+		h.State = DNP3HeaderBadRange
+	default:
+		h.State = DNP3HeaderTruncated
+	}
+
+	h.Data, h.Objects, h.BitsPerObject = nil, nil, 0
+	return err
 }
 
 // decodeRange reads the range field and sets Start, Stop and Count. It
 // returns the field width.
 func (h *DNP3ObjectHeader) decodeRange(b []byte) (int, error) {
+	// Reserved codes leave the layout of what follows undefined. The
+	// reserved bit 7 does not: the codes read the same with it set.
 	w := h.Range.width()
-	if w < 0 || h.Qualifier&dnp3QualReserved != 0 || h.Prefix.Len() < 0 {
+	if w < 0 || h.Prefix.Len() < 0 {
+		h.State = DNP3HeaderReserved
 		return 0, errDNP3Stop
 	}
 
@@ -1085,7 +1169,7 @@ func (h *DNP3ObjectHeader) decodeRange(b []byte) (int, error) {
 // bytes are there.
 func (h *DNP3ObjectHeader) decodeObjects(b []byte, mode dnp3ObjMode) (int, error) {
 	prefix := h.Prefix.Len()
-	if mode == dnp3HeadersOnly || h.Group == DNP3GroupClassData {
+	if h.Group == DNP3GroupClassData || mode == dnp3HeadersOnly && !h.valuedRequest() {
 		return h.decodeFixed(b, prefix, 0)
 	}
 
@@ -1104,12 +1188,12 @@ func (h *DNP3ObjectHeader) decodeObjects(b []byte, mode dnp3ObjMode) (int, error
 
 	size, ok := dnp3SizeOf(h.Group, h.Variation)
 	if !ok {
-		return 0, errDNP3Stop
+		return 0, h.unsized()
 	}
 
 	// Free format objects are variable sized: each needs a size prefix.
 	if h.Range == DNP3RangeFreeFormat1 {
-		return 0, errDNP3Stop
+		return 0, h.unsized()
 	}
 
 	if size.bits == 0 {
@@ -1118,7 +1202,7 @@ func (h *DNP3ObjectHeader) decodeObjects(b []byte, mode dnp3ObjMode) (int, error
 
 	// Packed objects are only defined without a prefix.
 	if prefix != 0 {
-		return 0, errDNP3Stop
+		return 0, h.unsized()
 	}
 
 	total := (h.Count*uint64(size.bits) + dnp3BitsPerByte - 1) / dnp3BitsPerByte
@@ -1128,6 +1212,22 @@ func (h *DNP3ObjectHeader) decodeObjects(b []byte, mode dnp3ObjMode) (int, error
 	h.Data = b[:total]
 	h.BitsPerObject = uint8(size.bits)
 	return int(total), nil
+}
+
+// valuedRequest reports whether the header carries object values even in
+// a request that otherwise lists headers only: objects sized by their
+// prefix, e.g. the g70v5 naming the file block to READ, and the g120v3
+// aggressive mode request that may lead any request. Wireshark makes the
+// same two exceptions.
+func (h *DNP3ObjectHeader) valuedRequest() bool {
+	return h.Prefix.IsSize() || h.Group == DNP3GroupAuthentication && h.Variation == dnp3AuthAggrVar
+}
+
+// unsized marks the header as one whose objects cannot be delimited and
+// stops the parse.
+func (h *DNP3ObjectHeader) unsized() error {
+	h.State = DNP3HeaderUnsized
+	return errDNP3Stop
 }
 
 // decodeFixed slices Count objects of prefix+size bytes each. With neither
@@ -1204,7 +1304,7 @@ func (h *DNP3ObjectHeader) lateSliced(mode dnp3ObjMode) bool {
 // fails now.
 func (h *DNP3ObjectHeader) decodeLate(b []byte, prefix int) (int, error) {
 	if h.Range == DNP3RangeFreeFormat1 {
-		return 0, errDNP3Stop
+		return 0, h.unsized()
 	}
 
 	var n int
@@ -1216,8 +1316,7 @@ func (h *DNP3ObjectHeader) decodeLate(b []byte, prefix int) (int, error) {
 	}
 
 	if err != nil {
-		h.Data, h.Objects = nil, nil
-		return 0, errDNP3Stop
+		return 0, h.unsized()
 	}
 	return n, nil
 }
