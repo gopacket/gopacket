@@ -28,8 +28,9 @@ import (
 //
 // Decoded: frame header, V3 integrity part (opaque), request and
 // response data headers, trailer. The item tree after the data header
-// (objects, attributes, values in VLQ encoding) stays raw in Data; the
-// exported VLQ readers decode its integers. A PDU too large for one
+// (objects, attributes, values in VLQ encoding) stays raw in Data;
+// DecodeBody decodes it on request, and the exported VLQ readers its
+// integers. A PDU too large for one
 // TPDU is sent as several frames that each repeat the frame header and
 // only the last of which has the trailer; a continuation frame does not
 // start with an opcode, so its body stays raw too.
