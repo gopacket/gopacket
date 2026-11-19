@@ -648,6 +648,7 @@ func decodeBACnetAll(data []byte) {
 	for _, l := range sc.Layers() {
 		_ = fmt.Sprint(l)
 	}
+	decodeBACnetMSTPAll(data)
 	var any BVLCAny
 	if err := any.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err == nil {
 		_, _ = any.NextLayerType(), any.LayerPayload()
@@ -747,6 +748,15 @@ func FuzzBACnet(f *testing.F) {
 		for _, frame := range bacnetFrames(f, name) {
 			f.Add(frame)
 		}
+	}
+
+	for _, v := range bacnetMSTPVectors {
+		f.Add(mustHex(f, v.frame))
+	}
+	for _, v := range bacnetSecurityVectors {
+		// As BACnet/IP: Original-Unicast-NPDU around the secured NPDU.
+		npdu := bacnetSecuredNPDU(f, v.msg, v.control, v.service)
+		f.Add(append([]byte{0x81, 0x0A, 0x00, uint8(len(npdu) + bvlcHeaderLen)}, npdu...))
 	}
 
 	f.Fuzz(func(t *testing.T, data []byte) {

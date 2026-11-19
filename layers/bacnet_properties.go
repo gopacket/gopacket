@@ -105,6 +105,7 @@ var bacnetPropertyTypes = map[BACnetPropertyIdentifier]BACnetDataType{
 	BACnetPropertySecuredStatus:                    BACnetDataTypeDoorSecuredStatus,
 	BACnetPropertyAccessDoors:                      BACnetDataTypeDeviceObjectReference,
 	BACnetPropertyAccessEventCredential:            BACnetDataTypeDeviceObjectReference,
+	BACnetPropertyAccessEventAuthenticationFactor:  BACnetDataTypeAuthenticationFactor,
 	BACnetPropertyAccompaniment:                    BACnetDataTypeDeviceObjectReference,
 	BACnetPropertyActivationTime:                   BACnetDataTypeDateTime,
 	BACnetPropertyAuthorizationMode:                BACnetDataTypeAuthorizationMode,

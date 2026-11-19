@@ -715,7 +715,7 @@ func TestBACnetSegmentLimits(t *testing.T) {
 // authentication data: 3 octets of service data from device 10 to 20.
 const bacnetWrapper = "90 02 01 05 00 00 0a 00 00 00 2a 65 b8 f0 00" + // control .. timestamp
 	" 00 00 14 00 01 01 07 00 02 06 0a 00 00 05 ba c0" + // destination device, DNET/DADR, SNET/SADR
-	" 01 00 64 02 00 02 be ef" + // mechanism 1, user 100, role 2, 2 octets
+	" 01 00 64 02 00 07 be ef" + // mechanism 1, user 100, role 2, 7 octets in all
 	" 01 02 03" + // service data
 	" 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a" // signature
 
@@ -799,9 +799,15 @@ func TestBACnetSecurityWrapper(t *testing.T) {
 	for msg := BACnetNetworkMessageChallengeRequest; msg <= BACnetNetworkMessageSetMasterKey; msg++ {
 		var npdu BACnetNPDU
 		frame = append([]byte{0x01, 0x80, byte(msg)}, wrapper...)
-		if err := npdu.DecodeFromBytes(frame, gopacket.NilDecodeFeedback); err != nil || !reflect.DeepEqual(npdu.Security, want) ||
-			!bytes.Equal(npdu.Body, wrapper) {
+		err := npdu.DecodeFromBytes(frame, gopacket.NilDecodeFeedback)
+		if err != nil || npdu.Security == nil || !bytes.Equal(npdu.Body, wrapper) {
 			t.Errorf("NPDU %v: %+v %v", msg, npdu.Security, err)
+			continue
+		}
+		// The message in the wrapper has a test of its own.
+		npdu.Security.Message = nil
+		if !reflect.DeepEqual(npdu.Security, want) {
+			t.Errorf("NPDU %v: %+v", msg, npdu.Security)
 		}
 
 		// Too short for a wrapper: Body alone, as before.
@@ -832,7 +838,8 @@ func TestBACnetSC(t *testing.T) {
 				OriginVMAC: originVMAC, DestinationVMAC: destVMAC,
 				DestinationOptions: []BACnetSCOption{{Type: BACnetSCOptionSecurePath, MustUnderstand: true}},
 				DataOptions: []BACnetSCOption{
-					{Type: BACnetSCOptionProprietary, Data: []byte{0xAA, 0xBB, 0xCC}},
+					{Type: BACnetSCOptionProprietary, Data: []byte{0xAA, 0xBB, 0xCC},
+						VendorID: 0xAABB, ProprietaryType: 0xCC, ProprietaryData: []byte{}},
 					{Type: BACnetSCOptionSecurePath},
 				}}},
 		{"BVLC-Result ACK",
@@ -906,6 +913,8 @@ func TestBACnetSC(t *testing.T) {
 		}
 	}
 
+	var sc BACnetSC
+
 	// The NPDU of an Encapsulated-NPDU is decoded on.
 	p := gopacket.NewPacket(mustHex(t, tests[0].data), LayerTypeBACnetSC, gopacket.Default)
 	if a, ok := p.Layer(LayerTypeBACnetAPDU).(*BACnetAPDU); !ok || a.UnconfirmedService != BACnetUnconfirmedServiceWhoIs {
@@ -919,10 +928,25 @@ func TestBACnetSC(t *testing.T) {
 		t.Errorf("control %#x", uint8(c))
 	}
 
+	// The typed views of an advertisement, a list of URIs and the
+	// Secure Path option.
+	if err := sc.DecodeFromBytes(mustHex(t, "04 00 00 0a 02 01 05c4 05c4"), gopacket.NilDecodeFeedback); err != nil ||
+		sc.HubConnection != BACnetSCHubFailover || sc.HubConnection.String() != "Connected to failover hub" {
+		t.Errorf("advertisement %v %v", sc.HubConnection, err)
+	}
+	uris := "wss://a:4443 wss://b"
+	if err := sc.DecodeFromBytes(append(mustHex(t, "03 00 00 09"), uris...), gopacket.NilDecodeFeedback); err != nil ||
+		!reflect.DeepEqual(sc.URIList(), []string{"wss://a:4443", "wss://b"}) || sc.SecurePath() {
+		t.Errorf("URIs %q %v", sc.URIList(), err)
+	}
+	if err := sc.DecodeFromBytes(mustHex(t, "01 01 00 01 41 01 00 10 08"), gopacket.NilDecodeFeedback); err != nil ||
+		!sc.SecurePath() || sc.URIList() != nil {
+		t.Errorf("secure path %+v %v", sc.DataOptions, err)
+	}
+
 	// A list of more options than are kept still ends where it ends.
 	many := append([]byte{0x0A, 0x02, 0x00, 0x01}, bytes.Repeat([]byte{0x81}, 3*bacnetSCMaxOptions)...)
 	many = append(many, 0x01)
-	var sc BACnetSC
 	if err := sc.DecodeFromBytes(many, gopacket.NilDecodeFeedback); err != nil || len(sc.DestinationOptions) != bacnetSCMaxOptions {
 		t.Errorf("%d options kept: %v", len(sc.DestinationOptions), err)
 	}

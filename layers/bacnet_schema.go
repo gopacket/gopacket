@@ -85,6 +85,12 @@ const (
 	BACnetDataTypeNameValue
 	BACnetDataTypeAuditNotification
 	BACnetDataTypeAuditLogRecord
+	BACnetDataTypeColorCommand
+	BACnetDataTypeXYColor
+	BACnetDataTypeAuthenticationFactor
+	BACnetDataTypeAuthorizationConstraint
+	BACnetDataTypeAuthorizationScope
+	BACnetDataTypeAccessToken
 
 	// bacnetDataTypeApplication is one application tagged primitive of any
 	// type; decoded, it takes the type of its tag.
@@ -125,6 +131,14 @@ func (f bacnetMember) scope(s bacnetFieldFlags) bacnetMember {
 	return f
 }
 
+// as types an ANY member by property p of the object in scope, the way
+// the command-value of an event is a present-value.
+func (f bacnetMember) as(p BACnetPropertyIdentifier) bacnetMember {
+	f.flags |= bacnetFixedProperty
+	f.prop = p
+	return f
+}
+
 // of gives an anonymous SEQUENCE or CHOICE its members.
 func (f bacnetMember) of(members ...bacnetMember) bacnetMember {
 	f.sub = members
@@ -152,6 +166,14 @@ var (
 
 	// bacnetExtendedParameters is the parameter list of the extended
 	// event and fault choices.
+	// bacnetNormalValue is a limit of fault-out-of-range.
+	bacnetNormalValue = []bacnetMember{
+		bacnetBare("real", BACnetDataTypeReal),
+		bacnetBare("unsigned", BACnetDataTypeUnsigned),
+		bacnetBare("double", BACnetDataTypeDouble),
+		bacnetBare("integer", BACnetDataTypeSigned),
+	}
+
 	bacnetExtendedParameters = bacnetCtx(2, "parameters", BACnetDataTypeChoice).of(
 		bacnetBare("value", bacnetDataTypeApplication),
 		bacnetCtx(0, "reference", BACnetDataTypeDeviceObjectPropertyReference),
@@ -238,8 +260,8 @@ var bacnetTypes = [bacnetDataTypeNamedBase]bacnetType{
 		bacnetCtx(4, "property-value", bacnetDataTypeProperty),
 	}},
 	BACnetDataTypePropertyReference: {name: "BACnetPropertyReference", kind: bacnetKindSequence, fields: []bacnetMember{
-		bacnetCtx(0, "property-identifier", BACnetDataTypePropertyIdentifier),
-		bacnetCtx(1, "property-array-index", BACnetDataTypeUnsigned).optional(),
+		bacnetCtx(0, "property-identifier", BACnetDataTypePropertyIdentifier).scope(bacnetPropertyScope),
+		bacnetCtx(1, "property-array-index", BACnetDataTypeUnsigned).optional().scope(bacnetIndexScope),
 	}},
 	BACnetDataTypePropertyValue: {name: "BACnetPropertyValue", kind: bacnetKindSequence, fields: []bacnetMember{
 		bacnetCtx(0, "property-identifier", BACnetDataTypePropertyIdentifier).scope(bacnetPropertyScope),
@@ -464,9 +486,9 @@ var bacnetTypes = [bacnetDataTypeNamedBase]bacnetType{
 			bacnetCtx(1, "status-flags", BACnetDataTypeStatusFlags),
 		),
 		bacnetCtx(3, "command-failure", BACnetDataTypeSequence).of(
-			bacnetCtx(0, "command-value", BACnetDataTypeAny),
+			bacnetCtx(0, "command-value", bacnetDataTypeProperty).as(BACnetPropertyPresentValue),
 			bacnetCtx(1, "status-flags", BACnetDataTypeStatusFlags),
-			bacnetCtx(2, "feedback-value", BACnetDataTypeAny),
+			bacnetCtx(2, "feedback-value", bacnetDataTypeProperty).as(BACnetPropertyFeedbackValue),
 		),
 		bacnetCtx(4, "floating-limit", BACnetDataTypeSequence).of(
 			bacnetCtx(0, "reference-value", BACnetDataTypeReal),
@@ -508,7 +530,7 @@ var bacnetTypes = [bacnetDataTypeNamedBase]bacnetType{
 			bacnetCtx(2, "access-event-tag", BACnetDataTypeUnsigned),
 			bacnetCtx(3, "access-event-time", BACnetDataTypeTimeStamp),
 			bacnetCtx(4, "access-credential", BACnetDataTypeDeviceObjectReference),
-			bacnetCtx(5, "authentication-factor", BACnetDataTypeAny).optional(),
+			bacnetCtx(5, "authentication-factor", BACnetDataTypeAuthenticationFactor).optional(),
 		),
 		bacnetCtx(14, "double-out-of-range", BACnetDataTypeSequence).of(
 			bacnetCtx(0, "exceeding-value", BACnetDataTypeDouble),
@@ -534,7 +556,7 @@ var bacnetTypes = [bacnetDataTypeNamedBase]bacnetType{
 			bacnetCtx(2, "alarm-value", BACnetDataTypeCharacterString),
 		),
 		bacnetCtx(18, "change-of-status-flags", BACnetDataTypeSequence).of(
-			bacnetCtx(0, "present-value", BACnetDataTypeAny).optional(),
+			bacnetCtx(0, "present-value", bacnetDataTypeProperty).as(BACnetPropertyPresentValue).optional(),
 			bacnetCtx(1, "referenced-flags", BACnetDataTypeStatusFlags),
 		),
 		bacnetCtx(19, "change-of-reliability", BACnetDataTypeSequence).of(
@@ -580,8 +602,8 @@ var bacnetTypes = [bacnetDataTypeNamedBase]bacnetType{
 			bacnetCtx(0, "status-flags-reference", BACnetDataTypeDeviceObjectPropertyReference),
 		),
 		bacnetCtx(6, "fault-out-of-range", BACnetDataTypeSequence).of(
-			bacnetCtx(0, "min-normal-value", BACnetDataTypeAny),
-			bacnetCtx(1, "max-normal-value", BACnetDataTypeAny),
+			bacnetCtx(0, "min-normal-value", BACnetDataTypeChoice).of(bacnetNormalValue...),
+			bacnetCtx(1, "max-normal-value", BACnetDataTypeChoice).of(bacnetNormalValue...),
 		),
 		bacnetCtx(7, "fault-listed", BACnetDataTypeSequence).of(
 			bacnetCtx(0, "fault-list-reference", BACnetDataTypeDeviceObjectPropertyReference),
@@ -741,8 +763,47 @@ var bacnetTypes = [bacnetDataTypeNamedBase]bacnetType{
 	BACnetDataTypeChannelValue: {name: "BACnetChannelValue", kind: bacnetKindChoice, fields: []bacnetMember{
 		bacnetBare("value", bacnetDataTypeApplication),
 		bacnetCtx(0, "lighting-command", BACnetDataTypeLightingCommand),
-		bacnetCtx(1, "xy-color", BACnetDataTypeAny),
-		bacnetCtx(2, "color-command", BACnetDataTypeAny),
+		bacnetCtx(1, "xy-color", BACnetDataTypeXYColor),
+		bacnetCtx(2, "color-command", BACnetDataTypeColorCommand),
+	}},
+	BACnetDataTypeColorCommand: {name: "BACnetColorCommand", kind: bacnetKindSequence, fields: []bacnetMember{
+		bacnetCtx(0, "operation", BACnetDataTypeColorOperation),
+		bacnetCtx(1, "target-color", BACnetDataTypeXYColor).optional(),
+		bacnetCtx(2, "target-color-temperature", BACnetDataTypeUnsigned).optional(),
+		bacnetCtx(3, "fade-time", BACnetDataTypeUnsigned).optional(),
+		bacnetCtx(4, "ramp-rate", BACnetDataTypeUnsigned).optional(),
+		bacnetCtx(5, "step-increment", BACnetDataTypeUnsigned).optional(),
+	}},
+	BACnetDataTypeXYColor: {name: "BACnetxyColor", kind: bacnetKindSequence, fields: []bacnetMember{
+		bacnetBare("x-coordinate", BACnetDataTypeReal),
+		bacnetBare("y-coordinate", BACnetDataTypeReal),
+	}},
+	BACnetDataTypeAuthenticationFactor: {name: "BACnetAuthenticationFactor", kind: bacnetKindSequence, fields: []bacnetMember{
+		bacnetCtx(0, "format-type", BACnetDataTypeAuthenticationFactorType),
+		bacnetCtx(1, "format-class", BACnetDataTypeUnsigned),
+		bacnetCtx(2, "value", BACnetDataTypeOctetString),
+	}},
+
+	// The authorization datatypes of Addendum 135-2020cp.
+	BACnetDataTypeAuthorizationConstraint: {name: "BACnetAuthorizationConstraint", kind: bacnetKindSequence, fields: []bacnetMember{
+		bacnetBare("origin", BACnetDataTypeAuthorizationOrigin),
+		bacnetBare("authentication", BACnetDataTypeAuthorizationMethod),
+	}},
+	BACnetDataTypeAuthorizationScope: {name: "BACnetAuthorizationScope", kind: bacnetKindSequence, fields: []bacnetMember{
+		bacnetBare("standard", BACnetDataTypeAuthorizationScopes),
+		bacnetCtx(0, "extended", BACnetDataTypeCharacterString).listOf().optional(),
+	}},
+	BACnetDataTypeAccessToken: {name: "BACnetAccessToken", kind: bacnetKindSequence, fields: []bacnetMember{
+		bacnetCtx(0, "issuer", BACnetDataTypeUnsigned),
+		bacnetCtx(1, "issued", BACnetDataTypeDateTime),
+		bacnetCtx(2, "audience", BACnetDataTypeSigned).listOf(),
+		bacnetCtx(3, "not-before", BACnetDataTypeDateTime).optional(),
+		bacnetCtx(4, "not-after", BACnetDataTypeDateTime).optional(),
+		bacnetCtx(5, "client", BACnetDataTypeUnsigned),
+		bacnetCtx(6, "constraint", BACnetDataTypeAuthorizationConstraint),
+		bacnetCtx(7, "scope", BACnetDataTypeAuthorizationScope),
+		bacnetCtx(8, "key-id", BACnetDataTypeUnsigned),
+		bacnetCtx(9, "signature", BACnetDataTypeOctetString),
 	}},
 	BACnetDataTypeGroupChannelValue: {name: "BACnetGroupChannelValue", kind: bacnetKindSequence, fields: []bacnetMember{
 		bacnetCtx(0, "channel", BACnetDataTypeUnsigned),
@@ -770,11 +831,11 @@ var bacnetTypes = [bacnetDataTypeNamedBase]bacnetType{
 		bacnetCtx(8, "source-user-id", BACnetDataTypeUnsigned).optional(),
 		bacnetCtx(9, "source-user-role", BACnetDataTypeUnsigned).optional(),
 		bacnetCtx(10, "target-device", BACnetDataTypeRecipient).optional(),
-		bacnetCtx(11, "target-object", BACnetDataTypeObjectIdentifier).optional(),
-		bacnetCtx(12, "target-property", BACnetDataTypePropertyReference).optional(),
+		bacnetCtx(11, "target-object", BACnetDataTypeObjectIdentifier).optional().scope(bacnetObjectScope),
+		bacnetCtx(12, "target-property", BACnetDataTypePropertyReference).optional().scope(bacnetPropertyScope),
 		bacnetCtx(13, "target-priority", BACnetDataTypeUnsigned).optional(),
-		bacnetCtx(14, "target-value", BACnetDataTypeAny).optional(),
-		bacnetCtx(15, "current-value", BACnetDataTypeAny).optional(),
+		bacnetCtx(14, "target-value", bacnetDataTypeProperty).optional(),
+		bacnetCtx(15, "current-value", bacnetDataTypeProperty).optional(),
 		bacnetCtx(16, "result", BACnetDataTypeError).optional(),
 	}},
 	BACnetDataTypeAuditLogRecord: {name: "BACnetAuditLogRecord", kind: bacnetKindSequence, fields: []bacnetMember{
@@ -1089,8 +1150,15 @@ var bacnetConfirmedRequests = map[BACnetConfirmedService][]bacnetMember{
 		bacnetCtx(2, "start-at-sequence-number", BACnetDataTypeUnsigned).optional(),
 		bacnetCtx(3, "requested-count", BACnetDataTypeUnsigned),
 	},
-	// AuthRequest is only split into its tags.
-	BACnetConfirmedServiceAuthRequest: bacnetUntypedFields,
+	// AuthRequest is a CHOICE with one alternative so far (Addendum
+	// 135-2020cp; its erratum makes scope optional).
+	BACnetConfirmedServiceAuthRequest: {
+		bacnetCtx(0, "token-request", BACnetDataTypeSequence).of(
+			bacnetCtx(0, "client", BACnetDataTypeUnsigned),
+			bacnetCtx(1, "audience", BACnetDataTypeSigned).listOf(),
+			bacnetCtx(2, "scope", BACnetDataTypeAuthorizationScope).optional(),
+		),
+	},
 }
 
 // bacnetComplexACKs gives the parameters of each ComplexACK (Clause 21,
@@ -1185,7 +1253,9 @@ var bacnetComplexACKs = map[BACnetConfirmedService][]bacnetMember{
 		).listOf(),
 		bacnetCtx(2, "no-more-items", BACnetDataTypeBoolean),
 	},
-	BACnetConfirmedServiceAuthRequest: bacnetUntypedFields,
+	BACnetConfirmedServiceAuthRequest: {
+		bacnetCtx(0, "token-response", BACnetDataTypeAccessToken),
+	},
 }
 
 // bacnetUnconfirmedRequests gives the parameters of each unconfirmed
@@ -1257,6 +1327,10 @@ var bacnetServiceErrors = map[BACnetConfirmedService][]bacnetMember{
 		bacnetCtx(1, "vendor-id", BACnetDataTypeUnsigned),
 		bacnetCtx(2, "service-number", BACnetDataTypeUnsigned),
 		bacnetCtx(3, "error-parameters", BACnetDataTypeAny).optional(),
+	},
+	BACnetConfirmedServiceAuthRequest: {
+		bacnetCtx(0, "error", BACnetDataTypeError),
+		bacnetCtx(1, "error-details", BACnetDataTypeCharacterString).optional(),
 	},
 	BACnetConfirmedServiceVTClose: {
 		bacnetCtx(0, "error-type", BACnetDataTypeError),

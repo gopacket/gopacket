@@ -378,6 +378,9 @@ const (
 	bacnetPropertyScope
 	// bacnetIndexScope fields name the array element whose value follows.
 	bacnetIndexScope
+	// bacnetFixedProperty fields hold the value of property prop of the
+	// object in scope.
+	bacnetFixedProperty
 )
 
 // bacnetMember is one member of a SEQUENCE or one alternative of a CHOICE.
@@ -387,6 +390,8 @@ type bacnetMember struct {
 	tag   uint8
 	typ   BACnetDataType
 	flags bacnetFieldFlags
+	// prop is the property of a bacnetFixedProperty member.
+	prop BACnetPropertyIdentifier
 	// sub holds the members of an anonymous SEQUENCE or CHOICE, typ saying
 	// which.
 	sub []bacnetMember
@@ -666,9 +671,13 @@ func (d *bacnetDecoder) value(f *bacnetMember, v *BACnetValue) error {
 		return errBACnetShape
 	}
 
-	// A bracketed object specifier still scopes the fields after it.
+	// A bracketed object specifier still scopes the fields after it,
+	// and so does a bracketed property reference.
 	if f.flags&bacnetObjectScope != 0 {
 		d.scope.object, d.scope.hasObject = sub.scope.object, sub.scope.hasObject
+	}
+	if f.flags&bacnetPropertyScope != 0 {
+		d.scope.property, d.scope.hasProperty, d.scope.index = sub.scope.property, sub.scope.hasProperty, sub.scope.index
 	}
 	return nil
 }
@@ -676,6 +685,9 @@ func (d *bacnetDecoder) value(f *bacnetMember, v *BACnetValue) error {
 // constructed reads the content of a constructed value at this level.
 func (d *bacnetDecoder) constructed(f *bacnetMember, t *bacnetType, v *BACnetValue) error {
 	if t.kind == bacnetKindProperty && !v.List {
+		if f.flags&bacnetFixedProperty != 0 {
+			d.scope.property, d.scope.hasProperty, d.scope.index = f.prop, true, BACnetNoArrayIndex
+		}
 		return d.propertyValue(v)
 	}
 	var err error

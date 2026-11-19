@@ -203,7 +203,7 @@ type BACnetNPDU struct {
 	Body []byte
 	// Security is the security wrapper of the network security messages,
 	// Challenge-Request to Set-Master-Key, or nil when Body is not a whole
-	// wrapper. What the wrapper secures is left in its ServiceData.
+	// wrapper. What the wrapper secures is its Message, unless encrypted.
 	Security *BACnetSecurityWrapper
 
 	// Networks is the DNET list of Who-Is-Router (at most one),
@@ -229,10 +229,11 @@ func (n *BACnetNPDU) LayerType() gopacket.LayerType { return LayerTypeBACnetNPDU
 // CanDecode returns LayerTypeBACnetNPDU.
 func (n *BACnetNPDU) CanDecode() gopacket.LayerClass { return LayerTypeBACnetNPDU }
 
-// NextLayerType returns LayerTypeBACnetAPDU unless the NPDU carries a
-// network layer message.
+// NextLayerType returns LayerTypeBACnetAPDU when the NPDU carries an APDU:
+// directly, or in a Security-Payload that is not encrypted. The other
+// network layer messages end the packet.
 func (n *BACnetNPDU) NextLayerType() gopacket.LayerType {
-	if n.Control.NetworkMessage() || len(n.Payload) == 0 {
+	if len(n.Payload) == 0 {
 		return gopacket.LayerTypeZero
 	}
 	return LayerTypeBACnetAPDU
@@ -365,13 +366,40 @@ func (n *BACnetNPDU) decodeMessage(df gopacket.DecodeFeedback) error {
 	case BACnetNetworkMessageInitializeRoutingTable, BACnetNetworkMessageInitializeRoutingTableAck:
 		return n.decodeRoutingTable(body, df)
 
-	case BACnetNetworkMessageChallengeRequest, BACnetNetworkMessageSecurityPayload,
-		BACnetNetworkMessageSecurityResponse, BACnetNetworkMessageRequestKeyUpdate,
-		BACnetNetworkMessageUpdateKeySet, BACnetNetworkMessageUpdateDistributionKey,
-		BACnetNetworkMessageRequestMasterKey, BACnetNetworkMessageSetMasterKey:
-		n.Security = bacnetSecurityOf(body)
+	default:
+		if n.MessageType.security() {
+			n.decodeSecurity()
+		}
 	}
 	return nil
+}
+
+// decodeSecurity decodes the security wrapper that is the body of a
+// network security message, and the message in it. An APDU secured in
+// plain text becomes the payload of the NPDU:
+//
+//	01 80 | 0B | wrapper header | length | APDU | signature
+//	NPDU    Security-Payload               Payload
+func (n *BACnetNPDU) decodeSecurity() {
+	w := bacnetSecurityOf(n.Body)
+	if w == nil {
+		return
+	}
+	w.decodeMessage(n.MessageType)
+	n.Security = w
+
+	p, ok := w.Message.(*BACnetSecurityPayload)
+	if !ok || w.Control.NetworkMessage() || len(p.Payload) == 0 {
+		return
+	}
+	n.Contents = n.Contents[:len(n.Contents)-len(w.Signature)-len(p.Payload)]
+	n.Payload = p.Payload
+}
+
+// security reports whether t is one of the network security messages of
+// Clause 24.3, whose body is a security wrapper.
+func (t BACnetNetworkMessageType) security() bool {
+	return t >= BACnetNetworkMessageChallengeRequest && t <= BACnetNetworkMessageSetMasterKey
 }
 
 // decodeNetworks reads size bytes of big-endian network numbers.

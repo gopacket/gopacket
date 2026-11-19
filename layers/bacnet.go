@@ -14,8 +14,10 @@
 //
 // BACnetSC is the link control of BACnet Secure Connect (Annex AB), which
 // runs over WebSockets on TLS: it decodes a binary WebSocket message once
-// the caller has unwrapped one. MS/TP and the other BACnet data links are
-// not decoded.
+// the caller has unwrapped one. BACnetMSTP is the MS/TP data link of
+// Clause 9, the link layer of captures of link type 165; it carries the
+// NPDU directly. The other BACnet data links (ARCNET, LonTalk, PTP,
+// ZigBee) are not decoded.
 
 package layers
 
@@ -45,10 +47,16 @@ var (
 	LayerTypeBACnetAPDU = gopacket.RegisterLayerType(178, gopacket.LayerTypeMetadata{Name: "BACnetAPDU", Decoder: gopacket.DecodeFunc(decodeBACnetAPDU)})
 )
 
-// registerBACnetDecoders maps the BACnet/IP port to BVLC. It is opt-in so
-// callers who never asked for BACnet keep seeing UDP 47808 as payload.
+// registerBACnetDecoders maps the BACnet/IP port to BVLC and the MS/TP
+// link type to BACnetMSTP. It is opt-in so callers who never asked for
+// BACnet keep seeing UDP 47808 as payload and link type 165 as unknown.
 func registerBACnetDecoders() {
 	RegisterUDPPortLayerType(UDPPort(UDPPortBACnet), LayerTypeBVLC)
+	LinkTypeMetadata[LinkTypeBACnetMSTP] = EnumMetadata{
+		DecodeWith: gopacket.DecodeFunc(decodeBACnetMSTP),
+		Name:       "BACnetMSTP",
+		LayerType:  LayerTypeBACnetMSTP,
+	}
 }
 
 // BACnet decoding errors.

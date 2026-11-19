@@ -97,6 +97,11 @@ const (
 	BACnetDataTypeResultFlags
 	BACnetDataTypeServicesSupported
 	BACnetDataTypeObjectTypesSupported
+	BACnetDataTypeColorOperation
+	BACnetDataTypeAuthenticationFactorType
+	BACnetDataTypeAuthorizationOrigin
+	BACnetDataTypeAuthorizationMethod
+	BACnetDataTypeAuthorizationScopes
 )
 
 // bacnetNamedTypes describes the datatypes from bacnetDataTypeNamedBase on,
@@ -186,6 +191,73 @@ var bacnetNamedTypes = [...]bacnetType{
 	{name: "BACnetResultFlags", kind: bacnetKindBitString, app: BACnetAppTagBitString, bits: bacnetBitsResultFlags},
 	{name: "BACnetServicesSupported", kind: bacnetKindBitString, app: BACnetAppTagBitString, bits: bacnetBitsServicesSupported},
 	{name: "BACnetObjectTypesSupported", kind: bacnetKindBitString, app: BACnetAppTagBitString, bits: bacnetBitsObjectTypesSupported},
+	{name: "BACnetColorOperation", kind: bacnetKindEnumerated, app: BACnetAppTagEnumerated, names: bacnetNamesColorOperation},
+	{name: "BACnetAuthenticationFactorType", kind: bacnetKindEnumerated, app: BACnetAppTagEnumerated, names: bacnetNamesAuthFactorType},
+	{name: "BACnetAuthorizationConstraint.origin", kind: bacnetKindEnumerated, app: BACnetAppTagEnumerated, names: bacnetNamesAuthOrigin},
+	{name: "BACnetAuthorizationConstraint.authentication", kind: bacnetKindEnumerated, app: BACnetAppTagEnumerated, names: bacnetNamesAuthMethod},
+	{name: "BACnetAuthorizationScope.standard", kind: bacnetKindBitString, app: BACnetAppTagBitString, bits: bacnetBitsAuthScopes},
+}
+
+var bacnetNamesColorOperation = map[uint32]string{
+	0: "none",
+	1: "fade-to-color",
+	2: "fade-to-cct",
+	3: "ramp-to-cct",
+	4: "step-up-cct",
+	5: "step-down-cct",
+	6: "stop",
+}
+
+var bacnetNamesAuthFactorType = map[uint32]string{
+	0:  "undefined",
+	1:  "error",
+	2:  "custom",
+	3:  "simple-number16",
+	4:  "simple-number32",
+	5:  "simple-number56",
+	6:  "simple-alpha-numeric",
+	7:  "aba-track2",
+	8:  "wiegand26",
+	9:  "wiegand37",
+	10: "wiegand37-facility",
+	11: "facility16-card32",
+	12: "facility32-card32",
+	13: "fasc-n",
+	14: "fasc-n-bcd",
+	15: "fasc-n-large",
+	16: "fasc-n-large-bcd",
+	17: "gsa75",
+	18: "chuid",
+	19: "chuid-full",
+	20: "guid",
+	21: "cbeff-a",
+	22: "cbeff-b",
+	23: "cbeff-c",
+	24: "user-password",
+}
+
+var bacnetNamesAuthOrigin = map[uint32]string{
+	0: "direct-connect",
+	1: "same-network",
+	2: "any-network",
+}
+
+var bacnetNamesAuthMethod = map[uint32]string{
+	0: "certified",
+	1: "secure-path",
+	2: "any-method",
+}
+
+var bacnetBitsAuthScopes = []string{
+	"view",
+	"adjust",
+	"control",
+	"override",
+	"config",
+	"bind",
+	"install",
+	"auth",
+	"infrastructure",
 }
 
 var bacnetNamesSegmentation = map[uint32]string{

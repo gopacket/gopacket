@@ -14,6 +14,7 @@ package layers
 
 import (
 	"encoding/binary"
+	"strings"
 
 	"github.com/gopacket/gopacket"
 )
@@ -120,7 +121,9 @@ var bacnetSCOptionNames = map[BACnetSCOptionType]string{
 // String returns the Annex AB name of the option type.
 func (t BACnetSCOptionType) String() string { return bacnetName(bacnetSCOptionNames, t) }
 
-// BACnetSCOption is one header option, undecoded beyond its marker.
+// BACnetSCOption is one header option (Annex AB.2.3). The standard
+// defines two: Secure Path, a data option without data that marks a
+// message which only ever travelled over secure links, and Proprietary.
 type BACnetSCOption struct {
 	Type BACnetSCOptionType
 	// MustUnderstand tells a node that does not know the option to
@@ -128,7 +131,34 @@ type BACnetSCOption struct {
 	MustUnderstand bool
 	// Data is the option data, nil when the marker says there is none.
 	Data []byte
+
+	// VendorID, ProprietaryType and ProprietaryData are Data decoded for
+	// a Proprietary option: the vendor, the option type the vendor chose
+	// and the data that goes with it.
+	VendorID        uint16
+	ProprietaryType uint8
+	ProprietaryData []byte
 }
+
+// BACnetSCHubConnection is the hub connection status of an Advertisement
+// (Annex AB.2.8).
+type BACnetSCHubConnection uint8
+
+// BACnetSCHubConnection values.
+const (
+	BACnetSCHubNone     BACnetSCHubConnection = 0
+	BACnetSCHubPrimary  BACnetSCHubConnection = 1
+	BACnetSCHubFailover BACnetSCHubConnection = 2
+)
+
+var bacnetSCHubNames = map[BACnetSCHubConnection]string{
+	BACnetSCHubNone:     "No hub connection",
+	BACnetSCHubPrimary:  "Connected to primary hub",
+	BACnetSCHubFailover: "Connected to failover hub",
+}
+
+// String returns the Annex AB name of the hub connection status.
+func (c BACnetSCHubConnection) String() string { return bacnetName(bacnetSCHubNames, c) }
 
 // BACnetSCResultCode is the result code of a BVLC-Result (Annex AB.2.4).
 type BACnetSCResultCode uint8
@@ -177,9 +207,9 @@ type BACnetSC struct {
 	// Address-Resolution-ACK.
 	URIs string
 
-	// HubConnection (0 none, 1 primary, 2 failover) and AcceptsConnections
-	// belong to Advertisement.
-	HubConnection      uint8
+	// HubConnection and AcceptsConnections (direct connections) belong to
+	// Advertisement.
+	HubConnection      BACnetSCHubConnection
 	AcceptsConnections bool
 	// MaxBVLCLength and MaxNPDULength are what the sender accepts, set by
 	// Advertisement, Connect-Request and Connect-Accept.
@@ -290,6 +320,14 @@ func bacnetSCOptions(data []byte, off int, df gopacket.DecodeFeedback) ([]BACnet
 			off += size
 		}
 
+		// vendor ID, proprietary option type, data
+		const proprietaryHeaderLen = bacnetUint16Len + 1
+		if opt.Type == BACnetSCOptionProprietary && len(opt.Data) >= proprietaryHeaderLen {
+			opt.VendorID = binary.BigEndian.Uint16(opt.Data)
+			opt.ProprietaryType = opt.Data[bacnetUint16Len]
+			opt.ProprietaryData = opt.Data[proprietaryHeaderLen:]
+		}
+
 		if len(opts) < bacnetSCMaxOptions {
 			opts = append(opts, opt)
 		}
@@ -297,8 +335,30 @@ func bacnetSCOptions(data []byte, off int, df gopacket.DecodeFeedback) ([]BACnet
 	return opts, off, nil
 }
 
+// URIList returns the WebSocket URIs of an Address-Resolution-ACK, which
+// a single space separates on the wire; nil when there are none.
+func (b *BACnetSC) URIList() []string {
+	if b.URIs == "" {
+		return nil
+	}
+	return strings.Split(b.URIs, " ")
+}
+
+// SecurePath reports whether the message carries the Secure Path data
+// option: it never left BACnet/SC on its way.
+func (b *BACnetSC) SecurePath() bool {
+	for i := range b.DataOptions {
+		if b.DataOptions[i].Type == BACnetSCOptionSecurePath {
+			return true
+		}
+	}
+	return false
+}
+
 // decodePayload decodes what follows the header at off, by function.
-// Functions without a payload, and unknown ones, leave it in Contents.
+// Address-Resolution, Advertisement-Solicitation, Disconnect-Request,
+// Disconnect-ACK, Heartbeat-Request and Heartbeat-ACK have no payload;
+// what follows them, and unknown functions, is left in Contents.
 func (b *BACnetSC) decodePayload(data []byte, off int, df gopacket.DecodeFeedback) error {
 	body := data[off:]
 
@@ -319,7 +379,7 @@ func (b *BACnetSC) decodePayload(data []byte, off int, df gopacket.DecodeFeedbac
 		if len(body) < size {
 			return bacnetTruncated(df)
 		}
-		b.HubConnection = body[0]
+		b.HubConnection = BACnetSCHubConnection(body[0])
 		b.AcceptsConnections = body[1] != 0
 		b.decodeLengths(body[2:])
 
