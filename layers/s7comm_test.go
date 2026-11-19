@@ -416,8 +416,8 @@ func s7Vectors(t *testing.T) [][]byte {
 		}
 	}
 
-	for _, pdu := range [][]byte{s7TestWriteJob, s7TestWriteAck, s7TestStartUpJob, s7TestStartUpAck,
-		s7TestUploadJob, s7TestUploadAck, s7TestEndUpJob, s7TestPLCStop} {
+	for _, pdu := range append([][]byte{s7TestWriteJob, s7TestWriteAck, s7TestStartUpJob, s7TestStartUpAck,
+		s7TestUploadJob, s7TestUploadAck, s7TestEndUpJob, s7TestPLCStop}, s7UDVectors...) {
 		out = append(out, s7PDU(pdu))
 	}
 	return out
@@ -452,7 +452,7 @@ func FuzzTPKT(f *testing.F) {
 	for _, v := range [][]byte{s7TestCR, s7TestCC, s7TestSetupJob, s7TestSetupAck, s7TestEmptyDT, s7TestReadJob, s7TestReadAck} {
 		f.Add(v)
 	}
-	for _, pdu := range [][]byte{s7TestWriteJob, s7TestWriteAck, s7TestStartUpAck, s7TestUploadAck, s7TestPLCStop} {
+	for _, pdu := range append([][]byte{s7TestWriteJob, s7TestWriteAck, s7TestStartUpAck, s7TestUploadAck, s7TestPLCStop}, s7UDVectors...) {
 		f.Add(s7PDU(pdu))
 	}
 	f.Add(bytes.Join([][]byte{s7TestSetupJob, s7TestEmptyDT, s7TestReadAck}, nil))

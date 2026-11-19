@@ -517,6 +517,11 @@ type S7CommVarItem struct {
 	Area          S7CommArea
 	BitAddress    uint32 // 24-bit address in bits: byte*8 + bit
 	Address       []byte
+
+	// Set for their syntax IDs only (see s7comm_address.go).
+	DBRead  []S7CommDBReadArea
+	NCK     *S7CommNCKAddress
+	DriveES *S7CommDriveESAddress
 }
 
 // ByteOffset returns the byte part of an S7ANY address.
@@ -565,11 +570,17 @@ type S7CommBlockControl struct {
 }
 
 // S7CommPIService is the parameter of a PLC Control (PI service) or PLC
-// Stop job. PLC Stop has no ParamBlock. ParamBlock is kept raw.
+// Stop job. PLC Stop has no ParamBlock. ParamBlock is kept raw; Blocks
+// and Args are its views for the services in s7comm_pi.go. DecodeErr
+// records why they were not set; DecodeFromBytes does not return it.
 type S7CommPIService struct {
 	Unknown     []byte
 	ParamBlock  []byte
 	ServiceName string // e.g. "_INSE", "P_PROGRAM"
+
+	Blocks    []S7CommPIBlock // _INSE, _INS2, _DELE
+	Args      []string        // P_PROGRAM, _MODU, _GARB, _N_* (file names...)
+	DecodeErr error
 }
 
 // S7Comm is a Siemens S7comm PDU. Params and Data always hold the raw
@@ -759,6 +770,8 @@ func (s *S7Comm) decodeVarItems(p []byte) error {
 			if err := item.decodeS7Any(); err != nil {
 				return err
 			}
+		} else {
+			item.decodeAddress()
 		}
 		s.VarItems = append(s.VarItems, item)
 		p = p[end:]
@@ -940,6 +953,7 @@ func (s *S7Comm) decodePIService() error {
 		return err
 	}
 	pi.ServiceName = name
+	pi.DecodeErr = pi.decodeParams()
 	s.PIService = pi
 	return nil
 }

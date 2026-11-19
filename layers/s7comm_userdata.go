@@ -9,6 +9,7 @@ package layers
 import (
 	"encoding/binary"
 	"fmt"
+	"time"
 )
 
 // S7comm Userdata (ROSCTR 7) carries the programming and diagnostic
@@ -18,9 +19,11 @@ import (
 //	[ data unit ref | last data unit | error code(2) ]   (len 8 only)
 //
 // and its data a single item: return code, transport size, length,
-// value. Decoded values: SZL read (CPU functions) and list blocks, list
-// blocks of type and get block info requests (block functions). Other
-// groups and subfunctions stay raw in S7CommUserdata.Data. Responses
+// value. Decoded values: SZL read and its records, alarms, diagnostic
+// and message service (CPU functions); block lists and info (block
+// functions); clock read and set; cyclic data; variable status, modify
+// and force (programmer commands). The security group and other
+// subfunctions stay raw in S7CommUserdata.Data. Responses
 // split over several PDUs (data unit reference set, or more data units
 // following) are left raw: only the reassembled whole has the
 // structure, and gopacket decodes one packet at a time.
@@ -239,12 +242,26 @@ func (l S7CommBlockLang) String() string {
 
 // S7CommSZL is a system status list (SZL) read. A request sets ID and
 // Index only. Records alias the packet data, RecordLength octets each.
+//
+// The record views below Records are set for the IDs and indexes in
+// s7comm_szl.go, one entry per record; others stay nil.
 type S7CommSZL struct {
 	ID           uint16
 	Index        uint16
 	RecordLength uint16
 	RecordCount  uint16
 	Records      [][]byte
+
+	ModuleIDs       []S7CommSZLModuleID   // xy11
+	Characteristics []uint16              // xy12
+	Components      []S7CommSZLComponent  // xy1C
+	CommCaps        []S7CommSZLCommCaps   // 0131 index 1
+	CommStatus      []S7CommSZLCommStatus // 0132 index 1
+	Protection      []S7CommSZLProtection // 0132 index 4
+	TimeSystem      []S7CommSZLTimeSystem // 0132 index 8
+	LEDs            []S7CommSZLLED        // xy74, xy19
+	ModeEvents      []S7CommSZLModeEvent  // 0124, 0424
+	DiagEvents      []S7CommDiagMessage   // xyA0
 }
 
 // HeaderOnly reports whether the SZL ID asks for the list header alone
@@ -269,8 +286,12 @@ type S7CommBlockEntry struct {
 // S7CommUserdata is the decoded parameter and data of a Userdata PDU.
 // DataUnitRef, LastDataUnit and ErrorCode are set only with the long
 // (response) parameter. The value views below Data are set only for a
-// successful, unfragmented SZL read or block function; other services
-// keep their value raw in Data.
+// successful (return code 0xFF), unfragmented value; a view is nil when
+// its service does not apply. Data always keeps the raw value.
+//
+// DecodeErr records why the view matching the group and subfunction
+// was not set, e.g. a count overrunning the data. DecodeFromBytes does
+// not return it: the PDU itself is well formed.
 type S7CommUserdata struct {
 	VarSpec       uint8
 	ParamLength   uint8 // octets after this one
@@ -293,6 +314,16 @@ type S7CommUserdata struct {
 	BlockType    S7CommBlockType    // list of type and get info requests
 	BlockNumber  string             // get block info request, ASCII digits
 	Filesystem   uint8              // get block info request
+
+	BlockInfo  *S7CommBlockInfo  // get block info response
+	Clock      *time.Time        // clock read response, set request; UTC
+	Cyclic     *S7CommCyclic     // cyclic data
+	TIS        *S7CommTIS        // programmer commands
+	Alarm      *S7CommAlarm      // alarm indications, ack, lock, query request
+	AlarmQuery *S7CommAlarmQuery // alarm query response
+	Diag       *S7CommDiagMessage
+	MsgService *S7CommMsgService
+	DecodeErr  error
 }
 
 // Fragmented reports whether the PDU is one part of a multi-PDU
@@ -416,15 +447,33 @@ func (s *S7Comm) decodeUserdata() error {
 }
 
 // decodeValue decodes the data value of the services this package
-// understands; others stay raw.
+// understands; others stay raw. Only the SZL and block function
+// checks that predate the other views return errors; the rest record
+// theirs in DecodeErr.
 func (u *S7CommUserdata) decodeValue() error {
 	switch u.FunctionGroup {
 	case S7CommGroupCPU:
-		if u.Subfunction == S7CommCPUReadSZL {
-			return u.decodeSZL()
+		if u.Subfunction != S7CommCPUReadSZL {
+			u.DecodeErr = u.decodeCPU()
+			return nil
 		}
+		if err := u.decodeSZL(); err != nil {
+			return err
+		}
+		u.DecodeErr = u.SZL.decodeRecords()
 	case S7CommGroupBlock:
-		return u.decodeBlockFunc()
+		if err := u.decodeBlockFunc(); err != nil {
+			return err
+		}
+		if u.Subfunction == S7CommBlockGetInfo && u.Type == S7CommUDTypeResponse {
+			u.DecodeErr = u.decodeBlockInfo()
+		}
+	case S7CommGroupProgrammer:
+		u.DecodeErr = u.decodeTIS()
+	case S7CommGroupCyclicData:
+		u.DecodeErr = u.decodeCyclic()
+	case S7CommGroupTime:
+		u.DecodeErr = u.decodeClock()
 	}
 	return nil
 }
