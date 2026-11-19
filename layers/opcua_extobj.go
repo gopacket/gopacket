@@ -551,6 +551,9 @@ func (r *opcuaReader) extBody(id uint32) interface{} {
 	if v, ok := r.extParameter(id); ok {
 		return v
 	}
+	if v, ok := r.extStructs(id); ok {
+		return v
+	}
 	r.err = ErrOPCUAMalformed
 	return nil
 }
@@ -677,13 +680,7 @@ func (r *opcuaReader) extService(id uint32) (interface{}, bool) {
 func (r *opcuaReader) extCommon(id uint32) (interface{}, bool) {
 	switch id {
 	case opcuaArgumentID:
-		return opcuaBoxed(r, OPCUAArgument{
-			Name:            r.str(),
-			DataType:        r.nodeID(),
-			ValueRank:       r.i32(),
-			ArrayDimensions: r.u32s(),
-			Description:     r.localizedText(),
-		}), true
+		return opcuaBoxed(r, r.argument()), true
 	case opcuaRangeID:
 		return opcuaBoxed(r, r.valueRange()), true
 	case opcuaEUInformationID:

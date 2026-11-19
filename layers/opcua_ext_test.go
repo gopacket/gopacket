@@ -8,6 +8,7 @@ package layers
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"math"
 	"reflect"
 	"testing"
@@ -569,7 +570,7 @@ func uaExtRead(v uaExtVector) []byte {
 // services added later and each known structure as a Variant value.
 func uaVectors() []uaVector {
 	out := append(uaBaseVectors(), uaMgmtVectors()...)
-	for _, v := range append(uaExtVectors(), uaNodeClassVectors()...) {
+	for _, v := range uaAllExtVectors() {
 		out = append(out, uaVector{"ExtensionObject " + n4(0, uint32(v.id)).String(), OPCUAServiceReadResponse, uaExtRead(v),
 			func(s *OPCUAService) interface{} {
 				return s.ReadResponse.Results[0].Value.Value.(OPCUAExtensionObject).Value
@@ -581,7 +582,7 @@ func uaVectors() []uaVector {
 // TestOPCUAExtBodyCut cuts the body of every known structure at every
 // offset: a short body stays encoded and breaks nothing around it.
 func TestOPCUAExtBodyCut(t *testing.T) {
-	for _, v := range append(uaExtVectors(), uaNodeClassVectors()...) {
+	for _, v := range uaAllExtVectors() {
 		for i := 0; i < len(v.body); i++ {
 			cut := v
 			cut.body = v.body[:i]
@@ -590,7 +591,7 @@ func TestOPCUAExtBodyCut(t *testing.T) {
 				t.Fatalf("i=%d cut at %d: Read not decoded", v.id, i)
 			}
 			e := s.ReadResponse.Results[0].Value.Value.(OPCUAExtensionObject)
-			if e.Value != nil || !bytes.Equal(e.Body, cut.body) {
+			if (e.Value != nil && !uaLegacyNode(e.Value)) || !bytes.Equal(e.Body, cut.body) {
 				t.Errorf("i=%d cut at %d: %+v", v.id, i, e)
 			}
 		}
@@ -732,7 +733,7 @@ func TestOPCUAChunkAssembler(t *testing.T) {
 	// Two requests interleave; unchunked messages and HEL pass through.
 	var a OPCUAChunkAssembler
 	hello := &OPCUA{MessageType: OPCUAMessageHello, ChunkType: OPCUAChunkFinal}
-	whole := uaChunk("MSG", OPCUAChunkFinal, 3, 1, body)
+	whole := uaChunk("MSG", OPCUAChunkFinal, 3, 4, body)
 	steps := []struct {
 		in   *OPCUA
 		same bool
@@ -742,8 +743,8 @@ func TestOPCUAChunkAssembler(t *testing.T) {
 		{uaChunk("MSG", OPCUAChunkIntermediate, 2, 3, body[:half]), false, false},
 		{hello, true, false},
 		{whole, true, false},
-		{uaChunk("MSG", OPCUAChunkFinal, 2, 4, body[half:]), false, true},
-		{uaChunk("MSG", OPCUAChunkFinal, 1, 5, body[half:]), false, true},
+		{uaChunk("MSG", OPCUAChunkFinal, 2, 5, body[half:]), false, true},
+		{uaChunk("MSG", OPCUAChunkFinal, 1, 6, body[half:]), false, true},
 	}
 	for i, st := range steps {
 		msg, err := a.Add(st.in)
@@ -766,21 +767,21 @@ func TestOPCUAChunkAssembler(t *testing.T) {
 	}
 
 	// An abort drops the chunks; the final chunk after it stands alone.
-	a.Add(uaChunk("MSG", OPCUAChunkIntermediate, 1, 2, body[:half]))
-	abort := uaChunk("MSG", OPCUAChunkAbort, 1, 3, uaBuilder{}.u32(0x80B80000).str("too big"))
+	a.Add(uaChunk("MSG", OPCUAChunkIntermediate, 1, 7, body[:half]))
+	abort := uaChunk("MSG", OPCUAChunkAbort, 1, 8, uaBuilder{}.u32(0x80B80000).str("too big"))
 	if msg, err := a.Add(abort); msg != abort || err != nil || a.Pending() != 0 || msg.Error.Reason != "too big" {
 		t.Errorf("abort: %+v %v", msg, err)
 	}
-	tail := uaChunk("MSG", OPCUAChunkFinal, 1, 4, body[half:])
+	tail := uaChunk("MSG", OPCUAChunkFinal, 1, 9, body[half:])
 	if msg, _ := a.Add(tail); msg != tail {
 		t.Errorf("final after abort joined")
 	}
 
 	// An OPN joins by its own key and decodes under policy None.
 	opn := uaBuilder{}.node(0, uint16(OPCUAServiceOpenSecureChannelRequest)).cat(uaRequestHeader()).u32(0, 0, 1).null().u32(3600000)
-	a.Add(uaChunk("OPN", OPCUAChunkIntermediate, 1, 1, opn[:10]))
-	a.Add(uaChunk("MSG", OPCUAChunkIntermediate, 1, 2, body[:half]))
-	if msg, _ := a.Add(uaChunk("OPN", OPCUAChunkFinal, 1, 3, opn[10:])); msg == nil || msg.Service == nil ||
+	a.Add(uaChunk("OPN", OPCUAChunkIntermediate, 1, 10, opn[:10]))
+	a.Add(uaChunk("MSG", OPCUAChunkIntermediate, 1, 11, body[:half]))
+	if msg, _ := a.Add(uaChunk("OPN", OPCUAChunkFinal, 1, 12, opn[10:])); msg == nil || msg.Service == nil ||
 		msg.Service.OpenSecureChannelRequest == nil || msg.Service.OpenSecureChannelRequest.RequestedLifetime != 3600000 {
 		t.Errorf("OPN: %+v", msg)
 	}
@@ -834,11 +835,11 @@ func TestOPCUAChunkLimits(t *testing.T) {
 	if a.Pending() != 3 {
 		t.Errorf("%d pending, want 3", a.Pending())
 	}
-	first := uaChunk("MSG", OPCUAChunkFinal, 1, 9, part)
+	first := uaChunk("MSG", OPCUAChunkFinal, 1, 5, part)
 	if msg, _ := a.Add(first); msg != first {
 		t.Errorf("evicted message joined")
 	}
-	if msg, _ := a.Add(uaChunk("MSG", OPCUAChunkFinal, 2, 10, part)); msg == nil || len(msg.Body) != 200 {
+	if msg, _ := a.Add(uaChunk("MSG", OPCUAChunkFinal, 2, 6, part)); msg == nil || len(msg.Body) != 200 {
 		t.Errorf("kept message: %+v", msg)
 	}
 
@@ -920,4 +921,311 @@ func TestOPCUAProbeAlloc(t *testing.T) {
 			t.Errorf("%s allocates %.0f bytes per input byte, want <= %d", name, got, maxPerByte)
 		}
 	}
+}
+
+// uaPolicyOPN is a final OPN chunk under the given policy. Under any
+// policy but None the body stands for ciphertext.
+func uaPolicyOPN(policy string, seq uint32) *OPCUA {
+	b := uaBuilder{}.u32(9).str(policy).str("\x30\x00").null().u32(seq, 1).u8(0xC1, 0xC2, 0xC3)
+	ua := &OPCUA{}
+	if err := ua.DecodeFromBytes(uaMessage("OPN", OPCUAChunkFinal, b), gopacket.NilDecodeFeedback); err != nil {
+		panic(err)
+	}
+	return ua
+}
+
+// uaReadBody is a Read response as a service body.
+func uaReadBody() []byte {
+	read := uaServiceMsg(OPCUAServiceReadResponse, uaBuilder{}.u32(1).u8(opcuaDataValueValue, uint8(OPCUATypeInt32)).u32(5).null())
+	return read[opcuaHeaderLen+16:]
+}
+
+// TestOPCUAChunkLost checks that a hole in the sequence numbers drops
+// the messages it may belong to, and nothing else.
+func TestOPCUAChunkLost(t *testing.T) {
+	body := uaReadBody()
+	half := len(body) / 2
+	head, tail := body[:half], body[half:]
+
+	// The middle chunk of three is lost: both pending messages go, the
+	// one that opens after the hole joins.
+	var a OPCUAChunkAssembler
+	a.Add(uaChunk("MSG", OPCUAChunkIntermediate, 1, 50, head))
+	a.Add(uaChunk("MSG", OPCUAChunkIntermediate, 2, 51, head))
+	if msg, err := a.Add(uaChunk("MSG", OPCUAChunkIntermediate, 1, 53, head)); msg != nil || err != nil || a.Lost() != 1 {
+		t.Errorf("chunk after the hole: %v %v, %d lost", msg, err, a.Lost())
+	}
+	a.Add(uaChunk("MSG", OPCUAChunkIntermediate, 3, 54, head))
+	for i, want := range []error{ErrOPCUAChunkLost, ErrOPCUAChunkLost, nil} {
+		id := uint32(i + 1)
+		msg, err := a.Add(uaChunk("MSG", OPCUAChunkFinal, id, 54+id, tail))
+		if err != want || (msg != nil) != (want == nil) {
+			t.Errorf("request %d: %v %v, want %v", id, msg, err, want)
+		}
+	}
+	if a.Pending() != 0 || a.Lost() != 1 {
+		t.Errorf("%d pending, %d lost", a.Pending(), a.Lost())
+	}
+
+	// Chunks out of order are a hole too: 61 before 60.
+	a = OPCUAChunkAssembler{}
+	a.Add(uaChunk("MSG", OPCUAChunkIntermediate, 1, 59, head))
+	a.Add(uaChunk("MSG", OPCUAChunkIntermediate, 1, 61, head))
+	a.Add(uaChunk("MSG", OPCUAChunkIntermediate, 1, 60, head))
+	if msg, err := a.Add(uaChunk("MSG", OPCUAChunkFinal, 1, 62, tail)); msg != nil || err != ErrOPCUAChunkLost || a.Lost() != 3 {
+		t.Errorf("out of order: %v %v, %d lost", msg, err, a.Lost())
+	}
+
+	// A whole message after a hole stands; the tail of a message whose
+	// start was lost does not pass for one.
+	a = OPCUAChunkAssembler{}
+	a.Add(uaChunk("MSG", OPCUAChunkFinal, 1, 70, body))
+	whole := uaChunk("MSG", OPCUAChunkFinal, 2, 75, body)
+	if msg, err := a.Add(whole); msg != whole || err != nil || a.Lost() != 1 {
+		t.Errorf("whole message after a hole: %v %v", msg, err)
+	}
+	if msg, err := a.Add(uaChunk("MSG", OPCUAChunkFinal, 3, 80, tail)); msg != nil || err != ErrOPCUAChunkLost {
+		t.Errorf("orphan final: %v %v", msg, err)
+	}
+	a.Add(uaChunk("MSG", OPCUAChunkIntermediate, 4, 90, tail))
+	if msg, err := a.Add(uaChunk("MSG", OPCUAChunkFinal, 4, 91, tail)); msg != nil || err != ErrOPCUAChunkLost || a.Pending() != 0 {
+		t.Errorf("orphan chunks: %v %v", msg, err)
+	}
+
+	// The numbers wrap early: a low one after one near the end is next.
+	for name, tc := range map[string]struct {
+		first, second uint32
+		lost          int
+	}{
+		"wrap to 0":       {math.MaxUint32, 0, 0},
+		"wrap to 1":       {math.MaxUint32, 1, 0},
+		"early wrap":      {opcuaSeqWrapLimit, opcuaSeqRestart - 1, 0},
+		"wrap too high":   {opcuaSeqWrapLimit, opcuaSeqRestart, 1},
+		"wrap too early":  {opcuaSeqWrapLimit - 1, 1, 1},
+		"repeated number": {100, 100, 1},
+	} {
+		a = OPCUAChunkAssembler{}
+		a.Add(uaChunk("MSG", OPCUAChunkIntermediate, 1, tc.first, head))
+		msg, err := a.Add(uaChunk("MSG", OPCUAChunkFinal, 1, tc.second, tail))
+		if a.Lost() != tc.lost || (msg != nil) != (tc.lost == 0) || (err == ErrOPCUAChunkLost) != (tc.lost != 0) {
+			t.Errorf("%s: %v %v, %d lost", name, msg, err, a.Lost())
+		}
+	}
+
+	// A lost message still counts against its signature.
+	a = OPCUAChunkAssembler{SignatureSize: 8}
+	a.Add(uaChunk("MSG", OPCUAChunkIntermediate, 1, 1, head))
+	a.Add(uaChunk("MSG", OPCUAChunkIntermediate, 1, 3, head))
+	if _, err := a.Add(uaChunk("MSG", OPCUAChunkFinal, 1, 4, tail[:4])); err != ErrOPCUAMalformed {
+		t.Errorf("short chunk of a lost message: %v", err)
+	}
+}
+
+// TestOPCUAChunkPolicy checks what the assembler takes from the OPN:
+// the signature size of the policy and whether the channel encrypts.
+func TestOPCUAChunkPolicy(t *testing.T) {
+	body := uaReadBody()
+	half := len(body) / 2
+
+	for policy, want := range map[string]int{
+		OPCUASecurityPolicyNone:            0,
+		OPCUASecurityPolicyBasic128Rsa15:   20,
+		OPCUASecurityPolicyBasic256:        20,
+		OPCUASecurityPolicyBasic256Sha256:  32,
+		OPCUASecurityPolicyAes128Sha256Oae: 32,
+		OPCUASecurityPolicyAes256Sha256Pss: 32,
+		OPCUASecurityPolicyECCNistP256:     32,
+		OPCUASecurityPolicyECCNistP384:     48,
+		OPCUASecurityPolicyECCBrainpool256: 32,
+		OPCUASecurityPolicyECCBrainpool384: 48,
+		OPCUASecurityPolicyECCCurve25519:   16,
+		OPCUASecurityPolicyECCCurve448:     16,
+	} {
+		if got, ok := OPCUASignatureSize(policy); got != want || !ok {
+			t.Errorf("%s: signature of %d bytes, want %d", policy, got, want)
+		}
+
+		// Mode Sign: the chunks join less the signature of the policy.
+		sig := bytes.Repeat([]byte{0xEE}, want)
+		var a OPCUAChunkAssembler
+		opn := uaPolicyOPN(policy, 1)
+		if msg, err := a.Add(opn); msg != opn || err != nil || msg.Encrypted != (policy != OPCUASecurityPolicyNone) {
+			t.Errorf("%s: OPN %+v %v", policy, msg, err)
+		}
+		if got, ok := a.SecurityPolicyURI(); got != policy || !ok {
+			t.Errorf("%s: policy %q %v", policy, got, ok)
+		}
+		a.Add(uaChunk("MSG", OPCUAChunkIntermediate, 1, 2, uaBuilder(body[:half]).cat(sig)))
+		msg, err := a.Add(uaChunk("MSG", OPCUAChunkFinal, 1, 3, uaBuilder(body[half:]).cat(sig)))
+		if err != nil || msg == nil || msg.Encrypted || !bytes.Equal(msg.Body, body) || msg.Service.ReadResponse == nil {
+			t.Errorf("%s: joined %+v %v", policy, msg, err)
+		}
+	}
+	if got, ok := OPCUASignatureSize("urn:vendor:policy"); got != 0 || ok {
+		t.Errorf("unknown policy: %d %v", got, ok)
+	}
+	if _, ok := (&OPCUAChunkAssembler{}).SecurityPolicyURI(); ok {
+		t.Errorf("policy before any OPN")
+	}
+
+	// The caller's size wins over the policy.
+	sig := bytes.Repeat([]byte{0xEE}, 12)
+	a := OPCUAChunkAssembler{SignatureSize: len(sig)}
+	a.Add(uaPolicyOPN(OPCUASecurityPolicyBasic256Sha256, 1))
+	a.Add(uaChunk("MSG", OPCUAChunkIntermediate, 1, 2, uaBuilder(body[:half]).cat(sig)))
+	if msg, err := a.Add(uaChunk("MSG", OPCUAChunkFinal, 1, 3, uaBuilder(body[half:]).cat(sig))); err != nil || msg == nil || !bytes.Equal(msg.Body, body) {
+		t.Errorf("override: %+v %v", msg, err)
+	}
+
+	// A negative size is refused, not sliced with.
+	a = OPCUAChunkAssembler{SignatureSize: -1}
+	if _, err := a.Add(uaChunk("MSG", OPCUAChunkIntermediate, 1, 2, body)); err != ErrOPCUAMalformed {
+		t.Errorf("negative signature size: %v", err)
+	}
+
+	// Mode SignAndEncrypt: the first MSG is no service, so every chunk
+	// comes back at once, marked, whatever its type and numbers.
+	a = OPCUAChunkAssembler{}
+	a.Add(uaPolicyOPN(OPCUASecurityPolicyBasic256Sha256, 1))
+	cipher := bytes.Repeat([]byte{0xC5}, 64)
+	for i, chunk := range []OPCUAChunkType{OPCUAChunkIntermediate, OPCUAChunkFinal, OPCUAChunkAbort, OPCUAChunkIntermediate} {
+		in := uaChunk("MSG", chunk, uint32(i)*77, uint32(i)*1000, cipher)
+		msg, err := a.Add(in)
+		if err != nil || msg == nil || msg == in || !msg.Encrypted || msg.Service != nil || in.Encrypted ||
+			!bytes.Equal(msg.EncryptedData, in.Contents[opcuaHeaderLen+8:]) {
+			t.Errorf("encrypted chunk %d: %+v %v", i, msg, err)
+		}
+	}
+	if a.Pending() != 0 || a.Lost() != 0 {
+		t.Errorf("encrypted channel: %d pending, %d lost", a.Pending(), a.Lost())
+	}
+
+	// A renewal under policy None makes the channel plaintext again.
+	a.Add(uaChunk("OPN", OPCUAChunkFinal, 1, 5, body))
+	a.Add(uaChunk("MSG", OPCUAChunkIntermediate, 1, 6, body[:half]))
+	if msg, err := a.Add(uaChunk("MSG", OPCUAChunkFinal, 1, 7, body[half:])); err != nil || msg == nil || msg.Encrypted || msg.Service == nil {
+		t.Errorf("after an OPN under None: %+v %v", msg, err)
+	}
+
+	// An abort right after the OPN does not settle the mode.
+	a = OPCUAChunkAssembler{}
+	a.Add(uaPolicyOPN(OPCUASecurityPolicyBasic256, 1))
+	abort := uaChunk("MSG", OPCUAChunkAbort, 1, 2, uaBuilder{}.u32(0x80B80000).null())
+	if msg, _ := a.Add(abort); msg != abort {
+		t.Errorf("abort after OPN: %+v", msg)
+	}
+	whole := uaChunk("MSG", OPCUAChunkFinal, 1, 3, uaBuilder(body).cat(make([]byte, 20)))
+	if msg, _ := a.Add(whole); msg != whole || msg.Encrypted {
+		t.Errorf("signed message after abort: %+v", msg)
+	}
+}
+
+// TestOPCUAChunkPcaps runs the secured captures through one assembler
+// per direction: the signed one stays readable, the encrypted one comes
+// back marked, ciphertext kept.
+func TestOPCUAChunkPcaps(t *testing.T) {
+	for name, want := range map[string]int{"opcua-signed.pcap": 0, "opcua-encrypted.pcap": 3, "opcua-read.pcap": 0} {
+		asm := map[gopacket.Flow]*OPCUAChunkAssembler{}
+		var secure, marked int
+		for _, p := range readOPCUAPcap(t, name) {
+			tcp, ok := p.TransportLayer().(*TCP)
+			if !ok {
+				continue
+			}
+			flow := tcp.TransportFlow()
+			if asm[flow] == nil {
+				asm[flow] = &OPCUAChunkAssembler{}
+			}
+			for _, ua := range opcuaLayers(p) {
+				msg, err := asm[flow].Add(ua)
+				if err != nil || msg == nil {
+					t.Fatalf("%s: %v %v", name, msg, err)
+				}
+				if msg.MessageType != OPCUAMessageSecure {
+					continue
+				}
+				secure++
+				if !msg.Encrypted {
+					continue
+				}
+				marked++
+				if msg.Service != nil || !bytes.Equal(msg.EncryptedData, ua.Contents[opcuaHeaderLen+8:]) {
+					t.Errorf("%s: encrypted MSG %+v", name, msg)
+				}
+			}
+		}
+
+		// The encrypted capture opens with a discovery under None.
+		if secure == 0 || marked != want {
+			t.Errorf("%s: %d of %d MSG marked encrypted, want %d", name, marked, secure, want)
+		}
+		for _, a := range asm {
+			if a.Lost() != 0 || a.Pending() != 0 {
+				t.Errorf("%s: %d lost, %d pending", name, a.Lost(), a.Pending())
+			}
+		}
+	}
+
+	// The decoder marks the OPN of a secured channel, and no other.
+	opn := opcuaPacketMsg(t, "opcua-encrypted.pcap", 31)
+	headerLen := len(opn.Contents) - len(opn.EncryptedData)
+	if !opn.Encrypted || opn.Service != nil || len(opn.EncryptedData) != len(opn.Body)+8 || headerLen <= opcuaHeaderLen {
+		t.Errorf("secured OPN: encrypted %v, %d bytes", opn.Encrypted, len(opn.EncryptedData))
+	}
+	if plain := opcuaPacketMsg(t, "opcua-encrypted.pcap", 9); plain.Encrypted || plain.EncryptedData != nil || plain.Service == nil {
+		t.Errorf("OPN under None: %+v", plain)
+	}
+}
+
+// uaChunkSeeds are streams of chunks, back to back.
+func uaChunkSeeds() [][]byte {
+	body := uaReadBody()
+	half := len(body) / 2
+	sig := make([]byte, 32)
+	stream := func(chunks ...*OPCUA) []byte {
+		var out []byte
+		for _, c := range chunks {
+			out = append(out, c.Contents...)
+		}
+		return out
+	}
+
+	return [][]byte{
+		stream(uaChunk("MSG", OPCUAChunkIntermediate, 1, 1, body[:half]), uaChunk("MSG", OPCUAChunkFinal, 1, 2, body[half:])),
+		stream(uaChunk("MSG", OPCUAChunkIntermediate, 1, 1, body[:half]), uaChunk("MSG", OPCUAChunkIntermediate, 2, 3, body[:half]),
+			uaChunk("MSG", OPCUAChunkFinal, 1, 4, body[half:]), uaChunk("MSG", OPCUAChunkFinal, 2, 5, body[half:])),
+		stream(uaPolicyOPN(OPCUASecurityPolicyBasic256Sha256, 1), uaChunk("MSG", OPCUAChunkIntermediate, 1, 2, uaBuilder(body[:half]).cat(sig)),
+			uaChunk("MSG", OPCUAChunkFinal, 1, 3, uaBuilder(body[half:]).cat(sig))),
+		stream(uaPolicyOPN(OPCUASecurityPolicyBasic256, 1), uaChunk("MSG", OPCUAChunkFinal, 1, 2, sig), uaChunk("CLO", OPCUAChunkFinal, 2, 3, sig)),
+		stream(uaChunk("MSG", OPCUAChunkIntermediate, 1, 1, body[:half]), uaChunk("MSG", OPCUAChunkAbort, 1, 2, uaBuilder{}.u32(1).null())),
+	}
+}
+
+func FuzzOPCUAChunks(f *testing.F) {
+	for _, s := range uaChunkSeeds() {
+		f.Add(s, uint8(0))
+		f.Add(s, uint8(32))
+	}
+	f.Fuzz(func(t *testing.T, data []byte, sig uint8) {
+		const maxSize, maxPending = 1 << 12, 2
+		asm := OPCUAChunkAssembler{MaxMessageSize: maxSize, MaxPending: maxPending, SignatureSize: int(sig)}
+		for _, ua := range opcuaLayers(decodeUA(data)) {
+			msg, err := asm.Add(ua)
+			if asm.Pending() > maxPending {
+				t.Fatalf("%d pending", asm.Pending())
+			}
+			if err != nil || msg == nil {
+				continue
+			}
+			_ = fmt.Sprintf("%+v", msg.Service)
+
+			// What was joined is a copy within the limit.
+			if msg != ua && !msg.Encrypted && len(msg.Body) > maxSize {
+				t.Fatalf("joined %d bytes", len(msg.Body))
+			}
+			if msg.Encrypted && len(msg.EncryptedData) > len(data) {
+				t.Fatalf("%d bytes of ciphertext from %d", len(msg.EncryptedData), len(data))
+			}
+		}
+	})
 }

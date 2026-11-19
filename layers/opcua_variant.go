@@ -149,7 +149,8 @@ const (
 // []byte, OPCUANodeID (NodeId and ExpandedNodeId), OPCUAStatusCode,
 // OPCUAQualifiedName, OPCUALocalizedText, OPCUAExtensionObject,
 // OPCUADataValue, OPCUAVariant or OPCUADiagnosticInfo. An array holds a
-// slice of that type, a nil slice when empty or null. Value is nil for
+// slice of that type: a nil slice when null, an empty one when the
+// array has length 0. Value is nil for
 // Null. The reserved types 26 to 31 hold a []byte, as the specification
 // asks: their value is read as a ByteString.
 type OPCUAVariant struct {
@@ -246,9 +247,14 @@ func (r *opcuaReader) localizedText() OPCUALocalizedText {
 //
 // A probing reader reads the elements and keeps none.
 func opcuaArray[T any](r *opcuaReader, minSize int, read func() T) []T {
-	n := r.arrayLen(minSize)
-	if r.err != nil || n == 0 {
+	n, kind := r.arrayLen(minSize)
+	if r.err != nil || kind == opcuaArrayNull || r.mode == opcuaReadProbe && n == 0 {
 		return nil
+	}
+	// An empty array is not null: it decodes to an empty slice, which
+	// costs no allocation.
+	if n == 0 {
+		return []T{}
 	}
 
 	var out []T

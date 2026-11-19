@@ -235,7 +235,7 @@ func TestOPCUASessionServices(t *testing.T) {
 		!reflect.DeepEqual(act.IdentityToken, &OPCUAUserIdentityToken{TokenType: OPCUAUserTokenAnonymous, PolicyID: "anonymous"}) {
 		t.Errorf("ActivateSession: %+v", act)
 	}
-	if ar := opcuaPcapService(t, minimal, 21).ActivateSessionResponse; ar == nil || len(ar.ServerNonce) != 32 || ar.Results != nil {
+	if ar := opcuaPcapService(t, minimal, 21).ActivateSessionResponse; ar == nil || len(ar.ServerNonce) != 32 || ar.Results == nil || len(ar.Results) != 0 {
 		t.Errorf("ActivateSession response: %+v", ar)
 	}
 
@@ -344,7 +344,7 @@ func TestOPCUASubscriptionServices(t *testing.T) {
 		t.Errorf("CreateMonitoredItems: %+v", mi)
 	}
 
-	if pr := opcuaPcapService(t, mainloop, 64).PublishRequest; pr == nil || pr.SubscriptionAcknowledgements != nil {
+	if pr := opcuaPcapService(t, mainloop, 64).PublishRequest; pr == nil || pr.SubscriptionAcknowledgements == nil || len(pr.SubscriptionAcknowledgements) != 0 {
 		t.Errorf("Publish: %+v", pr)
 	}
 	if pr := opcuaPcapService(t, mainloop, 80).PublishResponse; pr == nil || pr.SubscriptionID != 1 ||
@@ -390,7 +390,12 @@ type uaBuilder []byte
 
 func (b uaBuilder) u8(v ...uint8) uaBuilder { return append(b, v...) }
 
-func (b uaBuilder) u16(v uint16) uaBuilder { return binary.LittleEndian.AppendUint16(b, v) }
+func (b uaBuilder) u16(v ...uint16) uaBuilder {
+	for _, x := range v {
+		b = binary.LittleEndian.AppendUint16(b, x)
+	}
+	return b
+}
 
 func (b uaBuilder) u32(v ...uint32) uaBuilder {
 	for _, x := range v {

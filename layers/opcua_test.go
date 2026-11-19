@@ -439,6 +439,8 @@ func decodeOPCUAAll(data []byte) {
 	for _, ua := range opcuaLayers(p) {
 		_ = fmt.Sprint(ua, ua.MessageType, ua.ChunkType, ua.Error.Error)
 		_, _ = ua.ServiceNodeID()
+		_, _ = ua.NullStrings()
+		_ = ua.SecurityHeader.Certificates()
 		if s := ua.Service; s != nil {
 			_ = fmt.Sprint(s.ID, s.TypeID, s.ID.IsRequest())
 		}

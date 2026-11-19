@@ -19,6 +19,18 @@
 // channel with security policy None or mode Sign; the decoder cannot know
 // the mode of a MSG, so it decodes the body when it parses as a known
 // service and leaves it raw otherwise.
+//
+// Nothing is ever decrypted. A message known to be encrypted has
+// Encrypted set and its ciphertext in EncryptedData: an OPN under any
+// policy but None, and what an OPCUAChunkAssembler returns for a channel
+// it found to be in mode SignAndEncrypt.
+//
+// Null and empty are told apart where Go allows it: a null array or
+// ByteString decodes to nil, an empty one to an empty slice. Strings
+// decode to "" either way; OPCUA.NullStrings lists the null ones.
+//
+// PubSub messages (UADP, OPC 10000-14) are a layer of their own,
+// OPCUAPubSub.
 
 package layers
 
@@ -42,11 +54,18 @@ const OPCUASecurityPolicyNone = "http://opcfoundation.org/UA/SecurityPolicy#None
 // LayerTypeOPCUA is one OPC UA Binary transport message.
 var LayerTypeOPCUA = gopacket.RegisterLayerType(179, gopacket.LayerTypeMetadata{Name: "OPCUA", Decoder: gopacket.DecodeFunc(decodeOPCUA)})
 
-// registerOPCUADecoders maps the OPC UA port to the OPCUA layer. It is
-// opt-in so callers who never asked for OPC UA keep seeing TCP 4840 as
-// payload.
+// registerOPCUADecoders maps TCP port 4840 to the OPCUA layer, and UDP
+// port 4840 and EtherType 0xB62C to the OPCUAPubSub layer. It is opt-in
+// so callers who never asked for OPC UA keep seeing them as payload.
+// Calling it more than once is harmless.
 func registerOPCUADecoders() {
 	RegisterTCPPortLayerType(TCPPort(TCPPortOPCUA), LayerTypeOPCUA)
+	RegisterUDPPortLayerType(UDPPort(UDPPortOPCUAPubSub), LayerTypeOPCUAPubSub)
+	EthernetTypeMetadata[EthernetTypeOPCUAPubSub] = EnumMetadata{
+		DecodeWith: gopacket.DecodeFunc(decodeOPCUAPubSub),
+		Name:       "OPCUAPubSub",
+		LayerType:  LayerTypeOPCUAPubSub,
+	}
 }
 
 // OPC UA decoding errors.
@@ -132,9 +151,76 @@ type OPCUAReverseHello struct {
 // OPCUAAsymmetricSecurityHeader opens an OPN message (OPC 10000-6 §6.7.2.3).
 // The certificate and thumbprint are nil when null.
 type OPCUAAsymmetricSecurityHeader struct {
-	SecurityPolicyURI             string
-	SenderCertificate             []byte
+	SecurityPolicyURI string
+	// SenderCertificate is the DER certificate of the sender, followed
+	// by those of its issuers when it sends its chain; Certificates
+	// splits it.
+	SenderCertificate []byte
+	// ReceiverCertificateThumbprint is the SHA-1 of the DER certificate
+	// the message is encrypted for, 20 bytes.
 	ReceiverCertificateThumbprint []byte
+}
+
+// opcuaMaxCertChain is the count of certificates Certificates returns at
+// most; a longer chain is not one a server would accept.
+const opcuaMaxCertChain = 16
+
+// DER framing of a certificate: a SEQUENCE with a definite length.
+const (
+	opcuaDERSequence   = 0x30
+	opcuaDERLongForm   = 0x80
+	opcuaDERMaxLenSize = 4
+)
+
+// Certificates splits SenderCertificate into its DER certificates: the
+// sender's first, then its issuers'. It stops at the first byte that is
+// not the start of a DER SEQUENCE that fits, and returns at most 16
+// certificates. The slices alias SenderCertificate.
+func (h OPCUAAsymmetricSecurityHeader) Certificates() [][]byte {
+	var out [][]byte
+	rest := h.SenderCertificate
+	for len(out) < opcuaMaxCertChain {
+		n := opcuaDERLen(rest)
+		if n == 0 {
+			break
+		}
+		out = append(out, rest[:n:n])
+		rest = rest[n:]
+	}
+	return out
+}
+
+// opcuaDERLen returns the size of the DER SEQUENCE that opens b, header
+// included, or 0 when b does not open with one that fits.
+func opcuaDERLen(b []byte) int {
+	const minLen = 2
+	if len(b) < minLen || b[0] != opcuaDERSequence {
+		return 0
+	}
+
+	// Short form: the length is the octet itself.
+	if b[1] < opcuaDERLongForm {
+		return opcuaDERFit(minLen, uint64(b[1]), len(b))
+	}
+
+	// Long form: the low bits count the length octets that follow.
+	size := int(b[1] &^ opcuaDERLongForm)
+	if size == 0 || size > opcuaDERMaxLenSize || len(b) < minLen+size {
+		return 0
+	}
+	var n uint64
+	for _, c := range b[minLen : minLen+size] {
+		n = n<<opcuaMessageTypeBits | uint64(c)
+	}
+	return opcuaDERFit(minLen+size, n, len(b))
+}
+
+// opcuaDERFit returns header+n when that fits in have bytes, else 0.
+func opcuaDERFit(header int, n uint64, have int) int {
+	if n > uint64(have-header) {
+		return 0
+	}
+	return header + int(n)
 }
 
 // OPCUA is one OPC UA Binary transport message. Header fields are set by
@@ -166,6 +252,20 @@ type OPCUA struct {
 	Body []byte
 	// Service is the decoded body, nil when it was not decoded.
 	Service *OPCUAService
+
+	// Encrypted is set when the message is known to be ciphertext from
+	// the sequence header on: by the decoder for an OPN under a policy
+	// other than None, and by an OPCUAChunkAssembler for the MSG and CLO
+	// of a channel in mode SignAndEncrypt. The decoder alone cannot know
+	// the mode of a MSG and leaves it false. SequenceNumber and RequestID
+	// are then ciphertext too.
+	Encrypted bool
+	// EncryptedData is the ciphertext of an Encrypted message: sequence
+	// header, body, padding and signature, as sent. It is not decrypted.
+	EncryptedData []byte
+
+	// secured is the message from the sequence header on.
+	secured []byte
 }
 
 // LayerType returns LayerTypeOPCUA.
@@ -266,6 +366,16 @@ func (r *opcuaReader) limits() OPCUAConnectionLimits {
 // decodeSequence reads the sequence header, keeps the body and decodes
 // it when it can be plaintext.
 func (o *OPCUA) decodeSequence(r *opcuaReader) {
+	if r.err != nil {
+		return
+	}
+	o.secured = r.b[r.off:]
+
+	// An OPN is encrypted from here on under any policy but None.
+	if o.MessageType == OPCUAMessageOpenSecureChannel && o.SecurityHeader.SecurityPolicyURI != OPCUASecurityPolicyNone {
+		o.Encrypted, o.EncryptedData = true, o.secured
+	}
+
 	o.SequenceNumber = r.u32()
 	o.RequestID = r.u32()
 	if r.err != nil {
@@ -280,11 +390,64 @@ func (o *OPCUA) decodeSequence(r *opcuaReader) {
 		return
 	}
 
-	// An OPN body is encrypted under any policy but None.
-	if o.MessageType == OPCUAMessageOpenSecureChannel && o.SecurityHeader.SecurityPolicyURI != OPCUASecurityPolicyNone {
+	if o.Encrypted {
 		return
 	}
 	o.Service = decodeOPCUAService(o.Body)
+}
+
+// NullStrings tells the null Strings of the message from the empty
+// ones, which both decode to "". It returns the offset of the length of
+// every null String: those of the transport header (EndpointURL, Reason,
+// SecurityPolicyURI and the like) as offsets into LayerContents, those
+// of the decoded Service, the ExtensionObjects with a Value included,
+// as offsets into Body. A String of the service that is not listed is
+// not null. The message is walked again on every call.
+func (o *OPCUA) NullStrings() (header, body []int) {
+	r := &opcuaReader{b: o.Contents, off: opcuaHeaderLen, mode: opcuaReadProbe, nulls: &header}
+	if len(o.Contents) < opcuaHeaderLen {
+		return nil, nil
+	}
+
+	switch o.MessageType {
+	case OPCUAMessageHello:
+		r.limits()
+		r.str()
+	case OPCUAMessageError:
+		r.u32()
+		r.str()
+	case OPCUAMessageReverseHello:
+		r.str()
+		r.str()
+	case OPCUAMessageOpenSecureChannel:
+		r.u32()
+		r.str()
+	}
+
+	// The reason of an abort chunk stands in for the body.
+	if o.ChunkType == OPCUAChunkAbort && !o.Encrypted {
+		br := &opcuaReader{b: o.Body, mode: opcuaReadProbe, nulls: &body}
+		br.u32()
+		br.str()
+		return header, body
+	}
+	if o.Service == nil {
+		return header, nil
+	}
+
+	br := &opcuaReader{b: o.Body, mode: opcuaReadProbe, nulls: &body}
+	s := &OPCUAService{}
+	if !s.decodeHeader(br) {
+		return header, nil
+	}
+
+	// Parameters that do not parse stay raw in Params: no Strings.
+	mark := len(body)
+	s.decodeParams(br)
+	if br.err != nil {
+		body = body[:mark]
+	}
+	return header, body
 }
 
 // ServiceNodeID returns the type NodeId that opens the body of an OPN, MSG

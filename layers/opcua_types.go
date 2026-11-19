@@ -214,6 +214,10 @@ type opcuaReader struct {
 	reserved int
 	// extDepth counts the ExtensionObject bodies the buffer sits in.
 	extDepth int
+	// nulls, when set, collects the offset of every null String read,
+	// counted from base bytes before the buffer.
+	nulls *[]int
+	base  int
 }
 
 func (r *opcuaReader) remaining() int { return len(r.b) - r.off }
@@ -282,28 +286,41 @@ func (r *opcuaReader) byteString() []byte {
 	return r.take(int(n))
 }
 
-// str reads a String; null and empty both return "".
+// str reads a String; null and empty both return "". OPCUA.NullStrings
+// tells them apart.
 func (r *opcuaReader) str() string {
+	start := r.off
 	b := r.byteString()
+	if r.nulls != nil && b == nil && r.err == nil {
+		*r.nulls = append(*r.nulls, r.base+start)
+	}
 	if r.mode == opcuaReadProbe {
 		return ""
 	}
 	return string(b)
 }
 
+// opcuaArrayKind tells a null array from one with a length.
+type opcuaArrayKind uint8
+
+const (
+	opcuaArrayNull opcuaArrayKind = iota
+	opcuaArraySized
+)
+
 // arrayLen reads an array length and checks that count elements of at
 // least minSize bytes each fit in what is left, so a claimed length never
-// drives an allocation.
-func (r *opcuaReader) arrayLen(minSize int) int {
+// drives an allocation. Length -1 is the null array.
+func (r *opcuaReader) arrayLen(minSize int) (int, opcuaArrayKind) {
 	n := r.i32()
 	if r.err != nil || n == opcuaNullLength {
-		return 0
+		return 0, opcuaArrayNull
 	}
 	if n < opcuaNullLength || int64(n)*int64(minSize) > int64(r.remaining()-r.reserved) {
 		r.err = ErrOPCUAMalformed
-		return 0
+		return 0, opcuaArrayNull
 	}
-	return int(n)
+	return int(n), opcuaArraySized
 }
 
 // strings reads an array of String.
@@ -385,11 +402,39 @@ func (r *opcuaReader) extensionObject() OPCUAExtensionObject {
 	if e.Encoding != noBody {
 		e.Body = r.byteString()
 	}
-	if r.err != nil || r.mode == opcuaReadProbe {
+	if r.err != nil {
+		return e
+	}
+	if r.mode == opcuaReadProbe {
+		r.walkExtNulls(e)
 		return e
 	}
 	e.Value = decodeOPCUAExtBody(e, r.extDepth)
 	return e
+}
+
+// walkExtNulls collects the null Strings of the body of e, when the
+// reader collects them and the body is one that decodes.
+func (r *opcuaReader) walkExtNulls(e OPCUAExtensionObject) {
+	id, ok := e.binaryTypeID()
+	if r.nulls == nil || !ok || r.extDepth >= opcuaMaxExtDepth {
+		return
+	}
+
+	mark := len(*r.nulls)
+	sub := opcuaReader{
+		b:        e.Body,
+		mode:     opcuaReadProbe,
+		extDepth: r.extDepth + 1,
+		nulls:    r.nulls,
+		base:     r.base + r.off - len(e.Body),
+	}
+	sub.extBody(id)
+
+	// A body that does not decode has no Value, and no Strings.
+	if sub.err != nil || sub.remaining() != 0 {
+		*r.nulls = (*r.nulls)[:mark]
+	}
 }
 
 // diagnosticInfo reads a DiagnosticInfo, following InnerDiagnosticInfo at
