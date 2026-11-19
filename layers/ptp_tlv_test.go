@@ -104,7 +104,7 @@ func ptpMgmtVector(name string, body string, id PTPManagementID, dataHex string,
 	}
 }
 
-var ptpTLVVectors = []ptpTLVVector{
+var ptpCoreVectors = []ptpTLVVector{
 	ptpMgmtVector("null get", ptpBodyMgmtGet, PTPMgmtNullManagement, "", nil),
 	ptpMgmtVector("clock description", ptpBodyMgmtResponse, PTPMgmtClockDescription,
 		// clockType OC+BC, "IEEE 802.3", MAC, UDP/IPv4 10.0.0.9, OUI,
@@ -488,8 +488,8 @@ func TestPTPTLVHeaders(t *testing.T) {
 	}
 
 	// A type without a typed form is not an error.
-	if v, err := (PTPTLV{Type: PTPTLVL1Sync, Value: []byte{1, 2}}).Decode(); v != nil || err != nil {
-		t.Errorf("L1_SYNC: %#v, %v", v, err)
+	if v, err := (PTPTLV{Type: PTPTLVAuthenticationChallenge, Value: []byte{1, 2}}).Decode(); v != nil || err != nil {
+		t.Errorf("AUTHENTICATION_CHALLENGE: %#v, %v", v, err)
 	}
 	// Nor is a management ID without one, or a GET without data.
 	for _, m := range []PTPManagementTLV{

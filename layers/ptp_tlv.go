@@ -403,13 +403,15 @@ type PTPAlternateTimeOffset struct {
 	DisplayName    string
 }
 
-// PTPAuthentication is the header of an IEEE 1588-2019 AUTHENTICATION
-// TLV. Rest holds what follows the key ID: the optional disclosed key,
+// PTPAuthentication is an IEEE 1588-2019 AUTHENTICATION TLV (16.14).
+// Rest holds what follows the key ID: the optional disclosed key,
 // sequence number and reserved fields, then the ICV. Their sizes come
-// from the security association, which is not on the wire.
+// from the security association, which is not on the wire; Fields cuts
+// Rest with sizes the caller knows.
 type PTPAuthentication struct {
 	// SPP is the security parameter pointer.
-	SPP               uint8
+	SPP uint8
+	// SecParamIndicator flags which optional fields are present.
 	SecParamIndicator uint8
 	KeyID             uint32
 	Rest              []byte
@@ -430,6 +432,15 @@ type PTPPad []byte
 //	ALTERNATE_TIME_OFFSET_INDICATOR          PTPAlternateTimeOffset
 //	AUTHENTICATION (0x8009)                  PTPAuthentication
 //	PAD                                      PTPPad
+//	L1_SYNC                                  PTPL1Sync
+//	PORT_COMMUNICATION_AVAILABILITY          PTPPortAvailability
+//	PROTOCOL_ADDRESS                         PTPProtocolAddress
+//	SLAVE_RX_SYNC_TIMING_DATA                PTPSlaveRxSyncTiming
+//	SLAVE_RX_SYNC_COMPUTED_DATA              PTPSlaveRxSyncComputed
+//	SLAVE_TX_EVENT_TIMESTAMPS                PTPSlaveTxEventTimestamps
+//	CUMULATIVE_RATE_RATIO                    PTPCumulativeRateRatio
+//	ENHANCED_ACCURACY_METRICS                PTPEnhancedAccuracyMetrics
+//	CUM_FREQ_SCALE_FACTOR_OFFSET             PTPCumFreqScaleFactorOffset
 //
 // Any other type gives nil and no error. A value too short for its type
 // gives ErrPTPTLVValue. Slices alias the packet data.
@@ -489,7 +500,7 @@ func (t PTPTLV) Decode() (any, error) {
 	case PTPTLVPad:
 		return PTPPad(t.Value), nil
 	}
-	return nil, nil
+	return ptpDecode2019(t.Type, r)
 }
 
 // ptpValue returns v, or the reader's error when v was read past the end.
@@ -560,6 +571,10 @@ func ptpUint24(b []byte) uint32 {
 //	IEEE 802.1, DO_NOT_PROPAGATE, sub type 4         PTPGPTPCapable
 //	                              sub type 5         PTPGPTPCapableInterval
 //	IEEE C37.238, ORGANIZATION_EXTENSION, 1 and 2    PTPC37238
+//	SMPTE, ORGANIZATION_EXTENSION, sub type 1        PTPSMPTE
+//	CERN, ORGANIZATION_EXTENSION, sub type 0xDEAD01  PTPWhiteRabbit
+//	ITU-T, ORGANIZATION_EXTENSION, sub type 2        PTPInterfaceRate
+//	IANA, ORGANIZATION_EXTENSION, sub type 1         PTPNTPMessage
 //
 // Anything else gives nil and no error; a short value gives
 // ErrPTPTLVValue. Like Wireshark, it reads ORGANIZATION_EXTENSION_PROPAGATE
@@ -574,6 +589,8 @@ func (o PTPOrganizationExtension) Decode() (any, error) {
 		return ptpDecode8021Local(o.SubType, r)
 	case o.Type == PTPTLVOrganizationExtension && o.OrganizationID == PTPOrgIEEEC37:
 		return ptpDecodeC37(o.SubType, r)
+	case o.Type == PTPTLVOrganizationExtension:
+		return ptpDecodeOrgOther(o, r)
 	}
 	return nil, nil
 }
