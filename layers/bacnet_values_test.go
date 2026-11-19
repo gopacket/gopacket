@@ -608,6 +608,61 @@ func TestBACnetSegmentKeys(t *testing.T) {
 	}
 }
 
+// A message of more than 256 segments reuses sequence number 0, which
+// must not be taken for the start of a new message.
+func TestBACnetSegmentWrap(t *testing.T) {
+	const (
+		segmentSize = 50
+		// wrap is the index of the last segment before the sequence
+		// number returns to 0.
+		wrap = 255
+	)
+
+	ack := bacnetLongACK(7, 1000)
+	segs := bacnetSegment(ack, segmentSize)
+	if len(segs) <= wrap+2 {
+		t.Fatalf("%d segments do not wrap", len(segs))
+	}
+
+	inOrder := func() []int {
+		order := make([]int, len(segs))
+		for i := range order {
+			order[i] = i
+		}
+		return order
+	}
+	swapped := func(i int) []int {
+		order := inOrder()
+		order[i], order[i+1] = order[i+1], order[i]
+		return order
+	}
+	// repeated sends segment i once more, after the one that follows it.
+	repeated := func(i int) []int {
+		order := inOrder()
+		return append(order[:i+2], append([]int{i}, order[i+2:]...)...)
+	}
+
+	for _, test := range []struct {
+		name  string
+		order []int
+	}{
+		{"in order", inOrder()},
+		{"reordered before the wrap", swapped(20)},
+		{"reordered across the wrap", swapped(wrap)},
+		{"wrapped segment sent again", repeated(wrap + 1)},
+	} {
+		asm := NewBACnetSegmentAssembler()
+		whole := bacnetAddSegments(t, asm, "sender", segs, test.order)
+		if whole == nil {
+			t.Errorf("%s: message lost, %d pending", test.name, asm.Pending())
+			continue
+		}
+		if got := append(append([]byte(nil), whole.Contents...), whole.Parameters...); !bytes.Equal(got, ack) {
+			t.Errorf("%s: message differs", test.name)
+		}
+	}
+}
+
 func TestBACnetSegmentLimits(t *testing.T) {
 	segs := bacnetSegment(bacnetLongACK(3, 40), 100)
 	segment := func(i int) *BACnetAPDU {

@@ -49,6 +49,9 @@ type bacnetSegments struct {
 	// size counts the data octets in buf and held.
 	size int
 	next uint8
+	// zeroAt is where the data of the latest segment numbered 0 starts
+	// in buf: segment 0, 256, 512 and so on.
+	zeroAt int
 	// last is the sequence number of the final segment, once seen.
 	last     uint8
 	sawLast  bool
@@ -129,8 +132,7 @@ func (s *BACnetSegmentAssembler) Add(source []byte, a *BACnetAPDU) (*BACnetAPDU,
 		m.hold(a)
 		return nil, nil
 	}
-	m.buf = append(m.buf, a.Parameters...)
-	m.next++
+	m.join(a.Parameters)
 	m.drain()
 
 	if !m.sawLast || m.next != m.last+1 {
@@ -151,10 +153,7 @@ func (s *BACnetSegmentAssembler) Add(source []byte, a *BACnetAPDU) (*BACnetAPDU,
 func (s *BACnetSegmentAssembler) message(key bacnetSegmentKey, a *BACnetAPDU) *bacnetSegments {
 	m := s.pending[key]
 
-	// Segment 0 of a message that is past it is either sent again, with
-	// the data already held, or the invoke ID is in use for a new message
-	// and the old one was abandoned.
-	restart := a.SequenceNumber == 0 && (m == nil || m.next != 0 && !m.startsWith(a))
+	restart := a.SequenceNumber == 0 && (m == nil || m.abandonedBy(a))
 	if !restart {
 		return m
 	}
@@ -166,6 +165,7 @@ func (s *BACnetSegmentAssembler) message(key bacnetSegmentKey, a *BACnetAPDU) *b
 		s.evict()
 	}
 	m = &bacnetSegments{buf: bacnetWholeHeader(a)}
+	m.zeroAt = len(m.buf)
 	s.pending[key] = m
 	return m
 }
@@ -199,14 +199,28 @@ func (s *BACnetSegmentAssembler) maxPending() int {
 	return BACnetSegmentDefaultMaxPending
 }
 
-// startsWith reports whether the message begins with the data of the
-// segment.
-func (m *bacnetSegments) startsWith(a *BACnetAPDU) bool {
-	hdr := len(a.Contents) - bacnetSegmentHeaderLen
-	if hdr < 0 || hdr > len(m.buf) {
+// abandonedBy reports whether a segment numbered 0 starts a new message
+// in place of m, the invoke ID being in use again. It does not when the
+// sequence number has wrapped (segment 256 is numbered 0 too) or when the
+// segment is one already joined, sent again.
+//
+//	next 0, 129..255: 0 is awaited or overtook others    -> same message
+//	next 1..128:      0 is past; data equal to that kept -> sent again
+//	                                 other data          -> new message
+func (m *bacnetSegments) abandonedBy(a *BACnetAPDU) bool {
+	if ahead := -m.next; ahead <= bacnetSegmentAhead {
 		return false
 	}
-	return bytes.HasPrefix(m.buf[hdr:], a.Parameters)
+	return !bytes.HasPrefix(m.buf[m.zeroAt:], a.Parameters)
+}
+
+// join appends the data of the segment awaited.
+func (m *bacnetSegments) join(data []byte) {
+	if m.next == 0 {
+		m.zeroAt = len(m.buf)
+	}
+	m.buf = append(m.buf, data...)
+	m.next++
 }
 
 // hold keeps a copy of a segment that arrived early.
@@ -225,8 +239,7 @@ func (m *bacnetSegments) drain() {
 			return
 		}
 		delete(m.held, m.next)
-		m.buf = append(m.buf, data...)
-		m.next++
+		m.join(data)
 	}
 }
 
