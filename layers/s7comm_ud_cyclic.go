@@ -18,6 +18,13 @@ import (
 //	transfer/change request: reserved, count, timebase, factor, items
 //	transfer/change push and response: reserved, count, read data
 //	unsubscribe request: function, job ID
+//	read record request: reserved, count, item
+//	read record response: reserved, count, return code,
+//	  [transport size,] status length, status or fill octet,
+//	  [record length(2), record]
+//
+// The bracketed parts of a read record response come with return code
+// 0xFF only. Only its first item is read, as in Wireshark.
 
 // Subfunctions of the cyclic data group.
 const (
@@ -33,6 +40,8 @@ const (
 	s7commCyclicHead = 2
 	// Timebase and factor before the request items.
 	s7commCyclicTiming = 2
+	// Record length of a read record response.
+	s7commReadRecLenLen = 2
 
 	// Transport sizes announcing a list of NCK addresses instead of
 	// values in read data.
@@ -75,6 +84,20 @@ type S7CommCyclic struct {
 	Values    []S7CommDataItem
 	Function  uint8 // unsubscribe request
 	JobID     uint8 // unsubscribe request
+
+	Record *S7CommReadRecord // read record
+}
+
+// S7CommReadRecord is the first item of a read record (SFB 52 RDREC)
+// request or response. Item is the request address; the other fields
+// belong to the response. Status and Data alias the packet data.
+type S7CommReadRecord struct {
+	Item          *S7CommVarItem
+	ReturnCode    S7CommReturnCode
+	TransportSize S7CommDataTransportSize // with return code 0xFF
+	Status        []byte                  // STATUS output of the block
+	Length        uint16                  // with return code 0xFF
+	Data          []byte
 }
 
 // Interval returns the requested cycle time, or 0 when the timebase is
@@ -83,16 +106,20 @@ func (c *S7CommCyclic) Interval() time.Duration {
 	return c.Timebase.Duration() * time.Duration(c.Factor)
 }
 
-// decodeCyclic reads the cyclic data services; read record stays raw.
+// decodeCyclic reads the cyclic data services.
 func (u *S7CommUserdata) decodeCyclic() error {
 	d := u.Data
 	switch u.Subfunction {
-	case S7CommCyclicTransfer, S7CommCyclicChange, S7CommCyclicChangeMod, S7CommCyclicUnsubscribe:
+	case S7CommCyclicTransfer, S7CommCyclicChange, S7CommCyclicChangeMod, S7CommCyclicUnsubscribe,
+		S7CommCyclicReadRecord:
 	default:
 		return nil
 	}
 	if len(d) < s7commCyclicHead {
 		return fmt.Errorf("%w: cyclic data %d octets", ErrS7CommMalformed, len(d))
+	}
+	if u.Subfunction == S7CommCyclicReadRecord {
+		return u.decodeReadRecord()
 	}
 
 	if u.Subfunction == S7CommCyclicUnsubscribe {
@@ -223,4 +250,86 @@ func s7commReadData(d []byte, count int) ([]S7CommDataItem, []byte, error) {
 		d = d[end:]
 	}
 	return vals, d, nil
+}
+
+// decodeReadRecord reads a read record request or response.
+func (u *S7CommUserdata) decodeReadRecord() error {
+	d := u.Data
+	c := &S7CommCyclic{Reserved: d[0], ItemCount: d[1]}
+	d = d[s7commCyclicHead:]
+	if u.Type == S7CommUDTypePush {
+		return nil
+	}
+	u.Cyclic = c
+	if c.ItemCount == 0 {
+		return nil
+	}
+
+	r := &S7CommReadRecord{}
+	if u.Type == S7CommUDTypeRequest {
+		items, err := s7commParamItems(d, 1)
+		if err != nil {
+			u.Cyclic = nil
+			return err
+		}
+		r.Item = &items[0]
+		c.Record = r
+		return nil
+	}
+
+	if err := r.decodeResponse(d); err != nil {
+		u.Cyclic = nil
+		return err
+	}
+	c.Record = r
+	return nil
+}
+
+// decodeResponse reads the first item of a read record response.
+func (r *S7CommReadRecord) decodeResponse(d []byte) error {
+	short := fmt.Errorf("%w: read record response %d octets", ErrS7CommMalformed, len(d))
+	if len(d) < 1 {
+		return short
+	}
+	r.ReturnCode = S7CommReturnCode(d[0])
+	d = d[1:]
+	ok := r.ReturnCode == S7CommRetSuccess
+
+	if ok {
+		if len(d) < 1 {
+			return short
+		}
+		r.TransportSize = S7CommDataTransportSize(d[0])
+		d = d[1:]
+	}
+
+	// Status length, then the status or a fill octet in its place.
+	if len(d) < 1 {
+		return short
+	}
+	n := int(d[0])
+	d = d[1:]
+	if n == 0 {
+		n = 1
+	} else if n <= len(d) {
+		r.Status = d[:n]
+	}
+	if n > len(d) {
+		return short
+	}
+	d = d[n:]
+	if !ok {
+		return nil
+	}
+
+	if len(d) < s7commReadRecLenLen {
+		return short
+	}
+	r.Length = binary.BigEndian.Uint16(d)
+	d = d[s7commReadRecLenLen:]
+	if int(r.Length) > len(d) {
+		return short
+	}
+	r.Data = d[:r.Length]
+	return nil
 }

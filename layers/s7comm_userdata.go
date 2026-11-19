@@ -20,10 +20,11 @@ import (
 //
 // and its data a single item: return code, transport size, length,
 // value. Decoded values: SZL read and its records, alarms, diagnostic
-// and message service (CPU functions); block lists and info (block
-// functions); clock read and set; cyclic data; variable status, modify
-// and force (programmer commands). The security group and other
-// subfunctions stay raw in S7CommUserdata.Data. Responses
+// and message service, AR_SEND (CPU functions); block lists and info
+// (block functions); clock read and set; cyclic data and read record;
+// programmer commands; PBC BSEND; NC programming. The security and
+// data record routing groups and other subfunctions stay raw in
+// S7CommUserdata.Data. Responses
 // split over several PDUs (data unit reference set, or more data units
 // following) are left raw: only the reassembled whole has the
 // structure, and gopacket decodes one packet at a time. Feed the
@@ -103,6 +104,7 @@ const (
 	S7CommGroupSecurity       S7CommFuncGroup = 0x5
 	S7CommGroupPBC            S7CommFuncGroup = 0x6
 	S7CommGroupTime           S7CommFuncGroup = 0x7
+	S7CommGroupDRR            S7CommFuncGroup = 0x20
 	S7CommGroupNCProgramming  S7CommFuncGroup = 0x3F
 )
 
@@ -125,6 +127,8 @@ func (g S7CommFuncGroup) String() string {
 		return "PBC BSEND/BRECV"
 	case S7CommGroupTime:
 		return "Time functions"
+	case S7CommGroupDRR:
+		return "Data record routing"
 	case S7CommGroupNCProgramming:
 		return "NC programming"
 	default:
@@ -313,13 +317,17 @@ type S7CommBlockEntry struct {
 
 // S7CommUserdata is the decoded parameter and data of a Userdata PDU.
 // DataUnitRef, LastDataUnit and ErrorCode are set only with the long
-// (response) parameter. The value views below Data are set only for a
-// successful (return code 0xFF), unfragmented value; a view is nil when
-// its service does not apply. Data always keeps the raw value.
+// (response) parameter. The value views below Data are set for an
+// unfragmented value with data, whatever its return code, as Wireshark
+// does; only an SZL response, a block info response and the clock
+// need return code 0xFF, and block queries a transport size. A view is
+// nil when its service does not apply. Data always keeps the raw
+// value.
 //
 // DecodeErr records why the view matching the group and subfunction
 // was not set, e.g. a count overrunning the data. DecodeFromBytes does
-// not return it: the PDU itself is well formed.
+// not return it: the PDU itself is well formed. It does return a
+// malformed SZL or block function value sent with return code 0xFF.
 type S7CommUserdata struct {
 	VarSpec       uint8
 	ParamLength   uint8 // octets after this one
@@ -359,6 +367,8 @@ type S7CommUserdata struct {
 	AlarmQuery *S7CommAlarmQuery // alarm query response
 	Diag       *S7CommDiagMessage
 	MsgService *S7CommMsgService
+	NC         *S7CommNCFile   // NC programming, joined value only
+	Send       *S7CommSendData // PBC BSEND, AR_SEND
 	DecodeErr  error
 }
 
@@ -481,10 +491,27 @@ func (s *S7Comm) decodeUserdata() error {
 	u.Data = d[s7commDataItemHead:end]
 	u.splitUnitHeader()
 
-	if u.ReturnCode != S7CommRetSuccess || u.Fragmented() {
+	if u.Fragmented() {
 		return nil
 	}
-	return u.decodeValue()
+	return u.decodeView()
+}
+
+// decodeView decodes the value if there is one. A value that does not
+// parse fails the PDU only when it came with return code 0xFF; with
+// any other the station vouches for nothing and the reason goes to
+// DecodeErr.
+func (u *S7CommUserdata) decodeView() error {
+	if len(u.Data) == 0 {
+		return nil
+	}
+
+	err := u.decodeValue()
+	if err != nil && u.ReturnCode != S7CommRetSuccess {
+		u.DecodeErr = err
+		return nil
+	}
+	return err
 }
 
 // splitUnitHeader moves the octets some services send before every
@@ -530,6 +557,9 @@ func (u *S7CommUserdata) decodeValue() error {
 			u.DecodeErr = u.decodeCPU()
 			return nil
 		}
+		if u.Type == S7CommUDTypeResponse && u.ReturnCode != S7CommRetSuccess {
+			return nil
+		}
 		if err := u.decodeSZL(); err != nil {
 			return err
 		}
@@ -538,7 +568,7 @@ func (u *S7CommUserdata) decodeValue() error {
 		if err := u.decodeBlockFunc(); err != nil {
 			return err
 		}
-		if u.Subfunction == S7CommBlockGetInfo && u.Type == S7CommUDTypeResponse {
+		if u.Subfunction == S7CommBlockGetInfo && u.Type == S7CommUDTypeResponse && u.ReturnCode == S7CommRetSuccess {
 			u.DecodeErr = u.decodeBlockInfo()
 		}
 	case S7CommGroupProgrammer:
@@ -546,7 +576,13 @@ func (u *S7CommUserdata) decodeValue() error {
 	case S7CommGroupCyclicData:
 		u.DecodeErr = u.decodeCyclic()
 	case S7CommGroupTime:
-		u.DecodeErr = u.decodeClock()
+		if u.ReturnCode == S7CommRetSuccess {
+			u.DecodeErr = u.decodeClock()
+		}
+	case S7CommGroupPBC:
+		u.DecodeErr = u.decodeSend(binary.BigEndian)
+	case S7CommGroupNCProgramming:
+		u.DecodeErr = u.decodeNC()
 	}
 	return nil
 }
@@ -613,6 +649,11 @@ func (u *S7CommUserdata) decodeSZL() error {
 func (u *S7CommUserdata) decodeBlockFunc() error {
 	d := u.Data
 	req := u.Type == S7CommUDTypeRequest
+
+	// Like Wireshark, take the queries only with a transport size.
+	if u.Subfunction != S7CommBlockList && u.TransportSize == S7CommDataTSNull {
+		return nil
+	}
 
 	switch {
 	case u.Subfunction == S7CommBlockList && !req:

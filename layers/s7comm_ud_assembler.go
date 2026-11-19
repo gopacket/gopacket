@@ -242,13 +242,9 @@ func (u *S7CommUserdata) joined(data []byte, units int) *S7CommUserdata {
 		Fragments:     units,
 	}
 
-	if v.ReturnCode != S7CommRetSuccess {
-		return v
-	}
-
 	// A malformed joined value is reported like any other view error:
 	// the PDUs themselves were well formed.
-	if err := v.decodeValue(); err != nil {
+	if err := v.decodeView(); err != nil {
 		v.DecodeErr = err
 	}
 	return v

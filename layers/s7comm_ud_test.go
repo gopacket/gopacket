@@ -126,12 +126,28 @@ func TestS7CommBCDTime(t *testing.T) {
 	}{
 		{"14082011593374 64", s7commBCDShort, s7TestTime, true},
 		{"9912312359599997", s7commBCDShort, s7TestTimeB, true},
-		// Years below 89 are 20xx whatever the century octet says.
+		// Years below 90 are 20xx whatever the century octet says.
 		{"00191408201159337464", s7commBCDLong, s7TestTime, true},
 		{"00209912312359599997", s7commBCDLong, s7UTC(2099, time.December, 31, 23, 59, 59, 999), true},
 		{"14132011593374 64", s7commBCDShort, time.Time{}, false}, // month 13
 		{"14082024593374 64", s7commBCDShort, time.Time{}, false}, // hour 24
 		{"140820115933", s7commBCDShort, time.Time{}, false},
+		// DATE_AND_TIME: 90-99 is 19xx, 00-89 is 20xx.
+		{"8901010000000002", s7commBCDShort, s7UTC(2089, time.January, 1, 0, 0, 0, 0), true},
+		{"9001010000000002", s7commBCDShort, s7UTC(1990, time.January, 1, 0, 0, 0, 0), true},
+		{"00198901010000000002", s7commBCDLong, s7UTC(2089, time.January, 1, 0, 0, 0, 0), true},
+		// A century octet that is neither 19 nor 20 does not count.
+		{"00009512312359599997", s7commBCDLong, s7UTC(1995, time.December, 31, 23, 59, 59, 999), true},
+		// Digits above 9 are not BCD.
+		{"140A2011593374 64", s7commBCDShort, time.Time{}, false},
+		{"1408201159337A 64", s7commBCDShort, time.Time{}, false},
+		{"14082011593374 A4", s7commBCDShort, time.Time{}, false},
+		{"1A082011593374 64", s7commBCDShort, time.Time{}, false},
+		// Days the month does not have.
+		{"14023011593374 64", s7commBCDShort, time.Time{}, false},
+		{"14022911593374 64", s7commBCDShort, time.Time{}, false},
+		{"16022911593374 64", s7commBCDShort, s7UTC(2016, time.February, 29, 11, 59, 33, 746), true},
+		{"14080011593374 64", s7commBCDShort, time.Time{}, false},
 	} {
 		got, err := s7commBCDTime(s7Hex(c.in), c.form)
 		if (err == nil) != c.ok || !got.Equal(c.want) {

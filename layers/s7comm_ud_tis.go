@@ -99,7 +99,8 @@ type S7CommTISAddress struct {
 
 // S7CommTIS is a programmer command. Param and Body are the raw
 // parameter and data parts; the views below are set for variable
-// status, modify and force.
+// status, modify and force. ParamFields and DataFields split the
+// parameter and the data of the other services.
 type S7CommTIS struct {
 	ParamSize uint16
 	DataSize  uint16
@@ -109,6 +110,9 @@ type S7CommTIS struct {
 	Addresses []S7CommTISAddress
 	Values    []S7CommDataItem
 	Results   []S7CommReturnCode
+
+	typ S7CommUserdataType
+	sub S7CommSubfunction
 }
 
 // decodeTIS reads the programmer command sizes and, for the variable
@@ -122,6 +126,8 @@ func (u *S7CommUserdata) decodeTIS() error {
 	t := &S7CommTIS{
 		ParamSize: binary.BigEndian.Uint16(d[0:2]),
 		DataSize:  binary.BigEndian.Uint16(d[2:4]),
+		typ:       u.Type,
+		sub:       u.Subfunction,
 	}
 	pEnd := s7commTISHead + int(t.ParamSize)
 	dEnd := pEnd + int(t.DataSize)

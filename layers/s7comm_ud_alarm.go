@@ -176,6 +176,8 @@ func (u *S7CommUserdata) decodeCPU() error {
 		return nil
 	case S7CommCPUMessageService:
 		return u.decodeMsgService()
+	case S7CommCPUARSendInd:
+		return u.decodeSend(binary.LittleEndian)
 	case S7CommCPUAlarmQuery:
 		if u.Type == S7CommUDTypeResponse {
 			return u.decodeAlarmQuery()
