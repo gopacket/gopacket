@@ -51,10 +51,13 @@ const (
 	modbusMinFileWrite   = 0x09 // write file record request data length
 	modbusMaxFileWrite   = 0xFB
 	modbusMaxRecordNum   = 0x270F
-	modbusDevIDReqLen    = 2    // read device ID code + object ID
-	modbusDevIDRespHdr   = 5    // code, conformity, more, next, number
-	modbusDevObjHdrLen   = 2    // object ID + object length
-	modbusMoreFollows    = 0xFF // device ID response continues
+	modbusFileRecords    = 10000 // records of a file, numbered 0 to 9999
+	modbusMinFileResp    = 4     // one sub-response of one register
+	modbusMinSubResp     = 3     // ref type + one register
+	modbusDevIDReqLen    = 2     // read device ID code + object ID
+	modbusDevIDRespHdr   = 5     // code, conformity, more, next, number
+	modbusDevObjHdrLen   = 2     // object ID + object length
+	modbusMoreFollows    = 0xFF  // device ID response continues
 	modbusNoMoreFollows  = 0x00
 	modbusBitsPerByte    = 8
 	modbusRegisterLen    = 2
@@ -159,7 +162,7 @@ func (c ModbusDiagCode) String() string {
 	case ModbusDiagClearOverrun:
 		return "Clear Overrun Counter and Flag"
 	default:
-		return fmt.Sprintf("Unknown(0x%04X)", uint16(c))
+		return fmt.Sprintf("Reserved(0x%04X)", uint16(c))
 	}
 }
 
@@ -283,18 +286,20 @@ type ModbusDeviceID struct {
 //	0x03,0x04 req: Address, Quantity          resp: ByteCount, Registers
 //	0x05,0x06 req/resp: Address, Value
 //	0x07      resp: Status (output data byte)
-//	0x08      req/resp: SubFunction, Data
+//	0x08      req/resp: SubFunction, Data (Diagnostic reads it by type)
 //	0x0B      resp: Status, EventCount
 //	0x0C      resp: ByteCount, Status, EventCount, MessageCount, Events
 //	0x0F      req: Address, Quantity, ByteCount, Bits  resp: Address, Quantity
 //	0x10      req: Address, Quantity, ByteCount, Registers  resp: Address, Quantity
-//	0x11      resp: ByteCount, Data (server ID, run indicator, extra data)
+//	0x11      resp: ByteCount, Data (server ID, run indicator, extra data;
+//	          ServerID splits them)
 //	0x14,0x15 req/resp: ByteCount, FileRecords
 //	0x16      req/resp: Address, AndMask, OrMask
 //	0x17      req: Address, Quantity (read), WriteAddress, WriteQuantity,
 //	          ByteCount, Registers (write values)  resp: ByteCount, Registers
 //	0x18      req: Address (FIFO pointer)  resp: ByteCount, FIFOCount, Registers
-//	0x2B      req/resp: MEIType, then DeviceID (0x0E) or Data (others)
+//	0x2B      req/resp: MEIType, then DeviceID (0x0E) or Data (others;
+//	          CANopen reads the header of 0x0D)
 //	exception resp: ExceptionCode
 //	unknown function: Data
 type ModbusPDU struct {
@@ -695,14 +700,25 @@ func modbusFileRef(ref uint8) error {
 	return nil
 }
 
-// modbusFileAddr checks the file and record numbers of a sub-request.
-func modbusFileAddr(file, record uint16) error {
-	if file == 0 {
+// modbusFileAddr checks the file number, record number and record length
+// of a sub-request (spec sections 6.14, 6.15): files are numbered from 1,
+// and a file holds records 0 to 9999, one register each, so a read or
+// write of n registers from record r must end by record 9999.
+func modbusFileAddr(rec *ModbusFileRecord) error {
+	if rec.FileNumber == 0 {
 		return fmt.Errorf("%w: file number 0", ErrModbusPDUValue)
 	}
 
-	if record > modbusMaxRecordNum {
-		return fmt.Errorf("%w: record number %d", ErrModbusPDUValue, record)
+	if rec.RecordNumber > modbusMaxRecordNum {
+		return fmt.Errorf("%w: record number %d", ErrModbusPDUValue, rec.RecordNumber)
+	}
+
+	if rec.RecordLength == 0 {
+		return fmt.Errorf("%w: record length 0", ErrModbusPDUQuantity)
+	}
+
+	if end := int(rec.RecordNumber) + int(rec.RecordLength); end > modbusFileRecords {
+		return fmt.Errorf("%w: records %d to %d, file ends at %d", ErrModbusPDUQuantity, rec.RecordNumber, end-1, modbusMaxRecordNum)
 	}
 	return nil
 }
@@ -733,6 +749,9 @@ func (p *ModbusPDU) readFileReq(data []byte) error {
 		return fmt.Errorf("%w: %d bytes of 7 byte sub-requests", ErrModbusPDUByteCount, len(subs))
 	}
 
+	// The response sends, per sub-request, a length, the reference type
+	// and the registers: together they must fit a response.
+	respLen := 0
 	p.FileRecords = make([]ModbusFileRecord, 0, len(subs)/modbusFileSubReqLen)
 	for ; len(subs) > 0; subs = subs[modbusFileSubReqLen:] {
 		rec := ModbusFileRecord{
@@ -747,8 +766,13 @@ func (p *ModbusPDU) readFileReq(data []byte) error {
 			return err
 		}
 
-		if err := modbusFileAddr(rec.FileNumber, rec.RecordNumber); err != nil {
+		if err := modbusFileAddr(&rec); err != nil {
 			return err
+		}
+
+		respLen += modbusFileSubRespHdr + int(rec.RecordLength)*modbusRegisterLen
+		if respLen > modbusMaxFileReadLen {
+			return fmt.Errorf("%w: response of %d bytes, at most %d fit", ErrModbusPDUQuantity, respLen, modbusMaxFileReadLen)
 		}
 	}
 	return nil
@@ -756,8 +780,13 @@ func (p *ModbusPDU) readFileReq(data []byte) error {
 
 // readFileResp decodes sub-responses: length, ref type, record data. The
 // length counts the ref type byte plus the data, e.g. 05 06 0D FE 00 20.
+//
+// The spec tables give 0x07 as the least data length and sub-response
+// length, yet its own example above has sub-responses of 5. The least a
+// read can return is one register, so that is the minimum checked: a
+// data length of 4 and a sub-response length of 3.
 func (p *ModbusPDU) readFileResp(data []byte) error {
-	subs, err := p.fileCount(data, 0, modbusMaxFileReadLen)
+	subs, err := p.fileCount(data, modbusMinFileResp, modbusMaxFileReadLen)
 	if err != nil {
 		return err
 	}
@@ -768,7 +797,7 @@ func (p *ModbusPDU) readFileResp(data []byte) error {
 		}
 
 		n := int(subs[0])
-		if n < 1 || (n-1)%modbusRegisterLen != 0 || n > len(subs)-1 {
+		if n < modbusMinSubResp || (n-1)%modbusRegisterLen != 0 || n > len(subs)-1 {
 			return fmt.Errorf("%w: sub-response length %d", ErrModbusPDUByteCount, n)
 		}
 
@@ -818,7 +847,7 @@ func (p *ModbusPDU) writeFile(data []byte) error {
 			return err
 		}
 
-		if err := modbusFileAddr(rec.FileNumber, rec.RecordNumber); err != nil {
+		if err := modbusFileAddr(&rec); err != nil {
 			return err
 		}
 		subs = subs[end:]

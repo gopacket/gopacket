@@ -218,9 +218,17 @@ func TestModbusPDUErrors(t *testing.T) {
 		{"read file number 0", "14 07 06 00 00 00 01 00 02", ModbusRequest, ErrModbusPDUValue},
 		{"read file resp sub length lies", "14 04 09 06 00 01", ModbusResponse, ErrModbusPDUByteCount},
 		{"read file resp sub length even", "14 03 02 06 00", ModbusResponse, ErrModbusPDUByteCount},
-		{"read file resp header cut", "14 01 03", ModbusResponse, ErrModbusPDULength},
+		{"read file resp header cut", "14 05 03 06 00 01 05", ModbusResponse, ErrModbusPDULength},
+		{"read file resp below one register", "14 01 03", ModbusResponse, ErrModbusPDUByteCount},
+		{"read file resp sub length 1", "14 04 01 06 00 01", ModbusResponse, ErrModbusPDUByteCount},
+		{"read file record length 0", "14 07 06 00 04 00 01 00 00", ModbusRequest, ErrModbusPDUQuantity},
+		{"read file past record 9999", "14 07 06 00 04 27 0F 00 02", ModbusRequest, ErrModbusPDUQuantity},
+		{"read file response would not fit", "14 0E 06 00 04 00 01 00 3D 06 00 03 00 09 00 3D", ModbusRequest, ErrModbusPDUQuantity},
 		{"write file record past data", "15 09 06 00 04 00 07 00 03 06 AF", ModbusRequest, ErrModbusPDUByteCount},
-		{"write file sub-request cut", "15 09 06 00 04 00 07 00 00 06 AF", ModbusRequest, ErrModbusPDULength},
+		{"write file sub-request cut", "15 0B 06 00 04 00 07 00 01 06 AF 06 00", ModbusRequest, ErrModbusPDULength},
+		{"write file record length 0", "15 09 06 00 04 00 07 00 00 06 AF", ModbusRequest, ErrModbusPDUQuantity},
+		{"write file past record 9999", "15 0D 06 00 04 27 0E 00 03 06 AF 04 BE 10 0D", ModbusRequest, ErrModbusPDUQuantity},
+		{"write file number 0", "15 09 06 00 00 00 07 00 01 06 AF", ModbusRequest, ErrModbusPDUValue},
 		{"mask write cut", "16 00 04 00 F2", ModbusRequest, ErrModbusPDULength},
 		{"read/write write qty 122", "17 00 03 00 06 00 0E 00 7A F4" + strings.Repeat(" 00", 0xF4), ModbusRequest, ErrModbusPDUQuantity},
 		{"read/write count mismatch", "17 00 03 00 06 00 0E 00 03 04 00 FF 00 FF", ModbusRequest, ErrModbusPDUByteCount},
@@ -290,7 +298,7 @@ func TestModbusPDUStrings(t *testing.T) {
 		{ModbusRequest.String(), "Request"},
 		{ModbusDirection(7).String(), "Unknown(7)"},
 		{ModbusDiagServerBusyCount.String(), "Return Server Busy Count"},
-		{ModbusDiagCode(0x99).String(), "Unknown(0x0099)"},
+		{ModbusDiagCode(0x99).String(), "Reserved(0x0099)"},
 		{ModbusMEIDeviceID.String(), "Read Device Identification"},
 		{ModbusDevIDSpecific.String(), "Specific"},
 		{ModbusDevObjUserAppName.String(), "UserApplicationName"},
@@ -450,6 +458,24 @@ func FuzzModbusPDU(f *testing.F) {
 				t.Fatal("nil PDU without an error")
 			}
 			return
+		}
+
+		// The views and the guess read the same bytes: none may panic.
+		_, _ = p.Diagnostic()
+		_, _ = p.ServerID()
+		if c, _ := p.CANopen(); c != nil {
+			_ = c.Valid()
+			if len(c.Data) > len(pdu) {
+				t.Fatalf("CANopen data of %d bytes in a PDU of %d", len(c.Data), len(pdu))
+			}
+		}
+		_, _ = ModbusGuessDir(pdu)
+
+		var info ModbusDeviceInfo
+		_ = info.Add(&p.DeviceID)
+		_ = info.Add(&p.DeviceID)
+		if len(info.Objects) > len(p.DeviceID.Objects) {
+			t.Fatalf("%d objects joined from %d", len(info.Objects), len(p.DeviceID.Objects))
 		}
 
 		// Nothing decoded may claim more than the PDU holds.
