@@ -163,6 +163,7 @@ func TestCOTPNextLayer(t *testing.T) {
 		tpdu string
 		want gopacket.LayerType
 	}{
+		{"S7comm", "02f080" + "320100000000000000000000", LayerTypeS7Comm},
 		{"0x32 with bad ROSCTR", "02f080" + "320900000000000000000000", LayerTypeISOSession},
 		{"0x72 with bad version", "02f080" + "720900000000", LayerTypeISOSession},
 		{"ISO session CONNECT", "02f080" + "0d1205060000", LayerTypeISOSession},
@@ -211,6 +212,69 @@ func TestTPKTErrors(t *testing.T) {
 		if p.ErrorLayer() == nil {
 			t.Errorf("%s: packet has no error layer", c.name)
 		}
+	}
+}
+
+// TestTPKTSegment checks that every TPKT of a segment gets its stack,
+// in eager and lazy packets alike, and that a trailing partial TPKT is
+// an error after the complete ones.
+func TestTPKTSegment(t *testing.T) {
+	seg := bytes.Join([][]byte{s7TestSetupJob, s7TestEmptyDT, s7TestReadJob}, nil)
+	want := []gopacket.LayerType{
+		LayerTypeTPKT, LayerTypeCOTP, LayerTypeS7Comm,
+		LayerTypeTPKT, LayerTypeCOTP,
+		LayerTypeTPKT, LayerTypeCOTP, LayerTypeS7Comm,
+	}
+
+	for _, opt := range []gopacket.DecodeOptions{s7NoRecover, {Lazy: true, SkipDecodeRecovery: true}} {
+		p := gopacket.NewPacket(seg, LayerTypeTPKT, opt)
+		if got := s7LayerTypes(p); !reflect.DeepEqual(got, want) {
+			t.Errorf("lazy=%v: layers = %v, want %v", opt.Lazy, got, want)
+		}
+		if p.ErrorLayer() != nil {
+			t.Errorf("lazy=%v: %v", opt.Lazy, p.ErrorLayer().Error())
+		}
+
+		var fns []S7CommFunction
+		for _, l := range p.Layers() {
+			if s, ok := l.(*S7Comm); ok {
+				fns = append(fns, s.Function)
+			}
+		}
+		if !reflect.DeepEqual(fns, []S7CommFunction{S7CommFuncSetupComm, S7CommFuncReadVar}) {
+			t.Errorf("lazy=%v: functions = %v", opt.Lazy, fns)
+		}
+	}
+
+	partial := append(append([]byte{}, s7TestSetupJob...), s7TestReadJob[:10]...)
+	p := gopacket.NewPacket(partial, LayerTypeTPKT, s7NoRecover)
+	if p.ErrorLayer() == nil || !p.Metadata().Truncated {
+		t.Errorf("partial trailing TPKT: error %v, truncated %v", p.ErrorLayer(), p.Metadata().Truncated)
+	}
+	if p.Layer(LayerTypeS7Comm) == nil {
+		t.Error("partial trailing TPKT: first PDU not decoded")
+	}
+}
+
+// TestTPKTDecodingLayerParser checks the DecodingLayer path, which
+// decodes the first TPKT of a segment.
+func TestTPKTDecodingLayerParser(t *testing.T) {
+	var (
+		tpkt TPKT
+		cotp COTP
+		s7   S7Comm
+	)
+	parser := gopacket.NewDecodingLayerParser(LayerTypeTPKT, &tpkt, &cotp, &s7)
+	var decoded []gopacket.LayerType
+
+	if err := parser.DecodeLayers(s7TestReadAck, &decoded); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(decoded, []gopacket.LayerType{LayerTypeTPKT, LayerTypeCOTP, LayerTypeS7Comm}) {
+		t.Errorf("decoded = %v", decoded)
+	}
+	if s7.ROSCTR != S7CommROSCTRAckData || len(s7.DataItems) != 1 {
+		t.Errorf("S7comm = %+v", s7)
 	}
 }
 
