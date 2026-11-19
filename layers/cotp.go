@@ -238,8 +238,8 @@ func (c *COTP) LayerType() gopacket.LayerType { return LayerTypeCOTP }
 func (c *COTP) CanDecode() gopacket.LayerClass { return LayerTypeCOTP }
 
 // NextLayerType picks the decoder for the user data. A complete DT
-// goes to S7comm or the ISO session layer by its first octets; a DT
-// segment goes to LayerTypeFragment.
+// goes to S7comm, S7comm-plus or the ISO session layer by its first
+// octets; a DT segment goes to LayerTypeFragment.
 func (c *COTP) NextLayerType() gopacket.LayerType {
 	if len(c.Payload) == 0 {
 		return gopacket.LayerTypeZero
@@ -254,6 +254,8 @@ func (c *COTP) NextLayerType() gopacket.LayerType {
 	switch {
 	case isS7Comm(c.Payload):
 		return LayerTypeS7Comm
+	case isS7CommPlus(c.Payload):
+		return LayerTypeS7CommPlus
 	default:
 		return LayerTypeISOSession
 	}

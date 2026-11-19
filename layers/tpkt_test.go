@@ -164,6 +164,7 @@ func TestCOTPNextLayer(t *testing.T) {
 		want gopacket.LayerType
 	}{
 		{"S7comm", "02f080" + "320100000000000000000000", LayerTypeS7Comm},
+		{"S7comm-plus", "02f080" + "720100000000", LayerTypeS7CommPlus},
 		{"0x32 with bad ROSCTR", "02f080" + "320900000000000000000000", LayerTypeISOSession},
 		{"0x72 with bad version", "02f080" + "720900000000", LayerTypeISOSession},
 		{"ISO session CONNECT", "02f080" + "0d1205060000", LayerTypeISOSession},
