@@ -79,7 +79,9 @@ var (
 	// keep-alive.
 	ErrS7CommPlusFragment = errors.New("S7comm-plus frame is not a whole PDU")
 	// ErrS7CommPlusUnsupported is returned for opcodes and functions
-	// whose body layout is unknown (AddLink, RemoveLink, Abort, ...).
+	// whose body layout is unknown: AddLink, RemoveLink,
+	// GetVariablesAddress and Abort. No public capture or dissector
+	// describes them, so their octets stay raw in Rest.
 	ErrS7CommPlusUnsupported = errors.New("S7comm-plus body layout unknown")
 )
 
@@ -300,9 +302,9 @@ const (
 
 // DecodeBody decodes Data of a frame that holds a whole PDU: one with
 // a data header and a trailer. Fragments of larger PDUs return
-// ErrS7CommPlusFragment; reassemble their Data and call
-// DecodeS7CommPlusBody. On error the returned body, when not nil,
-// holds the fields decoded so far.
+// ErrS7CommPlusFragment; join them with an S7CommPlusAssembler and
+// decode the PDU it returns. On error the returned body, when not
+// nil, holds the fields decoded so far.
 func (s *S7CommPlus) DecodeBody() (*S7CommPlusBody, error) {
 	if !s.HasDataHeader || !s.HasTrailer {
 		return nil, ErrS7CommPlusFragment
@@ -575,8 +577,8 @@ func (b *S7CommPlusBody) setMulti(r *s7plusReader) {
 	}
 	b.Values = make([]S7CommPlusIDValue, 0, b.ItemCount)
 	for i := uint32(0); i < b.ItemCount && r.err == nil; i++ {
-		if it, end := r.idValue(); !end {
-			b.Values = append(b.Values, it.S7CommPlusIDValue)
+		if id := r.vu32(); id != s7plusTermID && r.err == nil {
+			b.Values = append(b.Values, r.item(id).S7CommPlusIDValue)
 		}
 	}
 	r.u8()
@@ -775,12 +777,16 @@ func (r *s7plusReader) errorList() []S7CommPlusItemError {
 // use 4-octet IDs. As in the plugin, a struct level counter decides
 // when the list ends: a STRUCT value opens a level (its members follow
 // as items), a 4-octet 0 closes one, and the list ends at level 0.
-// Members are attached to the struct they follow.
+// Members are attached to the struct they follow. A dry run counts
+// the list and every member list first.
 func (r *s7plusReader) subItems() []S7CommPlusIDValue {
 	var out []S7CommPlusIDValue
+	if h := r.ahead(r.subCount); h.n > 0 {
+		out = make([]S7CommPlusIDValue, 0, h.n)
+	}
+
 	stack := []*[]S7CommPlusIDValue{&out}
 	level := structLevel(0)
-
 	for r.err == nil {
 		id := r.u32()
 		if r.err != nil {
@@ -815,14 +821,55 @@ func (r *s7plusReader) subItem(stack *[]*[]S7CommPlusIDValue, id uint32, level s
 	if l == 0 {
 		return level
 	}
-
 	if len(*stack) > s7plusMaxDepth {
 		r.fail(fmt.Errorf("%w: limit %d", ErrS7CommPlusTooDeep, s7plusMaxDepth))
 		return 0
 	}
+
 	it := &(*cur)[len(*cur)-1]
+	if h, ok := r.hint(); ok && h.n > 0 {
+		it.Value.Members = make([]S7CommPlusIDValue, 0, h.n)
+	}
 	*stack = append(*stack, &it.Value.Members)
 	return level + l
+}
+
+// subCount is the dry run of subItems: it notes the length of the
+// list that starts here and of every member list, in stream order.
+func (r *s7plusReader) subCount() {
+	// One slot per open list: the top list and a member list per level.
+	var slots [s7plusMaxDepth + 1]int
+	top := 0
+	slots[top] = r.note(s7plusNoSlot, len(r.b))
+
+	level := structLevel(0)
+	for r.err == nil {
+		id := r.u32()
+		if r.err != nil {
+			break
+		}
+
+		if id == s7plusTermID {
+			level--
+			if top > 0 {
+				top--
+			}
+		} else {
+			_, l := r.value()
+			r.hints[slots[top]].n++
+			if l < 0 || (l > 0 && top == s7plusMaxDepth) {
+				break
+			}
+			if l > 0 {
+				top++
+				slots[top] = r.note(s7plusNoSlot, len(r.b))
+				level += l
+			}
+		}
+		if level <= 0 {
+			break
+		}
+	}
 }
 
 // notification reads a notification body.

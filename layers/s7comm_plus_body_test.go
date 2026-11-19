@@ -703,27 +703,55 @@ func TestS7CommPlusBodyTruncation(t *testing.T) {
 	}
 }
 
-// A body of one 60000-element BOOL array, or of 20000 three-octet NULL
-// items, must cost a small multiple of its structs. The array is
-// counted and allocated once (48 bytes per element). The item list ends
-// at a terminator and grows by doubling: 144 bytes of structs per item,
-// plus up to twice the list in spare and discarded capacity.
-func TestS7CommPlusAllocBound(t *testing.T) {
-	const maxPerByte = 150
-	bools := append(s7Hex("00"+"1001"+"83d460"), make([]byte, 60000)...)
-	nulls := append(s7Hex("00"), bytes.Repeat(s7Hex("010000"), 20000)...)
+// s7PlusAllocCases are bodies made of as many of the smallest entries
+// as fit: what a hostile peer sends to make the decoder allocate.
+func s7PlusAllocCases() []s7PlusCase {
+	const n = 20000
+	rep := func(head, item, tail string) string {
+		return string(s7Hex(head)) + strings.Repeat(string(s7Hex(item)), n) + string(s7Hex(tail))
+	}
+	resp := func(name string, fn S7CommPlusFunction, data string) s7PlusCase {
+		return s7PlusCase{name: name, ver: S7CommPlusV2, op: S7CommPlusOpResponse, fn: fn, data: data}
+	}
 
-	for _, c := range []struct {
-		name string
-		fn   S7CommPlusFunction
-		data []byte
-	}{{"bool array", S7CommPlusFuncGetVariable, bools}, {"null items", S7CommPlusFuncGetMultiVariables, append(nulls, 0, 0)}} {
-		got := allocPerByte(len(c.data), func() {
-			_, _ = DecodeS7CommPlusBody(S7CommPlusV2, S7CommPlusOpResponse, c.fn, c.data)
+	return []s7PlusCase{
+		resp("bool array", S7CommPlusFuncGetVariable, rep("00"+"1001"+"819c20", "01", "")),
+		resp("null items", S7CommPlusFuncGetMultiVariables, rep("00", "010000", "0000")),
+		resp("sparse bools", S7CommPlusFuncGetVariable, rep("00"+"4001", "0101", "00")),
+		resp("structs of one member", S7CommPlusFuncGetMultiVariables, rep("00", "01"+"0017"+"00000001"+"010000"+"00", "0000")),
+		resp("empty structs", S7CommPlusFuncGetMultiVariables, rep("00", "01"+"0017"+"00000001"+"00", "0000")),
+		resp("empty sparse arrays", S7CommPlusFuncGetMultiVariables, rep("00", "01"+"4001"+"00", "0000")),
+		resp("struct array of empty lists", S7CommPlusFuncGetVariable, rep("00"+"2017"+"00000001"+"819c20", "00", "")),
+		resp("item errors", S7CommPlusFuncSetMultiVariables, rep("00", "0101", "00")),
+		{name: "relations", ver: S7CommPlusV1, op: S7CommPlusOpResponse, fn: S7CommPlusFuncCreateObject,
+			data: rep("00"+"00", "a40100000000", "")},
+		{name: "empty objects", ver: S7CommPlusV1, op: S7CommPlusOpResponse, fn: S7CommPlusFuncCreateObject,
+			data: rep("00"+"00", "a1"+"00000001"+"010000"+"a2", "")},
+		{name: "empty attributes", ver: S7CommPlusV1, op: S7CommPlusOpResponse, fn: S7CommPlusFuncCreateObject,
+			data: rep("00"+"00", "a300", "")},
+		{name: "null attributes", ver: S7CommPlusV1, op: S7CommPlusOpResponse, fn: S7CommPlusFuncCreateObject,
+			data: rep("00"+"00", "a3010000", "")},
+		{name: "sub items", ver: S7CommPlusV2, op: S7CommPlusOpRequest, fn: S7CommPlusFuncGetVarSubStreamed,
+			data: rep("00000001"+"0017"+"00000001", "00000002"+"0000", "00000000")},
+		{name: "notification items", ver: S7CommPlusV2, op: S7CommPlusOpNotification,
+			data: rep("00000001"+"0400"+"0000"+"0000"+"01"+"00", "92"+"00000001"+"0000", "00")},
+	}
+}
+
+// TestS7CommPlusAllocBound bounds the heap a body costs per octet. The
+// lists that end at a terminator are counted by a dry run and then
+// allocated once, so the cost is that of the structs: 144 bytes for a
+// three-octet NULL item, 48 for a one-octet array element.
+func TestS7CommPlusAllocBound(t *testing.T) {
+	const maxPerByte = 60
+	for _, c := range s7PlusAllocCases() {
+		data := []byte(c.data)
+		got := allocPerByte(len(data), func() {
+			_, _ = DecodeS7CommPlusBody(c.ver, c.op, c.fn, data)
 		})
-		t.Logf("%s: %.0f bytes per input byte", c.name, got)
+		t.Logf("%s: %.1f bytes per input byte", c.name, got)
 		if got > maxPerByte {
-			t.Errorf("%s allocates %.0f bytes per input byte, want <= %d", c.name, got, maxPerByte)
+			t.Errorf("%s allocates %.1f bytes per input byte, want <= %d", c.name, got, maxPerByte)
 		}
 	}
 }
@@ -782,6 +810,19 @@ func FuzzS7CommPlusItems(f *testing.F) {
 		}
 		if b.Notification != nil {
 			_ = b.Notification.Time()
+		}
+		s7PlusFuzzBody(b)
+
+		// Every member list was counted by a dry run, not grown.
+		s7PlusWalk(b, func(iv *S7CommPlusIDValue) {
+			if m := iv.Value.Members; cap(m) != len(m) {
+				t.Fatalf("member list of %d has room for %d", len(m), cap(m))
+			}
+		}, nil)
+
+		// The same octets as a system event.
+		if e, err := DecodeS7CommPlusSysEvent(data[1:]); err == nil && e.Value != nil && len(e.Rest) > len(data) {
+			t.Fatalf("system event rest %d of %d octets", len(e.Rest), len(data))
 		}
 	})
 }

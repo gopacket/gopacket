@@ -33,7 +33,13 @@ import (
 // integers. A PDU too large for one
 // TPDU is sent as several frames that each repeat the frame header and
 // only the last of which has the trailer; a continuation frame does not
-// start with an opcode, so its body stays raw too.
+// start with an opcode, so its body stays raw too. S7CommPlusAssembler
+// joins such frames. A frame of version 0xFE is a system event, which
+// DecodeSysEvent decodes.
+//
+// Not decoded: the keep-alive of version 0xFF, whose third and fourth
+// octets are a sequence number and not a length. It is not recognised
+// as S7comm-plus.
 
 // LayerTypeS7CommPlus is the layer type of a Siemens S7comm-plus frame.
 var LayerTypeS7CommPlus = gopacket.RegisterLayerType(163, gopacket.LayerTypeMetadata{Name: "S7comm-plus", Decoder: gopacket.DecodeFunc(decodeS7CommPlus)})

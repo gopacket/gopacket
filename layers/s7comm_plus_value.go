@@ -396,10 +396,20 @@ const (
 // s7plusReader reads body fields from b. The first error sticks:
 // later reads return zero and consume nothing, so callers check err
 // after loops rather than after every field.
+//
+// wide is set for the value of a system event, whose IDs, flags, types
+// and integers take their full width instead of a VLQ. dry, hints and
+// next belong to the dry runs of s7comm_plus_count.go.
 type s7plusReader struct {
 	b     []byte
 	err   error
 	depth int
+	wide  bool
+
+	dry     bool
+	hints   []s7plusHint
+	next    int
+	dryRuns int
 }
 
 // fail records the first error.
@@ -509,10 +519,40 @@ func (r *s7plusReader) vi32() int32  { return s7plusVLQ(r, S7CommPlusVarInt32) }
 func (r *s7plusReader) vu64() uint64 { return s7plusVLQ(r, S7CommPlusVarUint64) }
 func (r *s7plusReader) vi64() int64  { return s7plusVLQ(r, S7CommPlusVarInt64) }
 
+// wu32 reads a VLQ, or 4 octets when wide; wi32, wu64 and wi64 do the
+// same for the other integers the plugin reads "without VLQ".
+func (r *s7plusReader) wu32() uint32 {
+	if r.wide {
+		return r.u32()
+	}
+	return r.vu32()
+}
+
+func (r *s7plusReader) wi32() int32 {
+	if r.wide {
+		return int32(r.u32())
+	}
+	return r.vi32()
+}
+
+func (r *s7plusReader) wu64() uint64 {
+	if r.wide {
+		return r.u64()
+	}
+	return r.vu64()
+}
+
+func (r *s7plusReader) wi64() int64 {
+	if r.wide {
+		return int64(r.u64())
+	}
+	return r.vi64()
+}
+
 // s7plusAppend appends v, doubling the capacity when full. The lists
-// it grows end at a terminator, not a count, and append grows a large
-// slice by a quarter: 20000 three-octet items then cost four times the
-// final list in discarded arrays.
+// it grows end at a terminator, not a count. Most get their capacity
+// from a dry run first; this covers the rest, where append would grow
+// a large slice by a quarter at a time.
 func s7plusAppend[T any](s []T, v T) []T {
 	if len(s) < cap(s) {
 		return append(s, v)
@@ -544,10 +584,17 @@ func (r *s7plusReader) leave() { r.depth-- }
 // here without a terminator.
 type structLevel int
 
+// s7plusStructID is the ID of the last STRUCT element read for a
+// value: it decides whether a packed struct follows.
+type s7plusStructID struct {
+	id   uint64
+	seen bool
+}
+
 // value reads one value: flags, datatype, then one element, a counted
 // array or a sparse array ended by key 0.
 func (r *s7plusReader) value() (S7CommPlusValue, structLevel) {
-	v := S7CommPlusValue{Flags: S7CommPlusTypeFlags(r.u8()), Type: S7CommPlusDatatype(r.u8())}
+	v := r.valueHead()
 	if r.err != nil {
 		return v, 0
 	}
@@ -557,24 +604,18 @@ func (r *s7plusReader) value() (S7CommPlusValue, structLevel) {
 	counted := !isStruct && v.Flags&(S7CommPlusFlagArray|S7CommPlusFlagAddressArray) != 0
 
 	var level structLevel
+	var last s7plusStructID
 	switch {
 	case sparse:
-		level = r.sparseElems(&v)
+		level, last = r.sparseElems(&v)
 	case counted:
-		n := r.vu32()
-		if !r.count(n, 1, "array elements") {
-			return v, 0
-		}
-		v.Elements = make([]S7CommPlusElement, 0, n)
-		for i := uint32(0); i < n && r.err == nil; i++ {
-			e, l := r.element(v.Type)
-			v.Elements = append(v.Elements, e)
-			level += l
-		}
+		level = r.arrayElems(&v)
 	default:
 		e, l := r.element(v.Type)
-		v.Elements = []S7CommPlusElement{e}
-		level = l
+		level, last = l, s7plusStructID{id: e.Bits, seen: true}
+		if !r.dry {
+			v.Elements = []S7CommPlusElement{e}
+		}
 	}
 	if r.err != nil {
 		return v, 0
@@ -586,11 +627,41 @@ func (r *s7plusReader) value() (S7CommPlusValue, structLevel) {
 		level = r.structArray(&v)
 	}
 
-	if isStruct && len(v.Elements) > 0 && s7plusPacked(v.Elements[len(v.Elements)-1].Bits) {
+	if isStruct && last.seen && s7plusPacked(last.id) {
 		v.Packed = r.packed()
 		level--
 	}
 	return v, level
+}
+
+// valueHead reads the flags and datatype of a value: an octet each,
+// or two octets each when wide, of which the low one counts.
+func (r *s7plusReader) valueHead() S7CommPlusValue {
+	if !r.wide {
+		return S7CommPlusValue{Flags: S7CommPlusTypeFlags(r.u8()), Type: S7CommPlusDatatype(r.u8())}
+	}
+	return S7CommPlusValue{Flags: S7CommPlusTypeFlags(r.u16()), Type: S7CommPlusDatatype(r.u16())}
+}
+
+// arrayElems reads the element count and elements of an array.
+func (r *s7plusReader) arrayElems(v *S7CommPlusValue) structLevel {
+	n := r.wu32()
+	if !r.count(n, 1, "array elements") {
+		return 0
+	}
+	if !r.dry {
+		v.Elements = make([]S7CommPlusElement, 0, n)
+	}
+
+	var level structLevel
+	for i := uint32(0); i < n && r.err == nil; i++ {
+		e, l := r.element(v.Type)
+		level += l
+		if !r.dry {
+			v.Elements = append(v.Elements, e)
+		}
+	}
+	return level
 }
 
 // s7plusPacked reports whether a struct ID marks a packed struct.
@@ -600,21 +671,40 @@ func s7plusPacked(id uint64) bool {
 }
 
 // sparseElems reads key/element pairs until key 0. Every pair takes at
-// least one octet, so the loop is bounded by the data.
-func (r *s7plusReader) sparseElems(v *S7CommPlusValue) structLevel {
+// least one octet, so the loop is bounded by the data. A dry run
+// counts the pairs first.
+func (r *s7plusReader) sparseElems(v *S7CommPlusValue) (structLevel, s7plusStructID) {
+	if !r.dry {
+		if h := r.ahead(func() { r.sparseElems(v) }); h.n > 0 {
+			v.Elements = make([]S7CommPlusElement, 0, h.n)
+		}
+	}
+
 	var level structLevel
+	var last s7plusStructID
+	left, slot := len(r.b), s7plusNoSlot
 	for r.err == nil {
-		key := r.vu32()
+		key := r.wu32()
 		if key == 0 || r.err != nil {
 			break
 		}
 
+		// The slot is taken before the element, whose own lists follow it.
+		if r.dry {
+			slot = r.note(slot, left)
+		}
 		e, l := r.sparseElem(v.Type)
 		e.Key = key
-		v.Elements = append(v.Elements, e)
 		level += l
+		last = s7plusStructID{id: e.Bits, seen: true}
+
+		if r.dry {
+			r.hints[slot].n++
+			continue
+		}
+		v.Elements = append(v.Elements, e)
 	}
-	return level
+	return level, last
 }
 
 // sparseElem reads a sparse array element. A sparse VARIANT element has
@@ -656,13 +746,17 @@ func (r *s7plusReader) scalar(e *S7CommPlusElement) structLevel {
 
 	switch e.Type {
 	case S7CommPlusTypeNull:
-	case S7CommPlusTypeUDInt, S7CommPlusTypeAID, S7CommPlusTypeVariant:
+	case S7CommPlusTypeUDInt:
+		e.Bits = uint64(r.wu32())
+	case S7CommPlusTypeAID, S7CommPlusTypeVariant:
 		e.Bits = uint64(r.vu32())
 	case S7CommPlusTypeULInt:
-		e.Bits = r.vu64()
+		e.Bits = r.wu64()
 	case S7CommPlusTypeDInt:
-		e.Bits = uint64(int64(r.vi32()))
-	case S7CommPlusTypeLInt, S7CommPlusTypeTimespan:
+		e.Bits = uint64(int64(r.wi32()))
+	case S7CommPlusTypeLInt:
+		e.Bits = uint64(r.wi64())
+	case S7CommPlusTypeTimespan:
 		e.Bits = uint64(r.vi64())
 	case S7CommPlusTypeWString:
 		n := r.vu32()
@@ -703,12 +797,20 @@ func (r *s7plusReader) blob(e *S7CommPlusElement) {
 		return
 	}
 
-	bl := &S7CommPlusBlob{RootID: root, Unknown: r.bytes(s7plusBlobUnknown, "blob head"), Type: r.u8()}
-	e.Blob = bl
-	if r.err != nil {
+	bl := S7CommPlusBlob{RootID: root, Unknown: r.bytes(s7plusBlobUnknown, "blob head"), Type: r.u8()}
+	if r.err == nil {
+		r.blobBody(e, &bl)
+	}
+	if r.dry {
 		return
 	}
 
+	kept := bl
+	e.Blob = &kept
+}
+
+// blobBody reads what follows the type of a BLOB with a root ID.
+func (r *s7plusReader) blobBody(e *S7CommPlusElement, bl *S7CommPlusBlob) {
 	switch bl.Type {
 	case s7plusBlobTypeList:
 		if r.enter() {
@@ -740,38 +842,86 @@ func (r *s7plusReader) structArray(v *S7CommPlusValue) structLevel {
 	}
 	defer r.leave()
 
-	v.StructArray = make([][]S7CommPlusIDValue, 0, n)
+	if !r.dry {
+		v.StructArray = make([][]S7CommPlusIDValue, 0, n)
+	}
 	for i := uint32(0); i < n && r.err == nil; i++ {
-		v.StructArray = append(v.StructArray, r.idList())
+		members := r.idList()
+		if !r.dry {
+			v.StructArray = append(v.StructArray, members)
+		}
 	}
 	return -1
 }
 
 // packed reads a packed struct after its struct ID.
 func (r *s7plusReader) packed() *S7CommPlusPacked {
-	p := &S7CommPlusPacked{InterfaceTimestamp: r.u64(), TransportFlags: r.vu32(), ElementCount: r.vu32()}
+	p := S7CommPlusPacked{InterfaceTimestamp: r.u64(), TransportFlags: r.vu32(), ElementCount: r.vu32()}
 	if p.TransportFlags&s7plusPackedCount2 != 0 {
 		p.ElementCount = r.vu32()
 	}
 	if r.count(p.ElementCount, 1, "packed struct octets") {
 		p.Data = r.bytes(int(p.ElementCount), "packed struct")
 	}
-	return p
+	if r.dry {
+		return nil
+	}
+
+	kept := p
+	return &kept
 }
+
+// s7plusListKind tells how an ID/value list ends.
+type s7plusListKind uint8
+
+const (
+	// s7plusIDList ends at ID 0 or after a value that ends the list (an
+	// address array of structs).
+	s7plusIDList s7plusListKind = iota
+	// s7plusItemList ends at item number 0 only, as the plugin reads
+	// multi-variable values.
+	s7plusItemList
+)
 
 // idList reads ID/value pairs until ID 0, or until a value that ends
 // the list (address array of structs). Struct members nest as their
 // own ID/value lists.
-func (r *s7plusReader) idList() []S7CommPlusIDValue {
+func (r *s7plusReader) idList() []S7CommPlusIDValue { return r.list(s7plusIDList) }
+
+// itemList reads item number/value pairs until item number 0, as the
+// plugin does for multi-variable values: struct members use IDs, and
+// an address array of structs does not end the list.
+func (r *s7plusReader) itemList() []S7CommPlusIDValue { return r.list(s7plusItemList) }
+
+// list reads an ID/value list. Its length comes from a dry run, so the
+// list is allocated once.
+func (r *s7plusReader) list(kind s7plusListKind) []S7CommPlusIDValue {
 	var out []S7CommPlusIDValue
+	if !r.dry {
+		if h := r.ahead(func() { r.list(kind) }); h.n > 0 {
+			out = make([]S7CommPlusIDValue, 0, h.n)
+		}
+	}
+
+	left, slot := len(r.b), s7plusNoSlot
 	for r.err == nil {
-		iv, end := r.idValue()
-		if end {
+		id := r.wu32()
+		if id == s7plusTermID || r.err != nil {
 			break
 		}
 
-		out = s7plusAppend(out, iv.S7CommPlusIDValue)
-		if iv.level < 0 {
+		// The slot is taken before the value, whose own lists follow it.
+		if r.dry {
+			slot = r.note(slot, left)
+		}
+		it := r.item(id)
+
+		if r.dry {
+			r.hints[slot].n++
+		} else {
+			out = s7plusAppend(out, it.S7CommPlusIDValue)
+		}
+		if kind == s7plusIDList && it.level < 0 {
 			break
 		}
 	}
@@ -784,18 +934,12 @@ type s7plusItem struct {
 	level structLevel
 }
 
-// idValue reads one ID and, unless it is the terminator, its value and
-// struct members. end reports the terminator (or an error).
-func (r *s7plusReader) idValue() (s7plusItem, bool) {
-	id := r.vu32()
-	if id == s7plusTermID || r.err != nil {
-		return s7plusItem{}, true
-	}
-
+// item reads the value and struct members that follow an ID.
+func (r *s7plusReader) item(id uint32) s7plusItem {
 	it := s7plusItem{S7CommPlusIDValue: S7CommPlusIDValue{ID: id}}
 	it.Value, it.level = r.value()
 	r.members(&it.Value, it.level)
-	return it, false
+	return it
 }
 
 // members reads the member list of a struct value when level says one
@@ -808,52 +952,81 @@ func (r *s7plusReader) members(v *S7CommPlusValue, level structLevel) {
 	r.leave()
 }
 
-// itemList reads item number/value pairs until item number 0, as the
-// plugin does for multi-variable values: struct members use IDs, and
-// an address array of structs does not end the list.
-func (r *s7plusReader) itemList() []S7CommPlusIDValue {
-	var out []S7CommPlusIDValue
-	for r.err == nil {
-		iv, end := r.idValue()
-		if end {
-			break
-		}
-		out = s7plusAppend(out, iv.S7CommPlusIDValue)
-	}
-	return out
-}
-
 // elements reads object elements until a terminating object (0xA2,
-// consumed) or an octet that starts no element (left unread).
+// consumed) or an octet that starts no element (left unread). A dry
+// run counts the objects and attributes first.
 func (r *s7plusReader) elements(es *S7CommPlusElements) {
+	if !r.dry {
+		h := r.ahead(func() { r.elements(es) })
+		if h.n > 0 {
+			es.Objects = make([]S7CommPlusObject, 0, h.n)
+		}
+		if h.m > 0 {
+			es.Attributes = make([]S7CommPlusIDValue, 0, h.m)
+		}
+	}
+
+	left, slot := len(r.b), s7plusNoSlot
 	for r.err == nil {
-		switch r.peek() {
-		case s7plusElemStartObject:
+		kind := r.peek()
+		switch kind {
+		case s7plusElemStartObject, s7plusElemAttribute:
 			r.u8()
-			es.Objects = s7plusAppend(es.Objects, r.object())
+			if r.dry {
+				slot = r.note(slot, left)
+			}
+			r.counted(es, kind, slot)
 		case s7plusElemTermObject:
 			r.u8()
 			return
-		case s7plusElemAttribute:
-			r.u8()
-			es.Attributes = s7plusAppend(es.Attributes, r.attribute())
-		case s7plusElemRelation:
-			r.u8()
-			es.Relations = append(es.Relations, S7CommPlusRelation{RelationID: r.vu32(), Unknown: r.u32()})
-		case s7plusElemStartTag:
-			r.u8()
-			es.TagDescs = append(es.TagDescs, r.tagDesc())
 		case s7plusElemTermTag:
 			r.u8()
-		case s7plusElemVarNames:
+		case s7plusElemRelation, s7plusElemStartTag, s7plusElemVarNames, s7plusElemVarTypes:
 			r.u8()
-			es.VarNames = append(es.VarNames, r.varNames()...)
-		case s7plusElemVarTypes:
-			r.u8()
-			es.VarTypes = append(es.VarTypes, r.varTypes()...)
+			r.describe(es, kind)
 		default:
 			return
 		}
+	}
+}
+
+// counted reads an object or an attribute after its start octet. A
+// dry run counts it in the hint at slot instead of keeping it.
+func (r *s7plusReader) counted(es *S7CommPlusElements, kind byte, slot int) {
+	if kind == s7plusElemStartObject {
+		o := r.object()
+		if r.dry {
+			r.hints[slot].n++
+			return
+		}
+		es.Objects = s7plusAppend(es.Objects, o)
+		return
+	}
+
+	a := r.attribute()
+	if r.dry {
+		r.hints[slot].m++
+		return
+	}
+	es.Attributes = s7plusAppend(es.Attributes, a)
+}
+
+// describe reads a relation, tag description or variable list after
+// its start octet. A dry run reads it and keeps nothing.
+func (r *s7plusReader) describe(es *S7CommPlusElements, kind byte) {
+	if r.dry {
+		es = &S7CommPlusElements{}
+	}
+
+	switch kind {
+	case s7plusElemRelation:
+		es.Relations = append(es.Relations, S7CommPlusRelation{RelationID: r.vu32(), Unknown: r.u32()})
+	case s7plusElemStartTag:
+		es.TagDescs = append(es.TagDescs, r.tagDesc())
+	case s7plusElemVarNames:
+		es.VarNames = append(es.VarNames, r.varNames()...)
+	case s7plusElemVarTypes:
+		es.VarTypes = append(es.VarTypes, r.varTypes()...)
 	}
 }
 
@@ -873,8 +1046,11 @@ func (r *s7plusReader) object() S7CommPlusObject {
 // attribute reads one ID/value of an attribute element; ID 0 alone is
 // an empty attribute.
 func (r *s7plusReader) attribute() S7CommPlusIDValue {
-	iv, _ := r.idValue()
-	return iv.S7CommPlusIDValue
+	id := r.vu32()
+	if id == s7plusTermID || r.err != nil {
+		return S7CommPlusIDValue{}
+	}
+	return r.item(id).S7CommPlusIDValue
 }
 
 // tagDesc reads a tag description after its 0xA7.
