@@ -59,7 +59,7 @@ var profinetBlockNames = map[ProfinetBlockType]string{
 	0x0104: "ExpectedSubmoduleBlockReq",
 	0x0105: "PrmServerBlockReq",
 	0x0106: "MCRBlockReq",
-	0x0107: "SubFrameBlock",
+	0x0107: "ARRPCBlockReq",
 	0x0108: "ARVendorBlockReq",
 	0x0109: "IRInfoBlock",
 	0x010A: "SRInfoBlock",

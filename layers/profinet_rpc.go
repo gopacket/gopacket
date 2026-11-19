@@ -369,7 +369,7 @@ func (r *ProfinetIORPC) decodeBody(body []byte, df gopacket.DecodeFeedback) erro
 	r.BaseLayer.Contents = r.BaseLayer.Contents[:profinetRPCHeaderLen+len(body)]
 	r.BaseLayer.Payload = nil
 
-	blocks, err := appendProfinetBlocks(r.Blocks, body[profinetNDRHeaderLen:])
+	blocks, err := appendProfinetBlocks(r.Blocks, body[profinetNDRHeaderLen:], profinetBlockTop)
 	r.Blocks = blocks
 	if err != nil {
 		return err

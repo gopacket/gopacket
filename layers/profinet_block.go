@@ -31,6 +31,9 @@ import (
 const (
 	profinetBlockHeaderLen = 6
 
+	// profinetBlockVersionHigh is the only BlockVersionHigh in use.
+	profinetBlockVersionHigh = 1
+
 	// profinetBlockVersionLen is the part of the header BlockLength covers.
 	profinetBlockVersionLen = 2
 
@@ -94,6 +97,11 @@ type profinetReader struct {
 	data  []byte
 	off   int
 	short bool
+
+	// base is the offset of data[0] in its block, for padding; depth is
+	// how deep that block is nested.
+	base  int
+	depth profinetDepth
 }
 
 // left returns the number of unread bytes.
@@ -157,6 +165,71 @@ func (r *profinetReader) count(elemLen int) int {
 		return max
 	}
 	return n
+}
+
+func (r *profinetReader) u64() uint64 {
+	b := r.bytes(8)
+	if b == nil {
+		return 0
+	}
+	return binary.BigEndian.Uint64(b)
+}
+
+// ip reads an IPv4 address.
+func (r *profinetReader) ip() net.IP {
+	return net.IP(r.bytes(net.IPv4len))
+}
+
+// str reads a string of n bytes; fixed-size strings keep their padding.
+func (r *profinetReader) str(n int) string {
+	return string(r.bytes(n))
+}
+
+// str8 reads a string behind its 8-bit length, clipped to the body when
+// the length lies.
+func (r *profinetReader) str8() string {
+	return r.clipStr(int(r.u8()))
+}
+
+// str16 reads a string behind its 16-bit length, clipped like str8.
+func (r *profinetReader) str16() string {
+	return r.clipStr(int(r.u16()))
+}
+
+func (r *profinetReader) clipStr(n int) string {
+	if n > r.left() {
+		r.short = true
+		n = r.left()
+	}
+	return string(r.bytes(n))
+}
+
+// skip drops n padding or reserved bytes.
+func (r *profinetReader) skip(n int) {
+	r.bytes(n)
+}
+
+// align drops the padding that makes the next field start on a multiple
+// of four bytes from the block start. Padding cut off by the block end is
+// not an error.
+func (r *profinetReader) align() {
+	pad := (profinetBlockAlign - (r.base+r.off)%profinetBlockAlign) % profinetBlockAlign
+	if pad > r.left() {
+		pad = r.left()
+	}
+	r.off += pad
+}
+
+// blocks decodes the blocks that fill the rest of the body. It returns nil
+// at the nesting limit and keeps the blocks decoded before a bad header.
+func (r *profinetReader) blocks() []ProfinetBlock {
+	data := r.rest()
+	if r.depth >= profinetMaxDepth {
+		return nil
+	}
+
+	blocks, _ := appendProfinetBlocks(nil, data, r.depth+1)
+	return blocks
 }
 
 // ProfinetBlockType is the BlockType of a PROFINET IO block.
@@ -332,8 +405,11 @@ func (r *profinetReader) status() ProfinetPNIOStatus {
 //
 // Body holds the bytes after the version, clipped to the captured data.
 // At most one of the typed pointers is set, for the block types listed
-// with them; every other type stays raw in Body. Wireshark decodes a typed
-// body only for block version 1.0 and so does this decoder.
+// with them. Every other block type with a known layout has its body in
+// Value, as a pointer to the Profinet type documented with its block type
+// constant, and the blocks it nests in Blocks. A block of an unknown type
+// or version, or with a body shorter than its fixed fields, stays raw in
+// Body.
 type ProfinetBlock struct {
 	Type        ProfinetBlockType
 	Length      uint16 // BlockLength as sent
@@ -352,6 +428,20 @@ type ProfinetBlock struct {
 	Control    *ProfinetControlBlock      // IODControl, IOXControl, IODRelease, PrmBegin
 	Record     *ProfinetRecordBlock       // IODWrite/IODRead request and response headers
 	Item       *ProfinetAlarmItemBlock    // MaintenanceItem, Upload&Retrieval, iParameter, PE alarm
+
+	// Value is the body of every other decoded block type: a pointer to
+	// the struct named beside the ProfinetBlock... constant of the type.
+	// Blocks holds the blocks nested in a container.
+	Value  interface{}
+	Blocks []ProfinetBlock
+}
+
+// Decoded reports whether the body was decoded into a typed value or into
+// nested blocks. Other blocks are header-only: their body is raw in Body.
+func (b *ProfinetBlock) Decoded() bool {
+	return b.Value != nil || b.Blocks != nil || b.Alarm != nil || b.AlarmAck != nil || b.AR != nil ||
+		b.IOCR != nil || b.AlarmCR != nil || b.Expected != nil || b.ModuleDiff != nil ||
+		b.ARServer != nil || b.Control != nil || b.Record != nil || b.Item != nil
 }
 
 // Clipped reports whether BlockLength promised more body than was captured.
@@ -359,13 +449,18 @@ func (b *ProfinetBlock) Clipped() bool {
 	return int(b.Length)-profinetBlockVersionLen > len(b.Body)
 }
 
-// profinetBlockNesting says where a block sits. Blocks inside an alarm
-// item are leaves: they never hold alarm blocks, which bounds recursion.
-type profinetBlockNesting uint8
+// profinetDepth counts the blocks around a block. Alarm notifications are
+// decoded at the top only, and nothing nests deeper than
+// profinetMaxDepth, which bounds recursion.
+type profinetDepth uint8
 
 const (
-	profinetBlockTop profinetBlockNesting = iota
-	profinetBlockNested
+	profinetBlockTop profinetDepth = 0
+
+	// profinetMaxDepth covers the deepest nesting of the standard: record
+	// data, MultipleBlockHeader, PDInterfaceMrpDataReal, MrpInstanceDataReal
+	// and its parameter block.
+	profinetMaxDepth profinetDepth = 6
 )
 
 // ProfinetDecodeBlocks decodes a run of blocks, such as the record data of
@@ -373,7 +468,7 @@ const (
 // of the data or at a zero block type, like Wireshark. Blocks decoded
 // before an error are returned with it.
 func ProfinetDecodeBlocks(data []byte) ([]ProfinetBlock, error) {
-	return appendProfinetBlocks(nil, data)
+	return appendProfinetBlocks(nil, data, profinetBlockTop)
 }
 
 // appendProfinetBlocks decodes the blocks in data onto dst.
@@ -381,7 +476,7 @@ func ProfinetDecodeBlocks(data []byte) ([]ProfinetBlock, error) {
 // Record data follows its IODWriteReqHeader or IODReadResHeader block
 // outside any block; it is attached to that header. A write request with
 // several records pads each one to a multiple of four bytes.
-func appendProfinetBlocks(dst []ProfinetBlock, data []byte) ([]ProfinetBlock, error) {
+func appendProfinetBlocks(dst []ProfinetBlock, data []byte, depth profinetDepth) ([]ProfinetBlock, error) {
 	// Size the list before decoding: append must not grow it block by
 	// block on a packet of minimal blocks.
 	if n := countProfinetBlocks(data); cap(dst)-len(dst) < n {
@@ -397,7 +492,7 @@ func appendProfinetBlocks(dst []ProfinetBlock, data []byte) ([]ProfinetBlock, er
 			break
 		}
 
-		b, n, err := decodeProfinetBlock(data[off:], profinetBlockTop)
+		b, n, err := decodeProfinetBlock(data[off:], depth)
 		if err != nil {
 			return dst, err
 		}
@@ -409,6 +504,7 @@ func appendProfinetBlocks(dst []ProfinetBlock, data []byte) ([]ProfinetBlock, er
 				n = len(data) - off
 			}
 			rec.Data = data[off : off+n]
+			rec.decodeData(depth)
 			off += n
 
 			// Wireshark aligns to the start of the RPC body, which the
@@ -453,7 +549,7 @@ func profinetRecordEnd(data []byte, off, end int) int {
 		return end
 	}
 
-	rec := ProfinetRecordBlock{Index: binary.BigEndian.Uint16(body[profinetRecordIndexOff:])}
+	rec := ProfinetRecordBlock{Index: ProfinetRecordIndex(binary.BigEndian.Uint16(body[profinetRecordIndexOff:]))}
 	if !rec.carriesData(ProfinetBlockType(binary.BigEndian.Uint16(block))) {
 		return end
 	}
@@ -471,7 +567,7 @@ func profinetRecordEnd(data []byte, off, end int) int {
 // decodeProfinetBlock decodes the block at the start of data and returns
 // the number of bytes it takes. A body cut short by the capture is clipped
 // (see ProfinetBlock.Clipped), as Wireshark does.
-func decodeProfinetBlock(data []byte, nesting profinetBlockNesting) (ProfinetBlock, int, error) {
+func decodeProfinetBlock(data []byte, depth profinetDepth) (ProfinetBlock, int, error) {
 	if len(data) < profinetBlockHeaderLen {
 		return ProfinetBlock{}, 0, ErrProfinetBlockTooShort
 	}
@@ -492,19 +588,26 @@ func decodeProfinetBlock(data []byte, nesting profinetBlockNesting) (ProfinetBlo
 	}
 	b.Body = data[profinetBlockHeaderLen:end]
 
-	if b.VersionHigh == 1 && b.VersionLow == 0 {
-		b.decodeBody(nesting)
+	if b.VersionHigh != profinetBlockVersionHigh {
+		return b, end, nil
+	}
+
+	r := &profinetReader{data: b.Body, base: profinetBlockHeaderLen, depth: depth}
+	if b.VersionLow == 0 {
+		b.decodeBody(r)
+	}
+	if !b.Decoded() {
+		b.decodeValue(r)
 	}
 	return b, end, nil
 }
 
-// decodeBody fills the typed pointer for the block types we know.
-func (b *ProfinetBlock) decodeBody(nesting profinetBlockNesting) {
-	r := &profinetReader{data: b.Body}
-
+// decodeBody fills the typed pointer for the block types that have one.
+// They exist in version 1.0 only.
+func (b *ProfinetBlock) decodeBody(r *profinetReader) {
 	switch b.Type {
 	case ProfinetBlockAlarmHigh, ProfinetBlockAlarmLow:
-		if nesting == profinetBlockTop {
+		if r.depth == profinetBlockTop {
 			b.Alarm = decodeProfinetAlarmNotif(r)
 		}
 	case ProfinetBlockAlarmAckHigh, ProfinetBlockAlarmAckLow:
@@ -696,27 +799,26 @@ func (u ProfinetUSI) String() string {
 type ProfinetChannelProperties uint16
 
 // Type returns the channel data type (bits 0-7).
-func (p ProfinetChannelProperties) Type() uint8 { return uint8(p & profinetChannelPropTypeMask) }
+func (p ProfinetChannelProperties) Type() ProfinetChannelDataType {
+	return ProfinetChannelDataType(p & profinetChannelPropTypeMask)
+}
 
 // Accumulative reports whether the diagnosis sums up several channels.
 func (p ProfinetChannelProperties) Accumulative() bool { return p&profinetChannelPropAccumBit != 0 }
 
-// Maintenance returns the severity (bits 9-10): 0 fault, 1 maintenance
-// required, 2 maintenance demanded, 3 see the qualified qualifier.
-func (p ProfinetChannelProperties) Maintenance() uint8 {
-	return uint8(p>>profinetChannelPropMaintShift) & profinetTwoBitMask
+// Maintenance returns the severity (bits 9-10).
+func (p ProfinetChannelProperties) Maintenance() ProfinetChannelMaintenance {
+	return ProfinetChannelMaintenance(p>>profinetChannelPropMaintShift) & profinetTwoBitMask
 }
 
-// Specifier returns bits 11-12: 0 all disappear, 1 appears, 2 disappears,
-// 3 disappears but others remain.
-func (p ProfinetChannelProperties) Specifier() uint8 {
-	return uint8(p>>profinetChannelPropSpecShift) & profinetTwoBitMask
+// Specifier returns bits 11-12: whether the diagnosis comes or goes.
+func (p ProfinetChannelProperties) Specifier() ProfinetChannelSpecifier {
+	return ProfinetChannelSpecifier(p>>profinetChannelPropSpecShift) & profinetTwoBitMask
 }
 
-// Direction returns bits 13-15: 0 manufacturer specific, 1 input,
-// 2 output, 3 input/output.
-func (p ProfinetChannelProperties) Direction() uint8 {
-	return uint8(p>>profinetChannelPropDirShift) & profinetThreeBitMask
+// Direction returns bits 13-15.
+func (p ProfinetChannelProperties) Direction() ProfinetChannelDirection {
+	return ProfinetChannelDirection(p>>profinetChannelPropDirShift) & profinetThreeBitMask
 }
 
 // ProfinetAlarmItem is one user structure of an alarm notification.
@@ -731,14 +833,14 @@ type ProfinetAlarmItem struct {
 	// and, for the first two fields, PRAL items.
 	ChannelNumber     uint16
 	ChannelProperties ProfinetChannelProperties
-	ChannelErrorType  uint16
+	ChannelErrorType  ProfinetChannelErrorType
 
 	// ExtChannelDiagnosis and QualifiedChannelDiagnosis.
-	ExtChannelErrorType uint16
+	ExtChannelErrorType ProfinetExtChannelErrorType
 	ExtChannelAddValue  uint32
 
 	// QualifiedChannelDiagnosis.
-	QualifiedChannelQualifier uint32
+	QualifiedChannelQualifier ProfinetChannelQualifier
 
 	// PRAL (channel related process alarm reason).
 	PRALReason         uint16
@@ -748,6 +850,21 @@ type ProfinetAlarmItem struct {
 	// Maintenance, Upload&Retrieval, iParameter and PE_EnergySavingStatus
 	// items wrap a block.
 	Block *ProfinetBlock
+
+	// Multiple: the DiagnosisData blocks of the submodule.
+	Blocks []ProfinetBlock
+
+	// RS_LowWatermark, RS_Timeout and RS_Overflow (reserved bits only).
+	RSAlarmInfo uint16
+
+	// RS_Event.
+	RSEvents *ProfinetRSEventInfo
+}
+
+// ExtErrorName names ExtChannelErrorType for the item's channel error
+// type.
+func (it *ProfinetAlarmItem) ExtErrorName() string {
+	return it.ExtChannelErrorType.Name(it.ChannelErrorType)
 }
 
 // ProfinetAlarmNotification is the body of an alarm notification block.
@@ -818,6 +935,16 @@ func decodeProfinetAlarmItem(r *profinetReader) ProfinetAlarmItem {
 		r.rest()
 	case ProfinetUSIPRAL:
 		it.decodePRAL(r)
+	case ProfinetUSIMultiple:
+		it.Blocks = r.blocks()
+	case ProfinetUSIRSLowWatermark, ProfinetUSIRSTimeout, ProfinetUSIRSOverflow:
+		if r.left() >= 2 {
+			it.RSAlarmInfo = r.u16()
+		}
+		r.rest()
+	case ProfinetUSIRSEvent:
+		it.RSEvents = decodeProfinetRSEvents(r)
+		r.rest()
 	default:
 		r.rest()
 	}
@@ -834,26 +961,24 @@ func (it *ProfinetAlarmItem) decodeDiagnosis(r *profinetReader, size int) {
 		return
 	}
 
-	it.ChannelNumber = r.u16()
-	it.ChannelProperties = ProfinetChannelProperties(r.u16())
-	it.ChannelErrorType = r.u16()
-	if size == profinetChannelDiagLen {
-		return
-	}
-
-	it.ExtChannelErrorType = r.u16()
-	it.ExtChannelAddValue = r.u32()
-	if size == profinetExtChannelDiagLen {
-		return
-	}
-
-	it.QualifiedChannelQualifier = r.u32()
+	d := r.channelDiag(size)
+	it.ChannelNumber = d.ChannelNumber
+	it.ChannelProperties = d.ChannelProperties
+	it.ChannelErrorType = d.ChannelErrorType
+	it.ExtChannelErrorType = d.ExtChannelErrorType
+	it.ExtChannelAddValue = d.ExtChannelAddValue
+	it.QualifiedChannelQualifier = d.QualifiedChannelQualifier
 }
 
 // decodeItemBlock reads the block an item wraps. Without a whole block
 // header the item stays raw.
 func (it *ProfinetAlarmItem) decodeItemBlock(r *profinetReader) {
-	b, n, err := decodeProfinetBlock(r.data[r.off:], profinetBlockNested)
+	if r.depth >= profinetMaxDepth {
+		r.rest()
+		return
+	}
+
+	b, n, err := decodeProfinetBlock(r.data[r.off:], r.depth+1)
 	if err != nil {
 		r.rest()
 		return
@@ -1124,7 +1249,7 @@ type ProfinetIOCRBlock struct {
 	FrameSendOffset uint32
 	WatchdogFactor  uint16
 	DataHoldFactor  uint16
-	TagHeader       uint16
+	TagHeader       ProfinetTagHeader
 	MulticastMAC    net.HardwareAddr
 	APIs            []ProfinetIOCRAPI
 }
@@ -1148,7 +1273,7 @@ func decodeProfinetIOCRReq(r *profinetReader) *ProfinetIOCRBlock {
 		FrameSendOffset: r.u32(),
 		WatchdogFactor:  r.u16(),
 		DataHoldFactor:  r.u16(),
-		TagHeader:       r.u16(),
+		TagHeader:       ProfinetTagHeader(r.u16()),
 		MulticastMAC:    r.mac(),
 	}
 
@@ -1209,8 +1334,8 @@ type ProfinetAlarmCRBlock struct {
 	Properties       ProfinetAlarmCRProperties
 	RTATimeoutFactor uint16
 	RTARetries       uint16
-	TagHeaderHigh    uint16
-	TagHeaderLow     uint16
+	TagHeaderHigh    ProfinetTagHeader
+	TagHeaderLow     ProfinetTagHeader
 }
 
 func decodeProfinetAlarmCRReq(r *profinetReader) *ProfinetAlarmCRBlock {
@@ -1226,8 +1351,8 @@ func decodeProfinetAlarmCRReq(r *profinetReader) *ProfinetAlarmCRBlock {
 		RTARetries:         r.u16(),
 		LocalAlarmRef:      r.u16(),
 		MaxAlarmDataLength: r.u16(),
-		TagHeaderHigh:      r.u16(),
-		TagHeaderLow:       r.u16(),
+		TagHeaderHigh:      ProfinetTagHeader(r.u16()),
+		TagHeaderLow:       ProfinetTagHeader(r.u16()),
 	}
 }
 
@@ -1255,7 +1380,7 @@ type ProfinetDataDescription struct {
 type ProfinetExpectedSubmodule struct {
 	Subslot      uint16
 	IdentNumber  uint32
-	Properties   uint16
+	Properties   ProfinetSubmoduleProperties
 	Descriptions []ProfinetDataDescription // two for input and output submodules
 }
 
@@ -1300,10 +1425,10 @@ func decodeProfinetExpected(r *profinetReader) *ProfinetExpectedBlock {
 func (r *profinetReader) expectedSubmodule(s *ProfinetExpectedSubmodule) {
 	s.Subslot = r.u16()
 	s.IdentNumber = r.u32()
-	s.Properties = r.u16()
+	s.Properties = ProfinetSubmoduleProperties(r.u16())
 
 	n := 1
-	if s.Properties&profinetSubmodulePropTypeMask == profinetSubmoduleTypeInOut {
+	if s.Properties.Type() == profinetSubmoduleTypeInOut {
 		n = 2
 	}
 	if max := r.left() / profinetDataDescLen; n > max {
@@ -1321,15 +1446,14 @@ func (r *profinetReader) expectedSubmodule(s *ProfinetExpectedSubmodule) {
 type ProfinetDiffSubmodule struct {
 	Subslot     uint16
 	IdentNumber uint32
-	State       uint16
+	State       ProfinetSubmoduleState
 }
 
-// ProfinetDiffModule is one module of a ModuleDiffBlock. State is 0 no
-// module, 1 wrong module, 2 proper module, 3 substitute.
+// ProfinetDiffModule is one module of a ModuleDiffBlock.
 type ProfinetDiffModule struct {
 	Slot        uint16
 	IdentNumber uint32
-	State       uint16
+	State       ProfinetModuleState
 	Submodules  []ProfinetDiffSubmodule
 }
 
@@ -1360,11 +1484,11 @@ func decodeProfinetModuleDiff(r *profinetReader) *ProfinetModuleDiffBlock {
 			m := &api.Modules[j]
 			m.Slot = r.u16()
 			m.IdentNumber = r.u32()
-			m.State = r.u16()
+			m.State = ProfinetModuleState(r.u16())
 
 			m.Submodules = make([]ProfinetDiffSubmodule, r.count(profinetDiffSubmoduleLen))
 			for k := range m.Submodules {
-				m.Submodules[k] = ProfinetDiffSubmodule{Subslot: r.u16(), IdentNumber: r.u32(), State: r.u16()}
+				m.Submodules[k] = ProfinetDiffSubmodule{Subslot: r.u16(), IdentNumber: r.u32(), State: ProfinetSubmoduleState(r.u16())}
 			}
 		}
 	}
@@ -1466,14 +1590,14 @@ func decodeProfinetControl(r *profinetReader) *ProfinetControlBlock {
 //
 // Data is the record data that follows a write request or a read response
 // header, clipped to the captured bytes. Its layout depends on Index; for
-// the indices that hold blocks, ProfinetDecodeBlocks parses it.
+// the indexes that hold blocks (Index.HoldsBlocks), Blocks is Data decoded.
 type ProfinetRecordBlock struct {
 	SeqNumber        uint16
 	ARUUID           ProfinetUUID
 	API              uint32
 	Slot             uint16
 	Subslot          uint16
-	Index            uint16
+	Index            ProfinetRecordIndex
 	RecordDataLength uint32
 
 	TargetARUUID ProfinetUUID       // read request with a nil ARUUID (implicit read)
@@ -1482,18 +1606,27 @@ type ProfinetRecordBlock struct {
 	Status       ProfinetPNIOStatus // write response
 
 	Data []byte
+
+	// Blocks is Data decoded, for the indices whose record data is a run
+	// of blocks (see ProfinetRecordIndex.HoldsBlocks).
+	Blocks []ProfinetBlock
 }
 
-// profinetIndexMultiWrite is the record index of a write request that
-// wraps several write requests instead of record data.
-const profinetIndexMultiWrite = 0xE040
+// decodeData decodes the record data of an index that holds blocks.
+func (rec *ProfinetRecordBlock) decodeData(depth profinetDepth) {
+	if !rec.Index.HoldsBlocks() || depth >= profinetMaxDepth {
+		return
+	}
+
+	rec.Blocks, _ = appendProfinetBlocks(nil, rec.Data, depth+1)
+}
 
 // carriesData reports whether record data follows a header of block
 // type t.
 func (rec *ProfinetRecordBlock) carriesData(t ProfinetBlockType) bool {
 	switch t {
 	case ProfinetBlockIODWriteReq:
-		return rec.Index != profinetIndexMultiWrite
+		return rec.Index != ProfinetIndexMultipleWrite
 	case ProfinetBlockIODReadRes:
 		return true
 	}
@@ -1513,7 +1646,7 @@ func decodeProfinetRecord(r *profinetReader, t ProfinetBlockType) *ProfinetRecor
 		Subslot:   r.u16(),
 	}
 	r.bytes(2) // padding
-	rec.Index = r.u16()
+	rec.Index = ProfinetRecordIndex(r.u16())
 	rec.RecordDataLength = r.u32()
 
 	// The tail differs per block; the rest of each body is padding.

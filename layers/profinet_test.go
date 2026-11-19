@@ -514,7 +514,7 @@ func TestProfinetDecodingLayerParser(t *testing.T) {
 func TestProfinetTruncation(t *testing.T) {
 	withProfinet(t)
 
-	for _, path := range []string{pnDCPPcap, pnRTAlarmPcap, pnHandmadePcap, pnExtraPcap} {
+	for _, path := range []string{pnDCPPcap, pnRTAlarmPcap, pnHandmadePcap, pnExtraPcap, pnBlocksPcap} {
 		for _, frame := range readPNECATPcap(t, path) {
 			for n := 0; n <= len(frame); n++ {
 				data := append([]byte(nil), frame[:n]...)
@@ -601,7 +601,7 @@ func TestProfinetDCPBlockLoop(t *testing.T) {
 
 func FuzzProfinet(f *testing.F) {
 	withProfinet(f)
-	for _, path := range []string{pnDCPPcap, pnRTAlarmPcap, pnHandmadePcap, pnExtraPcap} {
+	for _, path := range []string{pnDCPPcap, pnRTAlarmPcap, pnHandmadePcap, pnExtraPcap, pnBlocksPcap} {
 		for _, frame := range readPNECATPcap(f, path) {
 			f.Add(frame)
 		}
