@@ -26,7 +26,8 @@ import (
 // subfunctions stay raw in S7CommUserdata.Data. Responses
 // split over several PDUs (data unit reference set, or more data units
 // following) are left raw: only the reassembled whole has the
-// structure, and gopacket decodes one packet at a time.
+// structure, and gopacket decodes one packet at a time. Feed the
+// layers to an S7CommUDAssembler to get the joined, decoded value.
 
 const (
 	// Head octets before the userdata address length: function, count,
@@ -39,6 +40,12 @@ const (
 
 	s7commUDTypeShift = 6
 	s7commUDGroupMask = 0x3F
+
+	// Shortest data that counts as a data unit, as in Wireshark.
+	s7commUDMinUnit = 2
+	// Octets before each data unit: NC programming; PBC BSEND, AR_SEND.
+	s7commNCUnitHead  = 2
+	s7commPBCUnitHead = 8
 
 	// SZL request: ID, index. Response adds record length and count.
 	s7commSZLReqLen  = 4
@@ -96,7 +103,7 @@ const (
 	S7CommGroupSecurity       S7CommFuncGroup = 0x5
 	S7CommGroupPBC            S7CommFuncGroup = 0x6
 	S7CommGroupTime           S7CommFuncGroup = 0x7
-	S7CommGroupNCProgramming  S7CommFuncGroup = 0xF
+	S7CommGroupNCProgramming  S7CommFuncGroup = 0x3F
 )
 
 // String returns the Wireshark name of the function group.
@@ -152,6 +159,27 @@ const (
 	S7CommTimeReadClockFol S7CommSubfunction = 0x03
 	S7CommTimeSetClock2    S7CommSubfunction = 0x04
 )
+
+// Subfunctions of the NC programming group (Sinumerik file transfer).
+const (
+	S7CommNCRequestDownload S7CommSubfunction = 0x01
+	S7CommNCDownloadBlock   S7CommSubfunction = 0x02
+	S7CommNCContDownload    S7CommSubfunction = 0x03
+	S7CommNCDownloadEnded   S7CommSubfunction = 0x04
+	S7CommNCStartUpload     S7CommSubfunction = 0x06
+	S7CommNCUpload          S7CommSubfunction = 0x07
+	S7CommNCContUpload      S7CommSubfunction = 0x08
+)
+
+// ncHasUnitHeader reports whether the NC subfunction sends two unknown
+// octets before each data unit of a response or push.
+func (s S7CommSubfunction) ncHasUnitHeader() bool {
+	switch s {
+	case S7CommNCDownloadBlock, S7CommNCUpload, S7CommNCStartUpload:
+		return true
+	}
+	return false
+}
 
 // S7CommBlockType is a block type as its two ASCII octets ("08" is OB).
 type S7CommBlockType uint16
@@ -308,6 +336,14 @@ type S7CommUserdata struct {
 	Length        uint16
 	Data          []byte
 
+	// UnitHeader holds the octets NC programming, PBC BSEND and AR_SEND
+	// put before each data unit; Data starts after them.
+	UnitHeader []byte
+
+	// Fragments is the number of data units an S7CommUDAssembler joined
+	// into Data; 0 for a view decoded from a single PDU.
+	Fragments int
+
 	SZL          *S7CommSZL
 	BlockCounts  []S7CommBlockCount // list blocks response
 	BlockEntries []S7CommBlockEntry // list blocks of type response
@@ -327,8 +363,12 @@ type S7CommUserdata struct {
 }
 
 // Fragmented reports whether the PDU is one part of a multi-PDU
-// response.
+// value, which S7CommUDAssembler joins. It is false for the view the
+// assembler returns.
 func (u *S7CommUserdata) Fragmented() bool {
+	if u.Fragments > 0 {
+		return false
+	}
 	return u.DataUnitRef != 0 || u.LastDataUnit != 0
 }
 
@@ -439,11 +479,44 @@ func (s *S7Comm) decodeUserdata() error {
 		return fmt.Errorf("%w: userdata data length %d", ErrS7CommMalformed, u.Length)
 	}
 	u.Data = d[s7commDataItemHead:end]
+	u.splitUnitHeader()
 
 	if u.ReturnCode != S7CommRetSuccess || u.Fragmented() {
 		return nil
 	}
 	return u.decodeValue()
+}
+
+// splitUnitHeader moves the octets some services send before every
+// data unit from Data to UnitHeader, so that joined units form the
+// value:
+//
+//	NC programming download block, upload and start upload,
+//	response or push:                         unknown(2)
+//	PBC BSEND request or response, AR_SEND:   varspec, length,
+//	                                          syntax ID, unknown,
+//	                                          R_ID or AR_ID(4)
+func (u *S7CommUserdata) splitUnitHeader() {
+	n := 0
+	switch {
+	case len(u.Data) < s7commUDMinUnit:
+	case u.FunctionGroup == S7CommGroupNCProgramming:
+		if u.Type != S7CommUDTypeRequest && u.Subfunction.ncHasUnitHeader() {
+			n = s7commNCUnitHead
+		}
+	case u.FunctionGroup == S7CommGroupPBC:
+		if u.Type != S7CommUDTypePush {
+			n = s7commPBCUnitHead
+		}
+	case u.FunctionGroup == S7CommGroupCPU && u.Subfunction == S7CommCPUARSendInd:
+		n = s7commPBCUnitHead
+	}
+	if n == 0 || len(u.Data) < n {
+		return
+	}
+
+	u.UnitHeader = u.Data[:n]
+	u.Data = u.Data[n:]
 }
 
 // decodeValue decodes the data value of the services this package
@@ -510,14 +583,20 @@ func (u *S7CommUserdata) decodeSZL() error {
 	// nothing.
 	// uint64: 0xFFFF * 0x8001 overflows a 32-bit int.
 	size := uint64(szl.RecordLength) * uint64(szl.RecordCount)
+	count := int(szl.RecordCount)
 	if size > uint64(len(recs)) {
-		return fmt.Errorf("%w: SZL %d records of %d octets in %d", ErrS7CommMalformed, szl.RecordCount, szl.RecordLength, len(recs))
+		// Some CPUs send a count of 0xFFFF in lists spanning PDUs; like
+		// Wireshark, take the records a joined value holds.
+		if u.Fragments == 0 || szl.RecordLength == 0 {
+			return fmt.Errorf("%w: SZL %d records of %d octets in %d", ErrS7CommMalformed, szl.RecordCount, szl.RecordLength, len(recs))
+		}
+		count = len(recs) / int(szl.RecordLength)
 	}
 	if szl.RecordLength == 0 {
 		return nil
 	}
 
-	szl.Records = make([][]byte, szl.RecordCount)
+	szl.Records = make([][]byte, count)
 	for i := range szl.Records {
 		off := i * int(szl.RecordLength)
 		szl.Records[i] = recs[off : off+int(szl.RecordLength)]
