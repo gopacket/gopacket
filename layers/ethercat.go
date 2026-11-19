@@ -345,8 +345,9 @@ func decodeEtherCAT(data []byte, p gopacket.PacketBuilder) error {
 }
 
 // registerEtherCATDecoders maps EtherType 0x88A4 and UDP port 0x88A4 to the
-// EtherCAT decoder. It is opt-in because existing callers would otherwise
-// start seeing new layers. Calling it more than once is harmless.
+// EtherCAT decoder, and TCP port 48898 to the AMS over TCP decoder. It is
+// opt-in because existing callers would otherwise start seeing new
+// layers. Calling it more than once is harmless.
 func registerEtherCATDecoders() {
 	EthernetTypeMetadata[EthernetTypeEtherCAT] = EnumMetadata{
 		DecodeWith: gopacket.DecodeFunc(decodeEtherCAT),
@@ -354,4 +355,5 @@ func registerEtherCATDecoders() {
 		LayerType:  LayerTypeEtherCAT,
 	}
 	RegisterUDPPortLayerType(UDPPortEtherCAT, LayerTypeEtherCAT)
+	RegisterTCPPortLayerType(TCPPortEtherCATAMS, LayerTypeEtherCATAMSTCP)
 }

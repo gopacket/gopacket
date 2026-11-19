@@ -20,22 +20,30 @@ import (
 // tshark 4.7.
 const ecatPcap = "testdata/ethercat.pcap"
 
-// withEtherCAT registers the EtherCAT EtherType and UDP port for one test
-// and restores the previous state afterwards.
+// withEtherCAT registers the EtherCAT EtherType, UDP port and AMS TCP
+// port for one test and restores the previous state afterwards.
 func withEtherCAT(t testing.TB) {
 	oldEth := EthernetTypeMetadata[EthernetTypeEtherCAT]
 	port := uint16(UDPPortEtherCAT)
 	oldWord := udpPortLayerTypeOverride[port>>6]
 	oldType, hadType := udpPortLayerType[UDPPortEtherCAT]
+	tcpPort := uint16(TCPPortEtherCATAMS)
+	oldTCPWord := tcpPortLayerTypeOverride[tcpPort>>6]
+	oldTCPType, hadTCPType := tcpPortLayerType[TCPPortEtherCATAMS]
 
 	t.Cleanup(func() {
 		EthernetTypeMetadata[EthernetTypeEtherCAT] = oldEth
 		udpPortLayerTypeOverride[port>>6] = oldWord
+		tcpPortLayerTypeOverride[tcpPort>>6] = oldTCPWord
+
+		delete(udpPortLayerType, UDPPortEtherCAT)
 		if hadType {
 			udpPortLayerType[UDPPortEtherCAT] = oldType
-			return
 		}
-		delete(udpPortLayerType, UDPPortEtherCAT)
+		delete(tcpPortLayerType, TCPPortEtherCATAMS)
+		if hadTCPType {
+			tcpPortLayerType[TCPPortEtherCATAMS] = oldTCPType
+		}
 	})
 	registerEtherCATDecoders()
 }
@@ -357,9 +365,15 @@ func FuzzEtherCAT(f *testing.F) {
 			f.Add(frame)
 		}
 	}
+	for _, frame := range append(ecatMoreFrames(f), ecatAsmFrames()...) {
+		f.Add(frame)
+	}
+	for _, seg := range ecatAMSTCPSegments() {
+		f.Add(seg)
+	}
 
 	f.Fuzz(func(t *testing.T, data []byte) {
-		p := gopacket.NewPacket(data, LinkTypeEthernet, gopacket.Default)
+		p := gopacket.NewPacket(data, LinkTypeEthernet, ecatTCPOpts)
 		if e, ok := p.Layer(LayerTypeEtherCAT).(*EtherCAT); ok {
 			// Every datagram costs at least 12 bytes of input.
 			if len(e.Datagrams)*(ethercatDatagramHeaderLen+ethercatWKCLen) > len(data) {
@@ -379,7 +393,37 @@ func FuzzEtherCAT(f *testing.F) {
 			ecatFuzzMailbox(t, m, len(data))
 			ecatTouchMailbox(m)
 		}
+
+		// AMS over TCP: through the packet decoder and directly.
+		if a, ok := p.Layer(LayerTypeEtherCATAMSTCP).(*EtherCATAMSTCP); ok {
+			ecatFuzzAMSTCP(t, a, len(data))
+		}
+		var a EtherCATAMSTCP
+		if err := a.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err == nil {
+			ecatFuzzAMSTCP(t, &a, len(data))
+		}
+		if adv, tok, err := ScanEtherCATAMSTCP(data, true); err == nil && (adv > len(data) || len(tok) > adv) {
+			t.Fatalf("token of %d, advance %d, from %d bytes", len(tok), adv, len(data))
+		}
 	})
+}
+
+// ecatFuzzAMSTCP checks the packets of an AMS/TCP segment against the
+// input: each costs at least its 6-byte header.
+func ecatFuzzAMSTCP(t *testing.T, a *EtherCATAMSTCP, size int) {
+	if len(a.PDUs)*ethercatAMSTCPHeaderLen > size {
+		t.Fatalf("%d AMS/TCP packets from %d bytes", len(a.PDUs), size)
+	}
+
+	for i := range a.PDUs {
+		if i < len(a.PDUs)-1 && a.PDUs[i].Truncated {
+			t.Fatalf("packet %d of %d truncated", i, len(a.PDUs))
+		}
+		if a.PDUs[i].AMS != nil {
+			ecatFuzzADS(t, a.PDUs[i].AMS, size)
+		}
+	}
+	ecatTouchAMSTCP(a)
 }
 
 // ecatFuzzBounds fails when a decoded list is larger than its input
@@ -432,5 +476,13 @@ func ecatFuzzADS(t *testing.T, a *EtherCATAMS, size int) {
 	}
 	if cost > size {
 		t.Fatalf("stamps worth %d bytes from %d", cost, size)
+	}
+
+	// Sum-up accesses and their results: at least 12 and 4 bytes each.
+	if len(a.ADS.SumUp)*ethercatADSSumReadLen > size {
+		t.Fatalf("%d sum-up accesses from %d bytes", len(a.ADS.SumUp), size)
+	}
+	if n := len(a.ADS.SumUpResults(a.ADS)); n*ethercatADSSumResLen > size {
+		t.Fatalf("%d sum-up results from %d bytes", n, size)
 	}
 }

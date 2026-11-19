@@ -295,8 +295,8 @@ func ScanModbusTCP(data []byte, atEOF bool) (advance int, token []byte, err erro
 
 // OTStreamDecoder returns the splitter and the layer type to decode its
 // tokens with for a TCP port of an OT protocol in this package: 102
-// (TPKT), 502 (Modbus/TCP), 2404 (IEC 104), 4840 (OPC UA) and 20000
-// (DNP3). ok is false for any other port.
+// (TPKT), 502 (Modbus/TCP), 2404 (IEC 104), 4840 (OPC UA), 20000
+// (DNP3) and 48898 (AMS/TCP). ok is false for any other port.
 func OTStreamDecoder(port TCPPort) (split bufio.SplitFunc, layer gopacket.LayerType, ok bool) {
 	switch uint16(port) {
 	case TCPPortTPKT:
@@ -309,6 +309,8 @@ func OTStreamDecoder(port TCPPort) (split bufio.SplitFunc, layer gopacket.LayerT
 		return ScanOPCUA, LayerTypeOPCUA, true
 	case DNP3Port:
 		return ScanDNP3, LayerTypeDNP3, true
+	case uint16(TCPPortEtherCATAMS):
+		return ScanEtherCATAMSTCP, LayerTypeEtherCATAMSTCP, true
 	}
 	return nil, gopacket.LayerTypeZero, false
 }

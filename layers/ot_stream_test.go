@@ -359,6 +359,7 @@ func TestOTStreamDecoder(t *testing.T) {
 		{TCPPortIEC104, LayerTypeIEC104},
 		{TCPPortOPCUA, LayerTypeOPCUA},
 		{DNP3Port, LayerTypeDNP3},
+		{uint16(TCPPortEtherCATAMS), LayerTypeEtherCATAMSTCP},
 	}
 
 	for _, tc := range tests {

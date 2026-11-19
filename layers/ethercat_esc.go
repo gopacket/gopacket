@@ -17,7 +17,9 @@
 //	0x0120  AL control, status   0x0800  8 sync managers, 8 bytes each
 //	0x0200  interrupts           0x0900  distributed clocks
 //	0x0300  error counters       0x0980  DC cyclic unit, latches
-//	0x0400  watchdogs
+//	0x0400  watchdogs            0x0E00  ESC specific (product, vendor)
+//	                             0x0F00  digital and general purpose I/O
+//	                             0x0F80  user RAM
 //
 // One datagram often spans several registers, e.g. a read of 0x0130
 // length 6 covers AL status and the AL status code. Registers() lists
@@ -143,6 +145,12 @@ const (
 	ESCRegisterDCSMChangeTime  ESCRegister = 0x09F0
 	ESCRegisterDCPDISMStart    ESCRegister = 0x09F8
 	ESCRegisterDCPDISMChange   ESCRegister = 0x09FC
+	ESCRegisterProductID       ESCRegister = 0x0E00
+	ESCRegisterVendorID        ESCRegister = 0x0E08
+	ESCRegisterDigitalOutput   ESCRegister = 0x0F00
+	ESCRegisterGPOutput        ESCRegister = 0x0F10
+	ESCRegisterGPInput         ESCRegister = 0x0F18
+	ESCRegisterUserRAM         ESCRegister = 0x0F80
 )
 
 const (
@@ -152,6 +160,10 @@ const (
 	escSMCount   = 8
 	escWordLen   = 2
 	escQuadLen   = 8
+
+	// escUserRAMLen is the user RAM at the end of the register area,
+	// 0x0F80 to 0x0FFF.
+	escUserRAMLen = 128
 
 	// escMemoryStart is where the registers end and the process data
 	// memory (mailboxes, PDO buffers) begins.
@@ -279,6 +291,12 @@ var escRegisters = [...]escRegisterInfo{
 	{ESCRegisterDCSMChangeTime, 4, 1, "DC ECAT Buffer Change Event Time"},
 	{ESCRegisterDCPDISMStart, 4, 1, "DC PDI Buffer Start Event Time"},
 	{ESCRegisterDCPDISMChange, 4, 1, "DC PDI Buffer Change Event Time"},
+	{ESCRegisterProductID, 8, 1, "ESC Product ID"},
+	{ESCRegisterVendorID, 8, 1, "ESC Vendor ID"},
+	{ESCRegisterDigitalOutput, 4, 1, "Digital I/O Output Data"},
+	{ESCRegisterGPOutput, 8, 1, "General Purpose Outputs"},
+	{ESCRegisterGPInput, 8, 1, "General Purpose Inputs"},
+	{ESCRegisterUserRAM, escUserRAMLen, 1, "User RAM"},
 }
 
 // escRegisterMax is the most values Registers() can return: every table
@@ -322,7 +340,7 @@ type ESCRegisterValue struct {
 }
 
 // Uint returns the little-endian value of a register of up to 8 bytes,
-// and 0 for longer ones (FMMU and sync manager blocks).
+// and 0 for longer ones (FMMU and sync manager blocks, user RAM).
 func (v ESCRegisterValue) Uint() uint64 {
 	if len(v.Data) > escQuadLen {
 		return 0

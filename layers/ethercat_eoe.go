@@ -11,13 +11,18 @@
 //	    word 0: Type (4 bits) | Port (4) | LastFragment (1) |
 //	            TimeAppended (1) | TimeRequested (1) | reserved (5)
 //	    word 1: FragmentNo (6 bits) | Offset (6) | FrameNo (4)
-//	            or a 16-bit result for the two response types
+//	            or a 16-bit result for the response types
 //
 //	Fragment:           header | Ethernet frame bytes | [Timestamp (4)]
 //	Timestamp response: header | Timestamp (4)
 //	Set IP request:     header | Flags (4) | MAC (6) | IP (4) | Mask (4) |
 //	                    Gateway (4) | DNS (4) | DNS name (32)
 //	MAC filter request: header | Options (2) | 16 MACs | 4 masks
+//	Get IP request, get address filter request: header only
+//	Get IP response:    header | body of a set IP request
+//	Get address filter response: header | body of a MAC filter request
+//
+// Wireshark decodes neither the get services nor their responses.
 //
 // The Offset field counts 32-byte blocks: the position of the fragment
 // in the frame, or for fragment 0 the size of the whole frame.
@@ -70,6 +75,10 @@ const (
 	EtherCATEoESetIPResponse    EtherCATEoEType = 3
 	EtherCATEoEMACFilterRequest EtherCATEoEType = 4
 	EtherCATEoEMACFilterReply   EtherCATEoEType = 5
+	EtherCATEoEGetIPRequest     EtherCATEoEType = 6
+	EtherCATEoEGetIPResponse    EtherCATEoEType = 7
+	EtherCATEoEGetFilterRequest EtherCATEoEType = 8
+	EtherCATEoEGetFilterReply   EtherCATEoEType = 9
 )
 
 // String returns the frame type name.
@@ -87,8 +96,48 @@ func (t EtherCATEoEType) String() string {
 		return "MAC Req"
 	case EtherCATEoEMACFilterReply:
 		return "MAC Res"
+	case EtherCATEoEGetIPRequest:
+		return "Get IP Req"
+	case EtherCATEoEGetIPResponse:
+		return "Get IP Res"
+	case EtherCATEoEGetFilterRequest:
+		return "Get MAC Req"
+	case EtherCATEoEGetFilterReply:
+		return "Get MAC Res"
 	}
 	return fmt.Sprintf("Unknown(%d)", uint8(t))
+}
+
+// EtherCATEoEResult is the result word of the EoE responses.
+type EtherCATEoEResult uint16
+
+// EoE results (ETG.1000.6).
+const (
+	EtherCATEoESuccess          EtherCATEoEResult = 0x0000
+	EtherCATEoEUnspecifiedError EtherCATEoEResult = 0x0001
+	EtherCATEoEUnsupportedType  EtherCATEoEResult = 0x0002
+	EtherCATEoENoIPSupport      EtherCATEoEResult = 0x0201
+	EtherCATEoENoDHCPSupport    EtherCATEoEResult = 0x0202
+	EtherCATEoENoFilterSupport  EtherCATEoEResult = 0x0401
+)
+
+// String returns the result name.
+func (r EtherCATEoEResult) String() string {
+	switch r {
+	case EtherCATEoESuccess:
+		return "Success"
+	case EtherCATEoEUnspecifiedError:
+		return "Unspecified error"
+	case EtherCATEoEUnsupportedType:
+		return "Unsupported frame type"
+	case EtherCATEoENoIPSupport:
+		return "No IP support"
+	case EtherCATEoENoDHCPSupport:
+		return "DHCP not supported"
+	case EtherCATEoENoFilterSupport:
+		return "No filter support"
+	}
+	return fmt.Sprintf("Unknown(0x%04x)", uint16(r))
 }
 
 // EtherCATEoEIPFlags says which parameters a set IP request carries.
@@ -143,7 +192,7 @@ type EtherCATEoEMACFilter struct {
 // For a fragment, Data holds the Ethernet frame bytes without the
 // appended timestamp, and Offset is the byte offset of the fragment or,
 // for fragment 0, the size of the whole frame, both in steps of 32.
-// Fragments are not reassembled: that needs the earlier mailboxes.
+// Fragments are reassembled by EtherCATMailboxAssembler.
 type EtherCATEoE struct {
 	Type          EtherCATEoEType
 	Port          uint8
@@ -156,14 +205,17 @@ type EtherCATEoE struct {
 	Offset     uint16
 	FrameNo    uint8
 
-	// Result of the set IP and MAC filter responses.
-	Result uint16
+	// Result of the set and get IP and MAC filter responses.
+	Result EtherCATEoEResult
 
 	// Timestamp is set when HasTimestamp is: by a timestamp response, or
 	// by a fragment with TimeAppended that is long enough to hold it.
 	Timestamp    uint32
 	HasTimestamp bool
 
+	// SetIP holds the parameters of a set IP request or get IP
+	// response, MACFilter those of a set address filter request or get
+	// address filter response. The get requests have no body.
 	Data      []byte
 	SetIP     *EtherCATEoESetIP
 	MACFilter *EtherCATEoEMACFilter
@@ -200,7 +252,14 @@ func decodeEtherCATEoE(data []byte) *EtherCATEoE {
 	case EtherCATEoEMACFilterRequest:
 		e.MACFilter = decodeEtherCATMACFilter(e.Data)
 	case EtherCATEoESetIPResponse, EtherCATEoEMACFilterReply:
-		e.Result = word
+		e.Result = EtherCATEoEResult(word)
+	case EtherCATEoEGetIPResponse:
+		// The parameters read back, in the layout of a set IP request.
+		e.Result = EtherCATEoEResult(word)
+		e.SetIP = decodeEtherCATSetIP(e.Data)
+	case EtherCATEoEGetFilterReply:
+		e.Result = EtherCATEoEResult(word)
+		e.MACFilter = decodeEtherCATMACFilter(e.Data)
 	}
 	return e
 }

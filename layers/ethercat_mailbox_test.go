@@ -748,9 +748,77 @@ func ecatTouch(e *EtherCAT) {
 			d.FMMU(n)
 			d.SyncManager(n)
 		}
+		ecatTouchRegs(d)
 		ecatTouchMailbox(d.Mailbox)
 	}
 	ecatTouchMailbox(e.Mailbox)
+	ecatTouchAMS(e.ADS)
+}
+
+// ecatTouchRegs calls the typed register accessors of a datagram.
+func ecatTouchRegs(d *EtherCATDatagram) {
+	_ = d.Register().Area().String()
+	if code, ok := d.ALStatusCode(); ok {
+		_ = code.String()
+	}
+	if div, ok := d.WatchdogDivider(); ok {
+		_ = div.Period()
+	}
+	d.WatchdogTimePDI()
+	d.WatchdogTimeSM()
+	d.WatchdogStatus()
+	if c, ok := d.EEPROMControl(); ok {
+		_ = c.Command().String()
+		_ = c.ReadSize()
+	}
+	d.EEPROMAddress()
+	d.EEPROMData()
+	d.MIIControl()
+	if m, ok := d.MII(); ok {
+		_ = m.Control.Command().String()
+	}
+	d.DCActivation()
+	d.DCStartTime()
+	for n := -1; n <= escDCUnitCount; n++ {
+		d.DCCycleTime(n)
+		d.DCLatchControl(n)
+		d.DCLatchStatus(n)
+		d.DCLatchTime(n, ESCDCEdgePositive)
+		d.DCLatchTime(n, ESCDCEdgeNegative)
+	}
+}
+
+// ecatTouchAMS calls the accessors of an AMS packet.
+func ecatTouchAMS(a *EtherCATAMS) {
+	if a == nil {
+		return
+	}
+	_ = a.TargetNetID.String()
+	_ = a.TargetPort.String()
+	_ = a.SourcePort.String()
+	_ = a.Command.String()
+	_ = a.ErrorCode.String()
+	if a.ADS == nil {
+		return
+	}
+
+	_ = a.ADS.Result.String()
+	_ = a.ADS.IndexGroup.String()
+	_ = a.ADS.ADSState.String()
+	_ = a.ADS.TransmissionMode.String()
+	_ = a.ADS.MaxDelayTime()
+	_ = a.ADS.CycleDuration()
+	for _, r := range a.ADS.SumUpResults(a.ADS) {
+		_ = r.Result.String()
+	}
+}
+
+// ecatTouchAMSTCP calls the accessors of every AMS/TCP packet.
+func ecatTouchAMSTCP(a *EtherCATAMSTCP) {
+	for i := range a.PDUs {
+		_ = a.PDUs[i].Command.String()
+		ecatTouchAMS(a.PDUs[i].AMS)
+	}
 }
 
 // ecatTouchMailbox calls the accessors of a mailbox body.
@@ -769,10 +837,14 @@ func ecatTouchMailbox(m *EtherCATMailbox) {
 	if m.CoE != nil && m.CoE.SDO != nil {
 		_ = m.CoE.SDO.AbortCode().String()
 	}
-	if m.AoE != nil {
-		_ = m.AoE.TargetNetID.String()
-		_ = m.AoE.Command.String()
+	if m.EoE != nil {
+		_ = m.EoE.Type.String()
+		_ = m.EoE.Result.String()
 	}
+	if m.Error != nil {
+		_ = m.Error.Detail.String()
+	}
+	ecatTouchAMS(m.AoE)
 }
 
 // ecatMailboxBytes wraps a body in a mailbox header of the given type.

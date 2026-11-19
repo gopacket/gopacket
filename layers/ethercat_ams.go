@@ -31,7 +31,12 @@
 //	read write     Group, Offset, read Length,          Result, Length, data
 //	               write Length, data
 //
-// AMS over TCP (port 48898) and UDP are not EtherCAT and are not handled.
+// A read write request on index groups 0xF080 to 0xF084 is a sum-up
+// command: several accesses in one, see ethercat_ads.go.
+//
+// AMS over TCP (port 48898) wraps the same packet in a 6-byte header,
+// see ethercat_ams_tcp.go. AMS over UDP (port 48899, route discovery)
+// is a different protocol and is not handled.
 
 package layers
 
@@ -145,14 +150,14 @@ type EtherCATADSStamp struct {
 // EtherCATADS is the body of an ADS request or response. The fields set
 // depend on the command and direction, as listed in the file comment.
 type EtherCATADS struct {
-	Result      uint32 // responses
-	IndexGroup  uint32
+	Result      EtherCATADSError // responses
+	IndexGroup  EtherCATADSGroup
 	IndexOffset uint32
 	// Length is the read or write length of the request, or the data
 	// length of a read response.
 	Length      uint32
 	WriteLength uint32 // read write request
-	ADSState    uint16
+	ADSState    EtherCATADSState
 	DeviceState uint16
 
 	// Read device info response.
@@ -161,15 +166,21 @@ type EtherCATADS struct {
 	Build        uint16
 	DeviceName   []byte // without NUL padding
 
-	// Notifications.
+	// Notifications. MaxDelay and CycleTime count 100 ns steps; see
+	// MaxDelayTime and CycleDuration.
 	Handle           uint32
-	TransmissionMode uint32
+	TransmissionMode EtherCATADSTransMode
 	MaxDelay         uint32
 	CycleTime        uint32
 	StampCount       uint32 // as announced; Stamps holds those present
 	Stamps           []EtherCATADSStamp
 
 	Data []byte // read, write and control data
+
+	// SumUp lists the accesses of a sum-up request: a read write on
+	// index groups 0xF080 to 0xF084. IndexOffset announces their number;
+	// SumUp holds those present.
+	SumUp []EtherCATADSSumItem
 }
 
 // EtherCATAMS is an AMS packet with its ADS body.
@@ -179,13 +190,13 @@ type EtherCATADS struct {
 // of unknown commands stay raw in Data.
 type EtherCATAMS struct {
 	TargetNetID EtherCATAMSNetID
-	TargetPort  uint16
+	TargetPort  EtherCATAMSPort
 	SourceNetID EtherCATAMSNetID
-	SourcePort  uint16
+	SourcePort  EtherCATAMSPort
 	Command     EtherCATADSCommand
 	Flags       EtherCATAMSFlags
 	Length      uint32
-	ErrorCode   uint32
+	ErrorCode   EtherCATADSError
 	InvokeID    uint32
 	Data        []byte
 	ADS         *EtherCATADS
@@ -201,12 +212,12 @@ func decodeEtherCATAMS(data []byte) *EtherCATAMS {
 	}
 
 	a := &EtherCATAMS{
-		TargetPort: binary.LittleEndian.Uint16(data[6:8]),
-		SourcePort: binary.LittleEndian.Uint16(data[14:16]),
+		TargetPort: EtherCATAMSPort(binary.LittleEndian.Uint16(data[6:8])),
+		SourcePort: EtherCATAMSPort(binary.LittleEndian.Uint16(data[14:16])),
 		Command:    EtherCATADSCommand(binary.LittleEndian.Uint16(data[16:18])),
 		Flags:      EtherCATAMSFlags(binary.LittleEndian.Uint16(data[18:20])),
 		Length:     binary.LittleEndian.Uint32(data[20:24]),
-		ErrorCode:  binary.LittleEndian.Uint32(data[24:28]),
+		ErrorCode:  EtherCATADSError(binary.LittleEndian.Uint32(data[24:28])),
 		InvokeID:   binary.LittleEndian.Uint32(data[28:32]),
 		Data:       data[ethercatAMSHeaderLen:],
 	}
@@ -276,9 +287,9 @@ func decodeEtherCATADSReq(cmd EtherCATADSCommand, b []byte) *EtherCATADS {
 
 	switch cmd {
 	case EtherCATADSRead, EtherCATADSWrite, EtherCATADSAddNotification:
-		a.IndexGroup, a.IndexOffset, a.Length = u32(0), u32(4), u32(8)
+		a.IndexGroup, a.IndexOffset, a.Length = EtherCATADSGroup(u32(0)), u32(4), u32(8)
 	case EtherCATADSReadWrite:
-		a.IndexGroup, a.IndexOffset, a.Length, a.WriteLength = u32(0), u32(4), u32(8), u32(12)
+		a.IndexGroup, a.IndexOffset, a.Length, a.WriteLength = EtherCATADSGroup(u32(0)), u32(4), u32(8), u32(12)
 	}
 
 	switch cmd {
@@ -288,11 +299,13 @@ func decodeEtherCATADSReq(cmd EtherCATADSCommand, b []byte) *EtherCATADS {
 
 	switch cmd {
 	case EtherCATADSWriteControl:
-		a.ADSState = binary.LittleEndian.Uint16(b[0:2])
+		a.ADSState = EtherCATADSState(binary.LittleEndian.Uint16(b[0:2]))
 		a.DeviceState = binary.LittleEndian.Uint16(b[2:4])
 		a.Length = u32(4)
+	case EtherCATADSReadWrite:
+		a.SumUp = decodeEtherCATADSSumUp(a.IndexGroup, a.IndexOffset, a.Data)
 	case EtherCATADSAddNotification:
-		a.TransmissionMode, a.MaxDelay, a.CycleTime = u32(12), u32(16), u32(20)
+		a.TransmissionMode, a.MaxDelay, a.CycleTime = EtherCATADSTransMode(u32(12)), u32(16), u32(20)
 	case EtherCATADSDeleteNotification:
 		a.Handle = u32(0)
 	case EtherCATADSNotification:
@@ -310,7 +323,7 @@ func decodeEtherCATADSRes(cmd EtherCATADSCommand, b []byte) *EtherCATADS {
 		return nil
 	}
 
-	a := &EtherCATADS{Result: binary.LittleEndian.Uint32(b)}
+	a := &EtherCATADS{Result: EtherCATADSError(binary.LittleEndian.Uint32(b))}
 	rest := b[ethercatADSResultLen:]
 
 	switch cmd {
@@ -323,7 +336,7 @@ func decodeEtherCATADSRes(cmd EtherCATADSCommand, b []byte) *EtherCATADS {
 		a.Length = binary.LittleEndian.Uint32(rest)
 		a.Data = b[need:]
 	case EtherCATADSReadState:
-		a.ADSState = binary.LittleEndian.Uint16(rest[0:2])
+		a.ADSState = EtherCATADSState(binary.LittleEndian.Uint16(rest[0:2]))
 		a.DeviceState = binary.LittleEndian.Uint16(rest[2:4])
 	case EtherCATADSAddNotification:
 		a.Handle = binary.LittleEndian.Uint32(rest)

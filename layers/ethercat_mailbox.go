@@ -33,6 +33,7 @@ const (
 	ethercatSDOHeaderLen     = 8
 	ethercatSDOCommandLen    = 1
 	ethercatMailboxMaxLen    = 1500 // Wireshark's heuristic upper bound
+	ethercatMbxErrorLen      = 4    // type, detail
 	ethercatMailboxMinADO    = 0x1000
 	ethercatChannelMask      = 0x3F
 	ethercatPriorityShift    = 6
@@ -224,6 +225,10 @@ type EtherCATMailbox struct {
 	SoE      *EtherCATSoE // Type SoE only
 	VoE      *EtherCATVoE // Type VoE only
 	AoE      *EtherCATAMS // Type AoE only
+
+	// Error is the body of a Type ERR mailbox: the reply to a mailbox
+	// the slave could not take.
+	Error *EtherCATMailboxError
 }
 
 // DecodeEtherCATMailbox decodes a mailbox from the data of a datagram.
@@ -262,8 +267,93 @@ func DecodeEtherCATMailbox(data []byte) (*EtherCATMailbox, error) {
 		m.VoE = decodeEtherCATVoE(m.Data)
 	case EtherCATMailboxAoE:
 		m.AoE = decodeEtherCATAMS(m.Data)
+	case EtherCATMailboxERR:
+		m.Error = decodeEtherCATMbxError(m.Data)
 	}
 	return m, nil
+}
+
+// EtherCATMailboxErrDetail says why a slave refused a mailbox.
+type EtherCATMailboxErrDetail uint16
+
+// Mailbox error details (ETG.1000.4 table 30).
+const (
+	EtherCATMailboxErrSyntax      EtherCATMailboxErrDetail = 1
+	EtherCATMailboxErrProtocol    EtherCATMailboxErrDetail = 2
+	EtherCATMailboxErrChannel     EtherCATMailboxErrDetail = 3
+	EtherCATMailboxErrService     EtherCATMailboxErrDetail = 4
+	EtherCATMailboxErrHeader      EtherCATMailboxErrDetail = 5
+	EtherCATMailboxErrTooShort    EtherCATMailboxErrDetail = 6
+	EtherCATMailboxErrNoMemory    EtherCATMailboxErrDetail = 7
+	EtherCATMailboxErrSize        EtherCATMailboxErrDetail = 8
+	EtherCATMailboxErrServiceBusy EtherCATMailboxErrDetail = 9
+)
+
+// String returns the error detail name.
+func (d EtherCATMailboxErrDetail) String() string {
+	switch d {
+	case EtherCATMailboxErrSyntax:
+		return "Syntax error in mailbox header"
+	case EtherCATMailboxErrProtocol:
+		return "Unsupported protocol"
+	case EtherCATMailboxErrChannel:
+		return "Invalid channel"
+	case EtherCATMailboxErrService:
+		return "Service not supported"
+	case EtherCATMailboxErrHeader:
+		return "Invalid protocol header"
+	case EtherCATMailboxErrTooShort:
+		return "Mailbox too short"
+	case EtherCATMailboxErrNoMemory:
+		return "No more memory"
+	case EtherCATMailboxErrSize:
+		return "Invalid size"
+	case EtherCATMailboxErrServiceBusy:
+		return "Service in work"
+	}
+	return fmt.Sprintf("Unknown(0x%04x)", uint16(d))
+}
+
+// EtherCATMailboxErrCommand is the only error reply type defined.
+const EtherCATMailboxErrCommand uint16 = 0x0001
+
+// EtherCATMailboxError is the body of an error reply (mailbox type 0):
+//
+//	Type (2) | Detail (2)
+//
+// Type is EtherCATMailboxErrCommand in every reply the standard defines.
+type EtherCATMailboxError struct {
+	Type   uint16
+	Detail EtherCATMailboxErrDetail
+}
+
+// decodeEtherCATMbxError decodes an error reply, nil when it is cut.
+func decodeEtherCATMbxError(data []byte) *EtherCATMailboxError {
+	if len(data) < ethercatMbxErrorLen {
+		return nil
+	}
+
+	return &EtherCATMailboxError{
+		Type:   binary.LittleEndian.Uint16(data),
+		Detail: EtherCATMailboxErrDetail(binary.LittleEndian.Uint16(data[2:])),
+	}
+}
+
+// isEtherCATMbxError reports whether datagram data looks like an error
+// reply. Type 0 is also what unused memory reads as, so the whole reply
+// must fit: length 4, the command type and a defined detail.
+func isEtherCATMbxError(data []byte) bool {
+	if len(data) < ethercatMailboxHeaderLen+ethercatMbxErrorLen {
+		return false
+	}
+	if binary.LittleEndian.Uint16(data) != ethercatMbxErrorLen {
+		return false
+	}
+
+	body := data[ethercatMailboxHeaderLen:]
+	detail := EtherCATMailboxErrDetail(binary.LittleEndian.Uint16(body[2:]))
+	return binary.LittleEndian.Uint16(body) == EtherCATMailboxErrCommand &&
+		detail >= EtherCATMailboxErrSyntax && detail <= EtherCATMailboxErrServiceBusy
 }
 
 // decodeEtherCATCoE decodes a CoE header and, for SDO services, the SDO
@@ -356,7 +446,8 @@ func (s *EtherCATSDO) decodeFlags(data []byte, service EtherCATCoEService) {
 
 // findMailbox applies Wireshark's mailbox heuristic to a datagram: a
 // write, or a read with a working counter of one, to ADO 0x1000 or above,
-// whose header names a known mailbox type with a sane length.
+// whose header names a known mailbox type with a sane length. Error
+// replies (type 0) are found too, by a stricter test.
 func findMailbox(d *EtherCATDatagram) *EtherCATMailbox {
 	if len(d.Data) < ethercatMailboxHeaderLen || d.ADO() < ethercatMailboxMinADO {
 		return nil
@@ -375,6 +466,12 @@ func findMailbox(d *EtherCATDatagram) *EtherCATMailbox {
 	switch EtherCATMailboxType(d.Data[5] & ethercatTypeMask) {
 	case EtherCATMailboxAoE, EtherCATMailboxEoE, EtherCATMailboxCoE,
 		EtherCATMailboxFoE, EtherCATMailboxSoE, EtherCATMailboxVoE:
+	case EtherCATMailboxERR:
+		// Wireshark leaves error replies out; they are taken here when
+		// every field of the reply fits.
+		if !isEtherCATMbxError(d.Data) {
+			return nil
+		}
 	default:
 		return nil
 	}
