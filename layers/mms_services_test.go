@@ -116,7 +116,7 @@ func mmsWantAlt() []MMSAlternateAccess {
 
 var mmsTOD = mhex("000003e8") // 1 s after midnight, no date
 
-func mmsVectors() []mmsVector {
+func mmsBaseVectors() []mmsVector {
 	ld0 := MMSObjectName{MMSScopeDomain, "LD0", "DS1"}
 	vmd := func(s string) MMSObjectName { return MMSObjectName{Scope: MMSScopeVMD, ItemID: s} }
 	piName := "R395024397Application_1"
@@ -244,7 +244,7 @@ func mmsVectors() []mmsVector {
 			return m.ProgramReq.ExecutionArgument == "arg"
 		}},
 		{"getProgramInvocationAttributes response", mresp(mc(45, mp(0, []byte{3}), mc(1, mvs("D1")), mp(2, []byte{0xff}), mp(3, []byte{0}), mp(4, []byte{0xff}), mp(5, []byte("go")), mp(1, []byte("x")))), func(m *MMS) bool {
-			return reflect.DeepEqual(*m.ProgramAttributes, MMSProgramAttributes{MMSProgramRunning, []string{"D1"}, true, false, true, "go", "x"})
+			return reflect.DeepEqual(*m.ProgramAttributes, MMSProgramAttributes{State: MMSProgramRunning, Domains: []string{"D1"}, Deletable: true, Monitor: true, StartArgument: "go", ExecutionArgument: "x"})
 		}},
 
 		// Files.
@@ -284,15 +284,17 @@ func mmsVectors() []mmsVector {
 		{"readJournal", mreq(mc(65, mc(0, mdom("LD0", "LOG")), mc(1, mp(0, mmsTOD)))), func(m *MMS) bool {
 			return m.JournalReq.Name == MMSObjectName{MMSScopeDomain, "LD0", "LOG"}
 		}},
-		{"readJournal response", mresp(mc(65, mc(0, iecTLV(0x30, mp(0, []byte{1})), iecTLV(0x30, mp(0, []byte{2}))), mp(1, []byte{0xff}))), func(m *MMS) bool {
-			return *m.JournalResp == MMSJournalResponse{Entries: 2, MoreFollows: true}
+		{"readJournal response", mresp(mc(65, mc(0, mjentry(1), mjentry(2)), mp(1, []byte{0xff}))), func(m *MMS) bool {
+			r := m.JournalResp
+			return r.Entries == 2 && r.MoreFollows && len(r.List) == 2 && bytes.Equal(r.List[1].ID, []byte{2}) &&
+				r.List[0].Content.OccurrenceTime.Equal(mmsTODTime)
 		}},
-		{"writeJournal", mreq(mc(66, mc(0, mvmd("J")), mc(1, iecTLV(0x30), iecTLV(0x30), iecTLV(0x30)))), func(m *MMS) bool {
-			return *m.JournalReq == MMSJournalRequest{vmd("J"), 3}
+		{"writeJournal", mreq(mc(66, mc(0, mvmd("J")), mc(1, iecTLV(0x30, mp(0, mmsTOD)), iecTLV(0x30, mp(0, mmsTOD)), iecTLV(0x30, mp(0, mmsTOD))))), func(m *MMS) bool {
+			return m.JournalReq.Name == vmd("J") && m.JournalReq.Entries == 3 && len(m.JournalReq.Content) == 3
 		}},
 		{"reportJournalStatus", mreq(mc(68, mvmd("J"))), func(m *MMS) bool { return *m.ObjectName == vmd("J") }},
 		{"reportJournalStatus response", mresp(mc(68, mp(0, []byte{5}), mp(1, []byte{0xff}))), func(m *MMS) bool {
-			return *m.JournalResp == MMSJournalResponse{CurrentEntries: 5, Deletable: true}
+			return reflect.DeepEqual(*m.JournalResp, MMSJournalResponse{CurrentEntries: 5, Deletable: true})
 		}},
 
 		// Events.
@@ -332,8 +334,9 @@ func mmsVectors() []mmsVector {
 		{"getAlarmSummary filter", mreq(mc(63, mp(2, []byte{2}), mc(3, mp(0, []byte{1}), mp(1, []byte{100})), mc(5, mvmd("EC9")))), func(m *MMS) bool {
 			return *m.AlarmSummaryReq == MMSAlarmSummaryRequest{true, true, 2, true, 1, 100, true, vmd("EC9")}
 		}},
-		{"getAlarmSummary response", mresp(mc(63, mc(0, iecTLV(0x30), iecTLV(0x30)), mp(1, []byte{0xff}))), func(m *MMS) bool {
-			return *m.AlarmSummary == MMSAlarmSummaryResponse{2, true}
+		{"getAlarmSummary response", mresp(mc(63, mc(0, iecTLV(0x30, mc(0, mvmd("EC1"))), iecTLV(0x30, mc(0, mvmd("EC2")))), mp(1, []byte{0xff}))), func(m *MMS) bool {
+			a := m.AlarmSummary
+			return a.Summaries == 2 && a.MoreFollows && len(a.List) == 2 && a.List[1].ConditionName == vmd("EC2")
 		}},
 
 		// Errors.
@@ -801,6 +804,12 @@ func FuzzMMSServices(f *testing.F) {
 		m := &MMS{}
 		if err := m.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err == nil && len(m.Contents) > len(data) {
 			t.Fatal("contents longer than input")
+		}
+		if m.EventAction != nil {
+			_, _ = m.EventAction.Request()
+		}
+		if m.EventNotification != nil {
+			_, _ = m.EventNotification.Response()
 		}
 
 		// Through the stack, with the PDU as a second PDV.

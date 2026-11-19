@@ -29,6 +29,10 @@ const (
 	ISOPresentationARU
 	ISOPresentationARP
 	ISOPresentationUserData
+	// ISOPresentationRTTP and ISOPresentationRTTR are the token and data
+	// APDUs X.410-1984 mode sends as bare session user data.
+	ISOPresentationRTTP
+	ISOPresentationRTTR
 )
 
 // String returns the PPDU abbreviation.
@@ -46,6 +50,10 @@ func (t ISOPresentationType) String() string {
 		return "ARP"
 	case ISOPresentationUserData:
 		return "UserData"
+	case ISOPresentationRTTP:
+		return "RTTP"
+	case ISOPresentationRTTR:
+		return "RTTR"
 	default:
 		return fmt.Sprintf("Unknown(%d)", uint8(t))
 	}
@@ -106,6 +114,24 @@ const (
 	isoPresTagFullyEncoded  uint32 = 1
 )
 
+// x410-mode parameter tags: the fields of the X.410 RTORQ, RTOAC, RTORJ
+// and RTAB APDUs.
+const (
+	isoPresTagRTCheckpoint uint32 = 0
+	isoPresTagRTWindow     uint32 = 1
+	isoPresTagRTDialogue   uint32 = 2
+	isoPresTagRTDataRQ     uint32 = 3
+	isoPresTagRTProtocol   uint32 = 4
+	isoPresTagRTDataAC     uint32 = 2
+	isoPresTagRTRecover    uint32 = 1
+	isoPresTagRTReason     uint32 = 0
+	isoPresTagRTRefuseData uint32 = 1
+	isoPresTagRTReflected  uint32 = 1
+	isoPresTagRTAbortData  uint32 = 2
+
+	isoPresDefaultWindow = 3
+)
+
 var (
 	errISOPresUnknown = errors.New("ISO presentation: unknown PPDU")
 	errISOPresPDV     = errors.New("ISO presentation: PDV without data")
@@ -139,6 +165,38 @@ type ISOPresentationPDV struct {
 	Data           []byte
 }
 
+// ISOPresentationX410 holds the x410-mode parameters of a PPDU: the
+// fields of the X.410-1984 reliable transfer APDU it stands for.
+//
+//	CP    RTORQ  CheckpointSize, WindowSize, DialogueMode, ConnectionData
+//	             or Recover, ApplicationProtocol
+//	CPA   RTOAC  CheckpointSize, WindowSize, ConnectionData or Recover
+//	CPR   RTORJ  Reason, UserData
+//	ARU   RTAB   Reason, Reflected, UserData
+//	RTTP         Priority
+//
+// CheckpointSize defaults to 0 and WindowSize to 3.
+type ISOPresentationX410 struct {
+	CheckpointSize int64
+	WindowSize     int64
+	// DialogueMode is 0 monologue, 1 two way alternate.
+	DialogueMode           int64
+	ApplicationProtocol    int64
+	HasApplicationProtocol bool
+	// ConnectionData is the open value, or the session connection
+	// identifier of a recovered connection when Recover is set.
+	ConnectionData []byte
+	Recover        bool
+
+	// Reason is the refuseReason or abortReason.
+	Reason    int64
+	HasReason bool
+	// Reflected is the reflectedParameter BIT STRING value.
+	Reflected []byte
+	UserData  []byte
+	Priority  int64
+}
+
 // ISOPresentation is an ISO 8823 PPDU. The layer payload is the data of
 // the first PDV, and only that PDV is routed to the next layer. PDVs
 // lists all of them; PDVLayer decodes any one.
@@ -166,6 +224,9 @@ type ISOPresentation struct {
 	EventID           int64
 	PDVs              []ISOPresentationPDV
 	SimplyEncoded     []byte
+	// X410 is set for a PPDU with x410-mode parameters and for the RTTP
+	// and RTTR APDUs. The data of an RTTR is the layer payload.
+	X410 *ISOPresentationX410
 
 	next gopacket.LayerType
 }
@@ -198,6 +259,16 @@ func (p *ISOPresentation) decode(data []byte, want ISOPresentationType) error {
 	p.Contents = data[:len(data)-len(rest)]
 
 	switch {
+	case t.is(osiBERUniversal, osiBERConstructed, osiBERTagSet) && (want == ISOPresentationCPR || want == ISOPresentationARP):
+		err = p.decodeX410End(t.Value, want)
+	case t.is(osiBERUniversal, osiBERPrimitive, osiBERTagInteger) && len(rest) == 0:
+		p.Type = ISOPresentationRTTP
+		p.X410 = &ISOPresentationX410{}
+		p.X410.Priority, err = osiBERInt(t.Value)
+	case t.is(osiBERUniversal, osiBERPrimitive, osiBERTagOctetStr) && len(rest) == 0:
+		p.Type = ISOPresentationRTTR
+		p.X410 = &ISOPresentationX410{}
+		p.Payload = t.Value
 	case t.is(osiBERUniversal, osiBERConstructed, osiBERTagSet):
 		err = p.decodeConnect(t.Value, want)
 	case t.is(osiBERUniversal, osiBERConstructed, osiBERTagSequence):
@@ -223,6 +294,8 @@ func (p *ISOPresentation) decode(data []byte, want ISOPresentationType) error {
 // decodeConnect decodes the CP-type or CPA-PPDU SET.
 func (p *ISOPresentation) decodeConnect(b []byte, want ISOPresentationType) error {
 	p.Type = want
+	var x410 []byte
+	hasX410 := false
 	for len(b) > 0 {
 		t, rest, err := osiBERNext(b)
 		if err != nil {
@@ -238,11 +311,17 @@ func (p *ISOPresentation) decodeConnect(b []byte, want ISOPresentationType) erro
 			if err := p.decodeMode(t.Value); err != nil {
 				return err
 			}
+		case isoPresTagX410Mode:
+			x410, hasX410 = t.Value, t.Form == osiBERConstructed
 		case isoPresTagNormalMode:
 			if err := p.decodeNormal(t.Value); err != nil {
 				return err
 			}
 		}
+	}
+
+	if hasX410 {
+		return p.decodeX410Open(x410)
 	}
 
 	// Without a session hint, a responding selector or result list means
@@ -253,6 +332,103 @@ func (p *ISOPresentation) decodeConnect(b []byte, want ISOPresentationType) erro
 			p.Type = ISOPresentationCPA
 		}
 	}
+	return nil
+}
+
+// decodeX410Open reads the x410-mode parameters of a CP (RTORQ) or CPA
+// (RTOAC). Both start with [0] checkpointSize and [1] windowSize; [2] is
+// the primitive dialogueMode of a CP or the constructed connectionDataAC
+// of a CPA, which tells them apart without a session hint.
+func (p *ISOPresentation) decodeX410Open(b []byte) error {
+	x := &ISOPresentationX410{WindowSize: isoPresDefaultWindow}
+	accept := false
+	for len(b) > 0 {
+		t, rest, err := osiBERNext(b)
+		if err != nil {
+			return err
+		}
+		b = rest
+
+		switch {
+		case t.is(osiBERContext, osiBERPrimitive, isoPresTagRTCheckpoint):
+			x.CheckpointSize, err = osiBERInt(t.Value)
+		case t.is(osiBERContext, osiBERPrimitive, isoPresTagRTWindow):
+			x.WindowSize, err = osiBERInt(t.Value)
+		case t.is(osiBERContext, osiBERPrimitive, isoPresTagRTDialogue):
+			x.DialogueMode, err = osiBERInt(t.Value)
+		case t.is(osiBERContext, osiBERConstructed, isoPresTagRTDataAC):
+			accept = true
+			err = x.decodeConnData(t.Value)
+		case t.is(osiBERContext, osiBERConstructed, isoPresTagRTDataRQ):
+			err = x.decodeConnData(t.Value)
+		case t.is(osiBERContext, osiBERPrimitive, isoPresTagRTProtocol):
+			x.ApplicationProtocol, err = osiBERInt(t.Value)
+			x.HasApplicationProtocol = true
+		}
+		if err != nil {
+			return err
+		}
+	}
+
+	p.X410 = x
+	if p.Type != ISOPresentationCP && p.Type != ISOPresentationCPA {
+		p.Type = ISOPresentationCP
+		if accept {
+			p.Type = ISOPresentationCPA
+		}
+	}
+	return nil
+}
+
+// decodeConnData reads ConnectionData: open [0] ANY or recover [1]
+// SessionConnectionIdentifier.
+func (x *ISOPresentationX410) decodeConnData(b []byte) error {
+	t, err := osiBERSingle(b)
+	if err != nil {
+		return err
+	}
+	if t.Class != osiBERContext || t.Form != osiBERConstructed || t.Tag > isoPresTagRTRecover {
+		return errISOPresUnknown
+	}
+
+	x.ConnectionData = t.Value
+	x.Recover = t.Tag == isoPresTagRTRecover
+	return nil
+}
+
+// decodeX410End reads the x410-mode SET a Refuse or Abort SPDU carries:
+// RTORJ { [0] refuseReason, [1] userDataRJ } as a CPR, or RTAB { [0]
+// abortReason, [1] reflectedParameter, [2] userdataAB } as an ARU.
+func (p *ISOPresentation) decodeX410End(b []byte, want ISOPresentationType) error {
+	p.Type = ISOPresentationCPR
+	data := isoPresTagRTRefuseData
+	if want == ISOPresentationARP {
+		p.Type = ISOPresentationARU
+		data = isoPresTagRTAbortData
+	}
+
+	x := &ISOPresentationX410{}
+	for len(b) > 0 {
+		t, rest, err := osiBERNext(b)
+		if err != nil {
+			return err
+		}
+		b = rest
+
+		switch {
+		case t.is(osiBERContext, osiBERPrimitive, isoPresTagRTReason):
+			x.Reason, err = osiBERInt(t.Value)
+			x.HasReason = true
+		case t.is(osiBERContext, osiBERConstructed, data):
+			x.UserData = t.Value
+		case p.Type == ISOPresentationARU && t.is(osiBERContext, osiBERPrimitive, isoPresTagRTReflected):
+			x.Reflected = t.Value
+		}
+		if err != nil {
+			return err
+		}
+	}
+	p.X410 = x
 	return nil
 }
 
@@ -558,6 +734,12 @@ func (p *ISOPresentation) route() {
 		p.Payload = p.SimplyEncoded
 	}
 	if len(p.Payload) == 0 {
+		return
+	}
+
+	// The data of an RTTR is a fragment of an X.400 APDU.
+	if p.Type == ISOPresentationRTTR {
+		p.next = gopacket.LayerTypePayload
 		return
 	}
 

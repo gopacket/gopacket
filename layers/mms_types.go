@@ -504,10 +504,18 @@ func decodeMMSAddressIn(b []byte) (MMSAddress, error) {
 	return decodeMMSAddress(t)
 }
 
-// decodeSpec fills the address and variableDescription alternatives of a
-// VariableSpecification. The scatteredAccessDescription stays raw in Spec.
-func (v *MMSVariable) decodeSpec(spec osiBERTLV) error {
+// decodeSpec fills the address, variableDescription and
+// scatteredAccessDescription alternatives of a VariableSpecification
+// nested depth scattered accesses deep.
+func (v *MMSVariable) decodeSpec(spec osiBERTLV, depth int) error {
 	switch v.Kind {
+	case MMSVariableScattered:
+		if spec.Form != osiBERConstructed {
+			return errMMSField
+		}
+		var err error
+		v.Scattered, err = decodeMMSScattered(spec.Value, depth)
+		return err
 	case MMSVariableAddress:
 		if spec.Form != osiBERConstructed {
 			return errMMSField

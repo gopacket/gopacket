@@ -8,6 +8,7 @@ package layers
 
 import (
 	"fmt"
+	"math"
 	"time"
 )
 
@@ -26,6 +27,18 @@ func mmsResult[T any](v *T, err error) (*T, error) {
 		return nil, err
 	}
 	return v, nil
+}
+
+// mmsUint16 decodes an Unsigned16.
+func mmsUint16(v []byte) (uint16, error) {
+	n, err := osiBERUint(v)
+	if err != nil {
+		return 0, err
+	}
+	if n > math.MaxUint16 {
+		return 0, errOSIBERInteger
+	}
+	return uint16(n), nil
 }
 
 // mmsFields calls f for each TLV of a SEQUENCE body.
@@ -116,6 +129,12 @@ func decodeMMSObjectNames(b []byte) ([]MMSObjectName, error) {
 // the name must decode; the other alternatives are best effort and keep
 // their raw encoding in Spec.
 func decodeMMSVarSpec(spec osiBERTLV) (MMSVariable, error) {
+	return decodeMMSVarSpecAt(spec, 0)
+}
+
+// decodeMMSVarSpecAt is decodeMMSVarSpec for a specification nested depth
+// scattered access descriptions deep.
+func decodeMMSVarSpecAt(spec osiBERTLV, depth int) (MMSVariable, error) {
 	if spec.Class != osiBERContext || spec.Tag > uint32(MMSVariableInvalidated) {
 		return MMSVariable{}, errMMSField
 	}
@@ -128,8 +147,8 @@ func decodeMMSVarSpec(spec osiBERTLV) (MMSVariable, error) {
 	}
 
 	// A malformed address or description leaves only the raw Spec.
-	if err := v.decodeSpec(spec); err != nil {
-		v.Address, v.Type = MMSAddress{}, nil
+	if err := v.decodeSpec(spec, depth); err != nil {
+		v.Address, v.Type, v.Scattered = MMSAddress{}, nil, nil
 	}
 	return v, nil
 }
@@ -510,17 +529,26 @@ func (s MMSDomainState) String() string {
 //	Sharable      initiateDownloadSequence
 //	Discard       terminateDownloadSequence, when the download failed
 //	ULSMID        uploadSegment, terminateUploadSequence
+//
+// requestDomainDownload and loadDomainContent fill DomainName,
+// Capabilities, Sharable and FileName; requestDomainUpload and
+// storeDomainContent DomainName and FileName. ThirdParty is set for
+// loadDomainContent and storeDomainContent only.
 type MMSDomainRequest struct {
 	DomainName   string
 	Capabilities []string
 	Sharable     bool
 	Discard      *MMSServiceError
 	ULSMID       int32
+	FileName     []string
+	ThirdParty   *MMSApplicationReference
 }
 
 // MMSDomainResponse holds a getDomainAttributes, initiateUploadSequence,
 // downloadSegment or uploadSegment response. Segment data stays raw in
 // LoadData; Coded tells it is an EXTERNAL rather than non-coded octets.
+// LoadKind tells the loadData alternative and External is the decoded
+// EXTERNAL of coded data, nil when it is malformed.
 type MMSDomainResponse struct {
 	Capabilities       []string
 	State              MMSDomainState
@@ -533,6 +561,8 @@ type MMSDomainResponse struct {
 
 	LoadData    []byte
 	Coded       bool
+	LoadKind    MMSLoadDataKind
+	External    *ISOPresentationPDV
 	MoreFollows bool
 }
 
@@ -542,9 +572,12 @@ const (
 	mmsTagDomCaps     uint32 = 1
 	mmsTagDomSharable uint32 = 2
 	mmsTagDomDiscard  uint32 = 1
+	mmsTagDomDLFile   uint32 = 4
+	mmsTagDomDLThird  uint32 = 5
+	mmsTagDomULFile   uint32 = 1
+	mmsTagDomULThird  uint32 = 2
 	mmsTagULSMID      uint32 = 0
 	mmsTagULCaps      uint32 = 1
-	mmsTagSegNonCoded uint32 = 0
 	mmsTagSegMore     uint32 = 1
 	mmsTagDACaps      uint32 = 0
 	mmsTagDAState     uint32 = 1
@@ -575,8 +608,12 @@ func decodeMMSULSMID(t osiBERTLV) (*MMSDomainRequest, error) {
 }
 
 // decodeMMSDownloadReq reads InitiateDownloadSequence-Request ([0] name,
-// [1] capabilities, [2] sharable) or TerminateDownloadSequence-Request
-// ([0] name, [1] discard ServiceError OPTIONAL).
+// [1] capabilities, [2] sharable), TerminateDownloadSequence-Request
+// ([0] name, [1] discard ServiceError OPTIONAL), RequestDomainDownload-
+// and LoadDomainContent-Request (as initiate, then [4] fileName and, to
+// load, [5] thirdParty) or RequestDomainUpload- and
+// StoreDomainContent-Request ([0] name, [1] fileName and, to store, [2]
+// thirdParty).
 func decodeMMSDownloadReq(t osiBERTLV, s MMSConfirmedService) (*MMSDomainRequest, error) {
 	b, err := mmsBody(t, osiBERConstructed)
 	if err != nil {
@@ -589,16 +626,36 @@ func decodeMMSDownloadReq(t osiBERTLV, s MMSConfirmedService) (*MMSDomainRequest
 		switch {
 		case f.is(osiBERContext, osiBERPrimitive, mmsTagDomName):
 			r.DomainName = string(f.Value)
-		case s == MMSInitiateDownloadSequence && f.is(osiBERContext, osiBERConstructed, mmsTagDomCaps):
+		case s == MMSRequestDomainUpload || s == MMSStoreDomainContent:
+			err = r.decodeFile(f, s, mmsTagDomULFile, mmsTagDomULThird)
+		case s != MMSTerminateDownloadSequence && f.is(osiBERContext, osiBERConstructed, mmsTagDomCaps):
 			r.Capabilities, err = decodeMMSStrings(f.Value, osiBERTagVisible)
-		case s == MMSInitiateDownloadSequence && f.is(osiBERContext, osiBERPrimitive, mmsTagDomSharable):
+		case s != MMSTerminateDownloadSequence && f.is(osiBERContext, osiBERPrimitive, mmsTagDomSharable):
 			r.Sharable, err = osiBERBool(f.Value)
+		case s == MMSRequestDomainDownload || s == MMSLoadDomainContent:
+			err = r.decodeFile(f, s, mmsTagDomDLFile, mmsTagDomDLThird)
 		case s == MMSTerminateDownloadSequence && f.is(osiBERContext, osiBERConstructed, mmsTagDomDiscard):
 			r.Discard, err = decodeMMSServiceError(f.Value)
 		}
 		return err
 	})
 	return mmsResult(r, err)
+}
+
+// decodeFile stores the fileName and thirdParty of the requests that
+// move a domain to or from a file, found under the tags file and third.
+// Only loadDomainContent and storeDomainContent name a third party.
+func (r *MMSDomainRequest) decodeFile(f osiBERTLV, s MMSConfirmedService, file, third uint32) error {
+	var err error
+	switch {
+	case f.is(osiBERContext, osiBERConstructed, file):
+		r.FileName, err = decodeMMSFileName(f.Value)
+	case s == MMSRequestDomainDownload || s == MMSRequestDomainUpload:
+	case f.is(osiBERContext, osiBERConstructed, third):
+		// Best effort, as the ACSE titles are.
+		r.ThirdParty, _ = decodeMMSAppRef(f.Value)
+	}
+	return err
 }
 
 // decodeMMSUploadResp reads InitiateUploadSequence-Response: [0] ulsmID,
@@ -626,7 +683,8 @@ func decodeMMSUploadResp(t osiBERTLV) (*MMSDomainResponse, error) {
 }
 
 // decodeMMSSegmentResp reads Download/UploadSegment-Response: loadData
-// CHOICE { [0] non-coded, EXTERNAL }, [1] moreFollows DEFAULT TRUE.
+// CHOICE { [0] non-coded, EXTERNAL, EMBEDDED PDV }, [1] moreFollows
+// DEFAULT TRUE.
 func decodeMMSSegmentResp(t osiBERTLV) (*MMSDomainResponse, error) {
 	b, err := mmsBody(t, osiBERConstructed)
 	if err != nil {
@@ -635,17 +693,20 @@ func decodeMMSSegmentResp(t osiBERTLV) (*MMSDomainResponse, error) {
 
 	r := &MMSDomainResponse{MoreFollows: true}
 	err = mmsFields(b, func(f osiBERTLV) error {
-		var err error
-		switch {
-		case f.is(osiBERContext, osiBERPrimitive, mmsTagSegNonCoded):
-			r.LoadData = f.Value
-		case f.is(osiBERUniversal, osiBERConstructed, osiBERTagExternal):
-			r.LoadData = f.Value
-			r.Coded = true
-		case f.is(osiBERContext, osiBERPrimitive, mmsTagSegMore):
+		if f.is(osiBERContext, osiBERPrimitive, mmsTagSegMore) {
+			var err error
 			r.MoreFollows, err = osiBERBool(f.Value)
+			return err
 		}
-		return err
+
+		// A malformed EXTERNAL stays raw in LoadData.
+		l, ok, _ := decodeMMSLoadData(f)
+		if !ok {
+			return nil
+		}
+		r.LoadData, r.LoadKind, r.External = l.Data, l.Kind, l.External
+		r.Coded = l.Kind == MMSLoadCoded
+		return nil
 	})
 	return mmsResult(r, err)
 }
@@ -707,7 +768,8 @@ func (s MMSProgramState) String() string { return mmsEnumName(mmsProgramStateNam
 
 // MMSProgramRequest holds the arguments of the program invocation
 // requests. Name is always set; createProgramInvocation fills Domains,
-// Reusable and Monitor, start and resume the ExecutionArgument string.
+// Reusable and Monitor, start and resume the ExecutionArgument string or,
+// when it is encoded as an EXTERNAL, ExecutionExternal.
 type MMSProgramRequest struct {
 	Name              string
 	Domains           []string
@@ -715,6 +777,7 @@ type MMSProgramRequest struct {
 	Monitor           bool
 	HasMonitor        bool
 	ExecutionArgument string
+	ExecutionExternal *ISOPresentationPDV
 }
 
 // MMSProgramAttributes is a GetProgramInvocationAttributes-Response.
@@ -726,6 +789,10 @@ type MMSProgramAttributes struct {
 	Monitor           bool
 	StartArgument     string
 	ExecutionArgument string
+	// ExecutionExternal is the execution argument encoded as an EXTERNAL.
+	ExecutionExternal *ISOPresentationPDV
+	// AccessControlList is the ISO 9506-2:2003 addition.
+	AccessControlList string
 }
 
 // Program invocation tags.
@@ -742,7 +809,17 @@ const (
 	mmsTagPIAMonitor  uint32 = 4
 	mmsTagPIAStart    uint32 = 5
 	mmsTagPIAExec     uint32 = 1
+	mmsTagPIAACL      uint32 = 6
 )
+
+// mmsExternal decodes an EXTERNAL body, nil when it is malformed.
+func mmsExternal(b []byte) *ISOPresentationPDV {
+	ext, err := decodeISOPresPDV(b)
+	if err != nil {
+		return nil
+	}
+	return &ext
+}
 
 // decodeMMSProgramName reads a bare Identifier request.
 func decodeMMSProgramName(t osiBERTLV) (*MMSProgramRequest, error) {
@@ -775,6 +852,8 @@ func decodeMMSProgramReq(t osiBERTLV) (*MMSProgramRequest, error) {
 			r.Domains, err = decodeMMSStrings(f.Value, osiBERTagVisible)
 		case f.is(osiBERContext, osiBERPrimitive, mmsTagPIArgument):
 			r.ExecutionArgument = string(f.Value)
+		case f.is(osiBERUniversal, osiBERConstructed, osiBERTagExternal):
+			r.ExecutionExternal = mmsExternal(f.Value)
 		case f.is(osiBERContext, osiBERPrimitive, mmsTagPIReusable):
 			r.Reusable, err = osiBERBool(f.Value)
 		case f.is(osiBERContext, osiBERPrimitive, mmsTagPIMonitor):
@@ -808,6 +887,10 @@ func decodeMMSProgramAttrs(t osiBERTLV) (*MMSProgramAttributes, error) {
 			r.Domains, err = decodeMMSStrings(f.Value, osiBERTagVisible)
 		case f.is(osiBERContext, osiBERPrimitive, mmsTagPIAExec):
 			r.ExecutionArgument = string(f.Value)
+		case f.is(osiBERUniversal, osiBERConstructed, osiBERTagExternal):
+			r.ExecutionExternal = mmsExternal(f.Value)
+		case f.is(osiBERContext, osiBERPrimitive, mmsTagPIAACL):
+			r.AccessControlList = string(f.Value)
 		case f.is(osiBERContext, osiBERPrimitive, mmsTagPIADeletabl):
 			r.Deletable, err = osiBERBool(f.Value)
 		case f.is(osiBERContext, osiBERPrimitive, mmsTagPIAReusable):
@@ -1075,88 +1158,6 @@ func decodeMMSDirEntries(b []byte) ([]MMSDirectoryEntry, error) {
 	return out, nil
 }
 
-// MMSJournalRequest holds the journalName of the journal requests and,
-// for writeJournal, the number of entries written. Entry contents and
-// read ranges stay raw in ServiceData.
-type MMSJournalRequest struct {
-	Name    MMSObjectName
-	Entries int
-}
-
-// MMSJournalResponse is a ReadJournal-Response (Entries, MoreFollows) or
-// a ReportJournalStatus-Response (CurrentEntries, Deletable). Journal
-// entries stay raw in ServiceData.
-type MMSJournalResponse struct {
-	Entries        int
-	MoreFollows    bool
-	CurrentEntries uint32
-	Deletable      bool
-}
-
-// Journal tags.
-const (
-	mmsTagJouName      uint32 = 0
-	mmsTagJouEntries   uint32 = 1
-	mmsTagJouList      uint32 = 0
-	mmsTagJouMore      uint32 = 1
-	mmsTagJouCurrent   uint32 = 0
-	mmsTagJouDeletable uint32 = 1
-)
-
-// decodeMMSJournalReq reads the [0] journalName of a journal request and
-// counts the [1] entries of a WriteJournal-Request.
-func decodeMMSJournalReq(t osiBERTLV, s MMSConfirmedService) (*MMSJournalRequest, error) {
-	b, err := mmsBody(t, osiBERConstructed)
-	if err != nil {
-		return nil, err
-	}
-
-	r := &MMSJournalRequest{}
-	found := false
-	err = mmsFields(b, func(f osiBERTLV) error {
-		var err error
-		switch {
-		case f.is(osiBERContext, osiBERConstructed, mmsTagJouName):
-			r.Name, err = decodeMMSObjectNameIn(f.Value)
-			found = true
-		case s == MMSWriteJournal && f.is(osiBERContext, osiBERConstructed, mmsTagJouEntries):
-			r.Entries, err = osiBERCount(f.Value)
-		}
-		return err
-	})
-	if err == nil && !found {
-		err = errMMSField
-	}
-	return mmsResult(r, err)
-}
-
-// decodeMMSJournalResp reads ReadJournal-Response ([0] entries, [1]
-// moreFollows DEFAULT FALSE) or ReportJournalStatus-Response ([0]
-// currentEntries, [1] mmsDeletable).
-func decodeMMSJournalResp(t osiBERTLV, s MMSConfirmedService) (*MMSJournalResponse, error) {
-	b, err := mmsBody(t, osiBERConstructed)
-	if err != nil {
-		return nil, err
-	}
-
-	r := &MMSJournalResponse{}
-	err = mmsFields(b, func(f osiBERTLV) error {
-		var err error
-		switch {
-		case s == MMSReadJournal && f.is(osiBERContext, osiBERConstructed, mmsTagJouList):
-			r.Entries, err = osiBERCount(f.Value)
-		case s == MMSReadJournal && f.is(osiBERContext, osiBERPrimitive, mmsTagJouMore):
-			r.MoreFollows, err = osiBERBool(f.Value)
-		case s == MMSReportJournalStatus && f.is(osiBERContext, osiBERPrimitive, mmsTagJouCurrent):
-			r.CurrentEntries, err = osiBERUint32(f.Value)
-		case s == MMSReportJournalStatus && f.is(osiBERContext, osiBERPrimitive, mmsTagJouDeletable):
-			r.Deletable, err = osiBERBool(f.Value)
-		}
-		return err
-	})
-	return mmsResult(r, err)
-}
-
 // MMSEventState is an EC-State.
 type MMSEventState int64
 
@@ -1399,27 +1400,33 @@ func decodeMMSEventStatus(t osiBERTLV) (*MMSEventConditionStatus, error) {
 
 	s := &MMSEventConditionStatus{}
 	err = mmsFields(b, func(f osiBERTLV) error {
-		var err error
-		switch {
-		case f.is(osiBERContext, osiBERPrimitive, mmsTagECSState):
-			var n int64
-			n, err = osiBERInt(f.Value)
-			s.State = MMSEventState(n)
-		case f.is(osiBERContext, osiBERPrimitive, mmsTagECSCount):
-			s.Enrollments, err = osiBERUint32(f.Value)
-		case f.is(osiBERContext, osiBERPrimitive, mmsTagECSEnabled):
-			s.Enabled, err = osiBERBool(f.Value)
-			s.HasEnabled = true
-		case f.is(osiBERContext, osiBERConstructed, mmsTagECSToActive):
-			s.ToActive, err = decodeMMSEventTimeIn(f.Value)
-			s.HasToActive = true
-		case f.is(osiBERContext, osiBERConstructed, mmsTagECSToIdle):
-			s.ToIdle, err = decodeMMSEventTimeIn(f.Value)
-			s.HasToIdle = true
-		}
-		return err
+		return s.decodeField(f, 0)
 	})
 	return mmsResult(s, err)
+}
+
+// decodeField stores one status field. base is added to the tags: an
+// event condition list entry shifts them by one for its name.
+func (s *MMSEventConditionStatus) decodeField(f osiBERTLV, base uint32) error {
+	var err error
+	switch {
+	case f.is(osiBERContext, osiBERPrimitive, base+mmsTagECSState):
+		var n int64
+		n, err = osiBERInt(f.Value)
+		s.State = MMSEventState(n)
+	case f.is(osiBERContext, osiBERPrimitive, base+mmsTagECSCount):
+		s.Enrollments, err = osiBERUint32(f.Value)
+	case f.is(osiBERContext, osiBERPrimitive, base+mmsTagECSEnabled):
+		s.Enabled, err = osiBERBool(f.Value)
+		s.HasEnabled = true
+	case f.is(osiBERContext, osiBERConstructed, base+mmsTagECSToActive):
+		s.ToActive, err = decodeMMSEventTimeIn(f.Value)
+		s.HasToActive = true
+	case f.is(osiBERContext, osiBERConstructed, base+mmsTagECSToIdle):
+		s.ToIdle, err = decodeMMSEventTimeIn(f.Value)
+		s.HasToIdle = true
+	}
+	return err
 }
 
 // MMSEventNotification is an EventNotification.
@@ -1442,6 +1449,10 @@ type MMSEventNotification struct {
 	ActionName     MMSObjectName
 	ActionResponse []byte
 	ActionError    *MMSServiceError
+	// ModifierPosition tells which modifier of the action failed (ISO
+	// 9506-2:2003).
+	ModifierPosition    uint32
+	HasModifierPosition bool
 }
 
 // Event notification tags.
@@ -1458,6 +1469,8 @@ const (
 	mmsTagENCondUndef  uint32 = 1
 	mmsTagENSuccess    uint32 = 0
 	mmsTagENFailure    uint32 = 1
+	mmsTagENModPos     uint32 = 0
+	mmsTagENSvcError   uint32 = 1
 )
 
 // decodeMMSEventNotif reads EventNotification.
@@ -1539,12 +1552,61 @@ func (e *MMSEventNotification) decodeAction(b []byte) error {
 	case r.is(osiBERContext, osiBERConstructed, mmsTagENSuccess):
 		e.ActionResponse = r.Value
 	case r.is(osiBERContext, osiBERConstructed, mmsTagENFailure):
-		e.ActionError, err = decodeMMSServiceError(r.Value)
+		e.ActionError, err = e.decodeFailure(r.Value)
 	default:
 		err = errMMSField
 	}
 	e.HasAction = err == nil
 	return err
+}
+
+// Response decodes the ConfirmedServiceResponse of a successful action,
+// kept raw in ActionResponse, as a confirmed-ResponsePDU without
+// invokeID.
+func (e *MMSEventNotification) Response() (*MMS, error) {
+	if e.ActionResponse == nil {
+		return nil, errMMSNoService
+	}
+	t, err := osiBERSingle(e.ActionResponse)
+	if err != nil {
+		return nil, err
+	}
+	if t.Class != osiBERContext || t.Tag == mmsTagServiceExt || t.Tag > mmsMaxServiceTag {
+		return nil, errMMSField
+	}
+
+	m := &MMS{Type: MMSConfirmedResponse, Service: MMSConfirmedService(t.Tag), ServiceData: t.Value}
+	if err := m.decodeResponse(t); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// decodeFailure reads the failure of an action. ISO 9506-2:1990 has a
+// bare ServiceError there, the 2003 edition SEQUENCE { [0]
+// modifierPosition OPTIONAL, [1] ServiceError }. Both start with [0],
+// constructed (errorClass) only in the first.
+func (e *MMSEventNotification) decodeFailure(b []byte) (*MMSServiceError, error) {
+	t, rest, err := osiBERNext(b)
+	if err != nil {
+		return nil, err
+	}
+
+	if t.is(osiBERContext, osiBERPrimitive, mmsTagENModPos) {
+		if e.ModifierPosition, err = osiBERUint32(t.Value); err != nil {
+			return nil, err
+		}
+		e.HasModifierPosition = true
+		if t, _, err = osiBERNext(rest); err != nil {
+			return nil, err
+		}
+	}
+	if t.is(osiBERContext, osiBERConstructed, mmsTagENSvcError) {
+		if in, _, err := osiBERNext(t.Value); err == nil && in.is(osiBERContext, osiBERConstructed, mmsTagErrClass) {
+			return decodeMMSServiceError(t.Value)
+		}
+	}
+	return decodeMMSServiceError(b)
 }
 
 // MMSEventAck is an AcknowledgeEventNotification-Request.
@@ -1593,10 +1655,13 @@ type MMSAlarmSummaryRequest struct {
 	ContinueAfter     MMSObjectName
 }
 
-// MMSAlarmSummaryResponse is a GetAlarmSummary-Response, header only:
-// the AlarmSummary entries stay raw in ServiceData.
+// MMSAlarmSummaryResponse is a GetAlarmSummary-Response (List) or a
+// GetAlarmEnrollmentSummary-Response (Enrollments). Summaries counts the
+// entries of either.
 type MMSAlarmSummaryResponse struct {
 	Summaries   int
+	List        []MMSAlarmSummary
+	Enrollments []MMSAlarmEnrollment
 	MoreFollows bool
 }
 
@@ -1643,9 +1708,10 @@ func (r *MMSAlarmSummaryRequest) decodeSeverity(b []byte) error {
 	})
 }
 
-// decodeMMSAlarmResp reads GetAlarmSummary-Response: [0] summaries,
-// [1] moreFollows DEFAULT FALSE.
-func decodeMMSAlarmResp(t osiBERTLV) (*MMSAlarmSummaryResponse, error) {
+// decodeMMSAlarmResp reads GetAlarmSummary-Response or
+// GetAlarmEnrollmentSummary-Response: [0] summaries, [1] moreFollows
+// DEFAULT FALSE.
+func decodeMMSAlarmResp(t osiBERTLV, s MMSConfirmedService) (*MMSAlarmSummaryResponse, error) {
 	b, err := mmsBody(t, osiBERConstructed)
 	if err != nil {
 		return nil, err
@@ -1655,8 +1721,12 @@ func decodeMMSAlarmResp(t osiBERTLV) (*MMSAlarmSummaryResponse, error) {
 	err = mmsFields(b, func(f osiBERTLV) error {
 		var err error
 		switch {
+		case s == MMSGetAlarmSummary && f.is(osiBERContext, osiBERConstructed, mmsTagASList):
+			r.List, err = decodeMMSAlarms(f.Value)
+			r.Summaries = len(r.List)
 		case f.is(osiBERContext, osiBERConstructed, mmsTagASList):
-			r.Summaries, err = osiBERCount(f.Value)
+			r.Enrollments, err = decodeMMSAlarmEnrolls(f.Value)
+			r.Summaries = len(r.Enrollments)
 		case f.is(osiBERContext, osiBERPrimitive, mmsTagASMore):
 			r.MoreFollows, err = osiBERBool(f.Value)
 		}
@@ -1755,9 +1825,10 @@ func (m *MMS) decodeMoreReq(t osiBERTLV) error {
 		m.StatusReq, err = decodeMMSStatusReq(t)
 	case MMSRename:
 		m.RenameReq, err = decodeMMSRenameReq(t)
-	case MMSDeleteVariableAccess, MMSDeleteNamedVariableList:
+	case MMSDeleteVariableAccess, MMSDeleteNamedVariableList, MMSDeleteNamedType:
 		m.DeleteReq, err = decodeMMSDeleteReq(t)
-	case MMSInitiateDownloadSequence, MMSTerminateDownloadSequence:
+	case MMSInitiateDownloadSequence, MMSTerminateDownloadSequence,
+		MMSRequestDomainDownload, MMSRequestDomainUpload, MMSLoadDomainContent, MMSStoreDomainContent:
 		m.DomainReq, err = decodeMMSDownloadReq(t, s)
 	case MMSDownloadSegment, MMSInitiateUploadSequence, MMSDeleteDomain, MMSGetDomainAttributes:
 		m.DomainReq, err = decodeMMSDomainName(t)
@@ -1775,16 +1846,59 @@ func (m *MMS) decodeMoreReq(t osiBERTLV) error {
 		m.FileReq, err = decodeMMSFileDelete(t)
 	case MMSDefineEventCondition:
 		m.EventCondition, err = decodeMMSEventCond(t, mmsEventDefine)
-	case MMSGetEventConditionAttributes, MMSReportEventConditionStatus, MMSReportJournalStatus:
+	case MMSGetEventConditionAttributes, MMSReportEventConditionStatus, MMSReportJournalStatus,
+		MMSGetScatteredAccessAttributes, MMSGetNamedTypeAttributes, MMSDeleteSemaphore,
+		MMSReportSemaphoreStatus, MMSGetEventActionAttributes, MMSReportEventActionStatus,
+		MMSReportEventEnrollmentStatus, MMSGetDataExchangeAttributes:
 		m.ObjectName, err = decodeMMSNameReq(t)
 	case MMSAcknowledgeEventNotification:
 		m.EventAck, err = decodeMMSEventAck(t)
-	case MMSGetAlarmSummary:
+	case MMSGetAlarmSummary, MMSGetAlarmEnrollmentSummary:
 		m.AlarmSummaryReq, err = decodeMMSAlarmReq(t)
 	case MMSReadJournal, MMSWriteJournal, MMSInitializeJournal, MMSCreateJournal, MMSDeleteJournal:
 		m.JournalReq, err = decodeMMSJournalReq(t, s)
 	case MMSGetCapabilityList:
 		m.CapabilityList, err = decodeMMSCapReq(t)
+	default:
+		err = m.decodeNewReq(t)
+	}
+	return err
+}
+
+// decodeNewReq decodes the requests of the variable definition,
+// operator, semaphore and event services and of the services ISO
+// 9506-2:2003 adds.
+func (m *MMS) decodeNewReq(t osiBERTLV) error {
+	var err error
+	switch s := m.Service; s {
+	case MMSDefineNamedVariable:
+		m.NamedVariable, err = decodeMMSNamedVar(t)
+	case MMSDefineScatteredAccess:
+		m.ScatteredAccess, err = decodeMMSScatteredAcc(t, mmsEventDefine)
+	case MMSDefineNamedType:
+		m.NamedType, err = decodeMMSNamedTypeReq(t)
+	case MMSInput, MMSOutput:
+		m.OperatorReq, err = decodeMMSOperatorReq(t, s)
+	case MMSTakeControl, MMSRelinquishControl, MMSDefineSemaphore,
+		MMSReportPoolSemaphoreStatus, MMSReportSemaphoreEntryStatus:
+		m.SemaphoreReq, err = decodeMMSSemaphoreReq(t, s)
+	case MMSDeleteEventCondition, MMSDeleteEventAction, MMSDeleteEventEnrollment:
+		m.EventDeleteReq, err = decodeMMSEventDelete(t, s)
+	case MMSAlterEventConditionMonitoring, MMSTriggerEvent:
+		m.EventAlter, err = decodeMMSEventAlter(t, s)
+	case MMSDefineEventAction:
+		m.EventAction, err = decodeMMSEventAction(t, mmsEventDefine)
+	case MMSDefineEventEnrollment, MMSAlterEventEnrollment:
+		m.EventEnrollment, err = decodeMMSEnrollment(t, s)
+	case MMSGetEventEnrollmentAttributes:
+		m.EnrollmentQuery, err = decodeMMSEnrollQuery(t)
+	case MMSAdditionalService:
+		m.Additional, err = decodeMMSAdditional(t, MMSConfirmedRequest)
+	case MMSExchangeData:
+		m.DataExchange, err = decodeMMSExchange(t, MMSConfirmedRequest)
+	case MMSDefineAccessControlList, MMSGetAccessControlListAttributes,
+		MMSReportAccessControlledObjects, MMSDeleteAccessControlList, MMSChangeAccessControl:
+		m.AccessControl, err = decodeMMSAccessReq(t, s)
 	}
 	return err
 }
@@ -1797,7 +1911,7 @@ func (m *MMS) decodeMoreResp(t osiBERTLV) error {
 		m.Status, err = decodeMMSStatus(t)
 	case MMSGetVariableAccessAttributes:
 		m.VariableAttributes, err = decodeMMSGVAAResp(t)
-	case MMSDeleteVariableAccess, MMSDeleteNamedVariableList:
+	case MMSDeleteVariableAccess, MMSDeleteNamedVariableList, MMSDeleteNamedType:
 		m.DeleteResp, err = decodeMMSDeleteResp(t)
 	case MMSInitiateUploadSequence:
 		m.DomainResp, err = decodeMMSUploadResp(t)
@@ -1817,14 +1931,80 @@ func (m *MMS) decodeMoreResp(t osiBERTLV) error {
 		m.EventCondition, err = decodeMMSEventCond(t, mmsEventAttributes)
 	case MMSReportEventConditionStatus:
 		m.EventConditionStatus, err = decodeMMSEventStatus(t)
-	case MMSGetAlarmSummary:
-		m.AlarmSummary, err = decodeMMSAlarmResp(t)
+	case MMSGetAlarmSummary, MMSGetAlarmEnrollmentSummary:
+		m.AlarmSummary, err = decodeMMSAlarmResp(t, s)
+	case MMSInitializeJournal:
+		m.JournalResp, err = decodeMMSJournalInit(t)
 	case MMSReadJournal, MMSReportJournalStatus:
 		m.JournalResp, err = decodeMMSJournalResp(t, s)
 	case MMSGetCapabilityList:
 		m.CapabilityList, err = decodeMMSCapResp(t)
+	default:
+		err = m.decodeNewResp(t)
 	}
 	return err
+}
+
+// decodeNewResp is decodeNewReq for responses.
+func (m *MMS) decodeNewResp(t osiBERTLV) error {
+	var err error
+	switch s := m.Service; s {
+	case MMSGetScatteredAccessAttributes:
+		m.ScatteredAccess, err = decodeMMSScatteredAcc(t, mmsEventAttributes)
+	case MMSGetNamedTypeAttributes:
+		m.NamedType, err = decodeMMSNamedTypeResp(t)
+	case MMSInput:
+		m.OperatorResp, err = decodeMMSInputResp(t)
+	case MMSTakeControl:
+		m.SemaphoreResp, err = decodeMMSTakeResp(t)
+	case MMSReportSemaphoreStatus:
+		m.SemaphoreResp, err = decodeMMSSemStatus(t)
+	case MMSReportPoolSemaphoreStatus, MMSReportSemaphoreEntryStatus:
+		m.SemaphoreResp, err = decodeMMSSemList(t, s)
+	case MMSDeleteEventCondition, MMSDeleteEventAction, MMSDeleteEventEnrollment:
+		m.EventDeleteResp, err = decodeMMSEventDeleteResp(t)
+	case MMSGetEventActionAttributes:
+		m.EventAction, err = decodeMMSEventAction(t, mmsEventAttributes)
+	case MMSReportEventActionStatus:
+		var n uint32
+		n, err = mmsCount(t)
+		m.EventActionStatus, err = mmsResult(&MMSEventActionStatus{Enrollments: n}, err)
+	case MMSAlterEventEnrollment:
+		m.EnrollmentStatus, err = decodeMMSEnrollAltered(t)
+	case MMSReportEventEnrollmentStatus:
+		m.EnrollmentStatus, err = decodeMMSEnrollStatus(t)
+	case MMSGetEventEnrollmentAttributes:
+		m.EnrollmentList, err = decodeMMSEnrollList(t)
+	case MMSAdditionalService:
+		m.Additional, err = decodeMMSAdditional(t, MMSConfirmedResponse)
+	case MMSGetDataExchangeAttributes:
+		m.DataExchange, err = decodeMMSExchangeAttrs(t)
+	case MMSExchangeData:
+		m.DataExchange, err = decodeMMSExchange(t, MMSConfirmedResponse)
+	case MMSDefineAccessControlList, MMSGetAccessControlListAttributes,
+		MMSReportAccessControlledObjects, MMSDeleteAccessControlList, MMSChangeAccessControl:
+		m.AccessControl, err = decodeMMSAccessResp(t, s)
+	default:
+		err = mmsNullResp(t, s)
+	}
+	return err
+}
+
+// mmsNullResp checks the responses of the services above that are NULL.
+func mmsNullResp(t osiBERTLV, s MMSConfirmedService) error {
+	switch s {
+	case MMSDefineNamedVariable, MMSDefineScatteredAccess, MMSDefineNamedType, MMSOutput,
+		MMSRelinquishControl, MMSDefineSemaphore, MMSDeleteSemaphore,
+		MMSRequestDomainDownload, MMSRequestDomainUpload, MMSLoadDomainContent, MMSStoreDomainContent,
+		MMSAlterEventConditionMonitoring, MMSTriggerEvent, MMSDefineEventAction, MMSDefineEventEnrollment,
+		MMSCreateJournal, MMSDeleteJournal:
+		_, err := mmsBody(t, osiBERPrimitive)
+		if err == nil {
+			err = mmsNull(t.Value)
+		}
+		return err
+	}
+	return nil
 }
 
 // decodeMMSNameReq reads a request that is an EXPLICIT ObjectName.

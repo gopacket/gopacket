@@ -138,6 +138,19 @@ const (
 	MMSFileDirectory                  MMSConfirmedService = 77
 )
 
+// Confirmed services added by ISO 9506-2:2003. Tag 79 is reserved for the
+// service-ext detail, see MMSServiceExt.
+const (
+	MMSAdditionalService              MMSConfirmedService = 78
+	MMSGetDataExchangeAttributes      MMSConfirmedService = 80
+	MMSExchangeData                   MMSConfirmedService = 81
+	MMSDefineAccessControlList        MMSConfirmedService = 82
+	MMSGetAccessControlListAttributes MMSConfirmedService = 83
+	MMSReportAccessControlledObjects  MMSConfirmedService = 84
+	MMSDeleteAccessControlList        MMSConfirmedService = 85
+	MMSChangeAccessControl            MMSConfirmedService = 86
+)
+
 var mmsServiceNames = [...]string{
 	"status", "getNameList", "identify", "rename", "read", "write",
 	"getVariableAccessAttributes", "defineNamedVariable",
@@ -164,12 +177,15 @@ var mmsServiceNames = [...]string{
 	"getAlarmEnrollmentSummary", "readJournal", "writeJournal",
 	"initializeJournal", "reportJournalStatus", "createJournal",
 	"deleteJournal", "getCapabilityList", "fileOpen", "fileRead", "fileClose",
-	"fileRename", "fileDelete", "fileDirectory",
+	"fileRename", "fileDelete", "fileDirectory", "additionalService", "",
+	"getDataExchangeAttributes", "exchangeData", "defineAccessControlList",
+	"getAccessControlListAttributes", "reportAccessControlledObjects",
+	"deleteAccessControlList", "changeAccessControl",
 }
 
 // String returns the ASN.1 name of the service.
 func (s MMSConfirmedService) String() string {
-	if int(s) < len(mmsServiceNames) {
+	if int(s) < len(mmsServiceNames) && mmsServiceNames[s] != "" {
 		return mmsServiceNames[s]
 	}
 	return fmt.Sprintf("Unknown(%d)", uint16(s))
@@ -257,6 +273,27 @@ func (c MMSObjectClass) String() string {
 		return mmsClassNames[c]
 	}
 	return fmt.Sprintf("Unknown(%d)", uint8(c))
+}
+
+// MMSCSObjectClass is the csObjectClass of the companion standards.
+type MMSCSObjectClass uint8
+
+// Companion standard object classes.
+const (
+	MMSClassEventConditionList MMSCSObjectClass = 0
+	MMSClassUnitControl        MMSCSObjectClass = 1
+)
+
+// String returns the ASN.1 name of the class.
+func (c MMSCSObjectClass) String() string {
+	switch c {
+	case MMSClassEventConditionList:
+		return "eventConditionList"
+	case MMSClassUnitControl:
+		return "unitControl"
+	default:
+		return fmt.Sprintf("Unknown(%d)", uint8(c))
+	}
 }
 
 // MMSDataAccessError is the DataAccessError of a failed read or write.
@@ -433,6 +470,9 @@ const (
 	mmsTagInitVersion  uint32 = 0
 	mmsTagInitCBB      uint32 = 1
 	mmsTagInitServices uint32 = 2
+	mmsTagInitAddSupp  uint32 = 3
+	mmsTagInitAddCBB   uint32 = 4
+	mmsTagInitPrivCls  uint32 = 5
 
 	mmsTagObjVMD    uint32 = 0
 	mmsTagObjDomain uint32 = 1
@@ -455,6 +495,7 @@ const (
 	mmsTagGNLScope    uint32 = 1
 	mmsTagGNLContinue uint32 = 2
 	mmsTagGNLBasic    uint32 = 0
+	mmsTagGNLCS       uint32 = 1
 	mmsTagGNLIDs      uint32 = 0
 	mmsTagGNLMore     uint32 = 1
 
@@ -500,6 +541,9 @@ type MMSVariable struct {
 	// Alternate is the decoded AlternateAccess, nil when it is absent or
 	// malformed.
 	Alternate []MMSAlternateAccess
+	// Scattered lists the components of a scatteredAccessDescription, nil
+	// when it is malformed or nested too deep.
+	Scattered []MMSScatteredComponent
 }
 
 // MMSVariableAccess is a VariableAccessSpecification.
@@ -566,6 +610,11 @@ type MMSGetNameListRequest struct {
 	Scope         MMSObjectScope
 	DomainID      string
 	ContinueAfter string
+
+	// CSObjectClass is set, with HasCSObjectClass, when the request names
+	// a companion standard class instead of ObjectClass.
+	CSObjectClass    MMSCSObjectClass
+	HasCSObjectClass bool
 }
 
 // MMSGetNameListResponse is a GetNameList-Response.
@@ -597,6 +646,13 @@ type MMSInitiate struct {
 	// conclude and cancel).
 	ParameterCBB      []byte
 	ServicesSupported []byte
+
+	// AdditionalSupported, AdditionalCBB and PrivilegeClass are the ISO
+	// 9506-2:2003 detail: additional services bit n is
+	// MMSAdditionalKind n, the CBB bits are des, dei and recl.
+	AdditionalSupported []byte
+	AdditionalCBB       []byte
+	PrivilegeClass      string
 
 	// servicesUnused is the BIT STRING padding of ServicesSupported.
 	servicesUnused uint8
@@ -641,6 +697,12 @@ type MMS struct {
 	Service     MMSConfirmedService
 	Unconfirmed MMSUnconfirmedService
 	ServiceData []byte
+	// NoService is set for a confirmed PDU that ends after its invokeID,
+	// or goes on with a service-ext or, in a response, a universal
+	// element. The service is mandatory, yet such responses are seen on
+	// the wire; Service is then meaningless and ServiceDecodeErr tells
+	// why.
+	NoService bool
 
 	Initiate          *MMSInitiate
 	Error             *MMSServiceError
@@ -660,8 +722,8 @@ type MMS struct {
 	// The fields below are best effort: a malformed service element
 	// leaves them nil and sets ServiceDecodeErr, and the PDU still
 	// decodes with its raw ServiceData. ObjectName above is also set for
-	// the getEventConditionAttributes, reportEventConditionStatus and
-	// reportJournalStatus requests.
+	// the other requests that are a bare ObjectName, e.g.
+	// reportJournalStatus, deleteSemaphore or getNamedTypeAttributes.
 	ServiceDecodeErr error
 	// ErrorDetail is the serviceSpecificInformation of Error.
 	ErrorDetail *MMSErrorDetail
@@ -689,6 +751,31 @@ type MMS struct {
 	EventAck             *MMSEventAck
 	AlarmSummaryReq      *MMSAlarmSummaryRequest
 	AlarmSummary         *MMSAlarmSummaryResponse
+
+	// Modifiers is the listOfModifier of a confirmed request and
+	// ServiceExt the service-ext detail that may follow any service.
+	Modifiers  []MMSModifier
+	ServiceExt *MMSServiceExt
+
+	NamedVariable     *MMSNamedVariable
+	ScatteredAccess   *MMSScatteredAccess
+	NamedType         *MMSNamedType
+	OperatorReq       *MMSOperatorRequest
+	OperatorResp      *MMSOperatorResponse
+	SemaphoreReq      *MMSSemaphoreRequest
+	SemaphoreResp     *MMSSemaphoreResponse
+	EventAlter        *MMSEventAlter
+	EventAction       *MMSEventAction
+	EventActionStatus *MMSEventActionStatus
+	EventEnrollment   *MMSEventEnrollment
+	EnrollmentQuery   *MMSEnrollmentQuery
+	EnrollmentList    *MMSEnrollmentList
+	EnrollmentStatus  *MMSEnrollmentStatus
+	EventDeleteReq    *MMSEventDeleteRequest
+	EventDeleteResp   *MMSEventDeleteResponse
+	Additional        *MMSAdditional
+	DataExchange      *MMSDataExchange
+	AccessControl     *MMSAccessControl
 }
 
 // LayerType returns LayerTypeMMS.
@@ -779,29 +866,68 @@ func (m *MMS) decodeConfirmed(b []byte) error {
 		return err
 	}
 
-	// Skip the request's optional listOfModifier.
+	// A PDU that stops here lacks its mandatory service. It is kept: the
+	// invokeID still tells which request got an empty answer.
 	if len(b) == 0 {
-		return errMMSNoService
+		m.setNoService()
+		return nil
 	}
 	t, rest, err := osiBERNext(b)
 	if err != nil {
 		return err
 	}
+
+	// The request's optional listOfModifier.
 	if m.Type == MMSConfirmedRequest && t.is(osiBERUniversal, osiBERConstructed, osiBERTagSequence) {
+		m.Modifiers, m.ServiceDecodeErr = decodeMMSModifiers(t.Value)
 		if t, rest, err = osiBERNext(rest); err != nil {
 			return err
 		}
 	}
-	if t.Class != osiBERContext || t.Tag == mmsTagServiceExt || t.Tag > mmsMaxServiceTag {
+
+	// A response with a universal element in place of its service, e.g.
+	// an empty SEQUENCE, is kept like one without.
+	if m.Type == MMSConfirmedResponse && t.Class == osiBERUniversal {
+		m.setNoService()
+		return nil
+	}
+	if t.Class != osiBERContext || t.Tag > mmsMaxServiceTag {
 		return errMMSField
+	}
+
+	// A service-ext without service.
+	if t.Tag == mmsTagServiceExt {
+		m.setNoService()
+		m.setServiceExt(t)
+		return nil
 	}
 
 	m.Service = MMSConfirmedService(t.Tag)
 	m.ServiceData = t.Value
 	if m.Type == MMSConfirmedRequest {
-		return m.decodeRequest(t)
+		err = m.decodeRequest(t)
+	} else {
+		err = m.decodeResponse(t)
 	}
-	return m.decodeResponse(t)
+	if err != nil {
+		return err
+	}
+
+	m.decodeServiceExt(rest)
+	return nil
+}
+
+// setNoService marks a confirmed PDU without service.
+func (m *MMS) setNoService() {
+	m.NoService = true
+	m.softErr(errMMSNoService)
+}
+
+// softErr records the first error of the best effort decoders.
+func (m *MMS) softErr(err error) {
+	if m.ServiceDecodeErr == nil {
+		m.ServiceDecodeErr = err
+	}
 }
 
 // decodeRequest decodes the confirmed services with a typed request.
@@ -817,7 +943,9 @@ func (m *MMS) decodeRequest(t osiBERTLV) error {
 	case MMSGetVariableAccessAttributes:
 		m.ObjectName, err = decodeMMSGVAAReq(t.Value)
 		if err == nil && m.ObjectName == nil {
-			m.VariableAddress, m.ServiceDecodeErr = decodeMMSGVAAAddr(t.Value)
+			var aerr error
+			m.VariableAddress, aerr = decodeMMSGVAAAddr(t.Value)
+			m.softErr(aerr)
 		}
 	case MMSGetNamedVariableListAttributes:
 		var n MMSObjectName
@@ -826,7 +954,7 @@ func (m *MMS) decodeRequest(t osiBERTLV) error {
 	case MMSDefineNamedVariableList:
 		m.NamedVariableList, err = decodeMMSDefineNVL(t.Value)
 	default:
-		m.ServiceDecodeErr = m.decodeMoreReq(t)
+		m.softErr(m.decodeMoreReq(t))
 		return nil
 	}
 
@@ -852,7 +980,7 @@ func (m *MMS) decodeResponse(t osiBERTLV) error {
 	case MMSGetNamedVariableListAttributes:
 		m.NamedVariableList, err = decodeMMSGetNVLAResp(t.Value)
 	default:
-		m.ServiceDecodeErr = m.decodeMoreResp(t)
+		m.softErr(m.decodeMoreResp(t))
 		return nil
 	}
 
@@ -910,7 +1038,7 @@ func (m *MMS) decodeCancelError(b []byte) error {
 
 // decodeUnconfirmed reads Unconfirmed-PDU: service, [service-ext].
 func (m *MMS) decodeUnconfirmed(b []byte) error {
-	t, _, err := osiBERNext(b)
+	t, rest, err := osiBERNext(b)
 	if err != nil {
 		return err
 	}
@@ -928,7 +1056,12 @@ func (m *MMS) decodeUnconfirmed(b []byte) error {
 	case MMSUnconfirmedEvent:
 		m.EventNotification, m.ServiceDecodeErr = decodeMMSEventNotif(t)
 	}
-	return err
+	if err != nil {
+		return err
+	}
+
+	m.decodeServiceExt(rest)
+	return nil
 }
 
 // decodeMMSServiceError reads ServiceError: errorClass [0] CHOICE,
@@ -1038,6 +1171,13 @@ func (in *MMSInitiate) decodeDetail(b []byte) error {
 			in.ParameterCBB, _, err = osiBERBits(t.Value)
 		case t.is(osiBERContext, osiBERPrimitive, mmsTagInitServices):
 			in.ServicesSupported, in.servicesUnused, err = osiBERBits(t.Value)
+		case t.is(osiBERContext, osiBERPrimitive, mmsTagInitAddSupp):
+			// Best effort: these two were skipped before they were read.
+			in.AdditionalSupported, _, _ = osiBERBits(t.Value)
+		case t.is(osiBERContext, osiBERPrimitive, mmsTagInitAddCBB):
+			in.AdditionalCBB, _, _ = osiBERBits(t.Value)
+		case t.is(osiBERContext, osiBERPrimitive, mmsTagInitPrivCls):
+			in.PrivilegeClass = string(t.Value)
 		}
 		if err != nil {
 			return err
@@ -1108,7 +1248,12 @@ func decodeMMSAccess(t osiBERTLV) (MMSVariableAccess, error) {
 // decodeMMSVariables decodes listOfVariable: SEQUENCE OF SEQUENCE {
 // VariableSpecification, alternateAccess [5] OPTIONAL }.
 func decodeMMSVariables(b []byte) ([]MMSVariable, error) {
-	var out []MMSVariable
+	count, err := osiBERCount(b)
+	if err != nil || count == 0 {
+		return nil, err
+	}
+
+	out := make([]MMSVariable, 0, count)
 	for len(b) > 0 {
 		item, rest, err := osiBERExpect(b, osiBERUniversal, osiBERConstructed, osiBERTagSequence)
 		if err != nil {
@@ -1317,20 +1462,24 @@ func decodeMMSGetNameListReq(b []byte) (*MMSGetNameListRequest, error) {
 	return g, nil
 }
 
-// decodeClass reads ObjectClass: basicObjectClass [0] INTEGER. The
-// csObjectClass alternative is left at its zero value.
+// decodeClass reads ObjectClass: basicObjectClass [0] INTEGER or
+// csObjectClass [1] INTEGER.
 func (g *MMSGetNameListRequest) decodeClass(b []byte) error {
 	t, err := osiBERSingle(b)
 	if err != nil {
 		return err
 	}
-	if !t.is(osiBERContext, osiBERPrimitive, mmsTagGNLBasic) {
+	if t.Class != osiBERContext || t.Form != osiBERPrimitive || t.Tag > mmsTagGNLCS {
 		return nil
 	}
 
 	c, err := osiBERUint(t.Value)
 	if err != nil || c > 0xff {
 		return errMMSField
+	}
+	if t.Tag == mmsTagGNLCS {
+		g.CSObjectClass, g.HasCSObjectClass = MMSCSObjectClass(c), true
+		return nil
 	}
 	g.ObjectClass = MMSObjectClass(c)
 	return nil

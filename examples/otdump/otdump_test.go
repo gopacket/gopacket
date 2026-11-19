@@ -37,8 +37,7 @@ var captureCases = []captureCase{
 	// The client sends each TPKT header and body in separate segments.
 	{"iec61850_mms.pcap", layers.LayerTypeMMS, 163, 163, ""},
 	{"iec61850_mms.pcap", layers.LayerTypeTPKT, 165, 165, ""},
-	{"iec61850_mms_libiec61850.pcap", layers.LayerTypeMMS, 5, 4,
-		"frame 18: the MMS decoder rejects a confirmed-ResponsePDU tshark shows as a failure"},
+	{"iec61850_mms_libiec61850.pcap", layers.LayerTypeMMS, 5, 5, ""},
 	{"iec61850_mms_libiec61850.pcap", layers.LayerTypeTPKT, 8, 8, ""},
 	{"iec61850_mms_reports_goose.pcap", layers.LayerTypeMMS, 8, 36,
 		"tshark decodes MMS only after seeing the association; 36 is its 38 PRES PDUs less 2 release PDUs"},

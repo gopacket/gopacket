@@ -106,6 +106,12 @@ const (
 	acseTagCallingAuth    uint32 = 12
 	acseTagImplInfo       uint32 = 29
 	acseTagUserInfo       uint32 = 30
+	acseTagVersion        uint32 = 0
+	acseTagSenderReqs     uint32 = 10
+	acseTagCallingNames   uint32 = 13
+	acseTagRespReqs       uint32 = 8
+	acseTagRespNames      uint32 = 11
+	acseTagAuthOther      uint32 = 3
 
 	acseTagResult       uint32 = 2
 	acseTagResultDiag   uint32 = 3
@@ -198,6 +204,101 @@ type ACSE struct {
 	CalledInfo     ACSEAEInfo
 	CallingInfo    ACSEAEInfo
 	RespondingInfo ACSEAEInfo
+
+	// AuthenticationKind and AuthenticationValue are the alternative and
+	// value of Authentication: the password of a charstring, the BIT
+	// STRING value, or the body of the EXTERNAL or other SEQUENCE. They
+	// are best effort, like the fields below: malformed ones stay unset.
+	AuthenticationKind  ACSEAuthenticationKind
+	AuthenticationValue []byte
+	// Requirements is the sender- or responder-acse-requirements.
+	Requirements    ACSERequirements
+	HasRequirements bool
+	// ProtocolVersion is the protocol-version BIT STRING: 0x80 version1.
+	ProtocolVersion    uint8
+	HasProtocolVersion bool
+	// ContextNames is the application-context-name-list.
+	ContextNames []string
+}
+
+// ACSEAuthenticationKind is the Authentication-value CHOICE tag.
+type ACSEAuthenticationKind uint8
+
+// Authentication-value alternatives. ACSEAuthNone means no value, or one
+// that does not parse.
+const (
+	ACSEAuthNone ACSEAuthenticationKind = iota
+	ACSEAuthCharString
+	ACSEAuthBitString
+	ACSEAuthExternal
+	ACSEAuthOther
+)
+
+// String returns the ASN.1 name of the alternative.
+func (k ACSEAuthenticationKind) String() string {
+	switch k {
+	case ACSEAuthNone:
+		return "none"
+	case ACSEAuthCharString:
+		return "charstring"
+	case ACSEAuthBitString:
+		return "bitstring"
+	case ACSEAuthExternal:
+		return "external"
+	case ACSEAuthOther:
+		return "other"
+	default:
+		return fmt.Sprintf("Unknown(%d)", uint8(k))
+	}
+}
+
+// ACSERequirements is the ACSE-requirements BIT STRING.
+type ACSERequirements uint8
+
+// ACSE functional units; bit 0 is the most significant.
+const (
+	ACSERequireAuthentication     ACSERequirements = 0x80
+	ACSERequireContextNegotiation ACSERequirements = 0x40
+)
+
+// setAuth stores an EXPLICIT Authentication-value.
+func (a *ACSE) setAuth(b []byte) {
+	a.Authentication = b
+
+	t, err := osiBERSingle(b)
+	if err != nil || t.Class != osiBERContext || t.Tag > acseTagAuthOther {
+		return
+	}
+	a.AuthenticationKind = ACSEAuthenticationKind(t.Tag) + ACSEAuthCharString
+	a.AuthenticationValue = t.Value
+}
+
+// decodeOptional stores the best effort AARQ and AARE fields: reqs and
+// names are the tags of the requirements and context name list.
+func (a *ACSE) decodeOptional(f osiBERTLV, reqs, names uint32) {
+	switch {
+	case f.Tag == acseTagVersion && f.Form == osiBERPrimitive:
+		a.ProtocolVersion, a.HasProtocolVersion = acseBits(f.Value)
+	case f.Tag == reqs && f.Form == osiBERPrimitive:
+		var v uint8
+		v, a.HasRequirements = acseBits(f.Value)
+		a.Requirements = ACSERequirements(v)
+	case f.Tag == names && f.Form == osiBERConstructed:
+		a.ContextNames, _ = decodeISOPresOIDs(f.Value)
+	}
+}
+
+// acseBits returns the first octet of a BIT STRING value, 0 when it has
+// no bits.
+func acseBits(v []byte) (uint8, bool) {
+	bits, _, err := osiBERBits(v)
+	if err != nil {
+		return 0, false
+	}
+	if len(bits) == 0 {
+		return 0, true
+	}
+	return bits[0], true
 }
 
 // LayerType returns LayerTypeACSE.
@@ -316,7 +417,9 @@ func (a *ACSE) decodeAARQField(f osiBERTLV) error {
 	case acseTagMechanism:
 		a.MechanismName, err = osiBEROID(f.Value)
 	case acseTagCallingAuth:
-		a.Authentication = f.Value
+		a.setAuth(f.Value)
+	default:
+		a.decodeOptional(f, acseTagSenderReqs, acseTagCallingNames)
 	}
 	return err
 }
@@ -349,7 +452,9 @@ func (a *ACSE) decodeAAREField(f osiBERTLV) error {
 	case acseTagRespMech:
 		a.MechanismName, err = osiBEROID(f.Value)
 	case acseTagRespAuth:
-		a.Authentication = f.Value
+		a.setAuth(f.Value)
+	default:
+		a.decodeOptional(f, acseTagRespReqs, acseTagRespNames)
 	}
 	return err
 }

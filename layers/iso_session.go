@@ -236,6 +236,13 @@ func (id ISOSessionParamID) isGroup() bool {
 
 const (
 	isoSessionMinLen = 2
+	// isoSessionMaxSPDUs caps the SPDUs of one TSDU; the sequences ISO
+	// 8327-1 allows are shorter.
+	isoSessionMaxSPDUs = 8
+	// Lengths of the Session User Requirements and TSDU Maximum Size
+	// parameters.
+	isoSessionReqLen  = 2
+	isoSessionTSDULen = 4
 	// isoSessionLongLI introduces a 2 octet length indicator.
 	isoSessionLongLI = 0xff
 )
@@ -277,9 +284,174 @@ func (s *ISOSessionSPDU) Param(id ISOSessionParamID) *ISOSessionParam {
 	return nil
 }
 
+// ISOSessionOptions is the Protocol Options parameter.
+type ISOSessionOptions uint8
+
+// ISOSessionExtendedConcat tells the sender can receive extended
+// concatenated SPDUs.
+const ISOSessionExtendedConcat ISOSessionOptions = 0x01
+
+// ISOSessionRequirements is the Session User Requirements parameter: the
+// functional units proposed or selected.
+type ISOSessionRequirements uint16
+
+// ISO 8327-1 functional units.
+const (
+	ISOSessionFUHalfDuplex        ISOSessionRequirements = 1 << 0
+	ISOSessionFUDuplex            ISOSessionRequirements = 1 << 1
+	ISOSessionFUExpedited         ISOSessionRequirements = 1 << 2
+	ISOSessionFUMinorSync         ISOSessionRequirements = 1 << 3
+	ISOSessionFUMajorSync         ISOSessionRequirements = 1 << 4
+	ISOSessionFUResync            ISOSessionRequirements = 1 << 5
+	ISOSessionFUActivity          ISOSessionRequirements = 1 << 6
+	ISOSessionFUNegotiatedRelease ISOSessionRequirements = 1 << 7
+	ISOSessionFUCapabilityData    ISOSessionRequirements = 1 << 8
+	ISOSessionFUExceptions        ISOSessionRequirements = 1 << 9
+	ISOSessionFUTypedData         ISOSessionRequirements = 1 << 10
+	ISOSessionFUSymmetricSync     ISOSessionRequirements = 1 << 11
+	ISOSessionFUDataSeparation    ISOSessionRequirements = 1 << 12
+)
+
+// ISOSessionVersions is the Version Number parameter: a bit per protocol
+// version supported.
+type ISOSessionVersions uint8
+
+// ISO 8327-1 protocol versions.
+const (
+	ISOSessionVersion1 ISOSessionVersions = 0x01
+	ISOSessionVersion2 ISOSessionVersions = 0x02
+)
+
+// ISOSessionEnclosure is the Enclosure Item parameter of a segmented
+// SSDU.
+type ISOSessionEnclosure uint8
+
+// Enclosure Item bits.
+const (
+	ISOSessionEnclosureBegin ISOSessionEnclosure = 0x01
+	ISOSessionEnclosureEnd   ISOSessionEnclosure = 0x02
+)
+
+// ISOSessionTransportDisc is the Transport Disconnect parameter.
+type ISOSessionTransportDisc uint8
+
+// Transport Disconnect bits. The reason bits are only set in an Abort.
+const (
+	ISOSessionTransportReleased ISOSessionTransportDisc = 0x01
+	ISOSessionUserAbort         ISOSessionTransportDisc = 0x02
+	ISOSessionProtocolError     ISOSessionTransportDisc = 0x04
+	ISOSessionNoReason          ISOSessionTransportDisc = 0x08
+	ISOSessionImplRestriction   ISOSessionTransportDisc = 0x10
+)
+
+// octet returns the value of the one octet parameter id.
+func (s *ISOSessionSPDU) octet(id ISOSessionParamID) (uint8, bool) {
+	p := s.Param(id)
+	if p == nil || len(p.Value) != 1 {
+		return 0, false
+	}
+	return p.Value[0], true
+}
+
+// ProtocolOptions returns the Protocol Options parameter; ok is false
+// when it is absent or malformed, as for the accessors below.
+func (s *ISOSessionSPDU) ProtocolOptions() (opts ISOSessionOptions, ok bool) {
+	v, ok := s.octet(ISOSessionParamProtocolOptions)
+	return ISOSessionOptions(v), ok
+}
+
+// Versions returns the Version Number parameter.
+func (s *ISOSessionSPDU) Versions() (v ISOSessionVersions, ok bool) {
+	b, ok := s.octet(ISOSessionParamVersion)
+	return ISOSessionVersions(b), ok
+}
+
+// Requirements returns the Session User Requirements parameter.
+func (s *ISOSessionSPDU) Requirements() (r ISOSessionRequirements, ok bool) {
+	p := s.Param(ISOSessionParamSessionUserReq)
+	if p == nil || len(p.Value) != isoSessionReqLen {
+		return 0, false
+	}
+	return ISOSessionRequirements(binary.BigEndian.Uint16(p.Value)), true
+}
+
+// Enclosure returns the Enclosure Item parameter.
+func (s *ISOSessionSPDU) Enclosure() (e ISOSessionEnclosure, ok bool) {
+	b, ok := s.octet(ISOSessionParamEnclosure)
+	return ISOSessionEnclosure(b), ok
+}
+
+// TransportDisconnect returns the Transport Disconnect parameter.
+func (s *ISOSessionSPDU) TransportDisconnect() (d ISOSessionTransportDisc, ok bool) {
+	b, ok := s.octet(ISOSessionParamTransportDisc)
+	return ISOSessionTransportDisc(b), ok
+}
+
+// TokenItem returns the Token Item parameter: two bits per token (data,
+// synchronize-minor, major/activity, release from the least significant
+// pair up).
+func (s *ISOSessionSPDU) TokenItem() (tokens uint8, ok bool) {
+	return s.octet(ISOSessionParamTokenItem)
+}
+
+// TokenSetting returns the Token Setting Item parameter, laid out as the
+// Token Item.
+func (s *ISOSessionSPDU) TokenSetting() (tokens uint8, ok bool) {
+	return s.octet(ISOSessionParamTokenSetting)
+}
+
+// ReasonCode returns the first octet of the Reason Code parameter of a
+// Refuse SPDU, e.g. 2 for a rejection by the called SS-user with user
+// data.
+func (s *ISOSessionSPDU) ReasonCode() (code uint8, ok bool) {
+	p := s.Param(ISOSessionParamReasonCode)
+	if p == nil || len(p.Value) == 0 {
+		return 0, false
+	}
+	return p.Value[0], true
+}
+
+// MaxTSDUSize returns the TSDU Maximum Size parameter: the largest TSDU
+// from the initiator to the responder and back, 0 for no limit.
+func (s *ISOSessionSPDU) MaxTSDUSize() (toResponder, toInitiator uint16, ok bool) {
+	p := s.Param(ISOSessionParamTSDUMaxSize)
+	if p == nil || len(p.Value) != isoSessionTSDULen {
+		return 0, 0, false
+	}
+	return binary.BigEndian.Uint16(p.Value), binary.BigEndian.Uint16(p.Value[isoSessionReqLen:]), true
+}
+
+// CallingSelector returns the Calling Session Selector, nil when absent.
+func (s *ISOSessionSPDU) CallingSelector() []byte {
+	return s.value(ISOSessionParamCallingSelector)
+}
+
+// CalledSelector returns the Called (or Responding) Session Selector,
+// nil when absent.
+func (s *ISOSessionSPDU) CalledSelector() []byte {
+	return s.value(ISOSessionParamCalledSelector)
+}
+
+// SerialNumber returns the digits of the Serial Number parameter of a
+// synchronization SPDU, e.g. "42", or "" when absent.
+func (s *ISOSessionSPDU) SerialNumber() string {
+	return string(s.value(ISOSessionParamSerialNumber))
+}
+
+// value returns the value of parameter id, nil when absent.
+func (s *ISOSessionSPDU) value(id ISOSessionParamID) []byte {
+	p := s.Param(id)
+	if p == nil {
+		return nil
+	}
+	return p.Value
+}
+
 // ISOSession is an ISO 8327-1 session TSDU. SPDUs holds one SPDU, or a
 // category 0 SPDU (Give or Please Tokens) followed by the SPDU it is
-// concatenated with. The layer payload is the session user data: the
+// concatenated with. Extended concatenation puts several category 2
+// SPDUs after it, e.g. GT, MIP and DT; all are listed, the last one
+// being the main SPDU. The layer payload is the session user data: the
 // User Data parameter of connection SPDUs, the bytes that follow a DT,
 // or the SS-user data trailing a Refuse reason code.
 type ISOSession struct {
@@ -329,12 +501,44 @@ func (s *ISOSession) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) er
 			return err
 		}
 		s.SPDUs = append(s.SPDUs, second)
-		rest = more
+		rest = s.decodeExtended(more)
 	}
 
 	s.Contents = data[:len(data)-len(rest)]
 	s.Payload = s.userData(rest)
 	return nil
+}
+
+// decodeExtended adds the category 2 SPDUs extended concatenation puts
+// after the second one and returns what follows them. An SPDU with a
+// user information field ends the TSDU. What does not decode is no SPDU:
+// it is left alone, as it was before these were read.
+func (s *ISOSession) decodeExtended(rest []byte) []byte {
+	for len(s.SPDUs) < isoSessionMaxSPDUs {
+		last := s.SPDUs[len(s.SPDUs)-1].Type
+		if isoSessionHasUserInfo(last) || !isoSessionCategory2(rest) {
+			break
+		}
+
+		next, more, err := decodeISOSessionSPDU(rest)
+		if err != nil {
+			break
+		}
+		s.SPDUs = append(s.SPDUs, next)
+		rest = more
+	}
+	return rest
+}
+
+// isoSessionHasUserInfo reports whether the SPDU carries its user data
+// after its parameters, up to the end of the TSDU.
+func isoSessionHasUserInfo(t ISOSessionSPDUType) bool {
+	switch t {
+	case ISOSessionDataTransfer, ISOSessionTypedData, ISOSessionExpedited,
+		ISOSessionCapabilityData, ISOSessionCapabilityDataAck:
+		return true
+	}
+	return false
 }
 
 // isoSessionFeedback flags the packet truncated when an SPDU ran past
@@ -349,9 +553,7 @@ func isoSessionFeedback(err error, df gopacket.DecodeFeedback) {
 // what follows the SPDU in the TSDU: the user information of a DT.
 func (s *ISOSession) userData(trailing []byte) []byte {
 	main := &s.SPDUs[len(s.SPDUs)-1]
-	switch main.Type {
-	case ISOSessionDataTransfer, ISOSessionTypedData, ISOSessionExpedited,
-		ISOSessionCapabilityData, ISOSessionCapabilityDataAck:
+	if isoSessionHasUserInfo(main.Type) {
 		return trailing
 	}
 

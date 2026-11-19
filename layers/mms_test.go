@@ -207,7 +207,7 @@ func TestMMSPcaps(t *testing.T) {
 		{"iec61850_mms.pcap", 163, nil},
 		{"iec61850_mms_reports_goose.pcap", 31, nil},
 		{"iec61850_mms_siemens.pcap", 129, nil},
-		{"iec61850_mms_libiec61850.pcap", 6, []int{10, 18}},
+		{"iec61850_mms_libiec61850.pcap", 6, []int{10}},
 	}
 
 	for _, tc := range tests {
@@ -462,9 +462,10 @@ func TestMMSLibIEC61850(t *testing.T) {
 	}
 
 	// A confirmed-ResponsePDU with an invokeID and no service.
-	p = iecSession(tsdus[18][0])
-	if p.Layer(LayerTypeISOPresentation) == nil || p.ErrorLayer() == nil || p.ErrorLayer().Error() != errMMSNoService {
-		t.Errorf("response without service: %v", p.ErrorLayer())
+	// tshark shows it too; it decodes with NoService set.
+	_, m = iecMMSOf(t, tsdus, 18)
+	if m.Type != MMSConfirmedResponse || m.InvokeID != 0 || !m.NoService || m.ServiceDecodeErr != errMMSNoService {
+		t.Errorf("response without service: %+v", m)
 	}
 }
 
@@ -624,7 +625,7 @@ func TestMMSHandBuilt(t *testing.T) {
 			return m.Service == MMSFileOpen && bytes.Equal(m.ServiceData, []byte{0xaa})
 		}},
 		"getNameList domain": {iecTLV(0xa0, iecTLV(0x02, []byte{1}), iecTLV(0xa1, iecTLV(0xa0, iecTLV(0x80, []byte{0})), iecTLV(0xa1, iecTLV(0x81, []byte("LD0"))), iecTLV(0x82, []byte("x")))), func(m *MMS) bool {
-			return *m.GetNameListReq == MMSGetNameListRequest{MMSClassNamedVariable, MMSScopeDomain, "LD0", "x"}
+			return *m.GetNameListReq == MMSGetNameListRequest{ObjectClass: MMSClassNamedVariable, Scope: MMSScopeDomain, DomainID: "LD0", ContinueAfter: "x"}
 		}},
 		"getVariableAccessAttributes": {iecTLV(0xa0, iecTLV(0x02, []byte{2}), iecTLV(0xa6, iecTLV(0xa0, name))), func(m *MMS) bool {
 			return *m.ObjectName == MMSObjectName{MMSScopeDomain, "LD0", "LLN0$ST"}
@@ -666,7 +667,6 @@ func TestMMSHandBuilt(t *testing.T) {
 		"bad access error":   iecTLV(0xa1, iecTLV(0x02, []byte{4}), iecTLV(0xa4, iecTLV(0xa1, iecTLV(0x80, []byte{99})))),
 		"bad object name":    iecTLV(0xa0, iecTLV(0x02, []byte{2}), iecTLV(0xa6, iecTLV(0xa0, iecTLV(0x83, nil)))),
 		"bad reject":         iecTLV(0xa4, iecTLV(0x8c, []byte{0})),
-		"service-ext only":   iecTLV(0xa0, iecTLV(0x02, []byte{1}), []byte{0xbf, 0x4f, 0x00}),
 		"primitive read":     iecTLV(0xa0, iecTLV(0x02, []byte{1}), iecTLV(0x84)),
 		"service tag > 16b":  iecTLV(0xa0, iecTLV(0x02, []byte{1}), []byte{0xbf, 0x84, 0x80, 0x80, 0x04, 0x00}),
 		"data tag 259":       iecTLV(0xa1, iecTLV(0x02, []byte{4}), iecTLV(0xa4, iecTLV(0xa1, []byte{0x9f, 0x82, 0x03, 0x01, 0x00}))),
@@ -745,6 +745,9 @@ func FuzzISOSession(f *testing.F) {
 		}
 	}
 	f.Add(iecDT([]byte{0x8b, 0x00}))
+	for _, seed := range osiMoreSeeds() {
+		f.Add(seed)
+	}
 
 	f.Fuzz(func(t *testing.T, data []byte) {
 		p := iecSession(data)
@@ -752,6 +755,9 @@ func FuzzISOSession(f *testing.F) {
 			if len(l.LayerContents()) > len(data) {
 				t.Fatalf("%v contents longer than input", l.LayerType())
 			}
+		}
+		if s, ok := p.Layer(LayerTypeISOSession).(*ISOSession); ok {
+			osiReadParams(s)
 		}
 	})
 }
