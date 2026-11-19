@@ -183,7 +183,12 @@ func decodeMMSDataList(b []byte, depth int) ([]MMSData, error) {
 		return nil, errOSIBERDepth
 	}
 
-	var out []MMSData
+	count, err := osiBERCount(b)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]MMSData, 0, count)
 	for len(b) > 0 {
 		t, rest, err := osiBERNext(b)
 		if err != nil {

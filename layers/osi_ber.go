@@ -141,6 +141,21 @@ func osiBERNext(data []byte) (osiBERTLV, []byte, error) {
 	return t, data[off+length:], nil
 }
 
+// osiBERCount counts the TLVs of a SEQUENCE OF body so its list can be
+// allocated once. Grown by append, a body of two-octet items costs about
+// twice the final list in discarded arrays.
+func osiBERCount(data []byte) (int, error) {
+	count := 0
+	for ; len(data) > 0; count++ {
+		_, rest, err := osiBERNext(data)
+		if err != nil {
+			return 0, err
+		}
+		data = rest
+	}
+	return count, nil
+}
+
 // osiBERTagNum decodes a high tag number (base 128, high bit = more).
 func osiBERTagNum(data []byte) (uint32, int, error) {
 	var n uint32

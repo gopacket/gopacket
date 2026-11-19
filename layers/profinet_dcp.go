@@ -439,6 +439,11 @@ func (d *ProfinetDCP) prefix() ProfinetDCPPrefix {
 func (d *ProfinetDCP) decodeBlocks(data []byte, df gopacket.DecodeFeedback) error {
 	// Get requests list selectors, not blocks.
 	if d.ServiceID == ProfinetDCPServiceGet && d.ServiceType == ProfinetDCPRequest {
+		// The count is known: allocate once instead of growing by append,
+		// keeping a reused layer's array when it is big enough.
+		if n := len(data) / profinetDCPSelectorLen; cap(d.Blocks) < n {
+			d.Blocks = make([]ProfinetDCPBlock, 0, n)
+		}
 		for ; len(data) >= profinetDCPSelectorLen; data = data[profinetDCPSelectorLen:] {
 			d.Blocks = append(d.Blocks, ProfinetDCPBlock{Option: ProfinetDCPOption(data[0]), Suboption: data[1]})
 		}

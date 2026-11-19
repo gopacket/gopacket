@@ -449,8 +449,13 @@ func (t *BACnetTag) holds(a BACnetApplicationTag) bool {
 // deep. Each tag takes at least one octet, so the list never outgrows the
 // data it came from.
 func decodeBACnetTags(data []byte) ([]BACnetTag, error) {
+	count, err := countBACnetTags(data)
+	if err != nil {
+		return nil, err
+	}
+
 	var (
-		tags  []BACnetTag
+		tags  = make([]BACnetTag, 0, count)
 		open  [bacnetMaxTagDepth]uint8
 		depth int
 	)
@@ -487,6 +492,21 @@ func decodeBACnetTags(data []byte) ([]BACnetTag, error) {
 		return nil, ErrBACnetTag
 	}
 	return tags, nil
+}
+
+// countBACnetTags counts the tags of a parameter stream so the list is
+// allocated once: grown by append, a stream of one-octet tags costs
+// about twice its final size in discarded arrays.
+func countBACnetTags(data []byte) (int, error) {
+	count := 0
+	for off := 0; off < len(data); count++ {
+		_, n, err := decodeBACnetTag(data[off:])
+		if err != nil {
+			return 0, err
+		}
+		off += n
+	}
+	return count, nil
 }
 
 // decodeBACnetTag decodes the tag at the start of b and returns it with
