@@ -4,7 +4,10 @@
 // in the LICENSE file in the root of the source tree.
 
 // OPC UA service bodies (OPC 10000-4 §5): the request and response
-// headers of every service, and the parameters of a few.
+// headers of every service, and the parameters of the secure channel,
+// discovery, session, node, monitored item and subscription services.
+// Query, node management, HistoryUpdate, Cancel, SetTriggering,
+// TransferSubscriptions and server registration keep theirs in Params.
 
 package layers
 
@@ -156,10 +159,33 @@ type OPCUAReadRequest struct {
 	NodesToRead        []OPCUAReadValueID
 }
 
+// OPCUAResults is the per-operation status of a response (OPC 10000-4
+// §7.39, §7.12): Write, SetMonitoringMode, DeleteMonitoredItems,
+// SetPublishingMode and DeleteSubscriptions return only this.
+type OPCUAResults struct {
+	Results         []OPCUAStatusCode
+	DiagnosticInfos []OPCUADiagnosticInfo
+}
+
+func (r *opcuaReader) results() OPCUAResults {
+	return OPCUAResults{Results: r.statusCodes(), DiagnosticInfos: r.diagnosticInfos()}
+}
+
+func (r *opcuaReader) resultsPtr() *OPCUAResults {
+	res := r.results()
+	return &res
+}
+
 // OPCUAService is a decoded service body. TypeID and ID name the service;
 // one of the headers is always set; at most one of the typed parameter
 // fields is. Params holds what follows the last decoded field: the
 // parameters of other services, then padding and signature.
+//
+// The parameters decode in full or not at all: when they do not parse,
+// as in the first chunk of a long message, every typed field is nil and
+// Params holds all of them, as for a service without typed fields.
+// Services without parameters (CloseSecureChannel, CloseSession and
+// UnregisterNodes responses, ServiceFault) have no typed field.
 type OPCUAService struct {
 	TypeID OPCUANodeID
 	ID     OPCUAServiceID
@@ -171,6 +197,54 @@ type OPCUAService struct {
 	OpenSecureChannelResponse *OPCUAOpenSecureChannelResponse
 	GetEndpointsRequest       *OPCUAGetEndpointsRequest
 	ReadRequest               *OPCUAReadRequest
+
+	FindServersRequest      *OPCUAFindServersRequest
+	FindServersResponse     *OPCUAFindServersResponse
+	GetEndpointsResponse    *OPCUAGetEndpointsResponse
+	CreateSessionRequest    *OPCUACreateSessionRequest
+	CreateSessionResponse   *OPCUACreateSessionResponse
+	ActivateSessionRequest  *OPCUAActivateSessionRequest
+	ActivateSessionResponse *OPCUAActivateSessionResponse
+	CloseSessionRequest     *OPCUACloseSessionRequest
+
+	ReadResponse        *OPCUAReadResponse
+	WriteRequest        *OPCUAWriteRequest
+	WriteResponse       *OPCUAResults
+	HistoryReadRequest  *OPCUAHistoryReadRequest
+	HistoryReadResponse *OPCUAHistoryReadResponse
+	CallRequest         *OPCUACallRequest
+	CallResponse        *OPCUACallResponse
+
+	BrowseRequest                         *OPCUABrowseRequest
+	BrowseResponse                        *OPCUABrowseResponse
+	BrowseNextRequest                     *OPCUABrowseNextRequest
+	BrowseNextResponse                    *OPCUABrowseResponse
+	TranslateBrowsePathsToNodeIDsRequest  *OPCUATranslateRequest
+	TranslateBrowsePathsToNodeIDsResponse *OPCUATranslateResponse
+	RegisterNodesRequest                  *OPCUANodeIDList
+	RegisterNodesResponse                 *OPCUANodeIDList
+	UnregisterNodesRequest                *OPCUANodeIDList
+
+	CreateMonitoredItemsRequest  *OPCUACreateItemsRequest
+	CreateMonitoredItemsResponse *OPCUACreateItemsResponse
+	ModifyMonitoredItemsRequest  *OPCUAModifyItemsRequest
+	ModifyMonitoredItemsResponse *OPCUAModifyItemsResponse
+	SetMonitoringModeRequest     *OPCUASetMonitoringRequest
+	SetMonitoringModeResponse    *OPCUAResults
+	DeleteMonitoredItemsRequest  *OPCUADeleteItemsRequest
+	DeleteMonitoredItemsResponse *OPCUAResults
+	CreateSubscriptionRequest    *OPCUACreateSubRequest
+	CreateSubscriptionResponse   *OPCUACreateSubResponse
+	ModifySubscriptionRequest    *OPCUAModifySubRequest
+	ModifySubscriptionResponse   *OPCUASubscriptionRevision
+	SetPublishingModeRequest     *OPCUASetPublishingRequest
+	SetPublishingModeResponse    *OPCUAResults
+	DeleteSubscriptionsRequest   *OPCUASubscriptionIDs
+	DeleteSubscriptionsResponse  *OPCUAResults
+	PublishRequest               *OPCUAPublishRequest
+	PublishResponse              *OPCUAPublishResponse
+	RepublishRequest             *OPCUARepublishRequest
+	RepublishResponse            *OPCUARepublishResponse
 
 	Params []byte
 }
@@ -203,9 +277,13 @@ func decodeOPCUAService(body []byte) *OPCUAService {
 	pr := &opcuaReader{b: s.Params}
 	s.decodeParams(pr)
 	if pr.err != nil {
-		s.OpenSecureChannelRequest, s.OpenSecureChannelResponse = nil, nil
-		s.GetEndpointsRequest, s.ReadRequest = nil, nil
-		return s
+		return &OPCUAService{
+			TypeID:         s.TypeID,
+			ID:             s.ID,
+			RequestHeader:  s.RequestHeader,
+			ResponseHeader: s.ResponseHeader,
+			Params:         s.Params,
+		}
 	}
 	s.Params = pr.b[pr.off:]
 	return s
@@ -260,6 +338,121 @@ func (s *OPCUAService) decodeParams(r *opcuaReader) {
 
 	case OPCUAServiceReadRequest:
 		s.ReadRequest = r.readRequest()
+
+	// Each group switches on its own services and ignores the others.
+	default:
+		s.decodeSession(r)
+		s.decodeNodes(r)
+		s.decodeSubscriptions(r)
+	}
+}
+
+// decodeSession reads the discovery and session parameters.
+func (s *OPCUAService) decodeSession(r *opcuaReader) {
+	switch s.ID {
+	case OPCUAServiceFindServersRequest:
+		s.FindServersRequest = r.findServersRequest()
+	case OPCUAServiceFindServersResponse:
+		s.FindServersResponse = &OPCUAFindServersResponse{
+			Servers: opcuaArray(r, opcuaMinAppDescLen, r.applicationDescription),
+		}
+	case OPCUAServiceGetEndpointsResponse:
+		s.GetEndpointsResponse = &OPCUAGetEndpointsResponse{Endpoints: r.endpoints()}
+	case OPCUAServiceCreateSessionRequest:
+		s.CreateSessionRequest = r.createSessionRequest()
+	case OPCUAServiceCreateSessionResponse:
+		s.CreateSessionResponse = r.createSessionResponse()
+	case OPCUAServiceActivateSessionRequest:
+		s.ActivateSessionRequest = r.activateSessionRequest()
+	case OPCUAServiceActivateSessionResponse:
+		s.ActivateSessionResponse = r.activateSessionResponse()
+	case OPCUAServiceCloseSessionRequest:
+		s.CloseSessionRequest = &OPCUACloseSessionRequest{DeleteSubscriptions: r.boolean()}
+	}
+}
+
+// decodeNodes reads the parameters of the node services.
+func (s *OPCUAService) decodeNodes(r *opcuaReader) {
+	switch s.ID {
+	case OPCUAServiceReadResponse:
+		s.ReadResponse = r.readResponse()
+	case OPCUAServiceWriteRequest:
+		s.WriteRequest = r.writeRequest()
+	case OPCUAServiceWriteResponse:
+		s.WriteResponse = r.resultsPtr()
+	case OPCUAServiceHistoryReadRequest:
+		s.HistoryReadRequest = r.historyReadRequest()
+	case OPCUAServiceHistoryReadResponse:
+		s.HistoryReadResponse = r.historyReadResponse()
+	case OPCUAServiceCallRequest:
+		s.CallRequest = r.callRequest()
+	case OPCUAServiceCallResponse:
+		s.CallResponse = r.callResponse()
+	case OPCUAServiceBrowseRequest:
+		s.BrowseRequest = r.browseRequest()
+	case OPCUAServiceBrowseResponse:
+		s.BrowseResponse = r.browseResponse()
+	case OPCUAServiceBrowseNextRequest:
+		s.BrowseNextRequest = r.browseNextRequest()
+	case OPCUAServiceBrowseNextResponse:
+		s.BrowseNextResponse = r.browseResponse()
+	case OPCUAServiceTranslateBrowsePathsToNodeIdsRequest:
+		s.TranslateBrowsePathsToNodeIDsRequest = r.translateRequest()
+	case OPCUAServiceTranslateBrowsePathsToNodeIdsResponse:
+		s.TranslateBrowsePathsToNodeIDsResponse = r.translateResponse()
+	case OPCUAServiceRegisterNodesRequest:
+		s.RegisterNodesRequest = r.nodeIDList()
+	case OPCUAServiceRegisterNodesResponse:
+		s.RegisterNodesResponse = r.nodeIDList()
+	case OPCUAServiceUnregisterNodesRequest:
+		s.UnregisterNodesRequest = r.nodeIDList()
+	}
+}
+
+// decodeSubscriptions reads the monitored item and subscription
+// parameters.
+func (s *OPCUAService) decodeSubscriptions(r *opcuaReader) {
+	switch s.ID {
+	case OPCUAServiceCreateMonitoredItemsRequest:
+		s.CreateMonitoredItemsRequest = r.createItemsRequest()
+	case OPCUAServiceCreateMonitoredItemsResponse:
+		s.CreateMonitoredItemsResponse = r.createItemsResponse()
+	case OPCUAServiceModifyMonitoredItemsRequest:
+		s.ModifyMonitoredItemsRequest = r.modifyItemsRequest()
+	case OPCUAServiceModifyMonitoredItemsResponse:
+		s.ModifyMonitoredItemsResponse = r.modifyItemsResponse()
+	case OPCUAServiceSetMonitoringModeRequest:
+		s.SetMonitoringModeRequest = r.setMonitoringRequest()
+	case OPCUAServiceSetMonitoringModeResponse:
+		s.SetMonitoringModeResponse = r.resultsPtr()
+	case OPCUAServiceDeleteMonitoredItemsRequest:
+		s.DeleteMonitoredItemsRequest = r.deleteItemsRequest()
+	case OPCUAServiceDeleteMonitoredItemsResponse:
+		s.DeleteMonitoredItemsResponse = r.resultsPtr()
+	case OPCUAServiceCreateSubscriptionRequest:
+		s.CreateSubscriptionRequest = r.createSubRequest()
+	case OPCUAServiceCreateSubscriptionResponse:
+		s.CreateSubscriptionResponse = r.createSubResponse()
+	case OPCUAServiceModifySubscriptionRequest:
+		s.ModifySubscriptionRequest = r.modifySubRequest()
+	case OPCUAServiceModifySubscriptionResponse:
+		s.ModifySubscriptionResponse = r.modifySubResponse()
+	case OPCUAServiceSetPublishingModeRequest:
+		s.SetPublishingModeRequest = r.setPublishingRequest()
+	case OPCUAServiceSetPublishingModeResponse:
+		s.SetPublishingModeResponse = r.resultsPtr()
+	case OPCUAServiceDeleteSubscriptionsRequest:
+		s.DeleteSubscriptionsRequest = &OPCUASubscriptionIDs{SubscriptionIDs: r.u32s()}
+	case OPCUAServiceDeleteSubscriptionsResponse:
+		s.DeleteSubscriptionsResponse = r.resultsPtr()
+	case OPCUAServicePublishRequest:
+		s.PublishRequest = r.publishRequest()
+	case OPCUAServicePublishResponse:
+		s.PublishResponse = r.publishResponse()
+	case OPCUAServiceRepublishRequest:
+		s.RepublishRequest = r.republishRequest()
+	case OPCUAServiceRepublishResponse:
+		s.RepublishResponse = r.republishResponse()
 	}
 }
 

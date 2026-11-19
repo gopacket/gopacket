@@ -189,6 +189,9 @@ type opcuaReader struct {
 	b   []byte
 	off int
 	err error
+	// reserved is the least the open arrays still need for their later
+	// elements; arrayLen does not let a nested array claim it.
+	reserved int
 }
 
 func (r *opcuaReader) remaining() int { return len(r.b) - r.off }
@@ -268,7 +271,7 @@ func (r *opcuaReader) arrayLen(minSize int) int {
 	if r.err != nil || n == opcuaNullLength {
 		return 0
 	}
-	if n < opcuaNullLength || int64(n)*int64(minSize) > int64(r.remaining()) {
+	if n < opcuaNullLength || int64(n)*int64(minSize) > int64(r.remaining()-r.reserved) {
 		r.err = ErrOPCUAMalformed
 		return 0
 	}
