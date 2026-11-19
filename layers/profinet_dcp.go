@@ -18,6 +18,20 @@
 // BlockInfo (identify/get responses, hello requests) or BlockQualifier (set
 // requests), then the value, padded to an even length. Get requests carry
 // bare Option/Suboption selectors instead of blocks.
+//
+// Values by option (Wireshark dissect_PNDCP_Suboption_*):
+//
+//	IP       MAC | IP, mask, gateway | the same plus four DNS servers
+//	Device   names as text | vendor and device ID | role | option list |
+//	         instance | RSI and protocol property bits
+//	DHCP     OptionCode (1), ParameterLength (1), ParameterData
+//	Control  BlockQualifier, then a signal value; or Option, Suboption,
+//	         BlockError for a response
+//	NME/CIM  domain UUID and name | manager priority | parameter UUID |
+//	         agent UUID | vendor, device and instance ID
+//
+// Manufacturer specific options (0x80-0xFE) have no known layout: their
+// value stays raw.
 
 package layers
 
@@ -36,6 +50,9 @@ const (
 	profinetDCPSelectorLen    = 2
 	profinetDCPPrefixLen      = 2
 	profinetDCPDNSServers     = 4
+	profinetDCPDHCPHeadLen    = 2 // option code, parameter length
+	profinetDCPCIMLen         = 6 // vendor ID, device ID, instance
+	profinetDCPResetModeShift = 1
 )
 
 var (
@@ -158,7 +175,16 @@ const (
 	ProfinetDCPBlockAliasName        ProfinetDCPBlockType = 0x0206
 	ProfinetDCPBlockDeviceInstance   ProfinetDCPBlockType = 0x0207
 	ProfinetDCPBlockOEMDeviceID      ProfinetDCPBlockType = 0x0208
+	ProfinetDCPBlockRSIProperties    ProfinetDCPBlockType = 0x020A
+	ProfinetDCPBlockProtocolProps    ProfinetDCPBlockType = 0x020B
+	ProfinetDCPBlockDHCPHostName     ProfinetDCPBlockType = 0x030C
+	ProfinetDCPBlockDHCPVendor       ProfinetDCPBlockType = 0x032B
+	ProfinetDCPBlockDHCPServerID     ProfinetDCPBlockType = 0x0336
+	ProfinetDCPBlockDHCPParamRequest ProfinetDCPBlockType = 0x0337
+	ProfinetDCPBlockDHCPClassID      ProfinetDCPBlockType = 0x033C
 	ProfinetDCPBlockDHCPClientID     ProfinetDCPBlockType = 0x033D
+	ProfinetDCPBlockDHCPFQDN         ProfinetDCPBlockType = 0x0351
+	ProfinetDCPBlockDHCPUUID         ProfinetDCPBlockType = 0x0361
 	ProfinetDCPBlockDHCPControl      ProfinetDCPBlockType = 0x03FF
 	ProfinetDCPBlockStartTransaction ProfinetDCPBlockType = 0x0501
 	ProfinetDCPBlockEndTransaction   ProfinetDCPBlockType = 0x0502
@@ -167,6 +193,11 @@ const (
 	ProfinetDCPBlockFactoryReset     ProfinetDCPBlockType = 0x0505
 	ProfinetDCPBlockResetToFactory   ProfinetDCPBlockType = 0x0506
 	ProfinetDCPBlockDeviceInitiative ProfinetDCPBlockType = 0x0601
+	ProfinetDCPBlockNMEDomain        ProfinetDCPBlockType = 0x0701
+	ProfinetDCPBlockNMEManager       ProfinetDCPBlockType = 0x0702
+	ProfinetDCPBlockNMEParameterUUID ProfinetDCPBlockType = 0x0703
+	ProfinetDCPBlockNMEAgent         ProfinetDCPBlockType = 0x0704
+	ProfinetDCPBlockCIMInterface     ProfinetDCPBlockType = 0x0705
 	ProfinetDCPBlockAllSelector      ProfinetDCPBlockType = 0xFFFF
 )
 
@@ -203,6 +234,34 @@ func (t ProfinetDCPBlockType) String() string {
 		return "Device/Device instance"
 	case ProfinetDCPBlockOEMDeviceID:
 		return "Device/OEM device ID"
+	case ProfinetDCPBlockRSIProperties:
+		return "Device/RSI properties"
+	case ProfinetDCPBlockProtocolProps:
+		return "Device/Protocol properties"
+	case ProfinetDCPBlockDHCPHostName:
+		return "DHCP/Host name"
+	case ProfinetDCPBlockDHCPVendor:
+		return "DHCP/Vendor specific"
+	case ProfinetDCPBlockDHCPServerID:
+		return "DHCP/Server identifier"
+	case ProfinetDCPBlockDHCPParamRequest:
+		return "DHCP/Parameter request list"
+	case ProfinetDCPBlockDHCPClassID:
+		return "DHCP/Class identifier"
+	case ProfinetDCPBlockDHCPFQDN:
+		return "DHCP/FQDN"
+	case ProfinetDCPBlockDHCPUUID:
+		return "DHCP/UUID client identifier"
+	case ProfinetDCPBlockNMEDomain:
+		return "NME/Configuration domain"
+	case ProfinetDCPBlockNMEManager:
+		return "NME/Manager"
+	case ProfinetDCPBlockNMEParameterUUID:
+		return "NME/Parameter UUID"
+	case ProfinetDCPBlockNMEAgent:
+		return "NME/Agent"
+	case ProfinetDCPBlockCIMInterface:
+		return "NME/CIM interface"
 	case ProfinetDCPBlockDHCPClientID:
 		return "DHCP/Client identifier"
 	case ProfinetDCPBlockDHCPControl:
@@ -261,6 +320,39 @@ const (
 	ProfinetDCPRoleSupervisor   ProfinetDCPDeviceRole = 0x08
 )
 
+// ProfinetDCPResetMode is the mode of a Control/Reset to factory block,
+// carried in bits 1-15 of its BlockQualifier.
+type ProfinetDCPResetMode uint16
+
+// Reset to factory modes.
+const (
+	ProfinetDCPResetApplication   ProfinetDCPResetMode = 1
+	ProfinetDCPResetCommunication ProfinetDCPResetMode = 2
+	ProfinetDCPResetEngineering   ProfinetDCPResetMode = 3
+	ProfinetDCPResetAllStored     ProfinetDCPResetMode = 4
+	ProfinetDCPResetDevice        ProfinetDCPResetMode = 8
+	ProfinetDCPResetAndRestore    ProfinetDCPResetMode = 9
+)
+
+// String returns the reset mode name.
+func (m ProfinetDCPResetMode) String() string {
+	switch m {
+	case ProfinetDCPResetApplication:
+		return "Reset application data"
+	case ProfinetDCPResetCommunication:
+		return "Reset communication parameter"
+	case ProfinetDCPResetEngineering:
+		return "Reset engineering parameter"
+	case ProfinetDCPResetAllStored:
+		return "Reset all stored data except the security configuration"
+	case ProfinetDCPResetDevice:
+		return "Reset all stored data to factory values"
+	case ProfinetDCPResetAndRestore:
+		return "Reset and restore data"
+	}
+	return fmt.Sprintf("reserved(%d)", uint16(m))
+}
+
 // ProfinetDCPBlockError is the error code of a Control/Response block.
 type ProfinetDCPBlockError uint8
 
@@ -316,6 +408,9 @@ func (s ProfinetDCPSelector) Type() ProfinetDCPBlockType {
 // Value holds the bytes after the prefix, without padding. The typed fields
 // below it are filled for the block types they belong to, when Value is
 // long enough; they alias the packet data.
+//
+// Name ends at the first NUL, as tshark prints it: devices pad names with
+// NULs. Value keeps every byte.
 type ProfinetDCPBlock struct {
 	Option    ProfinetDCPOption
 	Suboption uint8
@@ -329,7 +424,7 @@ type ProfinetDCPBlock struct {
 	Subnet           net.IP                // IP parameter, full IP suite
 	Gateway          net.IP                // IP parameter, full IP suite
 	DNS              []net.IP              // full IP suite
-	Name             string                // type of station, name of station, alias name
+	Name             string                // type of station, name of station, alias name, NME domain name, arbitrary DHCP client identifier
 	VendorID         uint16                // device ID, OEM device ID
 	DeviceID         uint16                // device ID, OEM device ID
 	Role             ProfinetDCPDeviceRole // device role
@@ -339,6 +434,14 @@ type ProfinetDCPBlock struct {
 	Response         ProfinetDCPSelector   // control response: option answered
 	BlockError       ProfinetDCPBlockError // control response
 	DeviceInitiative uint16                // device initiative value
+	Properties       uint16                // RSI properties, protocol properties
+	DHCPOptionCode   DHCPOpt               // DHCP blocks
+	NMEPriority      uint16                // NME manager
+}
+
+// ResetMode returns the mode of a Control/Reset to factory block.
+func (b *ProfinetDCPBlock) ResetMode() ProfinetDCPResetMode {
+	return ProfinetDCPResetMode(b.BlockInfo >> profinetDCPResetModeShift)
 }
 
 // Type returns the block's option and suboption as one value.
@@ -536,7 +639,7 @@ func (b *ProfinetDCPBlock) decodeValue(v []byte, pdu ProfinetDCPPrefix) {
 		b.decodeIPParameter(v)
 		b.decodeDNS(v)
 	case ProfinetDCPBlockTypeOfStation, ProfinetDCPBlockNameOfStation, ProfinetDCPBlockAliasName:
-		b.Name = string(v)
+		b.Name = dcpName(v)
 	case ProfinetDCPBlockDeviceID, ProfinetDCPBlockOEMDeviceID:
 		if len(v) >= 4 {
 			b.VendorID = binary.BigEndian.Uint16(v)
@@ -566,6 +669,104 @@ func (b *ProfinetDCPBlock) decodeValue(v []byte, pdu ProfinetDCPPrefix) {
 	case ProfinetDCPBlockDeviceInitiative:
 		if len(v) >= 2 {
 			b.DeviceInitiative = binary.BigEndian.Uint16(v)
+		}
+	case ProfinetDCPBlockRSIProperties, ProfinetDCPBlockProtocolProps:
+		if len(v) >= 2 {
+			b.Properties = binary.BigEndian.Uint16(v)
+		}
+	}
+
+	switch b.Option {
+	case ProfinetDCPOptionDHCP:
+		b.decodeDHCP(v)
+	case ProfinetDCPOptionNME:
+		b.decodeNME(v)
+	}
+}
+
+// dcpName returns a station name: the text up to the first NUL.
+func dcpName(v []byte) string {
+	for i, c := range v {
+		if c == 0 {
+			return string(v[:i])
+		}
+	}
+	return string(v)
+}
+
+// DHCPParameter returns the parameter data of a DHCP block, clipped to the
+// block when its length byte lies. It is a method rather than a field to
+// keep the block small: a Get request allocates one block per two bytes.
+func (b *ProfinetDCPBlock) DHCPParameter() []byte {
+	v := b.Value
+	if b.Option != ProfinetDCPOptionDHCP || len(v) < profinetDCPDHCPHeadLen {
+		return nil
+	}
+
+	n := int(v[1])
+	v = v[profinetDCPDHCPHeadLen:]
+	if n > len(v) {
+		n = len(v)
+	}
+	return v[:n]
+}
+
+// decodeDHCP reads a DHCP block: the option code again, a length and the
+// parameter data. A client identifier parameter is a type byte followed,
+// for an arbitrary identifier, by the identifier text.
+func (b *ProfinetDCPBlock) decodeDHCP(v []byte) {
+	if len(v) < profinetDCPDHCPHeadLen {
+		return
+	}
+	b.DHCPOptionCode = DHCPOpt(v[0])
+
+	if param := b.DHCPParameter(); b.Type() == ProfinetDCPBlockDHCPClientID && len(param) > 1 {
+		b.Name = string(param[1:])
+	}
+}
+
+// UUID returns the UUID that opens an NME domain, parameter UUID or agent
+// block, and whether the block carries one. Like DHCPParameter it is a
+// method to keep the block small.
+func (b *ProfinetDCPBlock) UUID() (u ProfinetUUID, ok bool) {
+	if len(b.Value) < profinetUUIDLen {
+		return u, false
+	}
+
+	switch b.Type() {
+	case ProfinetDCPBlockNMEDomain, ProfinetDCPBlockNMEParameterUUID:
+	case ProfinetDCPBlockNMEAgent:
+		// Wireshark reads the agent only behind a BlockInfo.
+		if b.Prefix != ProfinetDCPPrefixBlockInfo {
+			return u, false
+		}
+	default:
+		return u, false
+	}
+
+	copy(u[:], b.Value)
+	return u, true
+}
+
+// decodeNME reads an NME (CIM) block. Like Wireshark, the manager and CIM
+// interface values are read only behind a BlockInfo.
+func (b *ProfinetDCPBlock) decodeNME(v []byte) {
+	info := b.Prefix == ProfinetDCPPrefixBlockInfo
+
+	switch b.Type() {
+	case ProfinetDCPBlockNMEDomain:
+		if len(v) >= profinetUUIDLen {
+			b.Name = dcpName(v[profinetUUIDLen:])
+		}
+	case ProfinetDCPBlockNMEManager:
+		if info && len(v) >= 2 {
+			b.NMEPriority = binary.BigEndian.Uint16(v)
+		}
+	case ProfinetDCPBlockCIMInterface:
+		if info && len(v) >= profinetDCPCIMLen {
+			b.VendorID = binary.BigEndian.Uint16(v)
+			b.DeviceID = binary.BigEndian.Uint16(v[2:])
+			b.Instance = binary.BigEndian.Uint16(v[4:])
 		}
 	}
 }

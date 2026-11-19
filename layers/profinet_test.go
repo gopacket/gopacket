@@ -38,7 +38,19 @@ const (
 // the previous table entry afterwards, so other tests see the defaults.
 func withProfinet(t testing.TB) {
 	old := EthernetTypeMetadata[EthernetTypeProfinet]
-	t.Cleanup(func() { EthernetTypeMetadata[EthernetTypeProfinet] = old })
+	port := uint16(UDPPortProfinetIO)
+	oldWord := udpPortLayerTypeOverride[port>>6]
+	oldType, hadType := udpPortLayerType[UDPPortProfinetIO]
+
+	t.Cleanup(func() {
+		EthernetTypeMetadata[EthernetTypeProfinet] = old
+		udpPortLayerTypeOverride[port>>6] = oldWord
+		if hadType {
+			udpPortLayerType[UDPPortProfinetIO] = oldType
+			return
+		}
+		delete(udpPortLayerType, UDPPortProfinetIO)
+	})
 	registerProfinetDecoders()
 }
 
@@ -438,10 +450,13 @@ func TestProfinetHandmadePcap(t *testing.T) {
 		t.Errorf("rtc1 legacy: %+v", pn)
 	}
 
-	// 15: fragment, kept raw.
+	// 15: fragment: the 2-byte fragment header, then the fragment as payload.
 	pn = pkts[14].Layer(LayerTypeProfinet).(*Profinet)
-	if pn.FrameID.Class() != ProfinetFrameClassFragment || len(pn.LayerPayload()) != 44 || pkts[14].ApplicationLayer() == nil {
+	if pn.FrameID.Class() != ProfinetFrameClassFragment || len(pn.LayerPayload()) != 42 || pkts[14].ApplicationLayer() == nil {
 		t.Errorf("fragment: %+v", pn)
+	}
+	if pn.FragDataLength != 0x2a || !pn.FragStatus.MoreFollows() || pn.FragStatus.Number() != 0 {
+		t.Errorf("fragment header: %d %v", pn.FragDataLength, pn.FragStatus)
 	}
 
 	// 16: NACK-RTA.
@@ -499,7 +514,7 @@ func TestProfinetDecodingLayerParser(t *testing.T) {
 func TestProfinetTruncation(t *testing.T) {
 	withProfinet(t)
 
-	for _, path := range []string{pnDCPPcap, pnRTAlarmPcap, pnHandmadePcap} {
+	for _, path := range []string{pnDCPPcap, pnRTAlarmPcap, pnHandmadePcap, pnExtraPcap} {
 		for _, frame := range readPNECATPcap(t, path) {
 			for n := 0; n <= len(frame); n++ {
 				data := append([]byte(nil), frame[:n]...)
@@ -586,7 +601,7 @@ func TestProfinetDCPBlockLoop(t *testing.T) {
 
 func FuzzProfinet(f *testing.F) {
 	withProfinet(f)
-	for _, path := range []string{pnDCPPcap, pnRTAlarmPcap, pnHandmadePcap} {
+	for _, path := range []string{pnDCPPcap, pnRTAlarmPcap, pnHandmadePcap, pnExtraPcap} {
 		for _, frame := range readPNECATPcap(f, path) {
 			f.Add(frame)
 		}
@@ -603,8 +618,30 @@ func FuzzProfinet(f *testing.F) {
 		}
 
 		// Decode the PDU types directly too, skipping the frame ID dispatch.
-		for _, dl := range []gopacket.DecodingLayer{&Profinet{}, &ProfinetDCP{}, &ProfinetAlarm{}, &ProfinetPTCP{}} {
+		for _, dl := range []gopacket.DecodingLayer{&Profinet{}, &ProfinetDCP{}, &ProfinetAlarm{}, &ProfinetPTCP{}, &ProfinetIORPC{}} {
 			_ = dl.DecodeFromBytes(data, gopacket.NilDecodeFeedback)
+		}
+
+		// The block list, and the count that sizes it.
+		blocks, err := ProfinetDecodeBlocks(data)
+		if err == nil && len(blocks) != countProfinetBlocks(data) {
+			t.Fatalf("counted %d blocks, decoded %d", countProfinetBlocks(data), len(blocks))
+		}
+
+		// DFP with the addresses of the frame, and reassembly.
+		if len(data) > 14 {
+			pn := &Profinet{}
+			if pn.DecodeFromBytes(data[14:], gopacket.NilDecodeFeedback) != nil {
+				return
+			}
+			pn.DecodeSubframes(data[0:6], data[6:12])
+
+			asm := NewProfinetFragAssembler(64)
+			for i := 0; i < 3; i++ {
+				if out, _ := asm.Add(data[6:12], data[0:6], pn); len(out) > asm.MaxSize {
+					t.Fatalf("reassembled %d bytes past the cap", len(out))
+				}
+			}
 		}
 	})
 }

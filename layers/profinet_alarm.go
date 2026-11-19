@@ -17,6 +17,12 @@
 //
 // PDUType holds the type in its low nibble and the version in its high
 // nibble; AddFlags holds WindowSize (low nibble) and TACK (high nibble).
+//
+// The VarPart of a DATA-RTA is one block (see profinet_block.go): an alarm
+// notification or an alarm acknowledge. ERR-RTA carries a PNIO status.
+//
+// Frame IDs 0xFC41 and 0xFE41 are the same PDU behind a SecurityMetaData
+// header, which the Profinet layer decodes and strips.
 
 package layers
 
@@ -66,9 +72,9 @@ func (t ProfinetAlarmPDUType) String() string {
 
 // ProfinetAlarm is a PROFINET IO RTA-PDU.
 //
-// The payload is the VarPart: alarm notification or acknowledge blocks for
-// DATA-RTA, the PNIO status for ERR-RTA. Ethernet padding past VarPartLen
-// is dropped. For ERR-RTA the PNIO status is also decoded below.
+// The payload is the raw VarPart; Ethernet padding past VarPartLen is
+// dropped. It is also decoded: the block of a DATA-RTA into Block, the
+// PNIO status of an ERR-RTA into the four error fields.
 type ProfinetAlarm struct {
 	BaseLayer
 
@@ -87,6 +93,21 @@ type ProfinetAlarm struct {
 	ErrorDecode uint8
 	ErrorCode1  uint8
 	ErrorCode2  uint8
+
+	// Block is the DATA-RTA block, with Block.Alarm or Block.AlarmAck set
+	// for the alarm block types. It is nil for other PDU types and when
+	// the VarPart holds no whole block header.
+	Block *ProfinetBlock
+}
+
+// Status returns the ERR-RTA PNIO status as one value.
+func (a *ProfinetAlarm) Status() ProfinetPNIOStatus {
+	return ProfinetPNIOStatus{
+		ErrorCode:   ProfinetErrorCode(a.ErrorCode),
+		ErrorDecode: ProfinetErrorDecode(a.ErrorDecode),
+		ErrorCode1:  a.ErrorCode1,
+		ErrorCode2:  a.ErrorCode2,
+	}
 }
 
 // LayerType returns LayerTypeProfinetAlarm.
@@ -120,6 +141,7 @@ func (a *ProfinetAlarm) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback)
 	a.AckSeqNum = binary.BigEndian.Uint16(data[8:10])
 	a.VarPartLength = binary.BigEndian.Uint16(data[10:12])
 	a.ErrorCode, a.ErrorDecode, a.ErrorCode1, a.ErrorCode2 = 0, 0, 0, 0
+	a.Block = nil
 
 	// The VarPart ends at VarPartLen; anything after it is padding.
 	end := profinetAlarmHeaderLen + int(a.VarPartLength)
@@ -134,6 +156,22 @@ func (a *ProfinetAlarm) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback)
 	if a.PDUType == ProfinetAlarmERR && len(status) >= profinetPNIOStatusLen {
 		a.ErrorCode, a.ErrorDecode, a.ErrorCode1, a.ErrorCode2 = status[0], status[1], status[2], status[3]
 	}
+
+	// DATA-RTA carries one block. A VarPart too short or too odd for a
+	// block header stays raw in the payload.
+	if a.PDUType != ProfinetAlarmData {
+		return nil
+	}
+
+	b, _, err := decodeProfinetBlock(a.BaseLayer.Payload, profinetBlockTop)
+	if err != nil {
+		return nil
+	}
+
+	if b.Clipped() {
+		df.SetTruncated()
+	}
+	a.Block = &b
 	return nil
 }
 
