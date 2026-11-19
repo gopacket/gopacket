@@ -484,13 +484,22 @@ type MMSObjectName struct {
 	ItemID   string
 }
 
-// MMSVariable is one listOfVariable entry. Only the name alternative is
-// decoded; others keep their raw encoding in Spec.
+// MMSVariable is one listOfVariable entry. Spec always keeps the raw
+// VariableSpecification value and AlternateAccess the raw alternate
+// access. The name alternative must decode; the others are best effort.
 type MMSVariable struct {
 	Kind            MMSVariableKind
 	Name            MMSObjectName
 	Spec            []byte
 	AlternateAccess []byte
+
+	// Address is set for the address and variableDescription
+	// alternatives, Type for the variableDescription.
+	Address MMSAddress
+	Type    *MMSTypeSpec
+	// Alternate is the decoded AlternateAccess, nil when it is absent or
+	// malformed.
+	Alternate []MMSAlternateAccess
 }
 
 // MMSVariableAccess is a VariableAccessSpecification.
@@ -647,6 +656,39 @@ type MMS struct {
 	InformationReport *MMSInformationReport
 	IdentifyResp      *MMSIdentifyResponse
 	NamedVariableList *MMSNamedVariableList
+
+	// The fields below are best effort: a malformed service element
+	// leaves them nil and sets ServiceDecodeErr, and the PDU still
+	// decodes with its raw ServiceData. ObjectName above is also set for
+	// the getEventConditionAttributes, reportEventConditionStatus and
+	// reportJournalStatus requests.
+	ServiceDecodeErr error
+	// ErrorDetail is the serviceSpecificInformation of Error.
+	ErrorDetail *MMSErrorDetail
+	// VariableAddress is set for a getVariableAccessAttributes request
+	// by address.
+	VariableAddress      *MMSAddress
+	VariableAttributes   *MMSVariableAttributes
+	DeleteReq            *MMSDeleteRequest
+	DeleteResp           *MMSDeleteResponse
+	StatusReq            *MMSStatusRequest
+	Status               *MMSVMDStatus
+	RenameReq            *MMSRenameRequest
+	CapabilityList       *MMSCapabilityList
+	DomainReq            *MMSDomainRequest
+	DomainResp           *MMSDomainResponse
+	ProgramReq           *MMSProgramRequest
+	ProgramAttributes    *MMSProgramAttributes
+	FileReq              *MMSFileRequest
+	FileResp             *MMSFileResponse
+	JournalReq           *MMSJournalRequest
+	JournalResp          *MMSJournalResponse
+	EventCondition       *MMSEventCondition
+	EventConditionStatus *MMSEventConditionStatus
+	EventNotification    *MMSEventNotification
+	EventAck             *MMSEventAck
+	AlarmSummaryReq      *MMSAlarmSummaryRequest
+	AlarmSummary         *MMSAlarmSummaryResponse
 }
 
 // LayerType returns LayerTypeMMS.
@@ -711,6 +753,7 @@ func (m *MMS) decodePDU(t osiBERTLV) error {
 		m.Initiate, err = decodeMMSInitiate(t.Value)
 	case MMSInitiateError, MMSConcludeError:
 		m.Error, err = decodeMMSServiceError(t.Value)
+		m.setErrorDetail(t.Value)
 	}
 	return err
 }
@@ -773,6 +816,9 @@ func (m *MMS) decodeRequest(t osiBERTLV) error {
 		m.WriteReq, err = decodeMMSWriteReq(t.Value)
 	case MMSGetVariableAccessAttributes:
 		m.ObjectName, err = decodeMMSGVAAReq(t.Value)
+		if err == nil && m.ObjectName == nil {
+			m.VariableAddress, m.ServiceDecodeErr = decodeMMSGVAAAddr(t.Value)
+		}
 	case MMSGetNamedVariableListAttributes:
 		var n MMSObjectName
 		n, err = decodeMMSObjectNameIn(t.Value)
@@ -780,6 +826,7 @@ func (m *MMS) decodeRequest(t osiBERTLV) error {
 	case MMSDefineNamedVariableList:
 		m.NamedVariableList, err = decodeMMSDefineNVL(t.Value)
 	default:
+		m.ServiceDecodeErr = m.decodeMoreReq(t)
 		return nil
 	}
 
@@ -805,6 +852,7 @@ func (m *MMS) decodeResponse(t osiBERTLV) error {
 	case MMSGetNamedVariableListAttributes:
 		m.NamedVariableList, err = decodeMMSGetNVLAResp(t.Value)
 	default:
+		m.ServiceDecodeErr = m.decodeMoreResp(t)
 		return nil
 	}
 
@@ -832,6 +880,7 @@ func (m *MMS) decodeConfirmedError(b []byte) error {
 			m.ModifierPosition, err = osiBERInt(t.Value)
 		case t.is(osiBERContext, osiBERConstructed, mmsTagErrService):
 			m.Error, err = decodeMMSServiceError(t.Value)
+			m.setErrorDetail(t.Value)
 		}
 		if err != nil {
 			return err
@@ -855,6 +904,7 @@ func (m *MMS) decodeCancelError(b []byte) error {
 		return err
 	}
 	m.Error, err = decodeMMSServiceError(v)
+	m.setErrorDetail(v)
 	return err
 }
 
@@ -870,8 +920,13 @@ func (m *MMS) decodeUnconfirmed(b []byte) error {
 
 	m.Unconfirmed = MMSUnconfirmedService(t.Tag)
 	m.ServiceData = t.Value
-	if m.Unconfirmed == MMSUnconfirmedInfoReport {
+	switch m.Unconfirmed {
+	case MMSUnconfirmedInfoReport:
 		m.InformationReport, err = decodeMMSReport(t.Value)
+	case MMSUnconfirmedStatus:
+		m.Status, m.ServiceDecodeErr = decodeMMSStatus(t)
+	case MMSUnconfirmedEvent:
+		m.EventNotification, m.ServiceDecodeErr = decodeMMSEventNotif(t)
 	}
 	return err
 }
@@ -1065,14 +1120,9 @@ func decodeMMSVariables(b []byte) ([]MMSVariable, error) {
 		if err != nil {
 			return nil, err
 		}
-		if spec.Class != osiBERContext || spec.Tag > uint32(MMSVariableInvalidated) {
-			return nil, errMMSField
-		}
-		v := MMSVariable{Kind: MMSVariableKind(spec.Tag), Spec: spec.Value}
-		if v.Kind == MMSVariableName {
-			if v.Name, err = decodeMMSObjectNameIn(spec.Value); err != nil {
-				return nil, err
-			}
+		v, err := decodeMMSVarSpec(spec)
+		if err != nil {
+			return nil, err
 		}
 
 		if len(more) > 0 {
@@ -1081,6 +1131,9 @@ func decodeMMSVariables(b []byte) ([]MMSVariable, error) {
 				return nil, err
 			}
 			v.AlternateAccess = alt
+
+			// Best effort: a malformed access only keeps the raw octets.
+			v.Alternate, _ = decodeMMSAltAccess(alt, 0)
 		}
 		out = append(out, v)
 	}

@@ -118,9 +118,22 @@ const (
 	acseTagAbortDiag    uint32 = 1
 	acseTagAPTitleForm2 uint32 = osiBERTagOID
 	acseTagAEQualForm2  uint32 = osiBERTagInteger
+
+	acseTagCalledAPInv   uint32 = 4
+	acseTagCalledAEInv   uint32 = 5
+	acseTagCallingAPInv  uint32 = 8
+	acseTagCallingAEInv  uint32 = 9
+	acseTagRespAPInv     uint32 = 6
+	acseTagRespAEInv     uint32 = 7
+	acseTagAPTitleForm1  uint32 = osiBERTagSequence
+	acseTagAEQualForm1   uint32 = osiBERTagSet
+	acseTagAttributeType uint32 = osiBERTagOID
 )
 
-var errACSEUnknown = errors.New("ACSE: unknown APDU")
+var (
+	errACSEUnknown    = errors.New("ACSE: unknown APDU")
+	errACSENoUserInfo = errors.New("ACSE: no such user-information")
+)
 
 // ACSEAETitle is an AP-title / AE-qualifier pair in their form 2 encoding
 // (OBJECT IDENTIFIER and INTEGER). Form 1 (directory name) is kept raw.
@@ -131,8 +144,34 @@ type ACSEAETitle struct {
 	HasAEQualifier bool
 }
 
+// ACSEAttribute is one AttributeTypeAndValue of a directory Name, e.g.
+// type "2.5.4.3" (commonName) and value "IED1". RDN is the index of its
+// RelativeDistinguishedName; Value holds the value octets of the
+// attribute value element.
+type ACSEAttribute struct {
+	RDN   int
+	Type  string
+	Value []byte
+}
+
+// ACSEAEInfo holds the parts of an AE title that ACSEAETitle leaves out:
+// the form 1 AP-title (a directory Name) and AE-qualifier (a
+// RelativeDistinguishedName), and the AP and AE invocation identifiers.
+type ACSEAEInfo struct {
+	APTitleName       []ACSEAttribute
+	AEQualifierName   []ACSEAttribute
+	APInvocationID    int64
+	HasAPInvocationID bool
+	AEInvocationID    int64
+	HasAEInvocationID bool
+}
+
 // ACSE is an ISO 8650-1 APDU. The layer payload is the single-ASN1-type
-// of the first user-information EXTERNAL, normally an MMS initiate PDU.
+// of the first user-information EXTERNAL, normally an MMS initiate PDU;
+// UserLayer decodes any of them.
+//
+// CalledInfo, CallingInfo and RespondingInfo are best effort: a
+// malformed form 1 name or invocation identifier leaves them unset.
 type ACSE struct {
 	BaseLayer
 	Type               ACSEAPDUType
@@ -155,6 +194,10 @@ type ACSE struct {
 	Authentication  []byte
 	Implementation  string
 	UserInformation []ISOPresentationPDV
+
+	CalledInfo     ACSEAEInfo
+	CallingInfo    ACSEAEInfo
+	RespondingInfo ACSEAEInfo
 }
 
 // LayerType returns LayerTypeACSE.
@@ -252,12 +295,24 @@ func (a *ACSE) decodeAARQField(f osiBERTLV) error {
 		a.ApplicationContext, err = acseExplicitOID(f.Value)
 	case acseTagCalledAPTitle:
 		err = a.Called.decodeAPTitle(f.Value)
+		a.CalledInfo.decodeAPTitle(f.Value)
 	case acseTagCalledAEQual:
 		err = a.Called.decodeAEQualifier(f.Value)
+		a.CalledInfo.decodeAEQualifier(f.Value)
 	case acseTagCallingAPTitle:
 		err = a.Calling.decodeAPTitle(f.Value)
+		a.CallingInfo.decodeAPTitle(f.Value)
 	case acseTagCallingAEQual:
 		err = a.Calling.decodeAEQualifier(f.Value)
+		a.CallingInfo.decodeAEQualifier(f.Value)
+	case acseTagCalledAPInv:
+		a.CalledInfo.APInvocationID, a.CalledInfo.HasAPInvocationID = acseInvocation(f)
+	case acseTagCalledAEInv:
+		a.CalledInfo.AEInvocationID, a.CalledInfo.HasAEInvocationID = acseInvocation(f)
+	case acseTagCallingAPInv:
+		a.CallingInfo.APInvocationID, a.CallingInfo.HasAPInvocationID = acseInvocation(f)
+	case acseTagCallingAEInv:
+		a.CallingInfo.AEInvocationID, a.CallingInfo.HasAEInvocationID = acseInvocation(f)
 	case acseTagMechanism:
 		a.MechanismName, err = osiBEROID(f.Value)
 	case acseTagCallingAuth:
@@ -283,8 +338,14 @@ func (a *ACSE) decodeAAREField(f osiBERTLV) error {
 		err = a.decodeDiagnostic(f.Value)
 	case acseTagRespAPTitle:
 		err = a.Responding.decodeAPTitle(f.Value)
+		a.RespondingInfo.decodeAPTitle(f.Value)
 	case acseTagRespAEQual:
 		err = a.Responding.decodeAEQualifier(f.Value)
+		a.RespondingInfo.decodeAEQualifier(f.Value)
+	case acseTagRespAPInv:
+		a.RespondingInfo.APInvocationID, a.RespondingInfo.HasAPInvocationID = acseInvocation(f)
+	case acseTagRespAEInv:
+		a.RespondingInfo.AEInvocationID, a.RespondingInfo.HasAEInvocationID = acseInvocation(f)
 	case acseTagRespMech:
 		a.MechanismName, err = osiBEROID(f.Value)
 	case acseTagRespAuth:
@@ -362,6 +423,119 @@ func (t *ACSEAETitle) decodeAEQualifier(b []byte) error {
 	t.AEQualifier, err = osiBERInt(inner.Value)
 	t.HasAEQualifier = true
 	return err
+}
+
+// decodeAPTitle keeps a form 1 AP-title: a Name, which is an
+// RDNSequence.
+func (i *ACSEAEInfo) decodeAPTitle(b []byte) {
+	inner, err := osiBERSingle(b)
+	if err != nil || !inner.is(osiBERUniversal, osiBERConstructed, acseTagAPTitleForm1) {
+		return
+	}
+	i.APTitleName, _ = decodeACSEName(inner.Value)
+}
+
+// decodeAEQualifier keeps a form 1 AE-qualifier: one
+// RelativeDistinguishedName.
+func (i *ACSEAEInfo) decodeAEQualifier(b []byte) {
+	inner, err := osiBERSingle(b)
+	if err != nil || !inner.is(osiBERUniversal, osiBERConstructed, acseTagAEQualForm1) {
+		return
+	}
+
+	count, err := osiBERCount(inner.Value)
+	if err != nil {
+		return
+	}
+	i.AEQualifierName, _ = decodeACSERDN(inner.Value, 0, make([]ACSEAttribute, 0, count))
+}
+
+// decodeACSEName decodes an RDNSequence body: SEQUENCE OF SET OF
+// SEQUENCE { type OID, value ANY }.
+func decodeACSEName(b []byte) ([]ACSEAttribute, error) {
+	// Count the attributes of all RDNs to allocate once.
+	total := 0
+	for rest := b; len(rest) > 0; {
+		set, more, err := osiBERExpect(rest, osiBERUniversal, osiBERConstructed, osiBERTagSet)
+		if err != nil {
+			return nil, err
+		}
+		rest = more
+
+		n, err := osiBERCount(set)
+		if err != nil {
+			return nil, err
+		}
+		total += n
+	}
+
+	out := make([]ACSEAttribute, 0, total)
+	for rdn := 0; len(b) > 0; rdn++ {
+		set, rest, err := osiBERExpect(b, osiBERUniversal, osiBERConstructed, osiBERTagSet)
+		if err != nil {
+			return nil, err
+		}
+		b = rest
+
+		if out, err = decodeACSERDN(set, rdn, out); err != nil {
+			return nil, err
+		}
+	}
+	return out, nil
+}
+
+// decodeACSERDN appends the AttributeTypeAndValues of one
+// RelativeDistinguishedName body.
+func decodeACSERDN(b []byte, rdn int, out []ACSEAttribute) ([]ACSEAttribute, error) {
+	for len(b) > 0 {
+		atv, rest, err := osiBERExpect(b, osiBERUniversal, osiBERConstructed, osiBERTagSequence)
+		if err != nil {
+			return nil, err
+		}
+		b = rest
+
+		v, rest, err := osiBERExpect(atv, osiBERUniversal, osiBERPrimitive, acseTagAttributeType)
+		if err != nil {
+			return nil, err
+		}
+		oid, err := osiBEROID(v)
+		if err != nil {
+			return nil, err
+		}
+
+		val, err := osiBERSingle(rest)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, ACSEAttribute{RDN: rdn, Type: oid, Value: val.Value})
+	}
+	return out, nil
+}
+
+// acseInvocation reads an EXPLICIT INTEGER invocation identifier; ok is
+// false when it is malformed.
+func acseInvocation(f osiBERTLV) (int64, bool) {
+	v, _, err := osiBERExpect(f.Value, osiBERUniversal, osiBERPrimitive, osiBERTagInteger)
+	if err != nil || f.Form != osiBERConstructed {
+		return 0, false
+	}
+
+	n, err := osiBERInt(v)
+	return n, err == nil
+}
+
+// UserLayer decodes user-information EXTERNAL i as an MMS PDU, or as
+// ACSE when it holds one. It returns nil, nil for other data.
+func (a *ACSE) UserLayer(i int) (gopacket.Layer, error) {
+	if i < 0 || i >= len(a.UserInformation) {
+		return nil, errACSENoUserInfo
+	}
+
+	ext := a.UserInformation[i]
+	if ext.Encoding != ISOPresentationSingleASN1 {
+		return nil, nil
+	}
+	return osiDecodeLayer(osiRouteByTag(ext.Data), ext.Data)
 }
 
 // acseInt reads an IMPLICIT INTEGER field, which must be primitive.

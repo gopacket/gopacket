@@ -8,6 +8,7 @@ package layers
 
 import (
 	"errors"
+	"math/big"
 	"strconv"
 	"strings"
 )
@@ -329,4 +330,14 @@ func osiBEROID(v []byte) (string, error) {
 		arc = 0
 	}
 	return sb.String(), nil
+}
+
+// osiBERBig decodes a two's complement INTEGER of any length, e.g. one
+// too long for osiBERInt: ff 00 .. 00 (9 octets) = -2^64.
+func osiBERBig(v []byte) *big.Int {
+	n := new(big.Int).SetBytes(v)
+	if len(v) > 0 && v[0]&0x80 != 0 {
+		n.Sub(n, new(big.Int).Lsh(big.NewInt(1), uint(len(v))*8))
+	}
+	return n
 }

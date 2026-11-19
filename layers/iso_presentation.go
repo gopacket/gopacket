@@ -109,6 +109,7 @@ const (
 var (
 	errISOPresUnknown = errors.New("ISO presentation: unknown PPDU")
 	errISOPresPDV     = errors.New("ISO presentation: PDV without data")
+	errISOPresNoPDV   = errors.New("ISO presentation: no such PDV")
 )
 
 // ISOPresentationContext is one presentation-context-definition-list
@@ -139,7 +140,8 @@ type ISOPresentationPDV struct {
 }
 
 // ISOPresentation is an ISO 8823 PPDU. The layer payload is the data of
-// the first PDV.
+// the first PDV, and only that PDV is routed to the next layer. PDVs
+// lists all of them; PDVLayer decodes any one.
 //
 // Presentation context identifiers are bound to abstract syntaxes by the
 // CP/CPA exchange, which later packets do not repeat. When a CP in the
@@ -565,23 +567,65 @@ func (p *ISOPresentation) route() {
 		return
 	}
 
-	// A context defined in this very PPDU names its abstract syntax.
 	if len(p.PDVs) > 0 {
-		for _, c := range p.Contexts {
-			if c.ID != p.PDVs[0].ContextID {
-				continue
-			}
-			switch c.AbstractSyntax {
-			case osiOIDACSE:
-				p.next = LayerTypeACSE
-				return
-			case osiOIDMMS:
-				p.next = LayerTypeMMS
-				return
-			}
-		}
+		p.next = p.pdvNext(p.PDVs[0])
+		return
 	}
 	p.next = osiRouteByTag(p.Payload)
+}
+
+// pdvNext picks the decoder of a single-ASN1-type PDV.
+func (p *ISOPresentation) pdvNext(pdv ISOPresentationPDV) gopacket.LayerType {
+	// A context defined in this very PPDU names its abstract syntax.
+	for _, c := range p.Contexts {
+		if c.ID != pdv.ContextID {
+			continue
+		}
+		switch c.AbstractSyntax {
+		case osiOIDACSE:
+			return LayerTypeACSE
+		case osiOIDMMS:
+			return LayerTypeMMS
+		}
+	}
+	return osiRouteByTag(pdv.Data)
+}
+
+// PDVLayer decodes PDV i as the ACSE or MMS layer it would be routed to
+// in first place, e.g. the MMS PDU that follows an ACSE APDU in the same
+// PPDU. It returns nil, nil for opaque or unrecognised data.
+func (p *ISOPresentation) PDVLayer(i int) (gopacket.Layer, error) {
+	if i < 0 || i >= len(p.PDVs) {
+		return nil, errISOPresNoPDV
+	}
+
+	pdv := p.PDVs[i]
+	if pdv.Encoding != ISOPresentationSingleASN1 || len(pdv.Data) == 0 {
+		return nil, nil
+	}
+	return osiDecodeLayer(p.pdvNext(pdv), pdv.Data)
+}
+
+// osiDecodeLayer decodes data as an ACSE or MMS layer; other layer types
+// give nil, nil.
+func osiDecodeLayer(t gopacket.LayerType, data []byte) (gopacket.Layer, error) {
+	var l interface {
+		gopacket.Layer
+		DecodeFromBytes([]byte, gopacket.DecodeFeedback) error
+	}
+	switch t {
+	case LayerTypeACSE:
+		l = &ACSE{}
+	case LayerTypeMMS:
+		l = &MMS{}
+	default:
+		return nil, nil
+	}
+
+	if err := l.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err != nil {
+		return nil, err
+	}
+	return l, nil
 }
 
 // osiRouteByTag picks ACSE for APPLICATION 0-4 APDUs and MMS for context

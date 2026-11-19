@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/big"
 	"time"
 )
 
@@ -142,6 +143,9 @@ type MMSData struct {
 
 	// Bool is set for boolean.
 	Bool bool
+	// IntOverflow is set for an integer, unsigned or bcd value too long
+	// for Int or Uint, which then stay 0; BigInt returns its value.
+	IntOverflow bool
 	// Int is set for integer and bcd.
 	Int int64
 	// Uint is set for unsigned.
@@ -232,9 +236,9 @@ func decodeMMSData(t osiBERTLV, depth int) (MMSData, error) {
 	case MMSDataBitString, MMSDataBooleanArray:
 		d.Bits, d.UnusedBits, err = osiBERBits(v)
 	case MMSDataInteger, MMSDataBCD:
-		d.Int, err = osiBERInt(v)
+		d.Int, d.IntOverflow, err = mmsDataInt(v)
 	case MMSDataUnsigned:
-		d.Uint, err = osiBERUint(v)
+		d.Uint, d.IntOverflow, err = mmsDataUint(v)
 	case MMSDataFloatingPoint:
 		d.Float, err = decodeMMSFloat(v)
 	case MMSDataOctetString:
@@ -250,6 +254,36 @@ func decodeMMSData(t osiBERTLV, depth int) (MMSData, error) {
 		err = errMMSDataType
 	}
 	return d, err
+}
+
+// mmsDataInt decodes an integer value; one of more than 8 octets is
+// flagged as overflow instead of rejected.
+func mmsDataInt(v []byte) (int64, bool, error) {
+	if len(v) > osiBERMaxIntOctets {
+		return 0, true, nil
+	}
+	n, err := osiBERInt(v)
+	return n, false, err
+}
+
+// mmsDataUint decodes an unsigned value; a non-negative one too long for
+// 64 bits is flagged as overflow instead of rejected.
+func mmsDataUint(v []byte) (uint64, bool, error) {
+	if len(v) > osiBERMaxIntOctets && v[0]&0x80 == 0 && (len(v) > osiBERMaxIntOctets+1 || v[0] != 0) {
+		return 0, true, nil
+	}
+	n, err := osiBERUint(v)
+	return n, false, err
+}
+
+// BigInt returns the value of an integer, unsigned or bcd of any length,
+// or nil for other types.
+func (d *MMSData) BigInt() *big.Int {
+	switch d.Type {
+	case MMSDataInteger, MMSDataUnsigned, MMSDataBCD:
+		return osiBERBig(d.Raw)
+	}
+	return nil
 }
 
 // decodeMMSFloat decodes the IEC 61850-8-1 FloatingPoint encoding:
