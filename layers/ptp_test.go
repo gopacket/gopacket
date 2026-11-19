@@ -497,6 +497,9 @@ func FuzzPTP(f *testing.F) {
 	for _, v := range ptpVectors(f) {
 		f.Add(v)
 	}
+	for _, v := range ptpTLVVectors {
+		f.Add(v.msg(f))
+	}
 	for _, tc := range ptpCaptures {
 		packets, err := ptpReadPcap(tc.path)
 		if err != nil {
@@ -514,8 +517,29 @@ func FuzzPTP(f *testing.F) {
 	}
 
 	f.Fuzz(func(t *testing.T, data []byte) {
+		// IEEE 802.1AS handling must agree with plain IEEE 1588 on
+		// everything but the timestamp it reserves.
+		gptp := PTP{Transport: PTPTransportEthernet}
+		gptpErr := gptp.DecodeFromBytes(data, gopacket.NilDecodeFeedback)
+
 		var m PTP
-		if err := m.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err == nil {
+		err := m.DecodeFromBytes(data, gopacket.NilDecodeFeedback)
+		if (err == nil) != (gptpErr == nil) || len(m.TLVs) != len(gptp.TLVs) {
+			t.Fatalf("transports disagree: %v with %d TLVs, %v with %d", err, len(m.TLVs), gptpErr, len(gptp.TLVs))
+		}
+
+		// Typed values may fail, never panic, and never outgrow the TLV.
+		for _, tlv := range m.TLVs {
+			v, err := ptpDecodeDeep(tlv)
+			if err != nil && !errors.Is(err, ErrPTPTLVValue) {
+				t.Fatalf("%v: %v", tlv.Type, err)
+			}
+			if trace, ok := v.(PTPPathTrace); ok && len(trace)*ptpClockIDLen > len(tlv.Value) {
+				t.Fatalf("path trace of %d clocks in %d octets", len(trace), len(tlv.Value))
+			}
+		}
+
+		if err == nil {
 			if len(m.Contents) != int(m.MessageLength) {
 				t.Fatalf("contents %d octets for messageLength %d", len(m.Contents), m.MessageLength)
 			}

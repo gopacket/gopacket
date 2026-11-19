@@ -11,6 +11,10 @@
 //	| common header (34)   | body (by message type)   | TLVs ...       |
 //	+----------------------+--------------------------+----------------+
 //	 \_____________________ messageLength octets _____________________/
+//
+// TLVs are kept raw; PTPTLV.Decode in ptp_tlv.go types their values.
+// Over Ethernet, majorSdoId 1 marks IEEE 802.1AS (gPTP), which reserves
+// the origin timestamp of some messages; see PTP.IsGPTP.
 
 package layers
 
@@ -235,6 +239,15 @@ func (t PTPTimestamp) Time() time.Time {
 	return time.Unix(int64(t.Seconds), int64(t.Nanoseconds)).UTC()
 }
 
+// UTC returns a PTP timescale (TAI) timestamp as UTC, by taking off
+// currentUtcOffset seconds, e.g. 37 since 2017. The offset comes from an
+// Announce message or a time properties data set and is only good when
+// their currentUtcOffsetValid flag is set. With the ptpTimescale flag
+// clear the timescale is arbitrary and Time is the best reading.
+func (t PTPTimestamp) UTC(currentUTCOffset int16) time.Time {
+	return t.Time().Add(-time.Duration(currentUTCOffset) * time.Second)
+}
+
 // PTPClockAccuracy is the clockAccuracy of a clockQuality.
 type PTPClockAccuracy uint8
 
@@ -375,6 +388,12 @@ const (
 	PTPTLVL1Sync                    PTPTLVType = 0x8001 // IEEE 1588-2019
 	PTPTLVPortAvailability          PTPTLVType = 0x8002 // IEEE 1588-2019
 	PTPTLVProtocolAddress           PTPTLVType = 0x8003 // IEEE 1588-2019
+	PTPTLVSlaveRxSyncTimingData     PTPTLVType = 0x8004 // IEEE 1588-2019
+	PTPTLVSlaveRxSyncComputedData   PTPTLVType = 0x8005 // IEEE 1588-2019
+	PTPTLVSlaveTxEventTimestamps    PTPTLVType = 0x8006 // IEEE 1588-2019
+	PTPTLVCumulativeRateRatio       PTPTLVType = 0x8007 // IEEE 1588-2019
+	PTPTLVPad                       PTPTLVType = 0x8008 // IEEE 1588-2019
+	PTPTLVAuthentication2019        PTPTLVType = 0x8009 // IEEE 1588-2019, 16.14
 )
 
 // ptpTLVNames names the TLV types.
@@ -398,6 +417,12 @@ var ptpTLVNames = map[PTPTLVType]string{
 	PTPTLVL1Sync:                    "L1_SYNC",
 	PTPTLVPortAvailability:          "PORT_COMMUNICATION_AVAILABILITY",
 	PTPTLVProtocolAddress:           "PROTOCOL_ADDRESS",
+	PTPTLVSlaveRxSyncTimingData:     "SLAVE_RX_SYNC_TIMING_DATA",
+	PTPTLVSlaveRxSyncComputedData:   "SLAVE_RX_SYNC_COMPUTED_DATA",
+	PTPTLVSlaveTxEventTimestamps:    "SLAVE_TX_EVENT_TIMESTAMPS",
+	PTPTLVCumulativeRateRatio:       "CUMULATIVE_RATE_RATIO",
+	PTPTLVPad:                       "PAD",
+	PTPTLVAuthentication2019:        "AUTHENTICATION",
 }
 
 // String returns the TLV type name, e.g. "PATH_TRACE".
@@ -408,7 +433,7 @@ func (t PTPTLVType) String() string {
 	return fmt.Sprintf("Unknown(0x%04X)", uint16(t))
 }
 
-// PTPTLV is one TLV. Value is left undecoded.
+// PTPTLV is one TLV. Value is the raw value; Decode gives its typed form.
 type PTPTLV struct {
 	Type   PTPTLVType
 	Length uint16
@@ -491,6 +516,10 @@ const (
 	PTPMgmtAlternateTimeOffsetName   PTPManagementID = 0x201F
 	PTPMgmtAlternateTimeOffsetMaxKey PTPManagementID = 0x2020
 	PTPMgmtAlternateTimeOffsetProps  PTPManagementID = 0x2021
+	PTPMgmtExternalPortConfigEnabled PTPManagementID = 0x3000 // IEEE 1588-2019
+	PTPMgmtMasterOnly                PTPManagementID = 0x3001 // IEEE 1588-2019
+	PTPMgmtHoldoverUpgradeEnable     PTPManagementID = 0x3002 // IEEE 1588-2019
+	PTPMgmtExtPortConfigPortDataSet  PTPManagementID = 0x3003 // IEEE 1588-2019
 	PTPMgmtTransparentClockDefaultDS PTPManagementID = 0x4000
 	PTPMgmtTransparentClockPortDS    PTPManagementID = 0x4001
 	PTPMgmtPrimaryDomain             PTPManagementID = 0x4002
@@ -542,6 +571,10 @@ var ptpManagementNames = map[PTPManagementID]string{
 	PTPMgmtAlternateTimeOffsetName:   "ALTERNATE_TIME_OFFSET_NAME",
 	PTPMgmtAlternateTimeOffsetMaxKey: "ALTERNATE_TIME_OFFSET_MAX_KEY",
 	PTPMgmtAlternateTimeOffsetProps:  "ALTERNATE_TIME_OFFSET_PROPERTIES",
+	PTPMgmtExternalPortConfigEnabled: "EXTERNAL_PORT_CONFIGURATION_ENABLED",
+	PTPMgmtMasterOnly:                "MASTER_ONLY",
+	PTPMgmtHoldoverUpgradeEnable:     "HOLDOVER_UPGRADE_ENABLE",
+	PTPMgmtExtPortConfigPortDataSet:  "EXT_PORT_CONFIG_PORT_DATA_SET",
 	PTPMgmtTransparentClockDefaultDS: "TRANSPARENT_CLOCK_DEFAULT_DATA_SET",
 	PTPMgmtTransparentClockPortDS:    "TRANSPARENT_CLOCK_PORT_DATA_SET",
 	PTPMgmtPrimaryDomain:             "PRIMARY_DOMAIN",
@@ -605,11 +638,32 @@ type PTPManagement struct {
 	Error PTPManagementError
 }
 
+// PTPTransport says what carried a PTP message.
+type PTPTransport uint8
+
+// PTP transports.
+const (
+	// PTPTransportUnknown is the zero value: the message is read as plain
+	// IEEE 1588, as it is over UDP.
+	PTPTransportUnknown PTPTransport = iota
+	// PTPTransportEthernet is PTP over EtherType 0x88F7, the only transport
+	// of IEEE 802.1AS.
+	PTPTransportEthernet
+)
+
+// ptpMajorSdoGPTP is the majorSdoId bit IEEE 802.1AS sets.
+const ptpMajorSdoGPTP = 0x1
+
 // PTP is a PTPv2 message. Body fields are set by message type; the others
 // stay zero. Payload holds octets past messageLength, such as Ethernet
 // padding.
 type PTP struct {
 	BaseLayer
+
+	// Transport is an input: DecodeFromBytes keeps it. The EtherType
+	// decoder sets PTPTransportEthernet; set it yourself when you feed
+	// Ethernet payloads to DecodeFromBytes and want IEEE 802.1AS handling.
+	Transport PTPTransport
 
 	// MajorSdoID is transportSpecific in IEEE 1588-2008, e.g. 1 for
 	// IEEE 802.1AS.
@@ -635,7 +689,9 @@ type PTP struct {
 	// Timestamp is the origin timestamp (Sync, Delay_Req, Pdelay_Req,
 	// Announce), preciseOriginTimestamp (Follow_Up), receiveTimestamp
 	// (Delay_Resp), requestReceiptTimestamp (Pdelay_Resp) or
-	// responseOriginTimestamp (Pdelay_Resp_Follow_Up).
+	// responseOriginTimestamp (Pdelay_Resp_Follow_Up). IEEE 802.1AS
+	// reserves these octets in Announce, Pdelay_Req and two-step Sync
+	// messages, so Timestamp stays zero there; see IsGPTP.
 	Timestamp PTPTimestamp
 	// RequestingPort is set for Delay_Resp, Pdelay_Resp and
 	// Pdelay_Resp_Follow_Up.
@@ -653,6 +709,30 @@ type PTP struct {
 // CorrectionNs returns the correction field in nanoseconds.
 func (p *PTP) CorrectionNs() float64 {
 	return float64(p.Correction) / (1 << 16)
+}
+
+// IsGPTP reports whether the message is IEEE 802.1AS (gPTP): majorSdoId
+// bit 0 set on a message known to come over Ethernet. This is Wireshark's
+// rule; over UDP the same bit leaves the message plain IEEE 1588.
+func (p *PTP) IsGPTP() bool {
+	return p.MajorSdoID&ptpMajorSdoGPTP != 0 && p.Transport == PTPTransportEthernet
+}
+
+// gptpNoTimestamp reports whether IEEE 802.1AS reserves the ten octets
+// where IEEE 1588 has the origin timestamp of this message (802.1AS-2020,
+// 10.6.3, 11.4.3 and 11.4.5).
+func (p *PTP) gptpNoTimestamp() bool {
+	if !p.IsGPTP() {
+		return false
+	}
+
+	switch p.MessageType {
+	case PTPMessageAnnounce, PTPMessagePdelayReq:
+		return true
+	case PTPMessageSync:
+		return p.Flags&PTPFlagTwoStep != 0
+	}
+	return false
 }
 
 // LayerType returns LayerTypePTP.
@@ -703,7 +783,7 @@ func (p *PTP) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 		return ErrPTPTooShort
 	}
 
-	*p = PTP{TLVs: p.TLVs[:0]}
+	*p = PTP{TLVs: p.TLVs[:0], Transport: p.Transport}
 	p.decodeHeader(data)
 	p.Contents = data[:length]
 	p.Payload = data[length:]
@@ -756,8 +836,11 @@ func (p *PTP) decodeBody(body []byte) {
 		return
 	}
 
-	// Every other message opens with a timestamp.
-	p.Timestamp = ptpTime(body)
+	// Every other message opens with a timestamp, or with reserved octets
+	// in its place.
+	if !p.gptpNoTimestamp() {
+		p.Timestamp = ptpTime(body)
+	}
 	rest := body[ptpTimestampLen:]
 
 	switch p.MessageType {
@@ -848,7 +931,17 @@ func ptpClockID(b []byte) PTPClockIdentity {
 }
 
 func decodePTP(data []byte, p gopacket.PacketBuilder) error {
-	ptp := &PTP{}
+	return ptpDecodeOver(PTPTransportUnknown, data, p)
+}
+
+// decodePTPEthernet decodes PTP carried by EtherType 0x88F7, where
+// majorSdoId 1 means IEEE 802.1AS.
+func decodePTPEthernet(data []byte, p gopacket.PacketBuilder) error {
+	return ptpDecodeOver(PTPTransportEthernet, data, p)
+}
+
+func ptpDecodeOver(transport PTPTransport, data []byte, p gopacket.PacketBuilder) error {
+	ptp := &PTP{Transport: transport}
 	if err := ptp.DecodeFromBytes(data, p); err != nil {
 		return err
 	}
@@ -861,5 +954,5 @@ func decodePTP(data []byte, p gopacket.PacketBuilder) error {
 func registerPTPDecoders() {
 	RegisterUDPPortLayerType(UDPPort(UDPPortPTPEvent), LayerTypePTP)
 	RegisterUDPPortLayerType(UDPPort(UDPPortPTPGeneral), LayerTypePTP)
-	EthernetTypeMetadata[EthernetTypePTP] = EnumMetadata{DecodeWith: gopacket.DecodeFunc(decodePTP), Name: "PTP", LayerType: LayerTypePTP}
+	EthernetTypeMetadata[EthernetTypePTP] = EnumMetadata{DecodeWith: gopacket.DecodeFunc(decodePTPEthernet), Name: "PTP", LayerType: LayerTypePTP}
 }
