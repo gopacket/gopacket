@@ -26,6 +26,7 @@ const (
 	opcuaMinSubAckLen     = 2 * opcuaUint32Len
 	opcuaMinItemNotifLen  = opcuaUint32Len + opcuaMinMaskedLen
 	opcuaMinEventListLen  = 2 * opcuaUint32Len
+	opcuaMinTransferLen   = 2 * opcuaUint32Len
 )
 
 // Binary encoding ids of the notification data (NodeIds.csv).
@@ -55,7 +56,8 @@ var opcuaMonitoringModeNames = map[OPCUAMonitoringMode]string{
 func (m OPCUAMonitoringMode) String() string { return opcuaName(opcuaMonitoringModeNames, m) }
 
 // OPCUAMonitoringParameters are the sampling and queueing settings of a
-// monitored item (OPC 10000-4 §7.21). The filter stays encoded.
+// monitored item (OPC 10000-4 §7.21). The Value of Filter is an
+// *OPCUADataChangeFilter, *OPCUAEventFilter or *OPCUAAggregateFilter.
 type OPCUAMonitoringParameters struct {
 	ClientHandle uint32
 	// SamplingInterval is in milliseconds.
@@ -81,7 +83,8 @@ type OPCUACreateItemsRequest struct {
 }
 
 // OPCUAMonitoredItemRevision is the sampling a server grants a monitored
-// item; the filter result stays encoded.
+// item. The Value of FilterResult is an *OPCUAEventFilterResult or
+// *OPCUAAggregateFilterResult.
 type OPCUAMonitoredItemRevision struct {
 	// RevisedSamplingInterval is in milliseconds.
 	RevisedSamplingInterval float64
@@ -136,6 +139,42 @@ type OPCUASetMonitoringRequest struct {
 	SubscriptionID   uint32
 	MonitoringMode   OPCUAMonitoringMode
 	MonitoredItemIDs []uint32
+}
+
+// OPCUASetTriggeringRequest is the SetTriggering request (OPC 10000-4
+// §5.12.5): the items a triggering item makes report.
+type OPCUASetTriggeringRequest struct {
+	SubscriptionID   uint32
+	TriggeringItemID uint32
+	LinksToAdd       []uint32
+	LinksToRemove    []uint32
+}
+
+// OPCUASetTriggeringResponse is the SetTriggering response.
+type OPCUASetTriggeringResponse struct {
+	AddResults            []OPCUAStatusCode
+	AddDiagnosticInfos    []OPCUADiagnosticInfo
+	RemoveResults         []OPCUAStatusCode
+	RemoveDiagnosticInfos []OPCUADiagnosticInfo
+}
+
+// OPCUATransferSubsRequest is the TransferSubscriptions request
+// (OPC 10000-4 §5.13.7).
+type OPCUATransferSubsRequest struct {
+	SubscriptionIDs   []uint32
+	SendInitialValues bool
+}
+
+// OPCUATransferResult is the result of moving one subscription.
+type OPCUATransferResult struct {
+	StatusCode               OPCUAStatusCode
+	AvailableSequenceNumbers []uint32
+}
+
+// OPCUATransferSubsResponse is the TransferSubscriptions response.
+type OPCUATransferSubsResponse struct {
+	Results         []OPCUATransferResult
+	DiagnosticInfos []OPCUADiagnosticInfo
 }
 
 // OPCUADeleteItemsRequest is the DeleteMonitoredItems request
@@ -243,7 +282,8 @@ type OPCUAStatusChangeNotification struct {
 
 // OPCUANotificationData is one entry of a NotificationMessage: the
 // ExtensionObject as sent and, for the three standard notification
-// types in binary form, the one decoded pointer that is set.
+// types in binary form, the one decoded pointer that is set, which is
+// the Value of Raw.
 type OPCUANotificationData struct {
 	Raw          OPCUAExtensionObject
 	DataChange   *OPCUADataChangeNotification
@@ -433,41 +473,45 @@ func (r *opcuaReader) notificationMessage() OPCUANotificationMessage {
 	return m
 }
 
-// decodeNotification decodes one notification ExtensionObject. A body
-// that does not parse leaves only Raw set, as for an unknown type.
+// decodeNotification sorts a notification ExtensionObject by the type
+// of its decoded Value. A body that does not parse leaves only Raw set,
+// as for an unknown type.
 func decodeNotification(e OPCUAExtensionObject) OPCUANotificationData {
 	n := OPCUANotificationData{Raw: e}
-	id, ok := e.binaryTypeID()
-	if !ok {
-		return n
-	}
-
-	r := &opcuaReader{b: e.Body}
-	switch id {
-	case opcuaDataChangeNotifID:
-		dc := &OPCUADataChangeNotification{
-			MonitoredItems: opcuaArray(r, opcuaMinItemNotifLen, func() OPCUAMonitoredItemNotif {
-				return OPCUAMonitoredItemNotif{ClientHandle: r.u32(), Value: r.dataValue(0)}
-			}),
-			DiagnosticInfos: r.diagnosticInfos(),
-		}
-		if r.err == nil {
-			n.DataChange = dc
-		}
-
-	case opcuaEventNotifListID:
-		ev := &OPCUAEventNotificationList{Events: opcuaArray(r, opcuaMinEventListLen, func() OPCUAEventFieldList {
-			return OPCUAEventFieldList{ClientHandle: r.u32(), EventFields: r.variants(0)}
-		})}
-		if r.err == nil {
-			n.Events = ev
-		}
-
-	case opcuaStatusChangeNotifID:
-		sc := &OPCUAStatusChangeNotification{Status: r.statusCode(), DiagnosticInfo: r.diagnosticInfo(0)}
-		if r.err == nil {
-			n.StatusChange = sc
-		}
+	switch v := e.Value.(type) {
+	case *OPCUADataChangeNotification:
+		n.DataChange = v
+	case *OPCUAEventNotificationList:
+		n.Events = v
+	case *OPCUAStatusChangeNotification:
+		n.StatusChange = v
 	}
 	return n
+}
+
+func (r *opcuaReader) setTriggeringRequest() *OPCUASetTriggeringRequest {
+	return &OPCUASetTriggeringRequest{
+		SubscriptionID:   r.u32(),
+		TriggeringItemID: r.u32(),
+		LinksToAdd:       r.u32s(),
+		LinksToRemove:    r.u32s(),
+	}
+}
+
+func (r *opcuaReader) setTriggeringResponse() *OPCUASetTriggeringResponse {
+	return &OPCUASetTriggeringResponse{
+		AddResults:            r.statusCodes(),
+		AddDiagnosticInfos:    r.diagnosticInfos(),
+		RemoveResults:         r.statusCodes(),
+		RemoveDiagnosticInfos: r.diagnosticInfos(),
+	}
+}
+
+func (r *opcuaReader) transferSubsResponse() *OPCUATransferSubsResponse {
+	return &OPCUATransferSubsResponse{
+		Results: opcuaArray(r, opcuaMinTransferLen, func() OPCUATransferResult {
+			return OPCUATransferResult{StatusCode: r.statusCode(), AvailableSequenceNumbers: r.u32s()}
+		}),
+		DiagnosticInfos: r.diagnosticInfos(),
+	}
 }

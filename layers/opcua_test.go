@@ -446,6 +446,14 @@ func decodeOPCUAAll(data []byte) {
 	var ua OPCUA
 	var decoded []gopacket.LayerType
 	_ = gopacket.NewDecodingLayerParser(LayerTypeOPCUA, &ua).DecodeLayers(data, &decoded)
+
+	// The same layers, as chunks: what joins is touched too.
+	asm := OPCUAChunkAssembler{MaxMessageSize: 1 << 16, MaxPending: 2}
+	for _, l := range opcuaLayers(p) {
+		if msg, err := asm.Add(l); err == nil && msg != nil && msg.Service != nil {
+			_ = fmt.Sprintf("%+v", msg.Service)
+		}
+	}
 }
 
 func FuzzOPCUA(f *testing.F) {

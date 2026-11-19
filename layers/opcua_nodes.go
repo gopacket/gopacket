@@ -235,7 +235,9 @@ type OPCUAHistoryReadValueID struct {
 }
 
 // OPCUAHistoryReadRequest is the HistoryRead request (OPC 10000-4
-// §5.10.3). The details, such as ReadRawModifiedDetails, stay encoded.
+// §5.10.3). The Value of HistoryReadDetails is an
+// *OPCUAReadRawModifiedDetails, *OPCUAReadEventDetails,
+// *OPCUAReadProcessedDetails or *OPCUAReadAtTimeDetails.
 type OPCUAHistoryReadRequest struct {
 	HistoryReadDetails        OPCUAExtensionObject
 	TimestampsToReturn        OPCUATimestampsToReturn
@@ -243,7 +245,9 @@ type OPCUAHistoryReadRequest struct {
 	NodesToRead               []OPCUAHistoryReadValueID
 }
 
-// OPCUAHistoryReadResult is the history of one node, its data encoded.
+// OPCUAHistoryReadResult is the history of one node. The Value of
+// HistoryData is an *OPCUAHistoryData, *OPCUAHistoryModifiedData or
+// *OPCUAHistoryEvent.
 type OPCUAHistoryReadResult struct {
 	StatusCode        OPCUAStatusCode
 	ContinuationPoint []byte
@@ -284,7 +288,7 @@ func (r *opcuaReader) browseDescription() OPCUABrowseDescription {
 
 func (r *opcuaReader) browseRequest() *OPCUABrowseRequest {
 	return &OPCUABrowseRequest{
-		View:                          OPCUAViewDescription{ViewID: r.nodeID(), Timestamp: r.dateTime(), ViewVersion: r.u32()},
+		View:                          r.viewDescription(),
 		RequestedMaxReferencesPerNode: r.u32(),
 		NodesToBrowse:                 opcuaArray(r, opcuaMinBrowseDescLen, r.browseDescription),
 	}

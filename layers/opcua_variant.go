@@ -60,6 +60,11 @@ const (
 	OPCUATypeDataValue       OPCUABuiltinType = 23
 	OPCUATypeVariant         OPCUABuiltinType = 24
 	OPCUATypeDiagnosticInfo  OPCUABuiltinType = 25
+
+	// opcuaMaxVariantType is the last of the type ids 26 to 31, which
+	// OPC 10000-6 §5.2.2.16 reserves and tells decoders to read as a
+	// ByteString. Wireshark 4.7 reads no value for them at all.
+	opcuaMaxVariantType OPCUABuiltinType = 31
 )
 
 var opcuaBuiltinTypeNames = map[OPCUABuiltinType]string{
@@ -145,7 +150,8 @@ const (
 // OPCUAQualifiedName, OPCUALocalizedText, OPCUAExtensionObject,
 // OPCUADataValue, OPCUAVariant or OPCUADiagnosticInfo. An array holds a
 // slice of that type, a nil slice when empty or null. Value is nil for
-// Null.
+// Null. The reserved types 26 to 31 hold a []byte, as the specification
+// asks: their value is read as a ByteString.
 type OPCUAVariant struct {
 	Type    OPCUABuiltinType
 	IsArray bool
@@ -237,19 +243,27 @@ func (r *opcuaReader) localizedText() OPCUALocalizedText {
 //
 //	[n=3 | elem0: [m=2 | a | b] | elem1 | elem2]
 //	              m*size must fit in what is left minus 2*minSize
+//
+// A probing reader reads the elements and keeps none.
 func opcuaArray[T any](r *opcuaReader, minSize int, read func() T) []T {
 	n := r.arrayLen(minSize)
 	if r.err != nil || n == 0 {
 		return nil
 	}
 
-	out := make([]T, n)
+	var out []T
+	if r.mode == opcuaReadDecode {
+		out = make([]T, n)
+	}
 	r.reserved += n * minSize
-	for i := range out {
+	for i := 0; i < n; i++ {
 		r.reserved -= minSize
-		out[i] = read()
+		v := read()
 		if r.err != nil {
 			return nil
+		}
+		if out != nil {
+			out[i] = v
 		}
 	}
 	return out
@@ -306,7 +320,7 @@ func (r *opcuaReader) dataValue(depth int) OPCUADataValue {
 }
 
 // variant reads a Variant; depth counts the Variants and DataValues it
-// sits in. Type ids past DiagnosticInfo, and dimensions without an
+// sits in. Type ids past the reserved ones, and dimensions without an
 // array, are malformed.
 func (r *opcuaReader) variant(depth int) OPCUAVariant {
 	mask := r.u8()
@@ -314,11 +328,16 @@ func (r *opcuaReader) variant(depth int) OPCUAVariant {
 	if r.err != nil {
 		return v
 	}
-	if depth >= opcuaMaxValueDepth || v.Type > OPCUATypeDiagnosticInfo || (mask&opcuaVariantDims != 0 && !v.IsArray) {
+	if depth >= opcuaMaxValueDepth || v.Type > opcuaMaxVariantType || (mask&opcuaVariantDims != 0 && !v.IsArray) {
 		r.err = ErrOPCUAMalformed
 		return v
 	}
 
+	// A probe skips the scalar: boxing it in Value would allocate.
+	if !v.IsArray && r.mode == opcuaReadProbe {
+		r.probeScalar(v.Type, depth)
+		return v
+	}
 	if !v.IsArray {
 		v.Value = r.scalar(v.Type, depth)
 		return v
@@ -331,8 +350,46 @@ func (r *opcuaReader) variant(depth int) OPCUAVariant {
 	return v
 }
 
+// probeScalar reads one value of built-in type t and drops it.
+func (r *opcuaReader) probeScalar(t OPCUABuiltinType, depth int) {
+	switch {
+	case t > OPCUATypeDiagnosticInfo:
+		r.byteString()
+		return
+	case t == OPCUATypeString, t == OPCUATypeXMLElement, t == OPCUATypeByteString:
+		r.byteString()
+		return
+	}
+
+	switch t {
+	case OPCUATypeNodeID:
+		r.nodeID()
+	case OPCUATypeExpandedNodeID:
+		r.expandedNodeID()
+	case OPCUATypeQualifiedName:
+		r.qualifiedName()
+	case OPCUATypeLocalizedText:
+		r.localizedText()
+	case OPCUATypeExtensionObject:
+		r.extensionObject()
+	case OPCUATypeDataValue:
+		r.dataValue(depth + 1)
+	case OPCUATypeVariant:
+		r.variant(depth + 1)
+	case OPCUATypeDiagnosticInfo:
+		r.diagnosticInfo(0)
+	// The other types have a fixed size, which is their minimum.
+	default:
+		r.take(opcuaBuiltinMinLen[t])
+	}
+}
+
 // scalar reads one value of built-in type t.
 func (r *opcuaReader) scalar(t OPCUABuiltinType, depth int) interface{} {
+	if t > OPCUATypeDiagnosticInfo {
+		return r.byteString()
+	}
+
 	switch t {
 	case OPCUATypeBoolean:
 		return r.boolean()
@@ -388,11 +445,15 @@ func (r *opcuaReader) scalar(t OPCUABuiltinType, depth int) interface{} {
 
 // valueArray reads an array of built-in type t as a typed slice.
 func (r *opcuaReader) valueArray(t OPCUABuiltinType, depth int) interface{} {
+	if t > OPCUATypeDiagnosticInfo {
+		return opcuaArray(r, opcuaUint32Len, r.byteString)
+	}
+
 	m := opcuaBuiltinMinLen[t]
 	switch t {
-	// A Null array has a length, as Wireshark reads it, but no elements.
+	// A Null has no other field, array bit or not (OPC 10000-6
+	// §5.2.2.16): no length is read, as in Wireshark 4.7.
 	case OPCUATypeNull:
-		r.arrayLen(m)
 		return nil
 	case OPCUATypeBoolean:
 		return opcuaArray(r, m, r.boolean)

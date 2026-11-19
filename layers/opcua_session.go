@@ -4,17 +4,21 @@
 // in the LICENSE file in the root of the source tree.
 
 // OPC UA discovery and session services (OPC 10000-4 §5.4, §5.6):
-// FindServers, GetEndpoints, CreateSession, ActivateSession and
-// CloseSession.
+// FindServers, FindServersOnNetwork, GetEndpoints, RegisterServer,
+// RegisterServer2, CreateSession, ActivateSession, CloseSession and
+// Cancel.
 
 package layers
 
+import "time"
+
 // Minimum encoded sizes of the discovery structures.
 const (
-	opcuaMinAppDescLen  = 2*opcuaUint32Len + opcuaMinMaskedLen + 4*opcuaUint32Len
-	opcuaMinTokenPolLen = 5 * opcuaUint32Len
-	opcuaMinEndpointLen = opcuaUint32Len + opcuaMinAppDescLen + 2*opcuaUint32Len + opcuaUint32Len + 2*opcuaUint32Len + opcuaUint8Len
-	opcuaMinSoftCertLen = 2 * opcuaUint32Len
+	opcuaMinAppDescLen   = 2*opcuaUint32Len + opcuaMinMaskedLen + 4*opcuaUint32Len
+	opcuaMinTokenPolLen  = 5 * opcuaUint32Len
+	opcuaMinEndpointLen  = opcuaUint32Len + opcuaMinAppDescLen + 2*opcuaUint32Len + opcuaUint32Len + 2*opcuaUint32Len + opcuaUint8Len
+	opcuaMinSoftCertLen  = 2 * opcuaUint32Len
+	opcuaMinNetServerLen = 4 * opcuaUint32Len
 )
 
 // OPCUAApplicationType is an ApplicationType (OPC 10000-4 §7.2.2).
@@ -66,6 +70,10 @@ const (
 	opcuaX509TokenID      = 327
 	opcuaIssuedTokenID    = 940
 )
+
+// opcuaMdnsConfigID is the binary encoding id of
+// MdnsDiscoveryConfiguration.
+const opcuaMdnsConfigID = 12901
 
 // opcuaIdentityTokenTypes maps an identity token encoding id to its type.
 var opcuaIdentityTokenTypes = map[uint32]OPCUAUserTokenType{
@@ -123,8 +131,8 @@ type OPCUASignedSoftwareCertificate struct {
 }
 
 // OPCUAUserIdentityToken is the decoded, non-secret part of a user
-// identity token. The UserName password and the IssuedToken data stay
-// only in the raw ExtensionObject body.
+// identity token, the Value of its ExtensionObject. The UserName
+// password and the IssuedToken data stay only in the raw body.
 type OPCUAUserIdentityToken struct {
 	TokenType OPCUAUserTokenType
 	PolicyID  string
@@ -190,7 +198,8 @@ type OPCUAActivateSessionRequest struct {
 	ClientSoftwareCertificates []OPCUASignedSoftwareCertificate
 	LocaleIDs                  []string
 	// UserIdentityToken is the token as sent; IdentityToken is its
-	// decoded form, nil for an unknown or undecodable token.
+	// decoded form, the Value of UserIdentityToken, nil for an unknown or
+	// undecodable token.
 	UserIdentityToken  OPCUAExtensionObject
 	IdentityToken      *OPCUAUserIdentityToken
 	UserTokenSignature OPCUASignatureData
@@ -206,6 +215,73 @@ type OPCUAActivateSessionResponse struct {
 // §5.6.4).
 type OPCUACloseSessionRequest struct {
 	DeleteSubscriptions bool
+}
+
+// OPCUACancelRequest is the Cancel request (OPC 10000-4 §5.6.5): the
+// handle of the requests to cancel.
+type OPCUACancelRequest struct {
+	RequestHandle uint32
+}
+
+// OPCUACancelResponse is the Cancel response.
+type OPCUACancelResponse struct {
+	CancelCount uint32
+}
+
+// OPCUAFindOnNetworkRequest is the FindServersOnNetwork request
+// (OPC 10000-4 §5.4.3).
+type OPCUAFindOnNetworkRequest struct {
+	StartingRecordID       uint32
+	MaxRecordsToReturn     uint32
+	ServerCapabilityFilter []string
+}
+
+// OPCUAServerOnNetwork is one server a discovery server knows from mDNS.
+type OPCUAServerOnNetwork struct {
+	RecordID           uint32
+	ServerName         string
+	DiscoveryURL       string
+	ServerCapabilities []string
+}
+
+// OPCUAFindOnNetworkResponse is the FindServersOnNetwork response.
+type OPCUAFindOnNetworkResponse struct {
+	LastCounterResetTime time.Time
+	Servers              []OPCUAServerOnNetwork
+}
+
+// OPCUARegisteredServer describes a server to a discovery server
+// (OPC 10000-4 §7.32).
+type OPCUARegisteredServer struct {
+	ServerURI         string
+	ProductURI        string
+	ServerNames       []OPCUALocalizedText
+	ServerType        OPCUAApplicationType
+	GatewayServerURI  string
+	DiscoveryURLs     []string
+	SemaphoreFilePath string
+	IsOnline          bool
+}
+
+// OPCUARegisterServerRequest is the RegisterServer request (OPC 10000-4
+// §5.4.5).
+type OPCUARegisterServerRequest struct {
+	Server OPCUARegisteredServer
+}
+
+// OPCUAMdnsDiscoveryConfig is the MdnsDiscoveryConfiguration a
+// RegisterServer2 request carries (OPC 10000-12 §5.3.2).
+type OPCUAMdnsDiscoveryConfig struct {
+	MdnsServerName     string
+	ServerCapabilities []string
+}
+
+// OPCUARegisterServer2Request is the RegisterServer2 request
+// (OPC 10000-4 §5.4.6). The Value of a known DiscoveryConfiguration is an
+// *OPCUAMdnsDiscoveryConfig.
+type OPCUARegisterServer2Request struct {
+	Server                 OPCUARegisteredServer
+	DiscoveryConfiguration []OPCUAExtensionObject
 }
 
 // applicationDescription reads an ApplicationDescription.
@@ -299,28 +375,60 @@ func (r *opcuaReader) activateSessionRequest() *OPCUAActivateSessionRequest {
 		UserIdentityToken:          r.extensionObject(),
 		UserTokenSignature:         r.signatureData(),
 	}
-	req.IdentityToken = decodeIdentityToken(req.UserIdentityToken)
+	req.IdentityToken, _ = req.UserIdentityToken.Value.(*OPCUAUserIdentityToken)
 	return req
+}
+
+func (r *opcuaReader) findOnNetworkRequest() *OPCUAFindOnNetworkRequest {
+	return &OPCUAFindOnNetworkRequest{
+		StartingRecordID:       r.u32(),
+		MaxRecordsToReturn:     r.u32(),
+		ServerCapabilityFilter: r.strings(),
+	}
+}
+
+func (r *opcuaReader) findOnNetworkResponse() *OPCUAFindOnNetworkResponse {
+	return &OPCUAFindOnNetworkResponse{
+		LastCounterResetTime: r.dateTime(),
+		Servers: opcuaArray(r, opcuaMinNetServerLen, func() OPCUAServerOnNetwork {
+			return OPCUAServerOnNetwork{
+				RecordID:           r.u32(),
+				ServerName:         r.str(),
+				DiscoveryURL:       r.str(),
+				ServerCapabilities: r.strings(),
+			}
+		}),
+	}
+}
+
+func (r *opcuaReader) registeredServer() OPCUARegisteredServer {
+	return OPCUARegisteredServer{
+		ServerURI:         r.str(),
+		ProductURI:        r.str(),
+		ServerNames:       opcuaArray(r, opcuaMinMaskedLen, r.localizedText),
+		ServerType:        OPCUAApplicationType(r.u32()),
+		GatewayServerURI:  r.str(),
+		DiscoveryURLs:     r.strings(),
+		SemaphoreFilePath: r.str(),
+		IsOnline:          r.boolean(),
+	}
+}
+
+func (r *opcuaReader) registerServer2Request() *OPCUARegisterServer2Request {
+	return &OPCUARegisterServer2Request{
+		Server:                 r.registeredServer(),
+		DiscoveryConfiguration: opcuaArray(r, opcuaMinExtObjLen, r.extensionObject),
+	}
 }
 
 func (r *opcuaReader) activateSessionResponse() *OPCUAActivateSessionResponse {
 	return &OPCUAActivateSessionResponse{ServerNonce: r.byteString(), OPCUAResults: r.results()}
 }
 
-// decodeIdentityToken decodes the non-secret fields of a binary user
-// identity token; it returns nil for any other ExtensionObject.
-func decodeIdentityToken(e OPCUAExtensionObject) *OPCUAUserIdentityToken {
-	id, ok := e.binaryTypeID()
-	if !ok {
-		return nil
-	}
-	typ, ok := opcuaIdentityTokenTypes[id]
-	if !ok {
-		return nil
-	}
-
-	r := &opcuaReader{b: e.Body}
-	t := &OPCUAUserIdentityToken{TokenType: typ, PolicyID: r.str()}
+// identityToken reads the non-secret fields of a user identity token of
+// type typ, and skips the secret ones.
+func (r *opcuaReader) identityToken(typ OPCUAUserTokenType) OPCUAUserIdentityToken {
+	t := OPCUAUserIdentityToken{TokenType: typ, PolicyID: r.str()}
 	switch typ {
 	case OPCUAUserTokenUserName:
 		t.UserName = r.str()
@@ -331,9 +439,6 @@ func decodeIdentityToken(e OPCUAExtensionObject) *OPCUAUserIdentityToken {
 	case OPCUAUserTokenIssued:
 		r.byteString() // token data
 		t.EncryptionAlgorithm = r.str()
-	}
-	if r.err != nil {
-		return nil
 	}
 	return t
 }

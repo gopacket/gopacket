@@ -24,6 +24,7 @@ const (
 	opcuaGUIDLen        = 16
 	opcuaNullLength     = -1 // String, ByteString and array length of null
 	opcuaMaxDiagDepth   = 16 // InnerDiagnosticInfo nested deeper is refused
+	opcuaMaxExtDepth    = 8  // ExtensionObject bodies nested deeper stay encoded
 	opcuaNodeIDTypeMask = 0x3F
 	opcuaNodeIDURIFlag  = 0x80 // ExpandedNodeId: NamespaceUri follows
 	opcuaNodeIDSrvFlag  = 0x40 // ExpandedNodeId: ServerIndex follows
@@ -148,13 +149,19 @@ type OPCUAQualifiedName struct {
 	Name      string
 }
 
-// OPCUAExtensionObject is an ExtensionObject (OPC 10000-6 §5.2.2.15). The
-// body is left encoded.
+// OPCUAExtensionObject is an ExtensionObject (OPC 10000-6 §5.2.2.15).
 type OPCUAExtensionObject struct {
 	TypeID OPCUANodeID
 	// Encoding is 0 for no body, 1 for a ByteString body, 2 for XML.
 	Encoding uint8
-	Body     []byte
+	// Body is the body as sent, always kept.
+	Body []byte
+	// Value is the decoded body when TypeID is the binary encoding id of a
+	// structure this package knows: a pointer to its type, such as
+	// *OPCUADataChangeFilter or *OPCUAArgument. It is nil for any other
+	// type, for a body that does not parse to its last byte, and for a
+	// body nested more than opcuaMaxExtDepth ExtensionObjects deep.
+	Value interface{}
 }
 
 // OPCUADiagnosticInfo is a DiagnosticInfo (OPC 10000-6 §5.2.2.12). The
@@ -181,17 +188,32 @@ const (
 	opcuaDiagInnerDiag      = 0x40
 )
 
+// opcuaReadMode tells a reader that builds values from one that only
+// checks that they parse.
+type opcuaReadMode uint8
+
+const (
+	opcuaReadDecode opcuaReadMode = iota
+	// opcuaReadProbe walks the encoding and allocates nothing: no arrays,
+	// no strings, no ExtensionObject values. A body is probed before it is
+	// decoded, so a count that lies costs no memory.
+	opcuaReadProbe
+)
+
 // opcuaReader reads OPC UA Binary types from a buffer. The first error
 // sticks: later reads return zero values, so a caller checks err once.
 // Every length is checked against the bytes left before anything is
 // sliced or allocated.
 type opcuaReader struct {
-	b   []byte
-	off int
-	err error
+	b    []byte
+	off  int
+	err  error
+	mode opcuaReadMode
 	// reserved is the least the open arrays still need for their later
 	// elements; arrayLen does not let a nested array claim it.
 	reserved int
+	// extDepth counts the ExtensionObject bodies the buffer sits in.
+	extDepth int
 }
 
 func (r *opcuaReader) remaining() int { return len(r.b) - r.off }
@@ -261,7 +283,13 @@ func (r *opcuaReader) byteString() []byte {
 }
 
 // str reads a String; null and empty both return "".
-func (r *opcuaReader) str() string { return string(r.byteString()) }
+func (r *opcuaReader) str() string {
+	b := r.byteString()
+	if r.mode == opcuaReadProbe {
+		return ""
+	}
+	return string(b)
+}
 
 // arrayLen reads an array length and checks that count elements of at
 // least minSize bytes each fit in what is left, so a claimed length never
@@ -279,14 +307,7 @@ func (r *opcuaReader) arrayLen(minSize int) int {
 }
 
 // strings reads an array of String.
-func (r *opcuaReader) strings() []string {
-	n := r.arrayLen(opcuaUint32Len)
-	var out []string
-	for i := 0; i < n && r.err == nil; i++ {
-		out = append(out, r.str())
-	}
-	return out
-}
+func (r *opcuaReader) strings() []string { return opcuaArray(r, opcuaUint32Len, r.str) }
 
 // dateTime reads a DateTime; 0 and negative ticks are the null time.
 func (r *opcuaReader) dateTime() time.Time {
@@ -356,13 +377,18 @@ func (r *opcuaReader) qualifiedName() OPCUAQualifiedName {
 	return OPCUAQualifiedName{Namespace: r.u16(), Name: r.str()}
 }
 
-// extensionObject reads an ExtensionObject, keeping its body encoded.
+// extensionObject reads an ExtensionObject and decodes the body of a
+// known structure.
 func (r *opcuaReader) extensionObject() OPCUAExtensionObject {
 	const noBody = 0
 	e := OPCUAExtensionObject{TypeID: r.nodeID(), Encoding: r.u8()}
 	if e.Encoding != noBody {
 		e.Body = r.byteString()
 	}
+	if r.err != nil || r.mode == opcuaReadProbe {
+		return e
+	}
+	e.Value = decodeOPCUAExtBody(e, r.extDepth)
 	return e
 }
 
@@ -397,6 +423,13 @@ func (r *opcuaReader) diagnosticInfo(depth int) OPCUADiagnosticInfo {
 		return d
 	}
 	inner := r.diagnosticInfo(depth + 1)
-	d.Inner = &inner
+	if r.mode == opcuaReadProbe {
+		return d
+	}
+
+	// Allocated here, not by taking the address of inner, so a probe
+	// costs nothing.
+	d.Inner = new(OPCUADiagnosticInfo)
+	*d.Inner = inner
 	return d
 }

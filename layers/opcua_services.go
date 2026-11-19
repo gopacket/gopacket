@@ -4,10 +4,12 @@
 // in the LICENSE file in the root of the source tree.
 
 // OPC UA service bodies (OPC 10000-4 §5): the request and response
-// headers of every service, and the parameters of the secure channel,
-// discovery, session, node, monitored item and subscription services.
-// Query, node management, HistoryUpdate, Cancel, SetTriggering,
-// TransferSubscriptions and server registration keep theirs in Params.
+// headers and the parameters of every service.
+//
+// A body is read twice. The first pass probes: it checks every length
+// and count against the data and allocates nothing. Only what the probe
+// accepted is decoded, so each array is allocated for elements that are
+// really there.
 
 package layers
 
@@ -178,14 +180,15 @@ func (r *opcuaReader) resultsPtr() *OPCUAResults {
 
 // OPCUAService is a decoded service body. TypeID and ID name the service;
 // one of the headers is always set; at most one of the typed parameter
-// fields is. Params holds what follows the last decoded field: the
-// parameters of other services, then padding and signature.
+// fields is. Params holds what follows the last decoded field: padding
+// and signature.
 //
 // The parameters decode in full or not at all: when they do not parse,
 // as in the first chunk of a long message, every typed field is nil and
-// Params holds all of them, as for a service without typed fields.
-// Services without parameters (CloseSecureChannel, CloseSession and
-// UnregisterNodes responses, ServiceFault) have no typed field.
+// Params holds all of them. OPCUAChunkAssembler joins such a message.
+// Services without parameters (CloseSecureChannel, the CloseSession,
+// UnregisterNodes and RegisterServer responses, ServiceFault) have no
+// typed field.
 type OPCUAService struct {
 	TypeID OPCUANodeID
 	ID     OPCUAServiceID
@@ -198,8 +201,16 @@ type OPCUAService struct {
 	GetEndpointsRequest       *OPCUAGetEndpointsRequest
 	ReadRequest               *OPCUAReadRequest
 
-	FindServersRequest      *OPCUAFindServersRequest
-	FindServersResponse     *OPCUAFindServersResponse
+	FindServersRequest           *OPCUAFindServersRequest
+	FindServersResponse          *OPCUAFindServersResponse
+	FindServersOnNetworkRequest  *OPCUAFindOnNetworkRequest
+	FindServersOnNetworkResponse *OPCUAFindOnNetworkResponse
+	RegisterServerRequest        *OPCUARegisterServerRequest
+	RegisterServer2Request       *OPCUARegisterServer2Request
+	RegisterServer2Response      *OPCUAResults
+	CancelRequest                *OPCUACancelRequest
+	CancelResponse               *OPCUACancelResponse
+
 	GetEndpointsResponse    *OPCUAGetEndpointsResponse
 	CreateSessionRequest    *OPCUACreateSessionRequest
 	CreateSessionResponse   *OPCUACreateSessionResponse
@@ -214,6 +225,21 @@ type OPCUAService struct {
 	HistoryReadResponse *OPCUAHistoryReadResponse
 	CallRequest         *OPCUACallRequest
 	CallResponse        *OPCUACallResponse
+
+	AddNodesRequest          *OPCUAAddNodesRequest
+	AddNodesResponse         *OPCUAAddNodesResponse
+	AddReferencesRequest     *OPCUAAddReferencesRequest
+	AddReferencesResponse    *OPCUAResults
+	DeleteNodesRequest       *OPCUADeleteNodesRequest
+	DeleteNodesResponse      *OPCUAResults
+	DeleteReferencesRequest  *OPCUADeleteReferencesRequest
+	DeleteReferencesResponse *OPCUAResults
+	QueryFirstRequest        *OPCUAQueryFirstRequest
+	QueryFirstResponse       *OPCUAQueryFirstResponse
+	QueryNextRequest         *OPCUAQueryNextRequest
+	QueryNextResponse        *OPCUAQueryNextResponse
+	HistoryUpdateRequest     *OPCUAHistoryUpdateRequest
+	HistoryUpdateResponse    *OPCUAHistoryUpdateResponse
 
 	BrowseRequest                         *OPCUABrowseRequest
 	BrowseResponse                        *OPCUABrowseResponse
@@ -246,47 +272,78 @@ type OPCUAService struct {
 	RepublishRequest             *OPCUARepublishRequest
 	RepublishResponse            *OPCUARepublishResponse
 
+	SetTriggeringRequest          *OPCUASetTriggeringRequest
+	SetTriggeringResponse         *OPCUASetTriggeringResponse
+	TransferSubscriptionsRequest  *OPCUATransferSubsRequest
+	TransferSubscriptionsResponse *OPCUATransferSubsResponse
+
 	Params []byte
 }
 
 // decodeOPCUAService decodes a body that opens with the binary encoding
 // id of a known service and a header that parses; anything else, such as
 // ciphertext or a later chunk of a long message, returns nil.
+//
+//	body ─ probe ─┬─ header fails ─► nil
+//	              ├─ params fail ──► header decoded, Params raw
+//	              └─ all parse ────► header and params decoded
 func decodeOPCUAService(body []byte) *OPCUAService {
-	r := &opcuaReader{b: body}
-	s := &OPCUAService{TypeID: r.expandedNodeID()}
-	if r.err != nil || !s.knownType() {
+	probe := opcuaReader{b: body, mode: opcuaReadProbe}
+	s := &OPCUAService{}
+	if !s.decodeHeader(&probe) {
 		return nil
+	}
+	paramsOff := probe.off
+	s.decodeParams(&probe)
+
+	// The header is known to parse; the decode cannot fail on it.
+	*s = OPCUAService{}
+	r := opcuaReader{b: body}
+	s.decodeHeader(&r)
+	s.Params = body[paramsOff:]
+
+	// Typed parameters are best effort: a chunked message ends early, and
+	// a failure leaves the parameters in Params.
+	if probe.err != nil {
+		return s
+	}
+	header := *s
+	s.decodeParams(&r)
+
+	// The probe read the same bytes, so the decode cannot fail; if it
+	// ever did, the parameters would stay raw as for a failed probe.
+	if r.err != nil {
+		*s = header
+		return s
+	}
+	s.Params = r.b[r.off:]
+	return s
+}
+
+// decodeHeader reads the service id and its request or response header,
+// and reports whether they parse. A probe keeps no header.
+func (s *OPCUAService) decodeHeader(r *opcuaReader) bool {
+	s.TypeID = r.expandedNodeID()
+	if r.err != nil || !s.knownType() {
+		return false
 	}
 	s.ID = OPCUAServiceID(s.TypeID.Numeric)
 
 	if s.ID.IsRequest() {
 		h := r.requestHeader()
-		s.RequestHeader = &h
-	} else {
-		h := r.responseHeader()
-		s.ResponseHeader = &h
-	}
-	if r.err != nil {
-		return nil
-	}
-	s.Params = r.b[r.off:]
-
-	// Typed parameters are best effort: a chunked message ends early, and
-	// a failure leaves the parameters in Params.
-	pr := &opcuaReader{b: s.Params}
-	s.decodeParams(pr)
-	if pr.err != nil {
-		return &OPCUAService{
-			TypeID:         s.TypeID,
-			ID:             s.ID,
-			RequestHeader:  s.RequestHeader,
-			ResponseHeader: s.ResponseHeader,
-			Params:         s.Params,
+		if r.mode == opcuaReadDecode {
+			s.RequestHeader = new(OPCUARequestHeader)
+			*s.RequestHeader = h
 		}
+		return r.err == nil
 	}
-	s.Params = pr.b[pr.off:]
-	return s
+
+	h := r.responseHeader()
+	if r.mode == opcuaReadDecode {
+		s.ResponseHeader = new(OPCUAResponseHeader)
+		*s.ResponseHeader = h
+	}
+	return r.err == nil
 }
 
 // knownType reports whether TypeID is a namespace 0 numeric id of a
@@ -343,6 +400,7 @@ func (s *OPCUAService) decodeParams(r *opcuaReader) {
 	default:
 		s.decodeSession(r)
 		s.decodeNodes(r)
+		s.decodeNodeMgmt(r)
 		s.decodeSubscriptions(r)
 	}
 }
@@ -368,6 +426,20 @@ func (s *OPCUAService) decodeSession(r *opcuaReader) {
 		s.ActivateSessionResponse = r.activateSessionResponse()
 	case OPCUAServiceCloseSessionRequest:
 		s.CloseSessionRequest = &OPCUACloseSessionRequest{DeleteSubscriptions: r.boolean()}
+	case OPCUAServiceCancelRequest:
+		s.CancelRequest = &OPCUACancelRequest{RequestHandle: r.u32()}
+	case OPCUAServiceCancelResponse:
+		s.CancelResponse = &OPCUACancelResponse{CancelCount: r.u32()}
+	case OPCUAServiceFindServersOnNetworkRequest:
+		s.FindServersOnNetworkRequest = r.findOnNetworkRequest()
+	case OPCUAServiceFindServersOnNetworkResponse:
+		s.FindServersOnNetworkResponse = r.findOnNetworkResponse()
+	case OPCUAServiceRegisterServerRequest:
+		s.RegisterServerRequest = &OPCUARegisterServerRequest{Server: r.registeredServer()}
+	case OPCUAServiceRegisterServer2Request:
+		s.RegisterServer2Request = r.registerServer2Request()
+	case OPCUAServiceRegisterServer2Response:
+		s.RegisterServer2Response = r.resultsPtr()
 	}
 }
 
@@ -453,23 +525,24 @@ func (s *OPCUAService) decodeSubscriptions(r *opcuaReader) {
 		s.RepublishRequest = r.republishRequest()
 	case OPCUAServiceRepublishResponse:
 		s.RepublishResponse = r.republishResponse()
+	case OPCUAServiceSetTriggeringRequest:
+		s.SetTriggeringRequest = r.setTriggeringRequest()
+	case OPCUAServiceSetTriggeringResponse:
+		s.SetTriggeringResponse = r.setTriggeringResponse()
+	case OPCUAServiceTransferSubscriptionsRequest:
+		s.TransferSubscriptionsRequest = &OPCUATransferSubsRequest{SubscriptionIDs: r.u32s(), SendInitialValues: r.boolean()}
+	case OPCUAServiceTransferSubscriptionsResponse:
+		s.TransferSubscriptionsResponse = r.transferSubsResponse()
 	}
 }
 
 // readRequest reads the Read parameters.
 func (r *opcuaReader) readRequest() *OPCUAReadRequest {
-	req := &OPCUAReadRequest{MaxAge: r.f64(), TimestampsToReturn: OPCUATimestampsToReturn(r.u32())}
-
-	n := r.arrayLen(opcuaMinReadValueIDLen)
-	for i := 0; i < n && r.err == nil; i++ {
-		req.NodesToRead = append(req.NodesToRead, OPCUAReadValueID{
-			NodeID:       r.nodeID(),
-			AttributeID:  OPCUAAttributeID(r.u32()),
-			IndexRange:   r.str(),
-			DataEncoding: r.qualifiedName(),
-		})
+	return &OPCUAReadRequest{
+		MaxAge:             r.f64(),
+		TimestampsToReturn: OPCUATimestampsToReturn(r.u32()),
+		NodesToRead:        opcuaArray(r, opcuaMinReadValueIDLen, r.readValueID),
 	}
-	return req
 }
 
 // requestHeader reads a RequestHeader.

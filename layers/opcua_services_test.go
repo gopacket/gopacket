@@ -22,8 +22,12 @@ import (
 // of every built-in type of open62541_read_service_test_data.pcap;
 // opcua-publish.pcap holds a CreateMonitoredItems response of 24 items
 // and a Publish response with a DataChangeNotification, from
-// opcua_with-gap.pcap. Expected values are from tshark 4.7.
-var opcuaServicePcaps = []string{"opcua-services.pcap", "opcua-publish.pcap"}
+// opcua_with-gap.pcap; opcua-nodemgmt.pcap holds two AddNodes, a
+// RegisterServer2, a FindServersOnNetwork, a CreateMonitoredItems with
+// the three monitoring filters and their results, and two Reads of a
+// structure, from four open62541 captures. Expected values are from
+// tshark 4.7.
+var opcuaServicePcaps = []string{"opcua-services.pcap", "opcua-publish.pcap", "opcua-nodemgmt.pcap"}
 
 // opcuaTyped reports whether a typed parameter field of s is set.
 func opcuaTyped(s *OPCUAService) bool {
@@ -452,7 +456,7 @@ type uaVector struct {
 }
 
 // Services absent from the captures, built by hand after OPC 10000-4.
-func uaVectors() []uaVector {
+func uaBaseVectors() []uaVector {
 	b := uaBuilder{}
 	params := OPCUAMonitoringParameters{ClientHandle: 1, SamplingInterval: 100, QueueSize: 10, DiscardOldest: true}
 	paramsWire := b.u32(1).f64(100).u8(0, 0, 0).u32(10).u8(1)
@@ -541,7 +545,7 @@ func uaVectors() []uaVector {
 			func(s *OPCUAService) interface{} { return s.ActivateSessionRequest.IdentityToken },
 			&OPCUAUserIdentityToken{TokenType: OPCUAUserTokenIssued, PolicyID: "jwt", EncryptionAlgorithm: "rsa-oaep"}},
 		{"Call arguments", OPCUAServiceCallRequest,
-			b.u32(1).node(0, 85).node(1, 2).u32(4).u8(0x10).str("<a/>").u8(0x80).u32(3).
+			b.u32(1).node(0, 85).node(1, 2).u32(4).u8(0x10).str("<a/>").u8(0x80).
 				u8(0x18, 0x06).u32(7).u8(0x92).u32(1).u8(0xC1, 0x00, 0x05, 0x00).str("urn:x").u32(2),
 			func(s *OPCUAService) interface{} { return s.CallRequest.MethodsToCall[0].InputArguments },
 			[]OPCUAVariant{
@@ -617,7 +621,15 @@ func TestOPCUAMalformedParams(t *testing.T) {
 		{"too deep", OPCUAServiceWriteRequest, uaNestedVariant(opcuaMaxValueDepth)},
 		{"dims count lie", OPCUAServiceReadResponse, b.u32(1).u8(0x01, 0xC6).u32(1, 1, 0x7FFFFFFF)},
 		{"dims without array", OPCUAServiceReadResponse, b.u32(1).u8(0x01, 0x46).u32(1)},
-		{"type 26", OPCUAServiceReadResponse, b.u32(1).u8(0x01, 26).u32(0)},
+		{"type 32", OPCUAServiceReadResponse, b.u32(1).u8(0x01, 32).null().null()},
+		{"reserved type cut", OPCUAServiceReadResponse, b.u32(1).u8(0x01, 26).u32(4).u8(1, 2, 3).null()},
+		{"reserved array lie", OPCUAServiceReadResponse, b.u32(1).u8(0x01, 0x80|31).u32(0x7FFFFFFF).null()},
+		{"AddNodes count lie", OPCUAServiceAddNodesRequest, b.u32(0x7FFFFFFF).u8(0)},
+		{"query nested lie", OPCUAServiceQueryFirstRequest, b.u8(0, 0).u8(make([]byte, 12)...).u32(1).u8(0, 0, 0).u32(0x10000000)},
+		{"SetTriggering links lie", OPCUAServiceSetTriggeringRequest, b.u32(5, 1, 0x40000000, 7)},
+		{"TransferSubscriptions negative", OPCUAServiceTransferSubscriptionsRequest, b.u32(0xFFFFFFFE).u8(0)},
+		{"HistoryUpdate count lie", OPCUAServiceHistoryUpdateRequest, b.u32(0x20000000).u8(0, 0, 0)},
+		{"RegisterServer names lie", OPCUAServiceRegisterServerRequest, b.null().null().u32(0x7FFFFFFF).u8(0)},
 		{"reserved encoding", OPCUAServiceWriteRequest, b.u32(1).u8(0x06)},
 	}
 	for _, c := range cases {
@@ -690,6 +702,34 @@ func TestOPCUAMinSizes(t *testing.T) {
 		{"MonitoredItemCreateRequest", opcuaMinItemCreateLen,
 			append(append(b.u8(0, 0).u32(0).null(), qname...), b.u32(0).u32(0).f64(0).u8(0, 0, 0).u32(0).u8(0)...),
 			func(r *opcuaReader) int { return len(opcuaArray(r, opcuaMinItemCreateLen, r.itemCreate)) }},
+		{"AddNodesItem", opcuaMinAddNodesLen, append(b.u8(0, 0, 0, 0, 0, 0), append(qname, b.u32(0).u8(0, 0, 0, 0, 0)...)...),
+			func(r *opcuaReader) int { return len(opcuaArray(r, opcuaMinAddNodesLen, r.addNodesItem)) }},
+		{"AddNodesResult", opcuaMinAddNodesResLen, b.u32(0).u8(0, 0),
+			func(r *opcuaReader) int { return len(r.addNodesResponse().Results) }},
+		{"AddReferencesItem", opcuaMinAddRefLen, b.u8(0, 0, 0, 0, 0).null().u8(0, 0).u32(0),
+			func(r *opcuaReader) int { return len(opcuaArray(r, opcuaMinAddRefLen, r.addReferencesItem)) }},
+		{"DeleteNodesItem", opcuaMinDelNodeLen, b.u8(0, 0, 0),
+			func(r *opcuaReader) int { return len(r.deleteNodesRequest().NodesToDelete) }},
+		{"DeleteReferencesItem", opcuaMinDelRefLen, b.u8(0, 0, 0, 0, 0, 0, 0, 0),
+			func(r *opcuaReader) int { return len(r.deleteRefsRequest().ReferencesToDelete) }},
+		{"NodeTypeDescription", opcuaMinNodeTypeLen, b.u8(0, 0, 0).null(),
+			func(r *opcuaReader) int { return len(opcuaArray(r, opcuaMinNodeTypeLen, r.nodeTypeDescription)) }},
+		{"QueryDataSet", opcuaMinDataSetLen, b.u8(0, 0, 0, 0).null(),
+			func(r *opcuaReader) int { return len(r.queryDataSets()) }},
+		{"HistoryUpdateResult", opcuaMinHistUpdResLen, b.u32(0).null().null(),
+			func(r *opcuaReader) int { return len(r.historyUpdateResponse().Results) }},
+		{"SimpleAttributeOperand", opcuaMinSimpleAttrLen, b.u8(0, 0).null().u32(0).null(),
+			func(r *opcuaReader) int { return len(opcuaArray(r, opcuaMinSimpleAttrLen, r.simpleAttrOperand)) }},
+		{"ContentFilterElement", opcuaMinFilterElemLen, b.u32(0).null(),
+			func(r *opcuaReader) int { return len(r.contentFilter().Elements) }},
+		{"ContentFilterElementResult", opcuaMinElemResultLen, b.u32(0).null().null(),
+			func(r *opcuaReader) int { return len(r.contentFilterResult().ElementResults) }},
+		{"HistoryEventFieldList", opcuaMinEventFieldsLen, b.null(),
+			func(r *opcuaReader) int { return len(r.historyEvents()) }},
+		{"TransferResult", opcuaMinTransferLen, b.u32(0).null(),
+			func(r *opcuaReader) int { return len(r.transferSubsResponse().Results) }},
+		{"ExtensionObject", opcuaMinExtObjLen, b.u8(0, 0, 0),
+			func(r *opcuaReader) int { return len(opcuaArray(r, opcuaMinExtObjLen, r.extensionObject)) }},
 		{"Variant", opcuaMinMaskedLen, []byte{0}, func(r *opcuaReader) int { return len(r.variants(0)) }},
 		{"DataValue", opcuaMinMaskedLen, []byte{0}, func(r *opcuaReader) int { return len(r.dataValues(0)) }},
 		{"LocalizedText", opcuaMinMaskedLen, []byte{0}, func(r *opcuaReader) int {
@@ -791,6 +831,17 @@ func FuzzOPCUAServices(f *testing.F) {
 	}
 	f.Fuzz(func(t *testing.T, body []byte) {
 		decodeOPCUAAll(uaMessage("MSG", OPCUAChunkFinal, uaSecure(body)))
+
+		// A probe and a decode read the same bytes and fail together.
+		probe, dec := &opcuaReader{b: body, mode: opcuaReadProbe}, &opcuaReader{b: body}
+		for _, r := range []*opcuaReader{probe, dec} {
+			if hs := (&OPCUAService{}); hs.decodeHeader(r) {
+				hs.decodeParams(r)
+			}
+		}
+		if (probe.err == nil) != (dec.err == nil) || probe.err == nil && probe.off != dec.off {
+			t.Fatalf("probe %v at %d, decode %v at %d", probe.err, probe.off, dec.err, dec.off)
+		}
 
 		s := decodeOPCUAService(body)
 		if s == nil {
