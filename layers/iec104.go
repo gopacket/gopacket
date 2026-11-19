@@ -17,6 +17,7 @@
 package layers
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -111,8 +112,73 @@ func (u IEC104UFunction) String() string {
 	return fmt.Sprintf("Unknown(0x%02X)", uint8(u))
 }
 
+// IEC104Fault flags what is wrong with the framing of an APDU that still
+// became a layer. A damaged APDU is decoded as far as its octets go, the
+// way Wireshark shows it, and the flags tell how far to trust it.
+type IEC104Fault uint8
+
+// APDU faults.
+const (
+	// IEC104FaultGarbage: octets that start no APDU came before this
+	// one. Skipped counts them.
+	IEC104FaultGarbage IEC104Fault = 1 << iota
+	// IEC104FaultLength: the length octet is below 4, or does not fit
+	// the frame format: an S or U frame longer than its control field.
+	IEC104FaultLength
+	// IEC104FaultTruncated: the data ends inside the APDU. The control
+	// field and the ASDU are set as far as the data reaches.
+	IEC104FaultTruncated
+	// IEC104FaultASDU: the ASDU of an I-format frame is malformed.
+	IEC104FaultASDU
+)
+
+var iec104FaultNames = [...]string{"Garbage", "Length", "Truncated", "ASDU"}
+
+// Has reports whether all of the faults in mask are set.
+func (f IEC104Fault) Has(mask IEC104Fault) bool {
+	return f&mask == mask
+}
+
+// String lists the faults, e.g. "Garbage|Truncated", or "None".
+func (f IEC104Fault) String() string {
+	if f == 0 {
+		return "None"
+	}
+
+	var out []byte
+	for k, name := range iec104FaultNames {
+		if f&(1<<uint(k)) == 0 {
+			continue
+		}
+		if len(out) > 0 {
+			out = append(out, '|')
+		}
+		out = append(out, name...)
+	}
+
+	// Bits above the named ones.
+	rest := f >> uint(len(iec104FaultNames)) << uint(len(iec104FaultNames))
+	if rest == 0 {
+		return string(out)
+	}
+	if len(out) > 0 {
+		out = append(out, '|')
+	}
+	return fmt.Sprintf("%sUnknown(0x%02X)", out, uint8(rest))
+}
+
 // IEC104 is one IEC 60870-5-104 APDU. Payload holds whatever follows it in
 // the segment, normally further APDUs.
+//
+// The decoder resynchronises instead of failing on octets that start no
+// APDU, such as the tail of an APDU begun in an earlier segment:
+//
+//	| garbage ... | 0x68 | length | control | ASDU | next APDU ...
+//	 \_ Skipped _/ \__________ Contents __________/ \_ Payload _
+//
+// It skips to the next whole APDU with a sound control field. When there
+// is none it takes the first start octet and decodes what follows as far
+// as it goes; Faults tells what was wrong.
 type IEC104 struct {
 	BaseLayer
 
@@ -127,6 +193,12 @@ type IEC104 struct {
 	UFunction IEC104UFunction
 	// ASDU is set for I-format frames.
 	ASDU IEC104ASDU
+
+	// Skipped counts the octets passed over before the start octet.
+	// They belong to no layer.
+	Skipped int
+	// Faults is zero for a sound APDU.
+	Faults IEC104Fault
 }
 
 // LayerType returns LayerTypeIEC104.
@@ -145,41 +217,175 @@ func (i *IEC104) NextLayerType() gopacket.LayerType {
 	return gopacket.LayerTypeZero
 }
 
-// DecodeFromBytes decodes the first APDU of data.
+// DecodeFromBytes decodes the first APDU of data, skipping garbage before
+// it. A damaged APDU is filled in as far as it goes and returned with an
+// error; Faults tells them apart.
 func (i *IEC104) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
-	if err := i.decodeAPCI(data, df); err != nil {
+	var mode iec104Resync
+	if err := i.decodeAPCI(data, df, &mode); err != nil {
 		return err
 	}
 	return i.decodeASDU()
 }
 
-// decodeAPCI reads the framing of the first APDU of data: start, length
+// iec104Resync is how the search for the next APDU goes on.
+type iec104Resync uint8
+
+const (
+	// iec104ResyncSound looks for a whole APDU with a sound control field.
+	iec104ResyncSound iec104Resync = iota
+	// iec104ResyncFirst takes the first start octet: a search found no
+	// sound APDU up to the end of the data, so none lies further on
+	// either and searching again would cost the square of the length.
+	iec104ResyncFirst
+)
+
+// iec104Sound reports whether data opens with a whole APDU whose length
+// and control field fit its frame format (IEC 60870-5-104, 5.1):
+//
+//	I  | N(S) << 1         | N(R) << 1 |  with an ASDU
+//	S  | 0x01 0x00         | N(R) << 1 |  control field only
+//	U  | function | 0x03, 0x00 0x00 0x00  one function bit, control only
+func iec104Sound(data []byte) bool {
+	if len(data) < iec104APCILen || data[0] != iec104StartByte {
+		return false
+	}
+
+	n := int(data[1])
+	if n < iec104ControlLen || n > iec104MaxLength || len(data) < iec104HeaderLen+n {
+		return false
+	}
+
+	c := data[iec104HeaderLen:iec104APCILen]
+	if c[0]&iec104FormatBitI == 0 {
+		return n > iec104ControlLen && c[2]&iec104FormatBitI == 0
+	}
+	if n != iec104ControlLen {
+		return false
+	}
+
+	if IEC104Format(c[0]&iec104FormatMask) == IEC104FormatS {
+		return c[0] == uint8(IEC104FormatS) && c[1] == 0 && c[2]&iec104FormatBitI == 0
+	}
+
+	// Exactly one of the six function bits.
+	fn := c[0] &^ iec104FormatMask
+	return fn != 0 && fn&(fn-1) == 0 && c[1] == 0 && c[2] == 0 && c[3] == 0
+}
+
+// iec104Locate returns the offset in data of the APDU to decode next, or
+// false when data holds no start octet. An APDU that opens data is taken
+// in place unless its length octet rules it out.
+func iec104Locate(data []byte, mode *iec104Resync) (int, bool) {
+	inPlace := len(data) > 0 && data[0] == iec104StartByte
+	if inPlace && (len(data) < iec104HeaderLen || data[1] >= iec104ControlLen) {
+		return 0, true
+	}
+
+	if *mode == iec104ResyncSound {
+		for off := 0; off < len(data); off++ {
+			if data[off] == iec104StartByte && iec104Sound(data[off:]) {
+				return off, true
+			}
+		}
+		*mode = iec104ResyncFirst
+	}
+
+	// A start octet with length 0 claims nothing, so it is garbage too.
+	for off := 0; off < len(data); off++ {
+		k := bytes.IndexByte(data[off:], iec104StartByte)
+		if k < 0 {
+			break
+		}
+
+		off += k
+		if off+1 >= len(data) || data[off+1] != 0 {
+			return off, true
+		}
+	}
+	return 0, false
+}
+
+// decodeAPCI reads the framing of the next APDU of data: start, length
 // and control field. It sets Contents and Payload and clears the ASDU.
-func (i *IEC104) decodeAPCI(data []byte, df gopacket.DecodeFeedback) error {
-	if len(data) < iec104APCILen {
+// A damaged APDU still gets its Contents, and an error.
+func (i *IEC104) decodeAPCI(data []byte, df gopacket.DecodeFeedback, mode *iec104Resync) error {
+	i.Length, i.Format, i.Skipped, i.Faults = 0, 0, 0, 0
+	i.SendSeq, i.RecvSeq, i.UFunction = 0, 0, 0
+	i.ASDU = IEC104ASDU{Objects: i.ASDU.Objects[:0]}
+	i.Contents, i.Payload = nil, nil
+
+	if len(data) == 0 {
 		df.SetTruncated()
 		return ErrIEC104TooShort
 	}
-	if data[0] != iec104StartByte {
+
+	off, found := iec104Locate(data, mode)
+	if !found {
 		return ErrIEC104BadStart
 	}
-
-	// The length octet covers the control field and the ASDU.
-	if data[1] < iec104ControlLen {
-		return ErrIEC104BadLength
+	if off > 0 {
+		i.Skipped = off
+		i.Faults |= IEC104FaultGarbage
+		data = data[off:]
 	}
-	end := iec104HeaderLen + int(data[1])
-	if len(data) < end {
+
+	// A start octet at the very end has no length to go by.
+	if len(data) < iec104HeaderLen {
+		i.Skipped, i.Faults = 0, 0
 		df.SetTruncated()
 		return ErrIEC104TooShort
 	}
 
 	i.Length = data[1]
+	n := int(data[1])
+	body := data[iec104HeaderLen:]
+	if n < iec104ControlLen {
+		return i.decodeShort(data, n)
+	}
+	if len(body) < n {
+		df.SetTruncated()
+		return i.decodeCut(data)
+	}
+
+	end := iec104HeaderLen + n
 	i.decodeControl(data[iec104HeaderLen:iec104APCILen])
-	i.ASDU = IEC104ASDU{Objects: i.ASDU.Objects[:0]}
 	i.Contents = data[:end]
 	i.Payload = data[end:]
 	return nil
+}
+
+// decodeShort keeps an APDU whose length n is below the control field as
+// start, length and the n octets it claims, e.g. 68 02 aa bb.
+func (i *IEC104) decodeShort(data []byte, n int) error {
+	i.Faults |= IEC104FaultLength
+
+	end := iec104HeaderLen + n
+	if len(data) < end {
+		i.Faults |= IEC104FaultTruncated
+		end = len(data)
+	}
+	i.Contents = data[:end]
+	i.Payload = data[end:]
+	return ErrIEC104BadLength
+}
+
+// decodeCut keeps an APDU the data ends in: the control field when it is
+// whole, and then the fields of the data unit identifier that are.
+func (i *IEC104) decodeCut(data []byte) error {
+	i.Faults |= IEC104FaultTruncated
+	i.Contents = data
+	i.Payload = data[len(data):]
+
+	if len(data) < iec104APCILen {
+		return ErrIEC104TooShort
+	}
+
+	i.decodeControl(data[iec104HeaderLen:iec104APCILen])
+	if i.Format == IEC104FormatI {
+		i.ASDU.decodeDUI(data[iec104APCILen:], iec104DefaultFields)
+	}
+	return ErrIEC104TooShort
 }
 
 // decodeASDU reads the ASDU of an APDU whose APCI decodeAPCI accepted.
@@ -188,11 +394,17 @@ func (i *IEC104) decodeASDU() error {
 	asdu := i.Contents[iec104APCILen:]
 	if i.Format != IEC104FormatI {
 		if len(asdu) != 0 {
+			i.Faults |= IEC104FaultLength
 			return ErrIEC104BadLength
 		}
 		return nil
 	}
-	return i.ASDU.decode(asdu, iec104DefaultFields)
+
+	if err := i.ASDU.decode(asdu, iec104DefaultFields); err != nil {
+		i.Faults |= IEC104FaultASDU
+		return err
+	}
+	return nil
 }
 
 // decodeControl reads the format and its numbers from the control field.
@@ -219,30 +431,39 @@ func decodeIEC104(data []byte, p gopacket.PacketBuilder) error {
 	// A segment may carry several APDUs back to back. Give each its own
 	// layer, in a loop rather than through NextDecoder so a large buffer
 	// does not cost a stack frame per APDU. Each pass consumes at least
-	// iec104APCILen octets.
+	// iec104HeaderLen octets.
 	//
-	// An APDU that does not frame, such as one cut short by segmentation,
-	// ends the loop with its error: gopacket turns that into an error
-	// layer holding the octets from that APDU on. An APDU that frames but
-	// carries a bad ASDU still becomes a layer, so its APCI is not lost,
-	// and then ends the loop the same way.
+	// Garbage between APDUs is skipped and counted on the next layer. A
+	// damaged APDU still becomes a layer, so what it holds is not lost,
+	// and the APDUs after it are decoded too. The first error is
+	// returned once the data is used up: gopacket turns it into an error
+	// layer holding the octets no APDU took.
+	var (
+		mode  iec104Resync
+		first error
+	)
 	for {
 		apdu := &IEC104{}
-		if err := apdu.decodeAPCI(data, p); err != nil {
-			return err
+		err := apdu.decodeAPCI(data, p, &mode)
+		if err == nil {
+			err = apdu.decodeASDU()
+		}
+		if first == nil {
+			first = err
 		}
 
-		err := apdu.decodeASDU()
-		p.AddLayer(apdu)
-		if err != nil {
-			return err
+		// Without contents no APDU was found: only garbage is left.
+		if apdu.Contents == nil {
+			break
 		}
+		p.AddLayer(apdu)
 
 		data = apdu.Payload
 		if len(data) == 0 {
-			return nil
+			break
 		}
 	}
+	return first
 }
 
 // registerIEC104Decoders routes TCP port 2404 to the IEC 104 decoder.

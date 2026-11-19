@@ -572,35 +572,41 @@ func TestIEC104Malformed(t *testing.T) {
 		}
 	}
 
-	// An APDU cut short after a good one is an error layer holding the
-	// cut octets, and the packet is flagged truncated.
+	// An APDU cut short after a good one is a layer flagged truncated,
+	// then the error, and the packet is flagged truncated.
 	good := iec104Vectors[len(iec104Vectors)-1]
 	cut := []byte{0x68, 0x04, 0x01}
 	p := gopacket.NewPacket(append(append([]byte{}, good...), cut...), LayerTypeIEC104, gopacket.Default)
 	e := p.ErrorLayer()
-	if e == nil || !errors.Is(e.Error(), ErrIEC104TooShort) || len(p.Layers()) != 2 ||
-		!bytes.Equal(e.LayerContents(), cut) || !p.Metadata().Truncated {
-		t.Errorf("trailing fragment: %v", p.Layers())
+	if e == nil || !errors.Is(e.Error(), ErrIEC104TooShort) || len(p.Layers()) != 3 || !p.Metadata().Truncated {
+		t.Fatalf("trailing fragment: %v", p.Layers())
+	}
+	if l := p.Layers()[1].(*IEC104); l.Faults != IEC104FaultTruncated || !bytes.Equal(l.Contents, cut) {
+		t.Errorf("trailing fragment: %+v", l)
 	}
 
-	// A broken APDU between good ones is an error layer too: the good one
-	// before it stays, the octets from the broken one on go to the error.
+	// A start octet with a length that cannot be between good APDUs is
+	// garbage: the APDU after it counts it as skipped.
 	broken := []byte{0x68, 0x02, 0x00, 0x00, 0x00, 0x00}
-	rest := append(append([]byte{}, broken...), good...)
-	p = gopacket.NewPacket(append(append([]byte{}, good...), rest...), LayerTypeIEC104, gopacket.Default)
-	e = p.ErrorLayer()
-	if e == nil || !errors.Is(e.Error(), ErrIEC104BadLength) || len(p.Layers()) != 2 ||
-		p.Layers()[0].LayerType() != LayerTypeIEC104 || !bytes.Equal(e.LayerContents(), rest) {
-		t.Errorf("broken middle APDU: %v", p.Layers())
+	p = gopacket.NewPacket(bytes.Join([][]byte{good, broken, good}, nil), LayerTypeIEC104, gopacket.Default)
+	if p.ErrorLayer() != nil || len(p.Layers()) != 2 {
+		t.Fatalf("broken middle APDU: %v", p.Layers())
+	}
+	if l := p.Layers()[1].(*IEC104); l.Skipped != len(broken) || !bytes.Equal(l.Contents, good) {
+		t.Errorf("broken middle APDU: %+v", l)
 	}
 
-	// A middle APDU with a valid APCI and a bad ASDU keeps its layer.
+	// A middle APDU with a valid APCI and a bad ASDU keeps its layer, and
+	// the APDU after it is decoded too.
 	bad := tests[5].data
 	p = gopacket.NewPacket(bytes.Join([][]byte{good, bad, good}, nil), LayerTypeIEC104, gopacket.Default)
 	e = p.ErrorLayer()
-	if e == nil || !errors.Is(e.Error(), tests[5].want) || len(p.Layers()) != 3 ||
-		!bytes.Equal(p.Layers()[1].LayerContents(), bad) || !bytes.Equal(e.LayerContents(), good) {
-		t.Errorf("bad middle ASDU: %v", p.Layers())
+	if e == nil || !errors.Is(e.Error(), tests[5].want) || len(p.Layers()) != 4 ||
+		!bytes.Equal(p.Layers()[1].LayerContents(), bad) || !bytes.Equal(p.Layers()[2].LayerContents(), good) {
+		t.Fatalf("bad middle ASDU: %v", p.Layers())
+	}
+	if l := p.Layers()[1].(*IEC104); l.Faults != IEC104FaultASDU {
+		t.Errorf("bad middle ASDU: %+v", l)
 	}
 }
 

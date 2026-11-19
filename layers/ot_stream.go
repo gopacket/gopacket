@@ -37,6 +37,10 @@ const (
 	// most 255 octets, start and length octets included.
 	iec104MaxLength = 253
 
+	// iec104GarbageMax is the most garbage ScanIEC104Resync puts in one
+	// token.
+	iec104GarbageMax = 1024
+
 	// modbusLengthEnd is where the MBAP length field ends: the ADU is
 	// modbusLengthEnd plus that many octets.
 	modbusLengthEnd = 6
@@ -150,6 +154,69 @@ func iec104PDULen(hdr []byte) (int, bool) {
 		return 0, false
 	}
 	return iec104HeaderLen + int(n), true
+}
+
+// ScanIEC104Resync is a bufio.SplitFunc like ScanIEC104 that drops no
+// octet: garbage before an APDU comes in front of it in the same token,
+//
+//	stream  | garbage | APDU | APDU | garbage ... | APDU |
+//	tokens  |<------ 1 ----->|<- 2 >|<-------- 3 ------->|
+//
+// and decoding the token as LayerTypeIEC104 gives the APDU with the
+// garbage counted in IEC104.Skipped. It accepts a start octet only for
+// an APDU whose control field is sound, which ScanIEC104 does not check:
+// an I frame with an even N(R) octet, an S frame of 01 00 and N(R), a U
+// frame with one function bit and three zero octets.
+//
+// Garbage is cut into tokens of 1024 octets when no APDU follows that
+// soon, so a token holds 1279 octets at most. A token without APDU, and
+// what is left at EOF, decodes to an error and whatever damaged APDUs
+// the decoder makes out. It never returns an error itself.
+func ScanIEC104Resync(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	for off := 0; off < len(data) && off < iec104GarbageMax; off++ {
+		if data[off] != iec104StartByte {
+			continue
+		}
+
+		// A sound APDU ends the token.
+		apdu := data[off:]
+		if iec104Sound(apdu) {
+			end := off + iec104HeaderLen + int(apdu[1])
+			return end, data[:end:end], nil
+		}
+
+		// One that may become sound with more data is worth waiting
+		// for. It is at most 255 octets long.
+		if !atEOF && iec104MaySound(apdu) {
+			return 0, nil, nil
+		}
+	}
+
+	if len(data) >= iec104GarbageMax {
+		return iec104GarbageMax, data[:iec104GarbageMax:iec104GarbageMax], nil
+	}
+	if !atEOF || len(data) == 0 {
+		return 0, nil, nil
+	}
+	return len(data), data[:len(data):len(data)], nil
+}
+
+// iec104MaySound reports whether data, which opens with a start octet
+// and is no sound APDU, may be the first octets of one.
+func iec104MaySound(data []byte) bool {
+	if len(data) < iec104APCILen {
+		return len(data) < iec104HeaderLen || (data[1] >= iec104ControlLen && data[1] <= iec104MaxLength)
+	}
+
+	// The header is whole: it is sound if it is so without its ASDU.
+	n := int(data[1])
+	if n > iec104MaxLength || len(data) >= iec104HeaderLen+n {
+		return false
+	}
+
+	var probe [iec104HeaderLen + iec104MaxLength]byte
+	copy(probe[:], data[:iec104APCILen])
+	return iec104Sound(probe[:])
 }
 
 // ScanOPCUA is a bufio.SplitFunc returning one OPC UA Binary transport

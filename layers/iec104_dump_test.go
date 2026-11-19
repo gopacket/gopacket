@@ -353,6 +353,35 @@ func (x *iec104Dump) asdu(a *IEC104ASDU) {
 	}
 }
 
+// dui dumps an ASDU of n octets: all of it when it is whole, else the
+// fields of its data unit identifier that n octets hold.
+func (x *iec104Dump) dui(a *IEC104ASDU, n int, faults IEC104Fault) {
+	const whole = iec104TypeVSQLen + iec104COTLen + iec104CALen
+	if n >= whole && !faults.Has(IEC104FaultTruncated) {
+		x.asdu(a)
+		return
+	}
+
+	if n >= 1 {
+		x.add("typeid", uint8(a.TypeID))
+	}
+	if n >= 2 {
+		x.add("sq", a.Sequence)
+		x.add("numix", a.NumObjects)
+	}
+	if n >= 3 {
+		x.add("causetx", uint8(a.Cause))
+		x.add("nega", a.Negative)
+		x.add("test", a.Test)
+	}
+	if n >= 4 {
+		x.add("oa", a.Originator)
+	}
+	if n >= whole {
+		x.add("addr", a.CommonAddr)
+	}
+}
+
 // apdus dumps the IEC 104 layers of a packet.
 func (x *iec104Dump) apdus(p gopacket.Packet) {
 	for _, l := range p.Layers() {
@@ -362,12 +391,18 @@ func (x *iec104Dump) apdus(p gopacket.Packet) {
 		}
 
 		x.add("apdulen", apdu.Length)
+
+		// tshark shows a control field only when it is whole.
+		if len(apdu.Contents) < iec104APCILen {
+			continue
+		}
+
 		switch apdu.Format {
 		case IEC104FormatI:
 			x.add("type", "0x00000000")
 			x.add("tx", apdu.SendSeq)
 			x.add("rx", apdu.RecvSeq)
-			x.asdu(&apdu.ASDU)
+			x.dui(&apdu.ASDU, len(apdu.Contents)-iec104APCILen, apdu.Faults)
 		case IEC104FormatS:
 			x.add("type", "0x00000001")
 			x.add("rx", apdu.RecvSeq)

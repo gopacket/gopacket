@@ -41,6 +41,28 @@ const (
 	iec104SOFActiveBit  = 0x80 // FA
 )
 
+// Value ranges of the file transfer elements (IEC 60870-5-101, 7.2.6.28
+// to 7.2.6.38): 0 is the default, then a range kept for the standard and
+// one for private use.
+const (
+	iec104FileQualPrivate  = 64  // FRQ, SRQ: 64 to 127
+	iec104SOFStatusPrivate = 16  // SOF status: 16 to 31
+	iec104NOFPrivate       = 128 // NOF: 128 to 255
+	iec104NOFNamedEnd      = 256 // NOF: plain file names from here
+)
+
+// iec104RangeName names a value by its range: "Default" for 0, reserved
+// for the standard below private, reserved for private use from there.
+func iec104RangeName(v, private uint8) string {
+	switch {
+	case v == 0:
+		return "Default"
+	case v < private:
+		return fmt.Sprintf("Reserved, standard(%d)", v)
+	}
+	return fmt.Sprintf("Reserved, private(%d)", v)
+}
+
 // IEC104COI is the cause of initialisation of M_EI_NA_1.
 type IEC104COI uint8
 
@@ -325,6 +347,15 @@ func (q IEC104FRQ) Negative() bool { return q&iec104FileFlagBit != 0 }
 // Qualifier returns the low seven bits; 0 is the default.
 func (q IEC104FRQ) Qualifier() uint8 { return uint8(q) & iec104FileQualMask }
 
+// String returns the confirm and the qualifier, e.g. "Negative, Default".
+func (q IEC104FRQ) String() string {
+	confirm := "Positive"
+	if q.Negative() {
+		confirm = "Negative"
+	}
+	return confirm + ", " + iec104RangeName(q.Qualifier(), iec104FileQualPrivate)
+}
+
 // IEC104SRQ is the section ready qualifier of F_SR_NA_1.
 type IEC104SRQ uint8
 
@@ -333,6 +364,15 @@ func (q IEC104SRQ) NotReady() bool { return q&iec104FileFlagBit != 0 }
 
 // Qualifier returns the low seven bits; 0 is the default.
 func (q IEC104SRQ) Qualifier() uint8 { return uint8(q) & iec104FileQualMask }
+
+// String returns the readiness and the qualifier, e.g. "Ready, Default".
+func (q IEC104SRQ) String() string {
+	ready := "Ready"
+	if q.NotReady() {
+		ready = "Not ready"
+	}
+	return ready + ", " + iec104RangeName(q.Qualifier(), iec104FileQualPrivate)
+}
 
 // IEC104FileError is the error nibble of SCQ and AFQ.
 type IEC104FileError uint8
@@ -499,6 +539,72 @@ func (s IEC104SOF) Directory() bool { return s&iec104SOFDirBit != 0 }
 
 // Active returns FA: the file transfer is active.
 func (s IEC104SOF) Active() bool { return s&iec104SOFActiveBit != 0 }
+
+// String returns the status and the three flags as Wireshark words
+// them, e.g. "Default, Last file, File, Waits for transfer".
+func (s IEC104SOF) String() string {
+	last, kind, active := "Additional file follows", "File", "Waits for transfer"
+	if s.LastFile() {
+		last = "Last file"
+	}
+	if s.Directory() {
+		kind = "Subdirectory"
+	}
+	if s.Active() {
+		active = "Transfer active"
+	}
+	return iec104RangeName(s.Status(), iec104SOFStatusPrivate) + ", " + last + ", " + kind + ", " + active
+}
+
+// IEC104NOF is the name of file (IEC 60870-5-101, 7.2.6.33).
+type IEC104NOF uint16
+
+// File names the standard defines.
+const (
+	IEC104NOFDefault     IEC104NOF = 0
+	IEC104NOFTransparent IEC104NOF = 1
+	IEC104NOFDisturbance IEC104NOF = 2
+	IEC104NOFEvents      IEC104NOF = 3
+	IEC104NOFAnalogue    IEC104NOF = 4
+)
+
+// String returns what the name stands for, e.g. "Sequences of events".
+func (n IEC104NOF) String() string {
+	switch {
+	case n == IEC104NOFDefault:
+		return "Default"
+	case n == IEC104NOFTransparent:
+		return "Transparent file"
+	case n == IEC104NOFDisturbance:
+		return "Disturbance data of protection equipment"
+	case n == IEC104NOFEvents:
+		return "Sequences of events"
+	case n == IEC104NOFAnalogue:
+		return "Sequences of recorded analogue values"
+	case n < iec104NOFPrivate:
+		return fmt.Sprintf("Reserved, standard(%d)", uint16(n))
+	case n < iec104NOFNamedEnd:
+		return fmt.Sprintf("Reserved, private(%d)", uint16(n))
+	}
+	return fmt.Sprintf("File(%d)", uint16(n))
+}
+
+// IEC104NOS is the name of section (IEC 60870-5-101, 7.2.6.34).
+type IEC104NOS uint8
+
+// String returns "Default" for 0, else the section, e.g. "Section(3)".
+func (n IEC104NOS) String() string {
+	if n == 0 {
+		return "Default"
+	}
+	return fmt.Sprintf("Section(%d)", uint8(n))
+}
+
+// NOF returns the name of file of a file transfer object.
+func (f *IEC104File) NOF() IEC104NOF { return IEC104NOF(f.Name) }
+
+// NOS returns the name of section of a file transfer object.
+func (f *IEC104File) NOS() IEC104NOS { return IEC104NOS(f.Section) }
 
 // FRQ returns the qualifier of an F_FR_NA_1 object.
 func (f *IEC104File) FRQ() IEC104FRQ { return IEC104FRQ(f.Qualifier) }

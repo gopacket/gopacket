@@ -85,6 +85,13 @@ const (
 	iec104CenturyBase      = 2000
 	iec104MsPerSecond      = 1000
 	iec104NsPerMillisecond = 1000000
+
+	// Largest values of the time tag fields (IEC 60870-5-4, 6.8).
+	iec104MaxMilliseconds = 59999
+	iec104MaxMinute       = 59
+	iec104MaxHour         = 23
+	iec104MaxMonth        = 12
+	iec104MaxYear         = 99
 )
 
 var (
@@ -512,6 +519,103 @@ func (t IEC104Time) Time(loc *time.Location) time.Time {
 		int(t.Hour), int(t.Minute), sec, nsec, loc)
 }
 
+// IEC104TimeFault flags the fields of a time tag that are out of range.
+// A tag with such a field still decodes: the fields hold what was sent.
+type IEC104TimeFault uint8
+
+// Time tag faults.
+const (
+	// IEC104TimeBadMilliseconds: above 59999.
+	IEC104TimeBadMilliseconds IEC104TimeFault = 1 << iota
+	// IEC104TimeBadMinute: above 59.
+	IEC104TimeBadMinute
+	// IEC104TimeBadHour: above 23.
+	IEC104TimeBadHour
+	// IEC104TimeBadDay: 0, or past the end of the month, e.g. 30
+	// February.
+	IEC104TimeBadDay
+	// IEC104TimeBadMonth: 0 or above 12.
+	IEC104TimeBadMonth
+	// IEC104TimeBadYear: above 99.
+	IEC104TimeBadYear
+)
+
+var iec104TimeFaultNames = [...]string{"Milliseconds", "Minute", "Hour", "Day", "Month", "Year"}
+
+// String lists the fields out of range, e.g. "Hour|Day", or "None".
+func (f IEC104TimeFault) String() string {
+	if f == 0 {
+		return "None"
+	}
+
+	var out []byte
+	for k, name := range iec104TimeFaultNames {
+		if f&(1<<uint(k)) == 0 {
+			continue
+		}
+		if len(out) > 0 {
+			out = append(out, '|')
+		}
+		out = append(out, name...)
+	}
+
+	// Bits above the named ones.
+	rest := f >> uint(len(iec104TimeFaultNames)) << uint(len(iec104TimeFaultNames))
+	if rest == 0 {
+		return string(out)
+	}
+	if len(out) > 0 {
+		out = append(out, '|')
+	}
+	return fmt.Sprintf("%sUnknown(0x%02X)", out, uint8(rest))
+}
+
+// RangeFaults returns the fields of the tag that are out of range, 0
+// when all are valid. It is apart from Invalid, the IV bit the sender
+// sets. A CP24Time2a tag has milliseconds and minutes to check only.
+func (t IEC104Time) RangeFaults() IEC104TimeFault {
+	var f IEC104TimeFault
+	if t.Format == IEC104TimeNone {
+		return f
+	}
+
+	if t.Milliseconds > iec104MaxMilliseconds {
+		f |= IEC104TimeBadMilliseconds
+	}
+	if t.Minute > iec104MaxMinute {
+		f |= IEC104TimeBadMinute
+	}
+	if t.Format != IEC104TimeCP56 {
+		return f
+	}
+
+	if t.Hour > iec104MaxHour {
+		f |= IEC104TimeBadHour
+	}
+	if t.Month == 0 || t.Month > iec104MaxMonth {
+		f |= IEC104TimeBadMonth
+	}
+	if t.Year > iec104MaxYear {
+		f |= IEC104TimeBadYear
+	}
+	if t.Day == 0 || int(t.Day) > iec104MonthDays(t.Year, t.Month) {
+		f |= IEC104TimeBadDay
+	}
+	return f
+}
+
+// iec104MonthDays returns the days of a month of year 2000+year, or 31
+// when the month itself is out of range.
+func iec104MonthDays(year, month uint8) int {
+	const longest = 31
+	if month == 0 || month > iec104MaxMonth {
+		return longest
+	}
+
+	// Day 0 of the next month is the last day of this one.
+	return time.Date(iec104CenturyBase+int(year), time.Month(month)+1, 0, 0, 0, 0, 0, time.UTC).Day()
+}
+
 // IEC104Counter is a BCR binary counter reading.
 type IEC104Counter struct {
 	Value    int32
@@ -632,22 +736,10 @@ type IEC104ASDU struct {
 // field sizes of f.
 func (a *IEC104ASDU) decode(data []byte, f iec104Fields) error {
 	dui := iec104TypeVSQLen + f.cot + f.ca
+	a.decodeDUI(data, f)
 	if len(data) < dui {
 		return ErrIEC104ASDUTooShort
 	}
-
-	a.TypeID = IEC104TypeID(data[0])
-	a.Sequence = data[1]&iec104SQBit != 0
-	a.NumObjects = data[1] & iec104NumMask
-	a.Cause = IEC104Cause(data[2] & iec104CauseMask)
-	a.Negative = data[2]&iec104NegativeBit != 0
-	a.Test = data[2]&iec104TestBit != 0
-
-	// The originator address is the second octet of a 2-octet COT.
-	if f.cot == iec104COTLen {
-		a.Originator = data[3]
-	}
-	a.CommonAddr = uint16(iec104UintLE(data[iec104TypeVSQLen+f.cot : dui]))
 	body := data[dui:]
 
 	// Secure authentication ASDUs have a body of their own, not objects.
@@ -670,6 +762,42 @@ func (a *IEC104ASDU) decode(data []byte, f iec104Fields) error {
 	}
 	a.Raw = rest
 	return nil
+}
+
+// decodeDUI reads the data unit identifier, or as many of its fields as
+// data holds whole, so that a cut ASDU still tells its type:
+//
+//	| type | SQ, number | T, P/N, cause | originator | common address |
+func (a *IEC104ASDU) decodeDUI(data []byte, f iec104Fields) {
+	if len(data) > 0 {
+		a.TypeID = IEC104TypeID(data[0])
+	}
+	if len(data) < iec104TypeVSQLen {
+		return
+	}
+	a.Sequence = data[1]&iec104SQBit != 0
+	a.NumObjects = data[1] & iec104NumMask
+
+	if len(data) < iec104TypeVSQLen+1 {
+		return
+	}
+	a.Cause = IEC104Cause(data[2] & iec104CauseMask)
+	a.Negative = data[2]&iec104NegativeBit != 0
+	a.Test = data[2]&iec104TestBit != 0
+
+	// The originator address is the second octet of a 2-octet COT.
+	addr := iec104TypeVSQLen + f.cot
+	if len(data) < addr {
+		return
+	}
+	if f.cot == iec104COTLen {
+		a.Originator = data[3]
+	}
+
+	if len(data) < addr+f.ca {
+		return
+	}
+	a.CommonAddr = uint16(iec104UintLE(data[addr : addr+f.ca]))
 }
 
 // decodeObjects reads NumObjects objects of parts each, their addresses

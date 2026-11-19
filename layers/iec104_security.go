@@ -119,13 +119,15 @@ func (t IEC104TypeID) hasSecurityBody() bool {
 // IEC104MACAlgorithm is MAL or HAL, the MAC algorithm.
 type IEC104MACAlgorithm uint8
 
-// MAC algorithms. Wireshark names 1 to 4 and reads 6 as AES-GMAC.
+// MAC algorithms (IEC 62351-5, MAL). Wireshark names 1 to 4 and reads 6
+// as AES-GMAC.
 const (
 	IEC104MACNone      IEC104MACAlgorithm = 0
 	IEC104MACSHA1x4    IEC104MACAlgorithm = 1 // HMAC SHA-1 truncated to 4 octets
 	IEC104MACSHA1x10   IEC104MACAlgorithm = 2
 	IEC104MACSHA256x8  IEC104MACAlgorithm = 3
 	IEC104MACSHA256x16 IEC104MACAlgorithm = 4
+	IEC104MACSHA1x8    IEC104MACAlgorithm = 5 // HMAC SHA-1 truncated to 8 octets
 	IEC104MACAESGMAC   IEC104MACAlgorithm = 6 // 12 octets
 )
 
@@ -135,6 +137,7 @@ const (
 	iec104MACLenSHA1x10   = 10
 	iec104MACLenSHA256x8  = 8
 	iec104MACLenSHA256x16 = 16
+	iec104MACLenSHA1x8    = 8
 	iec104MACLenGMAC      = 12
 )
 
@@ -151,6 +154,8 @@ func (m IEC104MACAlgorithm) String() string {
 		return "HMAC-SHA-256 truncated to 8 octets (serial)"
 	case m == IEC104MACSHA256x16:
 		return "HMAC-SHA-256 truncated to 16 octets (networked)"
+	case m == IEC104MACSHA1x8:
+		return "HMAC SHA-1 truncated to 8 octets (serial)"
 	case m == IEC104MACAESGMAC:
 		return "AES-GMAC"
 	case m >= iec104VendorFirst:
@@ -171,11 +176,58 @@ func (m IEC104MACAlgorithm) Size() int {
 		return iec104MACLenSHA256x8
 	case IEC104MACSHA256x16:
 		return iec104MACLenSHA256x16
+	case IEC104MACSHA1x8:
+		return iec104MACLenSHA1x8
 	case IEC104MACAESGMAC:
 		return iec104MACLenGMAC
 	}
 	return 0
 }
+
+// IEC104User is USR, the user number (IEC 62351-5).
+type IEC104User uint16
+
+// User numbers with a fixed meaning; the rest are handed out by the
+// controlling station.
+const (
+	IEC104UserUnknown IEC104User = 0
+	IEC104UserDefault IEC104User = 1
+)
+
+// String returns the user as Wireshark names it.
+func (u IEC104User) String() string {
+	switch u {
+	case IEC104UserUnknown:
+		return "(Unknown)"
+	case IEC104UserDefault:
+		return "Default"
+	}
+	return fmt.Sprintf("Chosen by the controlling station(%d)", uint16(u))
+}
+
+// IEC104ChallengeReason is RSC, the reason for a challenge.
+type IEC104ChallengeReason uint8
+
+// IEC104ReasonCritical is the one reason IEC 62351-5 defines: the
+// challenged ASDU is a critical function.
+const IEC104ReasonCritical IEC104ChallengeReason = 1
+
+// String returns the reason as Wireshark names it.
+func (r IEC104ChallengeReason) String() string {
+	switch r {
+	case 0:
+		return "(not used)"
+	case IEC104ReasonCritical:
+		return "CRITICAL"
+	}
+	return fmt.Sprintf("Unknown(%d)", uint8(r))
+}
+
+// USR returns the user number as a named value.
+func (s *IEC104Security) USR() IEC104User { return IEC104User(s.User) }
+
+// RSC returns the reason for challenge as a named value.
+func (s *IEC104Security) RSC() IEC104ChallengeReason { return IEC104ChallengeReason(s.Reason) }
 
 // IEC104KeyWrap is KWA, the key wrap algorithm.
 type IEC104KeyWrap uint8
