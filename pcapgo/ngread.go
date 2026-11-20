@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/bits"
 	"time"
 
 	"github.com/gopacket/gopacket"
@@ -402,6 +403,8 @@ func (r *NgReader) readInterfaceDescriptor() error {
 	var intf NgInterface
 	intf.LinkType = layers.LinkType(r.getUint16(r.buf[:2]))
 	intf.SnapLength = r.getUint32(r.buf[4:8])
+	// microseconds, unless if_tsresol says otherwise (0 means seconds)
+	intf.TimestampResolution = 6
 
 OPTIONS:
 	for {
@@ -440,10 +443,6 @@ OPTIONS:
 	if err := r.discard(int(r.currentBlock.length)); err != nil {
 		return err
 	}
-	if intf.TimestampResolution == 0 {
-		intf.TimestampResolution = 6
-	}
-
 	//parse options
 	if intf.TimestampResolution.Binary() {
 		//negative power of 2
@@ -464,13 +463,6 @@ OPTIONS:
 			intf.secondMask *= 10
 		}
 	}
-	intf.scaleDown = 1
-	intf.scaleUp = 1
-	if intf.secondMask < 1e9 {
-		intf.scaleUp = 1e9 / intf.secondMask
-	} else {
-		intf.scaleDown = intf.secondMask / 1e9
-	}
 	r.ifaces = append(r.ifaces, intf)
 	return nil
 }
@@ -478,7 +470,11 @@ OPTIONS:
 // convertTime adds offset + shifts the given time value according to the given interface
 func (r *NgReader) convertTime(ifaceID int, ts uint64) (int64, int64) {
 	iface := r.ifaces[ifaceID]
-	return int64(ts/iface.secondMask + iface.TimestampOffset), int64(ts % iface.secondMask * iface.scaleUp / iface.scaleDown)
+	// The fraction of a second in nanoseconds, computed in 128 bits so that it is exact for any
+	// resolution, including binary ones such as 2^-30
+	hi, lo := bits.Mul64(ts%iface.secondMask, 1e9)
+	nsec, _ := bits.Div64(hi, lo, iface.secondMask)
+	return int64(ts/iface.secondMask + iface.TimestampOffset), int64(nsec)
 }
 
 // readInterfaceStatistics updates the statistics of the given interface

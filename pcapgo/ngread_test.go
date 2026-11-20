@@ -88,8 +88,6 @@ func ngRunFileReadTest(test ngFileReadTest, be string, zerocopy bool, t *testing
 			currentInterface.TimestampResolution = 6
 		}
 		// clear private values
-		intf.scaleDown = 0
-		intf.scaleUp = 0
 		intf.secondMask = 0
 
 		if !reflect.DeepEqual(intf, currentInterface) {
@@ -1840,6 +1838,45 @@ func TestNgFileReadBEZero(t *testing.T) {
 func TestNgFileReadLEZero(t *testing.T) {
 	for _, test := range tests {
 		ngRunFileReadTest(test, "le", true, t)
+	}
+}
+
+func TestNgTimestampResolution(t *testing.T) {
+	tests := []struct {
+		name       string
+		resolution NgResolution
+		timestamp  time.Time
+	}{
+		// 2^-30 seconds
+		{"test903", 0x9e, time.Unix(1519128000, 750000000).UTC()},
+		// one second
+		{"test904", 0, time.Unix(1519128000, 0).UTC()},
+	}
+	for _, test := range tests {
+		for _, be := range []string{"le", "be"} {
+			data, err := os.ReadFile(filepath.Join("tests", be, test.name+".pcapng"))
+			if err != nil {
+				t.Fatalf("read file failed: %+v", err)
+			}
+			r, err := NewNgReader(bytes.NewReader(data), DefaultNgReaderOptions)
+			if err != nil {
+				t.Fatalf("init reader failed: %+v", err)
+			}
+			_, ci, err := r.ReadPacketData()
+			if err != nil {
+				t.Fatalf("read packet failed: %+v", err)
+			}
+			intf, err := r.Interface(0)
+			if err != nil {
+				t.Fatalf("get interface failed: %+v", err)
+			}
+			if intf.TimestampResolution != test.resolution {
+				t.Errorf("%s/%s: resolution = %#x, want %#x", be, test.name, intf.TimestampResolution, test.resolution)
+			}
+			if !ci.Timestamp.Equal(test.timestamp) {
+				t.Errorf("%s/%s: timestamp = %v, want %v", be, test.name, ci.Timestamp, test.timestamp)
+			}
+		}
 	}
 }
 
