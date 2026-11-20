@@ -4,13 +4,13 @@
 // that can be found in the LICENSE file in the root of the source
 // tree.
 
-//go:build !linux
-// +build !linux
+//go:build !(linux || windows)
+// +build !linux,!windows
 
-// Package routing is currently only supported in Linux, but the build system requires a valid go file for all architectures.
+// Package routing is currently only supported in Linux and Windows, but the build system requires a valid go file for all architectures.
 
 package routing
 
-func New() (Router, error) {
-	panic("router only implemented in linux")
+func (r *router) setupRouteTable() error {
+	panic("router only implemented in linux and windows")
 }
