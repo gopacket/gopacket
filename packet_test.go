@@ -252,3 +252,81 @@ func TestVerifyChecksumsNested(t *testing.T) {
 		t.Errorf("summed %d bytes for a %d-byte packet", summed, deep)
 	}
 }
+
+// reusedBufferSource is a ZeroCopyPacketDataSource that, like a real zero
+// copy source, returns the same data buffer and AncillaryData slice on every
+// read. It closes done when it runs out of packets.
+type reusedBufferSource struct {
+	buf   []byte
+	ancil []interface{}
+	left  int
+	done  chan struct{}
+}
+
+func (s *reusedBufferSource) ZeroCopyReadPacketData() ([]byte, CaptureInfo, error) {
+	if s.left == 0 {
+		close(s.done)
+		return nil, CaptureInfo{}, io.EOF
+	}
+	s.left--
+	s.buf[0]++
+	s.ancil[0] = int(s.buf[0])
+	ci := CaptureInfo{CaptureLength: len(s.buf), Length: len(s.buf), AncillaryData: s.ancil}
+	return s.buf, ci, nil
+}
+
+func newReusedBufferSource(n int) *reusedBufferSource {
+	return &reusedBufferSource{
+		buf:   make([]byte, 4),
+		ancil: make([]interface{}, 1),
+		left:  n,
+		done:  make(chan struct{}),
+	}
+}
+
+// Packets queued on the channel must not alias the buffer of a zero copy
+// source, even with NoCopy set, since the source overwrites it on the next
+// read.
+func TestZeroCopyPacketSourcePacketsCopiesData(t *testing.T) {
+	const n = 5
+	src := newReusedBufferSource(n)
+	ps := NewZeroCopyPacketSource(src, DecodePayload, WithNoCopy(true))
+
+	c := ps.Packets()
+	<-src.done // every packet has been read and queued before we look at any
+
+	var got []Packet
+	for p := range c {
+		got = append(got, p)
+	}
+	if len(got) != n {
+		t.Fatalf("got %d packets, want %d", len(got), n)
+	}
+	for i, p := range got {
+		want := byte(i + 1)
+		if p.Data()[0] != want {
+			t.Errorf("packet %d: data[0] = %d, want %d", i, p.Data()[0], want)
+		}
+		if &p.Data()[0] == &src.buf[0] {
+			t.Errorf("packet %d: data aliases the source buffer", i)
+		}
+		if a := p.Metadata().AncillaryData; len(a) != 1 || a[0] != int(want) {
+			t.Errorf("packet %d: AncillaryData = %v, want [%d]", i, a, want)
+		}
+	}
+}
+
+// NextPacket keeps zero copy behaviour: with NoCopy set, the packet uses the
+// source buffer directly.
+func TestZeroCopyPacketSourceNextPacketNoCopy(t *testing.T) {
+	src := newReusedBufferSource(1)
+	ps := NewZeroCopyPacketSource(src, DecodePayload, WithNoCopy(true))
+
+	p, err := ps.NextPacket()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if &p.Data()[0] != &src.buf[0] {
+		t.Error("NextPacket copied the data of a zero copy source with NoCopy set")
+	}
+}
