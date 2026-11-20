@@ -5,6 +5,7 @@
 package layers
 
 import (
+	"bytes"
 	"reflect"
 	"testing"
 
@@ -80,6 +81,96 @@ func TestPacketLLDP(t *testing.T) {
 		}
 	} else {
 		t.Error("No LLDP Info layer type found in packet")
+	}
+}
+
+func TestLLDPMandatoryTLVs(t *testing.T) {
+	tlv := func(typ LLDPTLVType, value ...byte) []byte {
+		header := uint16(typ)<<9 | uint16(len(value))
+		return append([]byte{byte(header >> 8), byte(header)}, value...)
+	}
+	chassis := tlv(LLDPTLVChassisID, byte(LLDPChassisIDSubTypeMACAddr), 0, 0x11, 0x22, 0x33, 0x44, 0x55)
+	port := tlv(LLDPTLVPortID, byte(LLDPPortIDSubtypeIfaceName), 'E', 't', 'h', '1')
+	ttl := tlv(LLDPTLVTTL, 0, 120)
+	shutdown := tlv(LLDPTLVTTL, 0, 0)
+	name := tlv(LLDPTLVSysName, 's', 'w', '1')
+	end := tlv(LLDPTLVEnd)
+
+	tests := []struct {
+		name          string
+		tlvs          [][]byte
+		wantError     bool
+		wantTruncated bool
+		wantTTL       uint16
+		wantSysName   string
+	}{
+		{name: "mandatory TLVs with End", tlvs: [][]byte{chassis, port, ttl, end}, wantTTL: 120},
+		{name: "optional TLV with End", tlvs: [][]byte{chassis, port, ttl, name, end}, wantTTL: 120, wantSysName: "sw1"},
+		{name: "mandatory TLVs without End", tlvs: [][]byte{chassis, port, ttl}, wantTTL: 120},
+		{name: "optional TLV without End", tlvs: [][]byte{chassis, port, ttl, name}, wantTTL: 120, wantSysName: "sw1"},
+		{name: "shutdown with End", tlvs: [][]byte{chassis, port, shutdown, end}},
+		{name: "shutdown without End", tlvs: [][]byte{chassis, port, shutdown}},
+		{name: "data after End", tlvs: [][]byte{chassis, port, ttl, end, shutdown, {0xff}}, wantTTL: 120},
+		{name: "port before chassis", tlvs: [][]byte{port, chassis, ttl, end}, wantError: true},
+		{name: "TTL before port", tlvs: [][]byte{chassis, ttl, port, end}, wantError: true},
+		{name: "port and TTL before chassis", tlvs: [][]byte{port, ttl, chassis, end}, wantError: true},
+		{name: "TTL before chassis", tlvs: [][]byte{ttl, chassis, port, end}, wantError: true},
+		{name: "mandatory TLVs reversed", tlvs: [][]byte{ttl, port, chassis, end}, wantError: true},
+		{name: "optional TLV before chassis", tlvs: [][]byte{name, chassis, port, ttl, end}, wantError: true},
+		{name: "optional TLV before port", tlvs: [][]byte{chassis, name, port, ttl, end}, wantError: true},
+		{name: "optional TLV before TTL", tlvs: [][]byte{chassis, port, name, ttl, end}, wantError: true},
+		{name: "missing chassis", tlvs: [][]byte{port, ttl, name, end}, wantError: true},
+		{name: "missing port", tlvs: [][]byte{chassis, ttl, name, end}, wantError: true},
+		{name: "missing TTL", tlvs: [][]byte{chassis, port, name, end}, wantError: true},
+		{name: "missing TTL without End", tlvs: [][]byte{chassis, port}, wantError: true},
+		{name: "empty packet", wantError: true},
+		{name: "End before TTL", tlvs: [][]byte{chassis, port, end, ttl}, wantError: true},
+		{name: "duplicate chassis", tlvs: [][]byte{chassis, port, ttl, chassis, end}, wantError: true},
+		{name: "duplicate port", tlvs: [][]byte{chassis, port, ttl, port, end}, wantError: true},
+		{name: "duplicate TTL", tlvs: [][]byte{chassis, port, ttl, shutdown, end}, wantError: true},
+		{name: "duplicate chassis after optional TLV", tlvs: [][]byte{chassis, port, ttl, name, chassis, end}, wantError: true},
+		{name: "duplicate port after optional TLV", tlvs: [][]byte{chassis, port, ttl, name, port, end}, wantError: true},
+		{name: "duplicate TTL after optional TLV", tlvs: [][]byte{chassis, port, ttl, name, shutdown, end}, wantError: true},
+		{name: "duplicate TTL without End", tlvs: [][]byte{chassis, port, ttl, shutdown}, wantError: true},
+		{name: "short TTL", tlvs: [][]byte{chassis, port, tlv(LLDPTLVTTL, 0), end}, wantError: true},
+		{name: "truncated TLV header", tlvs: [][]byte{chassis, port, ttl, {0x0a}}, wantError: true, wantTruncated: true},
+		{name: "truncated TLV value", tlvs: [][]byte{chassis, port, ttl, name[:len(name)-1]}, wantError: true, wantTruncated: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data := bytes.Join(tt.tlvs, nil)
+			p := gopacket.NewPacket(data, LayerTypeLinkLayerDiscovery, gopacket.Default)
+			if got := p.Metadata().Truncated; got != tt.wantTruncated {
+				t.Errorf("Truncated = %v, want %v", got, tt.wantTruncated)
+			}
+			if tt.wantError {
+				if p.ErrorLayer() == nil {
+					t.Fatal("Malformed LLDPDU decoded without an error")
+				}
+				if p.Layer(LayerTypeLinkLayerDiscovery) != nil {
+					t.Error("Malformed mandatory TLVs produced an LLDP layer")
+				}
+				return
+			}
+			if p.ErrorLayer() != nil {
+				t.Fatal("Failed to decode LLDPDU:", p.ErrorLayer().Error())
+			}
+			checkLayers(p, []gopacket.LayerType{LayerTypeLinkLayerDiscovery, LayerTypeLinkLayerDiscoveryInfo}, t)
+			lldp := p.Layer(LayerTypeLinkLayerDiscovery).(*LinkLayerDiscovery)
+			if lldp.ChassisID.Subtype != LLDPChassisIDSubTypeMACAddr || !bytes.Equal(lldp.ChassisID.ID, chassis[3:]) {
+				t.Errorf("Unexpected chassis ID: %+v", lldp.ChassisID)
+			}
+			if lldp.PortID.Subtype != LLDPPortIDSubtypeIfaceName || string(lldp.PortID.ID) != "Eth1" {
+				t.Errorf("Unexpected port ID: %+v", lldp.PortID)
+			}
+			if lldp.TTL != tt.wantTTL {
+				t.Errorf("TTL = %d, want %d", lldp.TTL, tt.wantTTL)
+			}
+			info := p.Layer(LayerTypeLinkLayerDiscoveryInfo).(*LinkLayerDiscoveryInfo)
+			if info.SysName != tt.wantSysName {
+				t.Errorf("SysName = %q, want %q", info.SysName, tt.wantSysName)
+			}
+		})
 	}
 }
 
