@@ -65,7 +65,8 @@ func (g *GTPv2) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 		return fmt.Errorf("GTP packet too small: %d bytes", dLen)
 	}
 
-	cIndex := uint16(hLen)
+	// The message can end past offset 65535, so the cursor has to be an int.
+	cIndex := hLen
 	if g.TEIDflag {
 		hLen += 4
 		cIndex += 4
@@ -76,7 +77,7 @@ func (g *GTPv2) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	}
 
 	// SequenceNumber (3 bytes) is followed by the 1-byte Spare.
-	if len(data) < int(cIndex)+4 {
+	if len(data) < cIndex+4 {
 		return fmt.Errorf("GTP packet too small for SequenceNumber: %d bytes", len(data))
 	}
 	g.SequenceNumber = uint32(data[cIndex])<<16 | uint32(data[cIndex+1])<<8 | uint32(data[cIndex+2])
@@ -84,25 +85,25 @@ func (g *GTPv2) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	hLen += 4
 	cIndex += 4
 
-	if mEnd < int(cIndex) {
+	if mEnd < cIndex {
 		return fmt.Errorf("GTP message length %d does not cover the header", g.MessageLength)
 	}
 
-	for int(cIndex) < mEnd {
+	for cIndex < mEnd {
 		// Need the full 4-byte IE header; int arithmetic so a 16-bit length
 		// cannot wrap past the bound.
-		if int(cIndex)+4 > mEnd {
+		if cIndex+4 > mEnd {
 			return fmt.Errorf("GTPv2 IE header truncated at offset %d", cIndex)
 		}
 		ieType := data[cIndex]
 		ieLength := int(binary.BigEndian.Uint16(data[cIndex+1 : cIndex+3]))
-		ieEnd := int(cIndex) + 4 + ieLength
+		ieEnd := cIndex + 4 + ieLength
 		if ieEnd > mEnd {
 			return fmt.Errorf("IE %d exceeds message length", ieType)
 		}
-		ieContent := data[int(cIndex)+4 : ieEnd]
+		ieContent := data[cIndex+4 : ieEnd]
 		g.IEs = append(g.IEs, IE{Type: ieType, Content: ieContent})
-		cIndex = uint16(ieEnd)
+		cIndex = ieEnd
 	}
 
 	g.BaseLayer = BaseLayer{Contents: data[:cIndex], Payload: data[cIndex:]}

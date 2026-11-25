@@ -135,3 +135,46 @@ func TestGTPv2MessageLengthBoundsIEs(t *testing.T) {
 		t.Error("Expected an error for a message length shorter than the header")
 	}
 }
+
+// TestGTPv2MessageEndsPast64K checks the IE walk on messages that end at
+// offset 65536 or later (Message Length 0xfffc to 0xffff), which a 16-bit
+// cursor cannot reach. UDP and IPv6 jumbograms carry such messages.
+func TestGTPv2MessageEndsPast64K(t *testing.T) {
+	// Echo Request whose only IE (Private Extension) ends at offset 65536.
+	data := make([]byte, 65536)
+	copy(data, []byte{
+		0x40, 0x01, 0xff, 0xfc, 0x00, 0x00, 0x01, 0x00,
+		0xff, 0xff, 0xf4, 0x00,
+	})
+	var g GTPv2
+	if err := g.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err != nil {
+		t.Fatal("Failed to decode:", err)
+	}
+	if len(g.IEs) != 1 || g.IEs[0].Type != 255 || len(g.IEs[0].Content) != 65524 {
+		t.Errorf("Expected one IE with 65524 bytes of content, got %d IEs", len(g.IEs))
+	}
+	if len(g.LayerContents()) != len(data) || len(g.LayerPayload()) != 0 {
+		t.Errorf("Expected %d bytes of contents and no payload, got %d and %d",
+			len(data), len(g.LayerContents()), len(g.LayerPayload()))
+	}
+
+	// The largest message: a second IE whose header starts at offset 65533
+	// and whose 2 bytes of content end the message at offset 65539.
+	data = make([]byte, 65539)
+	copy(data, []byte{
+		0x40, 0x01, 0xff, 0xff, 0x00, 0x00, 0x01, 0x00,
+		0xff, 0xff, 0xf1, 0x00,
+	})
+	copy(data[65533:], []byte{0x03, 0x00, 0x02, 0x00, 0x01, 0x02})
+	if err := g.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err != nil {
+		t.Fatal("Failed to decode:", err)
+	}
+	if len(g.IEs) != 2 || g.IEs[0].Type != 255 || len(g.IEs[0].Content) != 65521 ||
+		g.IEs[1].Type != 3 || !reflect.DeepEqual(g.IEs[1].Content, []byte{0x01, 0x02}) {
+		t.Errorf("Expected IEs of 65521 and 2 bytes, got %d IEs", len(g.IEs))
+	}
+	if len(g.LayerContents()) != len(data) || len(g.LayerPayload()) != 0 {
+		t.Errorf("Expected %d bytes of contents and no payload, got %d and %d",
+			len(data), len(g.LayerContents()), len(g.LayerPayload()))
+	}
+}

@@ -61,13 +61,14 @@ func (g *GTPv1U) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error 
 	g.ExtensionHeaderFlag = ((data[0] >> 2) & 0x01) == 1
 	g.MessageType = data[1]
 	g.MessageLength = binary.BigEndian.Uint16(data[2:4])
-	pLen := 8 + g.MessageLength
-	if uint16(dLen) < pLen {
+	pLen := 8 + int(g.MessageLength)
+	if dLen < pLen {
 		return fmt.Errorf("GTP packet too small: %d bytes", dLen)
 	}
 	//  Field used to multiplex different connections in the same GTP tunnel.
 	g.TEID = binary.BigEndian.Uint32(data[4:8])
-	cIndex := uint16(hLen)
+	// int, like dLen: a uint16 cursor wraps in a packet of 64 KiB or more.
+	cIndex := hLen
 	if g.SequenceNumberFlag || g.NPDUFlag || g.ExtensionHeaderFlag {
 		hLen += 4
 		cIndex += 4
@@ -86,7 +87,7 @@ func (g *GTPv1U) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error 
 			// 5.2.1), so the T-PDU starts right after the 12-byte header.
 			extensionFlag := data[cIndex-1] != 0
 			for extensionFlag {
-				if int(cIndex) >= dLen {
+				if cIndex >= dLen {
 					return fmt.Errorf("GTP packet too small: %d bytes", dLen)
 				}
 				extensionType := uint8(data[cIndex-1])
@@ -95,8 +96,8 @@ func (g *GTPv1U) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error 
 					return fmt.Errorf("GTP packet with invalid extension header")
 				}
 				// extensionLength is in 4-octet units
-				lIndex := cIndex + (uint16(extensionLength) * 4)
-				if uint16(dLen) < lIndex {
+				lIndex := cIndex + int(extensionLength)*4
+				if dLen < lIndex {
 					return fmt.Errorf("GTP packet with small extension header: %d bytes", dLen)
 				}
 				content := data[cIndex+1 : lIndex-1]

@@ -8,6 +8,7 @@
 package layers
 
 import (
+	"bytes"
 	"reflect"
 	"testing"
 
@@ -201,6 +202,38 @@ func TestGTPPacketWithEFlagAndNoEH(t *testing.T) {
 	want.BaseLayer = BaseLayer{data[:12], data[12:]}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("GTP packet mismatch:\ngot  :\n%#v\n\nwant :\n%#v\n\n", got, want)
+	}
+}
+
+// TestGTPPacketPast64K checks the offsets of the header walk on packets of
+// 64 KiB and more, where a 16-bit cursor or length comparison wraps.
+func TestGTPPacketPast64K(t *testing.T) {
+	// 16382 extension headers of 4 bytes; the last one ends at offset 65540
+	// and is followed by 3 bytes of T-PDU.
+	data := bytes.Repeat([]byte{0x01}, 65543)
+	copy(data, []byte{0x34, 0xff, 0xff, 0xff})
+	data[65539] = 0
+	var g GTPv1U
+	if err := g.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err != nil {
+		t.Fatal("Failed to decode:", err)
+	}
+	if len(g.GTPExtensionHeaders) != 16382 || len(g.LayerContents()) != 65540 || len(g.LayerPayload()) != 3 {
+		t.Errorf("Expected 16382 extension headers, 65540 bytes of contents and 3 of payload, got %d, %d and %d",
+			len(g.GTPExtensionHeaders), len(g.LayerContents()), len(g.LayerPayload()))
+	}
+
+	// An extension header that claims 1020 bytes when 108 are left.
+	data = bytes.Repeat([]byte{0xff}, 65400)
+	copy(data, []byte{0x34, 0xff, 0x00, 0x00})
+	if err := g.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err == nil {
+		t.Error("Expected an error for an extension header longer than the packet")
+	}
+
+	// A Message Length of 65528 in a packet of 20 bytes.
+	data = make([]byte, 20)
+	copy(data, []byte{0x30, 0xff, 0xff, 0xf8})
+	if err := g.DecodeFromBytes(data, gopacket.NilDecodeFeedback); err == nil {
+		t.Error("Expected an error for a message length longer than the packet")
 	}
 }
 
