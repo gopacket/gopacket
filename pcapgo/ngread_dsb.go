@@ -36,7 +36,12 @@ func (r *NgReader) readDecryptionSecretsBlock() error {
 	}
 	r.currentBlock.length -= uint32(len(payload))
 
-	// save decryption secrets
+	// save decryption secrets, as long as the section has room for them
+	size := ngSecretSize + len(payload)
+	if r.secretBytes+size > ngMaxSecretBytes {
+		return nil
+	}
+	r.secretBytes += size
 	var decryptSecret decryptionSecret
 	decryptSecret.blockInfo = *decryptionSecretsBlock
 	decryptSecret.payload = payload

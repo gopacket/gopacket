@@ -39,6 +39,26 @@ type NgReaderOptions struct {
 // DefaultNgReaderOptions provides sane defaults for a pcapng reader.
 var DefaultNgReaderOptions = NgReaderOptions{}
 
+// Limits on what the reader keeps in memory: of a section its interfaces, name
+// records and decryption secrets, of a packet its options. In the file these
+// are small, 20 bytes for an interface and one for an empty name, and in
+// memory many times that, so the file can't be left to decide how many are
+// kept. What is over a limit is read and dropped, which keeps the reader in
+// step with the file. It is not an error: there would be one for every block
+// over the limit, and gopacket.PacketSource sleeps and retries after each.
+const (
+	ngMaxInterfaceBytes = 16 << 20 // interfaces of a section, with their strings
+	ngMaxNameBytes      = 16 << 20 // name records of a section
+	ngMaxSecretBytes    = 16 << 20 // decryption secrets of a section
+	ngMaxPacketOptions  = 1024     // comments of a packet, and so for hashes and verdicts
+
+	// what an entry is charged on top of its strings or payload
+	ngInterfaceSize  = 256 // NgInterface
+	ngNameRecordSize = 96  // NgNameRecord and its address
+	ngNameSize       = 16  // string header of a name
+	ngSecretSize     = 64  // decryptionSecret
+)
+
 // NgReader wraps an underlying bufio.NgReader to read packet data in pcapng.
 type NgReader struct {
 	r                 *bufio.Reader
@@ -58,6 +78,10 @@ type NgReader struct {
 	bigEndian         bool
 	decryptionSecrets []decryptionSecret
 	nameRecords       []NgNameRecord
+	ifaceBytes        int  // charged to ngMaxInterfaceBytes in this section
+	ifacesFull        bool // an interface of this section was dropped
+	nameBytes         int  // charged to ngMaxNameBytes in this section
+	secretBytes       int  // charged to ngMaxSecretBytes in this section
 }
 
 // NewNgReader initializes a new reader, reads the first section header, and if necessary according to the options the first interface.
@@ -167,6 +191,15 @@ func (r *NgReader) blockTooShort(n uint64) error {
 		return discardErr
 	}
 	return err
+}
+
+// unknownInterface skips what is left of the current block, which names an interface the section doesn't have, and
+// returns the error for it. Returning in mid block would have the reader parse the rest of the block as block headers.
+func (r *NgReader) unknownInterface(id int) error {
+	if err := r.discard(int(r.currentBlock.length)); err != nil {
+		return err
+	}
+	return fmt.Errorf("Interface id %d not present in section (have only %d interfaces)", id, len(r.ifaces))
 }
 
 // The following functions make the binary.* functions inlineable (except for getUint64, which is too big, but not in any hot path anyway)
@@ -301,10 +334,17 @@ func (r *NgReader) readSectionHeader() error {
 		}
 		r.options.SectionEndCallback(interfaces, r.sectionInfo)
 	}
-	// clear interfaces, decryption secrets and name records
+	// clear interfaces, decryption secrets and name records. Truncating alone
+	// would leave what they hold in the backing arrays, where it stays alive.
+	clear(r.ifaces)
+	clear(r.decryptionSecrets)
+	clear(r.nameRecords)
 	r.ifaces = r.ifaces[:0]
 	r.decryptionSecrets = r.decryptionSecrets[:0]
 	r.nameRecords = r.nameRecords[:0]
+	r.ifaceBytes, r.ifacesFull = 0, false
+	r.nameBytes = 0
+	r.secretBytes = 0
 	r.activeSection = false
 
 RESTART:
@@ -514,6 +554,15 @@ OPTIONS:
 	} else {
 		intf.scaleDown = intf.secondMask / 1e9
 	}
+	// An interface that does not fit is dropped, and so is every later one of
+	// the section, since the ids of those kept have to stay right. A packet of
+	// a dropped interface fails like any packet whose interface id is unknown.
+	size := ngInterfaceSize + len(intf.Name) + len(intf.Comment) + len(intf.Description) + len(intf.Filter) + len(intf.OS)
+	if r.ifacesFull || r.ifaceBytes+size > ngMaxInterfaceBytes {
+		r.ifacesFull = true
+		return nil
+	}
+	r.ifaceBytes += size
 	r.ifaces = append(r.ifaces, intf)
 	return nil
 }
@@ -536,9 +585,10 @@ func (r *NgReader) readInterfaceStatistics() error {
 	ifaceID := int(r.getUint32(r.buf[:4]))
 	ts := uint64(r.getUint32(r.buf[4:8]))<<32 | uint64(r.getUint32(r.buf[8:12]))
 	if int(ifaceID) >= len(r.ifaces) {
-		return fmt.Errorf("Interface id %d not present in section (have only %d interfaces)", ifaceID, len(r.ifaces))
+		return r.unknownInterface(ifaceID)
 	}
 	stats := &r.ifaces[ifaceID].Statistics
+	r.ifaceBytes -= len(stats.Comment)
 	*stats = ngEmptyStatistics
 	stats.LastUpdate = time.Unix(r.convertTime(ifaceID, ts)).UTC()
 
@@ -551,6 +601,12 @@ OPTIONS:
 		case ngOptionCodeEndOfOptions:
 			break OPTIONS
 		case ngOptionCodeComment:
+			// the comment is kept with the interface, and charged like its strings
+			size := len(r.currentOption.value) - len(stats.Comment)
+			if r.ifaceBytes+size > ngMaxInterfaceBytes {
+				continue
+			}
+			r.ifaceBytes += size
 			stats.Comment = string(r.currentOption.value)
 		case ngOptionCodeInterfaceStatisticsStartTime:
 			if r.optionTooShort(8) {
@@ -606,7 +662,7 @@ FIND_PACKET:
 			r.currentBlock.length -= 20
 			r.ci.InterfaceIndex = int(r.getUint32(r.buf[:4]))
 			if r.ci.InterfaceIndex >= len(r.ifaces) {
-				return fmt.Errorf("Interface id %d not present in section (have only %d interfaces)", r.ci.InterfaceIndex, len(r.ifaces))
+				return r.unknownInterface(r.ci.InterfaceIndex)
 			}
 			r.ci.Timestamp = time.Unix(r.convertTime(r.ci.InterfaceIndex, uint64(r.getUint32(r.buf[4:8]))<<32|uint64(r.getUint32(r.buf[8:12])))).UTC()
 			r.ci.CaptureLength = int(r.getUint32(r.buf[12:16]))
@@ -660,7 +716,7 @@ FIND_PACKET:
 			r.currentBlock.length -= 20
 			r.ci.InterfaceIndex = int(r.getUint16(r.buf[0:2]))
 			if r.ci.InterfaceIndex >= len(r.ifaces) {
-				return fmt.Errorf("Interface id %d not present in section (have only %d interfaces)", r.ci.InterfaceIndex, len(r.ifaces))
+				return r.unknownInterface(r.ci.InterfaceIndex)
 			}
 			r.ci.Timestamp = time.Unix(r.convertTime(r.ci.InterfaceIndex, uint64(r.getUint32(r.buf[4:8]))<<32|uint64(r.getUint32(r.buf[8:12])))).UTC()
 			r.ci.CaptureLength = int(r.getUint32(r.buf[12:16]))
@@ -704,6 +760,9 @@ OPTIONS:
 		case ngOptionCodeEndOfOptions:
 			break OPTIONS
 		case ngOptionCodeComment:
+			if len(opts.Comments) >= ngMaxPacketOptions {
+				continue
+			}
 			opts.Comments = append(opts.Comments, string(r.currentOption.value))
 		case ngOptionCodeEpbFlags:
 			if r.optionTooShort(4) {
@@ -713,7 +772,7 @@ OPTIONS:
 			flags.FromUint32(binary.LittleEndian.Uint32(r.currentOption.value))
 			opts.Flags = &flags
 		case ngOptionCodeEpbHash:
-			if r.optionTooShort(1) {
+			if r.optionTooShort(1) || len(opts.Hashes) >= ngMaxPacketOptions {
 				continue
 			}
 			v := make([]byte, len(r.currentOption.value)-1)
@@ -741,7 +800,7 @@ OPTIONS:
 			v := binary.LittleEndian.Uint32(r.currentOption.value)
 			opts.Queue = &v
 		case ngOptionCodeEpbVerdict:
-			if r.optionTooShort(1) {
+			if r.optionTooShort(1) || len(opts.Verdicts) >= ngMaxPacketOptions {
 				continue
 			}
 			v := make([]byte, len(r.currentOption.value)-1)

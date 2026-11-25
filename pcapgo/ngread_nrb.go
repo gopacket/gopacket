@@ -128,12 +128,18 @@ func (r *NgReader) readNameResolutionBlock() error {
 		if _, err := r.readBytes(names); err != nil {
 			return fmt.Errorf("could not read name: %v", err)
 		}
-		for len(names) > 0 {
-			var name []byte
-			name, names, _ = bytes.Cut(names, []byte{0})
-			nameRecord.Names = append(nameRecord.Names, string(name))
+		// A record is charged for its text and for the string header of each
+		// name, and dropped if the section has no room left for it.
+		size := ngNameRecordSize + length + ngNameSize*bytes.Count(names, []byte{0})
+		if r.nameBytes+size <= ngMaxNameBytes {
+			r.nameBytes += size
+			for len(names) > 0 {
+				var name []byte
+				name, names, _ = bytes.Cut(names, []byte{0})
+				nameRecord.Names = append(nameRecord.Names, string(name))
+			}
+			r.nameRecords = append(r.nameRecords, nameRecord)
 		}
-		r.nameRecords = append(r.nameRecords, nameRecord)
 
 		//consume padding
 		if err := r.discard(padding); err != nil {
