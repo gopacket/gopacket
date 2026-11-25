@@ -16,6 +16,9 @@ type decryptionSecret struct {
 
 // readDecryptionSecrets parses an encryption secrets section from the given
 func (r *NgReader) readDecryptionSecretsBlock() error {
+	if err := r.checkBlock(8); err != nil {
+		return err
+	}
 	if _, err := r.readBytes(r.buf[:8]); err != nil {
 		return fmt.Errorf("could not read DecryptionSecret Header block length: %v", err)
 	}
@@ -24,6 +27,9 @@ func (r *NgReader) readDecryptionSecretsBlock() error {
 	var decryptionSecretsBlock = &pcapngDecryptionSecretsBlock{}
 	decryptionSecretsBlock.secretsType = r.getUint32(r.buf[0:4])
 	decryptionSecretsBlock.secretsLength = r.getUint32(r.buf[4:8])
+	if err := r.checkBlock(uint64(decryptionSecretsBlock.secretsLength)); err != nil {
+		return err
+	}
 	payload, err := r.readLarge(int(decryptionSecretsBlock.secretsLength))
 	if err != nil {
 		return fmt.Errorf("could not read %d bytes from DecryptionSecret payload: %v", decryptionSecretsBlock.secretsLength, err)

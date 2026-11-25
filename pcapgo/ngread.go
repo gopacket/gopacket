@@ -146,6 +146,29 @@ func (r *NgReader) discard(length int) error {
 	return nil
 }
 
+// ngBlockTrailerSize is the size of the block total length that ends every block.
+const ngBlockTrailerSize = 4
+
+// checkBlock returns an error if the current block doesn't have n more bytes in front of its trailing block length.
+// Every read inside a block must pass it first, fixed size parts included: the lengths come from the file, and a read
+// past the end of the block consumes the following blocks and wraps the remaining length.
+func (r *NgReader) checkBlock(n uint64) error {
+	if n+ngBlockTrailerSize <= uint64(r.currentBlock.length) {
+		return nil
+	}
+	return r.blockTooShort(n)
+}
+
+// blockTooShort skips what is left of the current block, so that the next read starts at the following block, and
+// returns the error of checkBlock. It is a function of its own to keep checkBlock inlineable.
+func (r *NgReader) blockTooShort(n uint64) error {
+	err := fmt.Errorf("Block of type %#x is too short: %d bytes needed, %d left including the trailing block length", uint32(r.currentBlock.typ), n, r.currentBlock.length)
+	if discardErr := r.discard(int(r.currentBlock.length)); discardErr != nil {
+		return discardErr
+	}
+	return err
+}
+
 // The following functions make the binary.* functions inlineable (except for getUint64, which is too big, but not in any hot path anyway)
 // Compared to storing binary.*Endian in a binary.ByteOrder this shaves off about 20% for (ZeroCopy)ReadPacketData, which is caused by the needed itab lookup + indirect go call
 func (r *NgReader) getUint16(buffer []byte) uint16 {
@@ -193,9 +216,17 @@ func (r *NgReader) readBlock() error {
 		} else {
 			return errors.New("Wrong byte order value in Section Header")
 		}
+		// As below, and 4 more for the byteOrderMagic
+		if r.getUint32(r.buf[4:8]) < 16 {
+			return fmt.Errorf("Block total length %d is too short", r.getUint32(r.buf[4:8]))
+		}
 		// Set length to remaining length (length - (type + lengthfield = 8) - 4 for byteOrderMagic)
 		r.currentBlock.length = r.getUint32(r.buf[4:8]) - 8 - 4
 		return nil
+	}
+	// A block has at least its type, its length and the trailing length (12 bytes). Less would wrap the remaining length
+	if r.getUint32(r.buf[4:8]) < 12 {
+		return fmt.Errorf("Block total length %d is too short", r.getUint32(r.buf[4:8]))
 	}
 	// Set length to remaining length (length - (type + lengthfield = 8)
 	r.currentBlock.length = r.getUint32(r.buf[4:8]) - 8
@@ -208,6 +239,9 @@ func (r *NgReader) readOption() error {
 		// no more options
 		r.currentOption.code = ngOptionCodeEndOfOptions
 		return nil
+	}
+	if err := r.checkBlock(4); err != nil {
+		return err
 	}
 	if _, err := r.readBytes(r.buf[:4]); err != nil {
 		return err
@@ -222,6 +256,9 @@ func (r *NgReader) readOption() error {
 		return nil
 	}
 	if length != 0 {
+		if err := r.checkBlock(uint64(length)); err != nil {
+			return err
+		}
 		if length < uint16(cap(r.currentOption.value)) {
 			r.currentOption.value = r.currentOption.value[:length]
 		} else {
@@ -272,6 +309,9 @@ func (r *NgReader) readSectionHeader() error {
 
 RESTART:
 	// read major, minor, section length
+	if err := r.checkBlock(12); err != nil {
+		return err
+	}
 	if _, err := r.readBytes(r.buf[:12]); err != nil {
 		return err
 	}
@@ -395,6 +435,9 @@ func (r *NgReader) firstInterface() error {
 
 // readInterfaceDescriptor parses an interface descriptor, prepares timing calculation, and adds the interface details to the current list
 func (r *NgReader) readInterfaceDescriptor() error {
+	if err := r.checkBlock(8); err != nil {
+		return err
+	}
 	if _, err := r.readBytes(r.buf[:8]); err != nil {
 		return err
 	}
@@ -483,6 +526,9 @@ func (r *NgReader) convertTime(ifaceID int, ts uint64) (int64, int64) {
 
 // readInterfaceStatistics updates the statistics of the given interface
 func (r *NgReader) readInterfaceStatistics() error {
+	if err := r.checkBlock(12); err != nil {
+		return err
+	}
 	if _, err := r.readBytes(r.buf[:12]); err != nil {
 		return err
 	}
@@ -551,6 +597,9 @@ FIND_PACKET:
 		}
 		switch r.currentBlock.typ {
 		case ngBlockTypeEnhancedPacket:
+			if err := r.checkBlock(20); err != nil {
+				return err
+			}
 			if _, err := r.readBytes(r.buf[:20]); err != nil {
 				return err
 			}
@@ -564,6 +613,9 @@ FIND_PACKET:
 			r.ci.Length = int(r.getUint32(r.buf[16:20]))
 			break FIND_PACKET
 		case ngBlockTypeSimplePacket:
+			if err := r.checkBlock(4); err != nil {
+				return err
+			}
 			if _, err := r.readBytes(r.buf[:4]); err != nil {
 				return err
 			}
@@ -577,6 +629,13 @@ FIND_PACKET:
 			}
 			if r.ifaces[0].SnapLength != 0 && uint32(r.ci.CaptureLength) > r.ifaces[0].SnapLength {
 				r.ci.CaptureLength = int(r.ifaces[0].SnapLength)
+			}
+			// A Simple Packet Block has no captured length: it is what the
+			// block holds. A writer that cut the packet without stating a
+			// snaplen leaves less than the original length, so stop at the
+			// trailing block length instead of reading into the next block.
+			if held := int(r.currentBlock.length) - ngBlockTrailerSize; r.ci.CaptureLength > held {
+				r.ci.CaptureLength = held
 			}
 			break FIND_PACKET
 		case ngBlockTypeInterfaceDescriptor:
@@ -592,6 +651,9 @@ FIND_PACKET:
 				return err
 			}
 		case ngBlockTypePacket:
+			if err := r.checkBlock(20); err != nil {
+				return err
+			}
 			if _, err := r.readBytes(r.buf[:20]); err != nil {
 				return err
 			}
@@ -711,6 +773,9 @@ func (r *NgReader) ReadPacketDataWithOptions() (data []byte, ci gopacket.Capture
 		ci.AncillaryData = make([]interface{}, 1)
 		ci.AncillaryData[0] = r.ancil[0]
 	}
+	if err = r.checkBlock(uint64(uint32(r.ci.CaptureLength))); err != nil {
+		return
+	}
 	if eagerRead(r.ci.CaptureLength) {
 		data = make([]byte, r.ci.CaptureLength)
 		_, err = r.readBytes(data)
@@ -761,6 +826,9 @@ func (r *NgReader) ZeroCopyReadPacketDataWithOptions() (data []byte, ci gopacket
 	ci = r.ci
 	if r.options.WantMixedLinkType {
 		ci.AncillaryData = r.ancil[:]
+	}
+	if err = r.checkBlock(uint64(uint32(r.ci.CaptureLength))); err != nil {
+		return
 	}
 	if eagerRead(ci.CaptureLength) {
 		if cap(r.packetBuf) < ci.CaptureLength {

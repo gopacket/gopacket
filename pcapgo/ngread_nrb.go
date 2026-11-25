@@ -63,7 +63,8 @@ func (r *NgReader) readHWAddr(nr *NgNameRecord, length int) error {
 
 func (r *NgReader) readNameResolutionBlock() error {
 
-	for r.currentBlock.length > 0 {
+	// a record header needs 4 bytes; a block that ends in less has no more records
+	for r.currentBlock.length >= 4 {
 		// Read name record header
 		if _, err := r.readBytes(r.buf[:4]); err != nil {
 			return fmt.Errorf("could not read NameRecord Header block length: %v", err)
@@ -76,7 +77,8 @@ func (r *NgReader) readNameResolutionBlock() error {
 
 		var nameRecord = NgNameRecord{}
 		length := min(int(nrh.recordLength), int(r.currentBlock.length))
-		padding := paddingBytes32b(length)
+		// like the record, its padding can't go past the end of the block
+		padding := min(paddingBytes32b(length), int(r.currentBlock.length)-length)
 		addressLength := 0
 		switch nrh.recordType {
 		case ngNameRecordIPv4:

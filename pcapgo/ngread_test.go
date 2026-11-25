@@ -2288,6 +2288,137 @@ func TestNgReadShortDropCount(t *testing.T) {
 	}
 }
 
+// Tests that a block which is too short for its fixed part, its packet or one of its options is an error for
+// that block, instead of a read into the blocks that follow it
+func TestNgReadPastBlock(t *testing.T) {
+	// block returns a block of the given type and body, with the total length that the body has
+	block := func(typ uint32, body ...byte) []byte {
+		total := uint32(8 + len(body) + 4)
+		return le(append(le(nil, typ, total), body...), total)
+	}
+	// comment returns a 4 byte opt_comment that claims the given length
+	comment := func(length uint32) []byte {
+		return append(le(nil, 1|length<<16), 'n', 'o', 't', 'e')
+	}
+	// epb returns the body of an enhanced packet block with 4 bytes of packet that claims the given capture length
+	epb := func(capLen uint32, options ...byte) []byte {
+		return append(le(nil, 0, 0, 0, capLen, 4, 0x04030201), options...)
+	}
+
+	for _, test := range []struct {
+		name  string
+		block []byte
+	}{
+		{"short section header", block(0x0A0D0D0A, le(nil, 0x1A2B3C4D, 1)...)},
+		{"section header option", block(0x0A0D0D0A, append(le(nil, 0x1A2B3C4D, 1, 0xffffffff, 0xffffffff), comment(100)...)...)},
+		{"short interface description", block(1, 1, 0, 0, 0)},
+		{"interface description option", block(1, append(le(nil, 1, 0), comment(100)...)...)},
+		{"short interface statistics", block(5, 0, 0, 0, 0)},
+		{"interface statistics option", block(5, append(le(nil, 0, 0, 0), comment(100)...)...)},
+		{"short enhanced packet", block(6, le(nil, 0, 0, 0, 4)...)},
+		{"enhanced packet data", block(6, epb(100)...)},
+		{"enhanced packet data up to the trailing length", block(6, epb(8)...)},
+		{"enhanced packet option", block(6, epb(4, comment(100)...)...)},
+		{"enhanced packet option up to the trailing length", block(6, epb(4, comment(8)...)...)},
+		{"enhanced packet option header", block(6, epb(4, 1, 0)...)},
+		{"short simple packet", block(3)},
+		{"short packet", block(2, le(nil, 0, 0, 0, 4)...)},
+		{"packet data", block(2, epb(100)...)},
+	} {
+		for _, zerocopy := range []bool{false, true} {
+			read := func(r *NgReader) ([]byte, error) {
+				if zerocopy {
+					data, _, err := r.ZeroCopyReadPacketData()
+					return data, err
+				}
+				data, _, err := r.ReadPacketData()
+				return data, err
+			}
+
+			// the block is the only thing between the packets of two sections
+			file := append(ngFile(0), ngEPB([]byte{1, 2, 3, 4})...)
+			file = append(file, test.block...)
+			file = append(file, ngFile(0)...)
+			file = append(file, ngEPB([]byte{5, 6, 7, 8})...)
+
+			r, err := NewNgReader(bytes.NewReader(file), DefaultNgReaderOptions)
+			if err != nil {
+				t.Fatalf("%s (zerocopy %v): unexpected error returned: %v", test.name, zerocopy, err)
+			}
+			if data, err := read(r); err != nil || !bytes.Equal(data, []byte{1, 2, 3, 4}) {
+				t.Errorf("%s (zerocopy %v): got packet %v, error %v; want [1 2 3 4]", test.name, zerocopy, data, err)
+			}
+			if _, err := read(r); err == nil || err == io.EOF || err == io.ErrUnexpectedEOF {
+				t.Errorf("%s (zerocopy %v): got error %v, want an error for the block", test.name, zerocopy, err)
+			}
+			// the reader continues with the block after it
+			if data, err := read(r); err != nil || !bytes.Equal(data, []byte{5, 6, 7, 8}) {
+				t.Errorf("%s (zerocopy %v): got packet %v, error %v; want [5 6 7 8]", test.name, zerocopy, data, err)
+			}
+			if _, err := read(r); err != io.EOF {
+				t.Errorf("%s (zerocopy %v): got error %v, want io.EOF", test.name, zerocopy, err)
+			}
+		}
+	}
+
+	// a simple packet block has no captured length, so a packet length past the end of the block is a cut packet
+	for _, length := range []uint32{8, 100} {
+		file := append(ngFile(0), block(3, le(nil, length, 0x04030201)...)...)
+		file = append(file, ngEPB([]byte{5, 6, 7, 8})...)
+		r, err := NewNgReader(bytes.NewReader(file), DefaultNgReaderOptions)
+		if err != nil {
+			t.Fatalf("simple packet of length %d: unexpected error returned: %v", length, err)
+		}
+		data, ci, err := r.ReadPacketData()
+		if err != nil || !bytes.Equal(data, []byte{1, 2, 3, 4}) || ci.Length != int(length) {
+			t.Errorf("simple packet of length %d: got packet %v of length %d, error %v; want [1 2 3 4]", length, data, ci.Length, err)
+		}
+		if data, _, err := r.ReadPacketData(); err != nil || !bytes.Equal(data, []byte{5, 6, 7, 8}) {
+			t.Errorf("simple packet of length %d: got packet %v, error %v; want [5 6 7 8]", length, data, err)
+		}
+	}
+
+	// decryption secrets are read in front of the first interface
+	for _, secrets := range [][]byte{
+		block(0x0A, le(nil, 0x544c534b)...),
+		block(0x0A, le(nil, 0x544c534b, 100, 0)...),
+	} {
+		file := append(ngFile(0)[:28], secrets...)
+		file = append(file, ngFile(0)[28:]...)
+		if _, err := NewNgReader(bytes.NewReader(file), DefaultNgReaderOptions); err == nil || err == io.ErrUnexpectedEOF {
+			t.Errorf("decryption secrets % x: got error %v, want an error for the block", secrets, err)
+		}
+	}
+
+	// name resolution records and their padding are cut at the end of the block instead
+	for _, records := range [][]byte{
+		block(4, 9, 0, 1, 0, 0),
+		block(4, 9, 0, 5, 0, 0, 0),
+	} {
+		file := append(ngFile(0), records...)
+		file = append(file, ngEPB([]byte{1, 2, 3, 4})...)
+		r, err := NewNgReader(bytes.NewReader(file), DefaultNgReaderOptions)
+		if err != nil {
+			t.Fatalf("name resolution % x: unexpected error returned: %v", records, err)
+		}
+		if data, _, err := r.ReadPacketData(); err != nil || !bytes.Equal(data, []byte{1, 2, 3, 4}) {
+			t.Errorf("name resolution % x: got packet %v, error %v; want [1 2 3 4]", records, data, err)
+		}
+	}
+
+	// a total length that doesn't cover the block header and the trailing length can't be skipped
+	for _, total := range []uint32{0, 8, 11} {
+		file := le(ngFile(0), 5, total, total, 0, 0, 0)
+		r, err := NewNgReader(bytes.NewReader(file), DefaultNgReaderOptions)
+		if err != nil {
+			t.Fatalf("total length %d: unexpected error returned: %v", total, err)
+		}
+		if _, _, err = r.ReadPacketData(); err == nil || err == io.EOF || err == io.ErrUnexpectedEOF {
+			t.Errorf("total length %d: got error %v, want an error for the block", total, err)
+		}
+	}
+}
+
 func BenchmarkNgReadPacketData(b *testing.B) {
 	r := setupNgReadBenchmark(b)
 	b.ResetTimer()
