@@ -230,8 +230,29 @@ func sendFrame(tb testing.TB, ifname string, frame []byte) {
 	}
 }
 
-// readFrame returns the next frame from the handle, or fails when none
-// arrives within the test timeout.
+// testSrcMAC marks the frames the tests send. The kernel also puts its own
+// frames on a veth as it comes up (IPv6 MLD reports, router solicitations),
+// and those carry the interface's MAC instead.
+var testSrcMAC = net.HardwareAddr{2, 0, 0, 0, 0, 1}
+
+// Ethernet header: destination MAC, source MAC, ethertype.
+const (
+	ethSrcOffset = 6
+	ethSrcEnd    = 12
+)
+
+// sentByTest reports whether the frame carries testSrcMAC as its source.
+func sentByTest(frame []byte) bool {
+	if len(frame) < ethSrcEnd {
+		return false
+	}
+
+	return bytes.Equal(frame[ethSrcOffset:ethSrcEnd], testSrcMAC)
+}
+
+// readFrame returns the next frame from testSrcMAC, skipping whatever the
+// kernel sent on its own, or fails when none arrives within the test
+// timeout.
 func readFrame(tb testing.TB, handle *pcapgo.EthernetHandle) ([]byte, gopacket.CaptureInfo) {
 	tb.Helper()
 	type result struct {
@@ -241,8 +262,15 @@ func readFrame(tb testing.TB, handle *pcapgo.EthernetHandle) ([]byte, gopacket.C
 	}
 	done := make(chan result, 1)
 	go func() {
-		data, ci, err := handle.ReadPacketData()
-		done <- result{data, ci, err}
+		for {
+			data, ci, err := handle.ReadPacketData()
+			if err == nil && !sentByTest(data) {
+				continue
+			}
+
+			done <- result{data, ci, err}
+			return
+		}
 	}()
 	select {
 	case r := <-done:
@@ -271,6 +299,7 @@ func TestEthernetHandleCapturesFullFrame(t *testing.T) {
 		t.Fatal(err)
 	}
 	frame := make([]byte, intf.MTU+14)
+	copy(frame[ethSrcOffset:], testSrcMAC)
 	frame[12] = 0x08 // ethertype IPv4
 	for i := range frame[14:] {
 		frame[14+i] = byte(i)
