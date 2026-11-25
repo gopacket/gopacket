@@ -393,6 +393,7 @@ const (
 	DHCPOptT2                    DHCPOpt = 59  // 4, uint32
 	DHCPOptClassID               DHCPOpt = 60  // n, []byte
 	DHCPOptClientID              DHCPOpt = 61  // n >=  2, []byte
+	DHCPOptCaptivePortal         DHCPOpt = 114 // RFC 8910, captive portal API URI
 	DHCPOptDomainSearch          DHCPOpt = 119 // n, string
 	DHCPOptSIPServers            DHCPOpt = 120 // n, url
 	DHCPOptClasslessStaticRoute  DHCPOpt = 121 //
@@ -531,6 +532,8 @@ func (o DHCPOpt) String() string {
 		return "ClassID"
 	case DHCPOptClientID:
 		return "ClientID"
+	case DHCPOptCaptivePortal:
+		return "CaptivePortal"
 	case DHCPOptDomainSearch:
 		return "DomainSearch"
 	case DHCPOptClasslessStaticRoute:
@@ -555,7 +558,7 @@ func (o DHCPOption) String() string {
 
 	case DHCPOptHostname, DHCPOptMeritDumpFile, DHCPOptDomainName, DHCPOptRootPath,
 		DHCPOptExtensionsPath, DHCPOptNISDomain, DHCPOptNetBIOSTCPScope, DHCPOptXFontServer,
-		DHCPOptXDisplayManager, DHCPOptMessage, DHCPOptDomainSearch: // string
+		DHCPOptXDisplayManager, DHCPOptMessage, DHCPOptDomainSearch, DHCPOptCaptivePortal: // string
 		return fmt.Sprintf("Option(%s:%s)", o.Type, string(o.Data))
 
 	case DHCPOptMessageType:

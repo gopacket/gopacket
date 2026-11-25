@@ -11,6 +11,7 @@ import (
 	"encoding/binary"
 	"net"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/gopacket/gopacket"
@@ -108,6 +109,41 @@ func TestDHCPv4SerializeOversized(t *testing.T) {
 		if want := append(data, byte(DHCPOptEnd)); !bytes.Equal(want, buf.Bytes()) {
 			t.Errorf("[%d] serialized %d bytes differ from the %d expected", optlen, len(buf.Bytes()), len(want))
 		}
+	}
+}
+
+func TestDHCPv4CaptivePortal(t *testing.T) {
+	uri := "https://example.com/" + strings.Repeat("x", 235) // 255-byte URI
+	portal := NewDHCPOption(DHCPOptCaptivePortal, []byte(uri))
+	legacy := NewDHCPOption(DHCPOpt(160), []byte("vendor data"))
+	dhcp := &DHCPv4{Operation: DHCPOpReply, Options: DHCPOptions{portal, legacy}}
+	buf := gopacket.NewSerializeBuffer()
+	if err := gopacket.SerializeLayers(buf, gopacket.SerializeOptions{}, dhcp); err != nil {
+		t.Fatal(err)
+	}
+	want := append([]byte{114, 255}, uri...)
+	want = append(want, 160, 11)
+	want = append(want, "vendor data"...)
+	want = append(want, 255)
+	if got := buf.Bytes()[240:]; !bytes.Equal(got, want) {
+		t.Fatalf("DHCPv4 option bytes = %x, want %x", got, want)
+	}
+
+	var decoded DHCPv4
+	if err := decoded.DecodeFromBytes(buf.Bytes(), gopacket.NilDecodeFeedback); err != nil {
+		t.Fatal(err)
+	}
+	if len(decoded.Options) != 2 {
+		t.Fatalf("decoded options = %v, want two options", decoded.Options)
+	}
+	if got := decoded.Options[0]; got.Type != DHCPOptCaptivePortal || got.Length != 255 || string(got.Data) != uri {
+		t.Errorf("decoded Captive Portal option = %+v", got)
+	}
+	if got := decoded.Options[0].String(); got != "Option(CaptivePortal:"+uri+")" {
+		t.Errorf("Captive Portal option string = %q", got)
+	}
+	if got := decoded.Options[1]; got.Type != 160 || got.Type.String() != "Unknown" || !bytes.Equal(got.Data, legacy.Data) {
+		t.Errorf("option 160 should be preserved as an unknown option, got %+v", got)
 	}
 }
 
