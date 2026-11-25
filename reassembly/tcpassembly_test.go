@@ -2765,3 +2765,66 @@ func TestPortReuseAfterKeptClose(t *testing.T) {
 		t.Fatalf("second connection on the same 4-tuple: got bytes %q, expected %q", fact.bytes, "firstsecond")
 	}
 }
+
+/* Counts streams, completions and bytes */
+type testRSTFactory struct {
+	streams, completed int
+	bytes              []byte
+}
+
+func (t *testRSTFactory) New(a, b gopacket.Flow, tcp *layers.TCP, ac AssemblerContext) Stream {
+	t.streams++
+	return t
+}
+func (t *testRSTFactory) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir TCPFlowDirection, seq Sequence, start *bool, ac AssemblerContext) bool {
+	return true
+}
+func (t *testRSTFactory) ReassembledSG(sg ScatterGather, ac AssemblerContext) {
+	l, _ := sg.Lengths()
+	t.bytes = append(t.bytes, sg.Fetch(l)...)
+}
+func (t *testRSTFactory) ReassemblyComplete(ac AssemblerContext) bool {
+	t.completed++
+	return true
+}
+
+// A RST from one side ends the whole connection: the stream completes, and a
+// new connection on the same 4-tuple starts a new stream.
+func TestRSTClosesBothHalves(t *testing.T) {
+	fact := &testRSTFactory{}
+	p := NewStreamPool(fact)
+	a := NewAssembler(p)
+	ts := time.Unix(1432538521, 566690000)
+	send := func(dir TCPFlowDirection, tcp layers.TCP) {
+		flow := netFlow
+		tcp.SrcPort, tcp.DstPort = 54842, 80
+		if dir == TCPDirServerToClient {
+			flow = flow.Reverse()
+			tcp.SrcPort, tcp.DstPort = 80, 54842
+		}
+		tcp.SetInternalPortsForTesting()
+		ts = ts.Add(time.Millisecond)
+		ctx := assemblerSimpleContext(gopacket.CaptureInfo{Timestamp: ts})
+		a.AssembleWithContext(flow, &tcp, &ctx)
+	}
+	connection := func(seq, ack uint32, payload []byte) {
+		send(TCPDirClientToServer, layers.TCP{SYN: true, Seq: seq})
+		send(TCPDirServerToClient, layers.TCP{SYN: true, ACK: true, Seq: ack, Ack: seq + 1})
+		send(TCPDirClientToServer, layers.TCP{ACK: true, Seq: seq + 1, Ack: ack + 1, BaseLayer: layers.BaseLayer{Payload: payload}})
+		send(TCPDirClientToServer, layers.TCP{RST: true, Seq: seq + 1 + uint32(len(payload))})
+	}
+	connection(1000, 5000, []byte("first"))
+	if fact.streams != 1 || fact.completed != 1 || string(fact.bytes) != "first" {
+		t.Fatalf("after RST: got %d streams, %d completed, bytes %q; expected 1, 1, %q",
+			fact.streams, fact.completed, fact.bytes, "first")
+	}
+	if n := len(p.connections()); n != 0 {
+		t.Fatalf("after RST: %d connections left in the pool, expected 0", n)
+	}
+	// same 4-tuple, new ISNs
+	connection(2000000, 6000000, []byte("second"))
+	if fact.streams != 2 || fact.completed != 2 || string(fact.bytes) != "firstsecond" {
+		t.Fatalf("second connection: got %d streams, %d completed, bytes %q; expected 2, 2, %q",
+			fact.streams, fact.completed, fact.bytes, "firstsecond")
+	}
+}

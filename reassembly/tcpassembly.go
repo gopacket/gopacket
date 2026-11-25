@@ -799,6 +799,12 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 	if len(a.ret) > 0 {
 		action.nextSeq = a.sendToConnection(conn, half, ac)
 	}
+	// A RST aborts the connection in both directions (RFC 9293, 3.10.7.4):
+	// close the other half too, so the stream completes and a new connection
+	// on the same 4-tuple is not taken for the open half.
+	if t.RST && half.closed && !rev.closed {
+		a.closeHalfConnection(conn, rev)
+	}
 	if action.nextSeq != invalidSequence {
 		half.nextSeq = action.nextSeq
 		if t.FIN {
